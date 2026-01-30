@@ -117,13 +117,27 @@ export default function InboxPage() {
     try {
       setSending(true);
       
-      // TODO: Implement sendMessage in messageService
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
+
+      // Get tenant_id
+      const { data: profile } = await supabase
+        .from("users")
+        .select("tenant_id")
+        .eq("auth_user_id", user.user.id)
+        .single();
+
+      if (!profile) throw new Error("Profile not found");
+
+      // Send reply
       const { error } = await supabase.from("messages").insert({
         direction: "outbound",
         content: replyText,
         to_number: selectedThread,
         from_number: "+47 900 00 000", // TODO: Get from gateway config
         status: "pending",
+        tenant_id: profile.tenant_id,
+        thread_key: selectedThread // Simple thread key for now
       });
 
       if (error) throw error;
@@ -140,12 +154,26 @@ export default function InboxPage() {
 
   const handleAcknowledge = async (threadId: string) => {
     try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("id")
+        .eq("auth_user_id", user.user.id)
+        .single();
+        
+      if (!profile) throw new Error("Profile not found");
+
       // Mark all messages from this thread as acknowledged
       const { error } = await supabase
         .from("messages")
-        .update({ is_acknowledged: true })
+        .update({ 
+          acknowledged_at: new Date().toISOString(),
+          acknowledged_by_user_id: profile.id
+        })
         .eq("from_number", threadId)
-        .eq("is_acknowledged", false);
+        .is("acknowledged_at", null);
 
       if (error) throw error;
 

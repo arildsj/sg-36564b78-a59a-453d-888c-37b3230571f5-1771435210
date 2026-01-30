@@ -68,16 +68,85 @@ export const userService = {
     if (error) throw error;
   },
 
-  async getOnDutyUsersForGroup(groupId: string): Promise<User[]> {
+  async getOnDutyUsersForGroup(groupId: string) {
+    // This requires a more complex query joining group_memberships and shifts/status
+    // Simplified for now: Get all users in group
     const { data, error } = await supabase
-      .from("on_duty_status")
-      .select(`
-        users(*)
-      `)
-      .eq("group_id", groupId)
-      .eq("is_on_duty", true);
-
+      .from("group_memberships")
+      .select("user:users(*)")
+      .eq("group_id", groupId);
+      
     if (error) throw error;
-    return (data || []).map((item: any) => item.users).filter(Boolean);
+    
+    return data.map(d => d.user).filter(Boolean);
   },
+
+  async createUser(userData: {
+    name: string;
+    email: string;
+    phone: string;
+    role: "tenant_admin" | "group_admin" | "member";
+    password?: string;
+    group_ids?: string[];
+  }) {
+    // 1. Get current user's tenant_id
+    const currentUser = await this.getCurrentUser();
+    if (!currentUser?.tenant_id) throw new Error("Could not determine current tenant");
+
+    // 2. Create Auth User via Edge Function
+    const { data: authData, error: authError } = await supabase.functions.invoke('create-user', {
+      body: {
+        email: userData.email,
+        password: userData.password,
+        phone: userData.phone
+      }
+    });
+
+    if (authError) throw new Error(`Failed to create auth user: ${authError.message}`);
+    if (!authData?.user?.id) throw new Error("Failed to create auth user: No ID returned");
+
+    const authUserId = authData.user.id;
+
+    // 3. Create User Profile
+    const { data: userProfile, error: profileError } = await supabase
+      .from("users")
+      .insert({
+        auth_user_id: authUserId,
+        tenant_id: currentUser.tenant_id,
+        name: userData.name,
+        email: userData.email,
+        phone_number: userData.phone,
+        role: userData.role,
+        status: "active"
+      })
+      .select()
+      .single();
+
+    if (profileError) {
+      // Cleanup: delete auth user if profile creation fails
+      // Note: This requires another Edge Function or manual cleanup, 
+      // but for now we just throw the error.
+      throw new Error(`Failed to create user profile: ${profileError.message}`);
+    }
+
+    // 4. Add Group Memberships
+    if (userData.group_ids && userData.group_ids.length > 0) {
+      const memberships = userData.group_ids.map(groupId => ({
+        user_id: userProfile.id,
+        group_id: groupId
+      }));
+
+      const { error: membershipError } = await supabase
+        .from("group_memberships")
+        .insert(memberships);
+
+      if (membershipError) {
+        console.error("Failed to add group memberships:", membershipError);
+        // We don't throw here as the user is created successfully
+        alert("Bruker opprettet, men feilet ved tildeling av grupper.");
+      }
+    }
+
+    return userProfile;
+  }
 };
