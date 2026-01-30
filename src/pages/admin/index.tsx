@@ -45,6 +45,7 @@ type User = {
   email: string | null;
   role: string;
   status: string;
+  tenant_id: string;
   groups?: string[];
 };
 
@@ -53,6 +54,7 @@ export default function AdminPage() {
   const [groups, setGroups] = useState<GroupNode[]>([]);
   const [allGroups, setAllGroups] = useState<GroupNode[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -72,9 +74,10 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [groupsData, usersData] = await Promise.all([
+      const [groupsData, usersData, currentUserData] = await Promise.all([
         groupService.getGroupsHierarchy(),
         userService.getAllUsers(),
+        userService.getCurrentUser(),
       ]);
       setGroups(groupsData as GroupNode[]);
       
@@ -93,6 +96,7 @@ export default function AdminPage() {
       setAllGroups(flattenGroups(groupsData as GroupNode[]));
       
       setUsers(usersData as User[]);
+      setCurrentUser(currentUserData as unknown as User);
     } catch (error) {
       console.error("Failed to load admin data:", error);
     } finally {
@@ -109,12 +113,17 @@ export default function AdminPage() {
         return;
       }
 
+      if (!currentUser?.tenant_id) {
+        alert("Kan ikke opprette gruppe: Mangler tenant ID");
+        return;
+      }
+
       await groupService.createGroup({
         name: newGroup.name,
         kind: newGroup.kind,
         parent_id: newGroup.parent_id,
         description: newGroup.description || null,
-        tenant_id: "", // Will be set by database trigger
+        tenant_id: currentUser.tenant_id,
       });
 
       // Reset form and close dialog

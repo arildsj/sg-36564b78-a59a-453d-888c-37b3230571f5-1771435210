@@ -2,6 +2,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 type Group = Database["public"]["Tables"]["groups"]["Row"];
+type GroupInsert = Database["public"]["Tables"]["groups"]["Insert"];
+type GroupUpdate = Database["public"]["Tables"]["groups"]["Update"];
+
 type GroupWithMembers = Group & {
   member_count?: number;
   on_duty_count?: number;
@@ -96,7 +99,7 @@ export const groupService = {
     return data;
   },
 
-  async createGroup(group: Omit<Group, "id" | "created_at" | "updated_at">): Promise<Group> {
+  async createGroup(group: GroupInsert): Promise<Group> {
     const { data, error } = await supabase
       .from("groups")
       .insert(group)
@@ -107,7 +110,7 @@ export const groupService = {
     return data;
   },
 
-  async updateGroup(id: string, updates: Partial<Group>): Promise<Group> {
+  async updateGroup(id: string, updates: GroupUpdate): Promise<Group> {
     const { data, error } = await supabase
       .from("groups")
       .update(updates)
