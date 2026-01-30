@@ -5,12 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { authService } from "@/services/authService";
-import { Building2, UserCog, Phone, CheckCircle2 } from "lucide-react";
+import { Building2, UserCog, CheckCircle2 } from "lucide-react";
 
-type OnboardingStep = "tenant" | "admin" | "gateway" | "complete";
+type OnboardingStep = "tenant" | "admin" | "complete";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -30,16 +29,10 @@ export default function OnboardingPage() {
     password: "",
     confirmPassword: ""
   });
-  
-  const [gateway, setGateway] = useState({ 
-    name: "", 
-    phone: "" 
-  });
 
   const steps: { id: OnboardingStep; label: string; icon: React.ReactNode }[] = [
     { id: "tenant", label: "Organisasjon", icon: <Building2 className="h-5 w-5" /> },
     { id: "admin", label: "Administrator", icon: <UserCog className="h-5 w-5" /> },
-    { id: "gateway", label: "Gateway", icon: <Phone className="h-5 w-5" /> },
     { id: "complete", label: "Fullført", icon: <CheckCircle2 className="h-5 w-5" /> },
   ];
 
@@ -138,9 +131,8 @@ export default function OnboardingPage() {
             "1. Gå til Supabase Dashboard → Authentication → Providers → Email\n" +
             "   og skru AV 'Confirm email' (Enable email confirmations)\n\n" +
             "2. Eller sjekk e-posten din for bekreftelseslenke\n\n" +
-            "Deretter kan du logge inn på /settings og fortsette oppsettet."
+            "Deretter kan du logge inn på /settings."
           );
-          // Skip gateway setup and go straight to complete with manual login instruction
           setCurrentStep("complete");
           return;
         }
@@ -151,39 +143,11 @@ export default function OnboardingPage() {
         return;
       }
 
-      // Successfully signed in - continue to gateway setup
-      setCurrentStep("gateway");
+      // Successfully signed in - go to complete
+      setCurrentStep("complete");
     } catch (error) {
       console.error("Failed to create admin:", error);
       alert("Feil ved opprettelse av administrator");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateGateway = async () => {
-    try {
-      setLoading(true);
-
-      if (!gateway.name || !gateway.phone) {
-        alert("Vennligst fyll ut gateway-informasjon");
-        return;
-      }
-
-      const { error } = await supabase.from("gateways").insert({
-        tenant_id: tenantId,
-        name: gateway.name,
-        phone_number: gateway.phone,
-        fallback_group_id: null,
-        status: "active",
-      });
-
-      if (error) throw error;
-      
-      setCurrentStep("complete");
-    } catch (error) {
-      console.error("Failed to create gateway:", error);
-      alert("Feil ved opprettelse av gateway");
     } finally {
       setLoading(false);
     }
@@ -353,47 +317,6 @@ export default function OnboardingPage() {
                   className="w-full"
                   disabled={loading}
                 >
-                  {loading ? "Oppretter..." : "Neste: Konfigurer gateway"}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {currentStep === "gateway" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Konfigurer FairGateway</CardTitle>
-                <CardDescription>
-                  Gateway som mottar og sender SMS. Telefonnummeret som skal brukes.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="gateway-name">Gateway-navn *</Label>
-                  <Input
-                    id="gateway-name"
-                    placeholder="FairGateway Hovedkontor"
-                    value={gateway.name}
-                    onChange={(e) => setGateway({ ...gateway, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gateway-phone">Telefonnummer *</Label>
-                  <Input
-                    id="gateway-phone"
-                    placeholder="+4740123456"
-                    value={gateway.phone}
-                    onChange={(e) => setGateway({ ...gateway, phone: e.target.value })}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Dette er nummeret som vil motta og sende SMS-meldinger
-                  </p>
-                </div>
-                <Button 
-                  onClick={handleCreateGateway} 
-                  className="w-full"
-                  disabled={loading}
-                >
                   {loading ? "Oppretter..." : "Fullfør oppsett"}
                 </Button>
               </CardContent>
@@ -405,41 +328,33 @@ export default function OnboardingPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle2 className="h-6 w-6 text-primary" />
-                  Administrator opprettet!
+                  Grunnleggende oppsett fullført!
                 </CardTitle>
                 <CardDescription>
-                  Brukeren din er opprettet. For å fortsette må du logge inn.
+                  Organisasjonen og administratoren er opprettet. Du kan nå logge inn og fullføre konfigurasjonen.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-2">
-                  <h3 className="font-semibold text-sm text-yellow-900 dark:text-yellow-100">
-                    ⚠️ E-postbekreftelse påkrevd
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg space-y-2">
+                  <h3 className="font-semibold text-sm text-blue-900 dark:text-blue-100">
+                    ✅ Hva er gjort så langt:
                   </h3>
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                    Supabase krever e-postbekreftelse før pålogging. Du har to alternativer:
-                  </p>
-                  <ol className="space-y-1 text-sm list-decimal list-inside text-yellow-800 dark:text-yellow-200">
-                    <li>
-                      <strong>For utvikling/testing:</strong> Gå til Supabase Dashboard → 
-                      Authentication → Providers → Email og skru AV "Confirm email"
-                    </li>
-                    <li>
-                      <strong>For produksjon:</strong> Sjekk e-posten din ({adminData.email}) 
-                      for bekreftelseslenke
-                    </li>
-                  </ol>
+                  <ul className="space-y-1 text-sm list-disc list-inside text-blue-800 dark:text-blue-200">
+                    <li>Organisasjonen "{tenantData.name}" er opprettet</li>
+                    <li>Tenant-administrator "{adminData.name}" er opprettet</li>
+                    <li>Du er klar til å logge inn og fortsette</li>
+                  </ul>
                 </div>
                 
                 <div className="p-4 bg-muted rounded-lg space-y-2">
-                  <h3 className="font-semibold text-sm">Neste steg etter pålogging:</h3>
+                  <h3 className="font-semibold text-sm">📋 Neste steg etter pålogging:</h3>
                   <ul className="space-y-1 text-sm list-disc list-inside">
-                    <li>Gå til Settings og fullfør gateway-oppsett</li>
-                    <li>Gå til Admin-panelet for å legge til grupper</li>
-                    <li>Opprett brukere og tildel dem til grupper</li>
-                    <li>Sett opp åpningstider per gruppe</li>
-                    <li>Konfigurer routing-regler og auto-svar</li>
-                    <li>Test systemet med SMS-simulering</li>
+                    <li><strong>Innstillinger:</strong> Konfigurer Fair Gateway (SMS-gateway)</li>
+                    <li><strong>Admin-panel:</strong> Opprett grupper (Support, Salg, osv.)</li>
+                    <li><strong>Admin-panel:</strong> Legg til brukere og tildel til grupper</li>
+                    <li><strong>Admin-panel:</strong> Sett opp åpningstider per gruppe</li>
+                    <li><strong>Admin-panel:</strong> Konfigurer routing-regler og auto-svar</li>
+                    <li><strong>Simulering:</strong> Test systemet med SMS-simulering</li>
                   </ul>
                 </div>
                 
