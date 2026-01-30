@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -212,9 +213,9 @@ export default function SimulatePage() {
                   <div className="p-4 bg-destructive/10 border border-destructive/20 rounded">
                     <p className="text-sm text-destructive">
                       ⚠️ Ingen gateways funnet. Gå til{" "}
-                      <a href="/onboarding" className="underline font-medium">
+                      <Link href="/onboarding" className="underline font-medium">
                         Onboarding
-                      </a>{" "}
+                      </Link>{" "}
                       for å sette opp organisasjonen din.
                     </p>
                   </div>
