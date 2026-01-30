@@ -61,6 +61,25 @@ export default function InboxPage() {
   useEffect(() => {
     loadGroups();
     loadThreads();
+
+    // Subscribe to realtime updates for messages
+    const channel = supabase
+      .channel("inbox_updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages" },
+        () => {
+          loadThreads();
+          if (selectedThread) {
+            loadMessages(selectedThread.id);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [activeTab, selectedGroupFilter]);
 
   useEffect(() => {
@@ -88,27 +107,7 @@ export default function InboxPage() {
       } else if (activeTab === "fallback") {
         loadedThreads = await messageService.getFallbackThreads();
       } else if (activeTab === "escalated") {
-        const escalated = await messageService.getEscalatedThreads(30);
-        // Convert escalated messages to thread format
-        const threadMap = new Map<string, MessageThread>();
-        escalated.forEach((msg: any) => {
-          const thread = msg.message_threads;
-          if (!threadMap.has(thread.id)) {
-            threadMap.set(thread.id, {
-              id: thread.id,
-              contact_phone: thread.contact_phone,
-              resolved_group_id: thread.resolved_group_id,
-              is_resolved: false,
-              last_message_at: msg.created_at,
-              created_at: msg.created_at,
-              group_name: thread.groups?.name || "Unknown",
-              unread_count: 1,
-              last_message_content: msg.content,
-              is_fallback: false,
-            });
-          }
-        });
-        loadedThreads = Array.from(threadMap.values());
+        loadedThreads = await messageService.getEscalatedThreads(30);
       }
 
       // Filter by group if selected
@@ -120,9 +119,13 @@ export default function InboxPage() {
 
       setThreads(loadedThreads);
 
-      // Auto-select first thread
-      if (loadedThreads.length > 0 && !selectedThread) {
-        setSelectedThread(loadedThreads[0]);
+      // Preserve selection if still valid, or select first
+      if (loadedThreads.length > 0) {
+        if (!selectedThread || !loadedThreads.find(t => t.id === selectedThread.id)) {
+          setSelectedThread(loadedThreads[0]);
+        }
+      } else {
+        setSelectedThread(null);
       }
     } catch (error) {
       console.error("Failed to load threads:", error);
@@ -154,7 +157,7 @@ export default function InboxPage() {
       );
 
       setReplyText("");
-      await loadMessages(selectedThread.id);
+      // Message update handled by subscription
     } catch (error) {
       console.error("Failed to send reply:", error);
       alert("Kunne ikke sende melding");
@@ -168,10 +171,7 @@ export default function InboxPage() {
 
     try {
       await messageService.acknowledgeThread(selectedThread.id);
-      await loadThreads();
-      if (selectedThread) {
-        await loadMessages(selectedThread.id);
-      }
+      // Updates handled by subscription
     } catch (error) {
       console.error("Failed to acknowledge thread:", error);
     }
@@ -184,6 +184,7 @@ export default function InboxPage() {
       await messageService.reclassifyThread(selectedThread.id, reclassifyTargetGroup);
       setReclassifyDialogOpen(false);
       setReclassifyTargetGroup("");
+      // Updates handled by subscription, but force reload to be safe
       await loadThreads();
     } catch (error) {
       console.error("Failed to reclassify thread:", error);
@@ -214,16 +215,20 @@ export default function InboxPage() {
       </Head>
 
       <AppLayout>
-        <div className="space-y-6">
-          <div>
+        <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
+          <div className="flex-none">
             <h2 className="text-3xl font-bold tracking-tight text-foreground">Innboks</h2>
             <p className="text-muted-foreground mt-2">
               Håndter meldinger fra dine grupper. Kun meldinger fra grupper du er vakt i vises her.
             </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="space-y-4">
-            <div className="flex items-center justify-between">
+          <Tabs 
+            value={activeTab} 
+            onValueChange={(v: any) => setActiveTab(v)} 
+            className="flex-1 flex flex-col space-y-4"
+          >
+            <div className="flex-none flex items-center justify-between flex-wrap gap-4">
               <TabsList>
                 <TabsTrigger value="all" className="gap-2">
                   <MessageSquare className="h-4 w-4" />
@@ -254,25 +259,25 @@ export default function InboxPage() {
               </Select>
             </div>
 
-            <TabsContent value={activeTab} className="m-0">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-20rem)]">
+            <TabsContent value={activeTab} className="flex-1 m-0 min-h-0">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
                 {/* Thread List */}
-                <Card className="lg:col-span-1 flex flex-col">
-                  <CardHeader className="border-b">
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5 text-primary" />
+                <Card className="lg:col-span-1 flex flex-col h-full overflow-hidden">
+                  <CardHeader className="border-b py-3 px-4 flex-none">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <MessageSquare className="h-4 w-4 text-primary" />
                       Samtaler ({threads.length})
                     </CardTitle>
                   </CardHeader>
                   <ScrollArea className="flex-1">
-                    <div className="p-4 space-y-2">
+                    <div className="p-3 space-y-2">
                       {loading ? (
-                        <p className="text-muted-foreground text-center py-8">Laster...</p>
+                        <p className="text-muted-foreground text-center py-8 text-sm">Laster...</p>
                       ) : threads.length === 0 ? (
-                        <div className="text-center py-12">
-                          <InboxIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
-                          <p className="text-muted-foreground">Ingen samtaler</p>
-                          <p className="text-sm text-muted-foreground mt-2">
+                        <div className="text-center py-12 px-4">
+                          <InboxIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3 opacity-50" />
+                          <p className="text-muted-foreground font-medium">Ingen samtaler</p>
+                          <p className="text-xs text-muted-foreground mt-1">
                             {activeTab === "fallback"
                               ? "Ingen ukjente avsendere for øyeblikket"
                               : activeTab === "escalated"
@@ -286,38 +291,37 @@ export default function InboxPage() {
                             key={thread.id}
                             onClick={() => setSelectedThread(thread)}
                             className={cn(
-                              "w-full text-left p-4 rounded-lg border transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
+                              "w-full text-left p-3 rounded-lg border transition-all hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
                               selectedThread?.id === thread.id
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-card hover:bg-accent"
+                                ? "bg-primary/5 border-primary/50 shadow-sm"
+                                : "bg-card hover:bg-accent/50"
                             )}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <p className="font-semibold truncate">{thread.contact_phone}</p>
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <span className="font-semibold text-sm truncate">{thread.contact_phone}</span>
                                   {thread.unread_count > 0 && (
-                                    <Badge variant="destructive" className="text-xs">
-                                      {thread.unread_count} ny
+                                    <Badge variant="destructive" className="text-[10px] h-4 px-1">
+                                      {thread.unread_count}
                                     </Badge>
                                   )}
                                   {thread.is_fallback && (
-                                    <Badge variant="outline" className="text-xs">
+                                    <Badge variant="outline" className="text-[10px] h-4 px-1 border-yellow-500 text-yellow-600">
                                       Ukjent
                                     </Badge>
                                   )}
                                 </div>
-                                <p className="text-sm opacity-90 flex items-center gap-1 mt-1">
-                                  <Phone className="h-3 w-3" />
-                                  {thread.contact_phone}
-                                </p>
-                                <p className="text-xs opacity-75 mt-1">{thread.group_name}</p>
-                                <p className="text-sm mt-2 truncate opacity-80">
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                                  <span className="font-medium text-foreground/80">{thread.group_name}</span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {new Date(thread.last_message_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground truncate line-clamp-1">
                                   {thread.last_message_content}
-                                </p>
-                                <p className="text-xs opacity-60 mt-1 flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {new Date(thread.last_message_at).toLocaleString("no-NO")}
                                 </p>
                               </div>
                             </div>
@@ -329,21 +333,22 @@ export default function InboxPage() {
                 </Card>
 
                 {/* Message Thread View */}
-                <Card className="lg:col-span-2 flex flex-col">
+                <Card className="lg:col-span-2 flex flex-col h-full overflow-hidden">
                   {selectedThread ? (
                     <>
-                      <CardHeader className="border-b">
+                      <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
                         <div className="flex items-center justify-between">
                           <div>
-                            <CardTitle className="flex items-center gap-2">
+                            <CardTitle className="flex items-center gap-2 text-base">
                               {selectedThread.contact_phone}
                               {selectedThread.is_fallback && (
-                                <Badge variant="outline">Ukjent avsender</Badge>
+                                <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+                                  Ukjent avsender
+                                </Badge>
                               )}
                             </CardTitle>
-                            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                              <Phone className="h-4 w-4" />
-                              {selectedThread.contact_phone} • {selectedThread.group_name}
+                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                              Gruppe: <span className="font-medium text-foreground">{selectedThread.group_name}</span>
                             </p>
                           </div>
                           <div className="flex gap-2">
@@ -351,68 +356,83 @@ export default function InboxPage() {
                               <Button
                                 onClick={() => setReclassifyDialogOpen(true)}
                                 variant="outline"
+                                size="sm"
                                 className="gap-2"
                               >
                                 <FolderInput className="h-4 w-4" />
-                                Omklassifiser
+                                <span className="hidden sm:inline">Omklassifiser</span>
                               </Button>
                             )}
                             {hasUnacknowledged && (
-                              <Button onClick={handleAcknowledge} variant="outline" className="gap-2">
+                              <Button 
+                                onClick={handleAcknowledge} 
+                                variant="default" 
+                                size="sm" 
+                                className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                              >
                                 <CheckCheck className="h-4 w-4" />
-                                Bekreft mottatt
+                                <span className="hidden sm:inline">Bekreft mottatt</span>
                               </Button>
                             )}
-                            <Button onClick={handleResolve} variant="outline" className="gap-2">
+                            <Button 
+                              onClick={handleResolve} 
+                              variant="ghost" 
+                              size="sm" 
+                              className="gap-2 text-muted-foreground hover:text-foreground"
+                            >
                               <Archive className="h-4 w-4" />
-                              Løs
+                              <span className="hidden sm:inline">Løs</span>
                             </Button>
                           </div>
                         </div>
                       </CardHeader>
 
-                      <ScrollArea className="flex-1 p-4">
+                      <ScrollArea className="flex-1 p-4 bg-slate-50 dark:bg-slate-950/20">
                         <div className="space-y-4">
                           {messages.length === 0 ? (
-                            <p className="text-muted-foreground text-center py-8">Ingen meldinger</p>
+                            <p className="text-muted-foreground text-center py-8 text-sm">Ingen meldinger</p>
                           ) : (
                             messages.map((msg) => (
                               <div
                                 key={msg.id}
                                 className={cn(
-                                  "flex",
-                                  msg.direction === "outbound" ? "justify-end" : "justify-start"
+                                  "flex flex-col max-w-[85%] mb-4",
+                                  msg.direction === "outbound" ? "ml-auto items-end" : "mr-auto items-start"
                                 )}
                               >
                                 <div
                                   className={cn(
-                                    "max-w-[70%] rounded-lg p-4",
+                                    "rounded-2xl px-4 py-2 text-sm shadow-sm",
                                     msg.direction === "outbound"
-                                      ? "bg-primary text-primary-foreground"
-                                      : "bg-muted text-foreground border"
+                                      ? "bg-blue-600 text-white rounded-br-none"
+                                      : "bg-white dark:bg-card border text-foreground rounded-bl-none"
                                   )}
                                 >
                                   {msg.is_fallback && msg.direction === "inbound" && (
-                                    <Badge variant="outline" className="mb-2 text-xs">
-                                      Ukjent avsender
-                                    </Badge>
+                                    <div className="mb-1 pb-1 border-b border-border/10 flex items-center gap-1 text-xs opacity-90">
+                                       <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                                       <span>Ukjent avsender</span>
+                                    </div>
                                   )}
-                                  <p className="text-sm leading-relaxed">{msg.content}</p>
-                                  <div className="flex items-center justify-between gap-2 mt-2">
-                                    <p
-                                      className={cn(
-                                        "text-xs",
-                                        msg.direction === "outbound"
-                                          ? "text-primary-foreground/70"
-                                          : "text-muted-foreground"
-                                      )}
-                                    >
-                                      {new Date(msg.created_at).toLocaleString("no-NO")}
-                                    </p>
-                                    {msg.direction === "inbound" && msg.is_acknowledged && (
-                                      <CheckCheck className="h-3 w-3 text-green-600" />
-                                    )}
-                                  </div>
+                                  <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1 px-1">
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {new Date(msg.created_at).toLocaleString("no-NO", {
+                                      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                                    })}
+                                  </span>
+                                  {msg.direction === "inbound" && msg.is_acknowledged && (
+                                    <div className="flex items-center gap-1 text-[10px] text-green-600 font-medium">
+                                      <CheckCheck className="h-3 w-3" />
+                                      <span>Mottatt</span>
+                                    </div>
+                                  )}
+                                  {msg.direction === "inbound" && !msg.is_acknowledged && (
+                                    <span className="text-[10px] text-amber-600 font-medium animate-pulse">
+                                      Ubehandlet
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             ))
@@ -420,13 +440,13 @@ export default function InboxPage() {
                         </div>
                       </ScrollArea>
 
-                      <CardContent className="border-t p-4">
+                      <CardContent className="border-t p-4 bg-background">
                         <form
                           onSubmit={(e) => {
                             e.preventDefault();
                             handleSendReply();
                           }}
-                          className="flex gap-2"
+                          className="flex gap-3"
                         >
                           <Textarea
                             placeholder="Skriv svar..."
@@ -438,28 +458,30 @@ export default function InboxPage() {
                                 handleSendReply();
                               }
                             }}
-                            className="flex-1 resize-none focus-visible:ring-2 focus-visible:ring-primary"
-                            rows={3}
+                            className="flex-1 min-h-[50px] max-h-[150px] resize-none focus-visible:ring-1"
+                            rows={1}
                             disabled={sending}
                           />
                           <Button
                             type="submit"
                             disabled={!replyText.trim() || sending}
-                            className="gap-2"
-                            size="lg"
+                            className="h-[50px] w-[50px] rounded-full p-0 flex-none shrink-0"
+                            size="icon"
                           >
-                            <Send className="h-4 w-4" />
-                            {sending ? "Sender..." : "Send"}
+                            <Send className="h-5 w-5" />
                           </Button>
                         </form>
                       </CardContent>
                     </>
                   ) : (
-                    <CardContent className="flex-1 flex items-center justify-center">
-                      <div className="text-center text-muted-foreground">
-                        <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg font-medium">Velg en samtale for å se meldinger</p>
+                    <CardContent className="flex-1 flex flex-col items-center justify-center bg-muted/5 h-full">
+                      <div className="bg-muted/20 p-6 rounded-full mb-4">
+                        <MessageSquare className="h-12 w-12 text-muted-foreground/40" />
                       </div>
+                      <h3 className="text-lg font-medium text-foreground">Velg en samtale</h3>
+                      <p className="text-sm text-muted-foreground mt-1 max-w-xs text-center">
+                        Velg en samtale fra listen til venstre for å se meldingshistorikk og svare.
+                      </p>
                     </CardContent>
                   )}
                 </Card>
@@ -475,22 +497,28 @@ export default function InboxPage() {
           <DialogHeader>
             <DialogTitle>Omklassifiser samtale</DialogTitle>
             <DialogDescription>
-              Velg riktig gruppe for denne samtalen. Meldingen vil flyttes fra fallback-innboks til
-              den valgte gruppen.
+              Flytt denne samtalen til en annen gruppe. Meldingen vil forsvinne fra "Ukjente avsendere" og vises i den valgte gruppens innboks.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Nåværende gruppe</label>
-              <p className="text-sm text-muted-foreground">{selectedThread?.group_name}</p>
+            <div className="bg-muted/30 p-3 rounded-md border">
+              <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Nåværende info</p>
+              <div className="flex justify-between items-center text-sm">
+                <span>Avsender:</span>
+                <span className="font-mono">{selectedThread?.contact_phone}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm mt-1">
+                <span>Mottatt i:</span>
+                <span className="font-medium">{selectedThread?.group_name}</span>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Ny gruppe</label>
+              <label className="text-sm font-medium">Velg ny gruppe</label>
               <Select value={reclassifyTargetGroup} onValueChange={setReclassifyTargetGroup}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Velg gruppe" />
+                  <SelectValue placeholder="Søk eller velg gruppe..." />
                 </SelectTrigger>
                 <SelectContent>
                   {groups
@@ -510,7 +538,7 @@ export default function InboxPage() {
               Avbryt
             </Button>
             <Button onClick={handleReclassify} disabled={!reclassifyTargetGroup}>
-              Omklassifiser
+              Omklassifiser og flytt
             </Button>
           </DialogFooter>
         </DialogContent>

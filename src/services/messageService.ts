@@ -1,7 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-export type Message = Database["public"]["Tables"]["messages"]["Row"] & {
+// Helper types to avoid deep nesting issues
+type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
+type ThreadRow = Database["public"]["Tables"]["message_threads"]["Row"];
+type GroupRow = Database["public"]["Tables"]["groups"]["Row"];
+
+export type Message = MessageRow & {
   is_acknowledged: boolean;
 };
 
@@ -22,22 +27,18 @@ export const messageService = {
   /**
    * Get all message threads for a specific group
    */
-  async getThreadsByGroup(groupId: string) {
+  async getThreadsByGroup(groupId: string): Promise<MessageThread[]> {
     const { data, error } = await supabase
       .from("message_threads")
       .select(`
-        id,
-        contact_phone,
-        resolved_group_id,
-        is_resolved,
-        last_message_at,
-        created_at,
-        groups!message_threads_resolved_group_id_fkey (
+        *,
+        groups (
           name
         ),
-        messages!inner (
+        messages (
           id,
           content,
+          created_at,
           acknowledged_at,
           is_fallback
         )
@@ -51,33 +52,13 @@ export const messageService = {
       throw error;
     }
 
-    // Process threads with unread counts
-    const threads: MessageThread[] = (data || []).map((thread: any) => {
-      const messages = Array.isArray(thread.messages) ? thread.messages : [];
-      const unreadCount = messages.filter((m: any) => !m.acknowledged_at).length;
-      const lastMessage = messages[0] || { content: "", is_fallback: false };
-
-      return {
-        id: thread.id,
-        contact_phone: thread.contact_phone,
-        resolved_group_id: thread.resolved_group_id,
-        is_resolved: thread.is_resolved,
-        last_message_at: thread.last_message_at,
-        created_at: thread.created_at,
-        group_name: thread.groups?.name || "Unknown",
-        unread_count: unreadCount,
-        last_message_content: lastMessage.content,
-        is_fallback: lastMessage.is_fallback || false,
-      };
-    });
-
-    return threads;
+    return this._mapThreadsResponse(data);
   },
 
   /**
    * Get all threads across all groups for current user
    */
-  async getAllThreads() {
+  async getAllThreads(): Promise<MessageThread[]> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -93,22 +74,17 @@ export const messageService = {
     const { data, error } = await supabase
       .from("message_threads")
       .select(`
-        id,
-        contact_phone,
-        resolved_group_id,
-        is_resolved,
-        last_message_at,
-        created_at,
-        groups!message_threads_resolved_group_id_fkey (
+        *,
+        groups (
           id,
           name
         ),
-        messages!inner (
+        messages (
           id,
           content,
+          created_at,
           acknowledged_at,
-          is_fallback,
-          created_at
+          is_fallback
         )
       `)
       .eq("tenant_id", profile.tenant_id)
@@ -120,37 +96,13 @@ export const messageService = {
       throw error;
     }
 
-    const threads: MessageThread[] = (data || []).map((thread: any) => {
-      const messages = Array.isArray(thread.messages) ? thread.messages : [];
-      const unreadCount = messages.filter((m: any) => !m.acknowledged_at).length;
-      
-      // Get last message (most recent)
-      const sortedMessages = messages.sort((a: any, b: any) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      const lastMessage = sortedMessages[0] || { content: "", is_fallback: false };
-
-      return {
-        id: thread.id,
-        contact_phone: thread.contact_phone,
-        resolved_group_id: thread.resolved_group_id,
-        is_resolved: thread.is_resolved,
-        last_message_at: thread.last_message_at,
-        created_at: thread.created_at,
-        group_name: thread.groups?.name || "Unknown",
-        unread_count: unreadCount,
-        last_message_content: lastMessage.content,
-        is_fallback: lastMessage.is_fallback || false,
-      };
-    });
-
-    return threads;
+    return this._mapThreadsResponse(data);
   },
 
   /**
-   * Get fallback threads (messages from unknown senders)
+   * Get fallback threads (threads with fallback messages)
    */
-  async getFallbackThreads() {
+  async getFallbackThreads(): Promise<MessageThread[]> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -162,69 +114,41 @@ export const messageService = {
 
     if (!profile) throw new Error("Profile not found");
 
+    // We look for threads where the resolved_group is the fallback group OR messages are flagged as fallback
+    // Simplest approach: check threads with messages that have is_fallback=true
+    
+    // First, let's find threads that contain fallback messages
     const { data, error } = await supabase
       .from("message_threads")
       .select(`
-        id,
-        contact_phone,
-        resolved_group_id,
-        is_resolved,
-        last_message_at,
-        created_at,
-        groups!message_threads_resolved_group_id_fkey (
+        *,
+        groups (
           id,
           name
         ),
         messages!inner (
           id,
           content,
+          created_at,
           acknowledged_at,
-          is_fallback,
-          created_at
+          is_fallback
         )
       `)
       .eq("tenant_id", profile.tenant_id)
       .eq("is_resolved", false)
+      .eq("messages.is_fallback", true)
       .order("last_message_at", { ascending: false });
 
     if (error) throw error;
 
-    // Filter threads that have at least one fallback message
-    const fallbackThreads: MessageThread[] = (data || [])
-      .filter((thread: any) => {
-        const messages = Array.isArray(thread.messages) ? thread.messages : [];
-        return messages.some((m: any) => m.is_fallback === true);
-      })
-      .map((thread: any) => {
-        const messages = Array.isArray(thread.messages) ? thread.messages : [];
-        const unreadCount = messages.filter((m: any) => !m.acknowledged_at).length;
-        
-        const sortedMessages = messages.sort((a: any, b: any) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        const lastMessage = sortedMessages[0] || { content: "", is_fallback: false };
-
-        return {
-          id: thread.id,
-          contact_phone: thread.contact_phone,
-          resolved_group_id: thread.resolved_group_id,
-          is_resolved: thread.is_resolved,
-          last_message_at: thread.last_message_at,
-          created_at: thread.created_at,
-          group_name: thread.groups?.name || "Unknown",
-          unread_count: unreadCount,
-          last_message_content: lastMessage.content,
-          is_fallback: true,
-        };
-      });
-
-    return fallbackThreads;
+    // Use our mapper, but we know these are fallback threads
+    return this._mapThreadsResponse(data).map(t => ({ ...t, is_fallback: true }));
   },
 
   /**
    * Get escalated threads (unacknowledged messages past threshold)
    */
-  async getEscalatedThreads(thresholdMinutes: number = 30) {
+  async getEscalatedThreads(thresholdMinutes: number = 30): Promise<MessageThread[]> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -239,6 +163,7 @@ export const messageService = {
     const thresholdTime = new Date();
     thresholdTime.setMinutes(thresholdTime.getMinutes() - thresholdMinutes);
 
+    // Find messages that are unacknowledged and older than threshold
     const { data, error } = await supabase
       .from("messages")
       .select(`
@@ -252,7 +177,10 @@ export const messageService = {
           id,
           contact_phone,
           resolved_group_id,
-          groups!message_threads_resolved_group_id_fkey (
+          created_at,
+          last_message_at,
+          is_resolved,
+          groups (
             name
           )
         )
@@ -265,13 +193,34 @@ export const messageService = {
 
     if (error) throw error;
 
-    return data || [];
+    // Map these messages to a unique list of threads
+    const threadMap = new Map<string, MessageThread>();
+    
+    (data || []).forEach((msg: any) => {
+      const thread = msg.message_threads;
+      if (!threadMap.has(thread.id)) {
+        threadMap.set(thread.id, {
+          id: thread.id,
+          contact_phone: thread.contact_phone,
+          resolved_group_id: thread.resolved_group_id,
+          is_resolved: thread.is_resolved,
+          last_message_at: msg.created_at, // Use message time for sorting in escalation view
+          created_at: thread.created_at,
+          group_name: thread.groups?.name || "Unknown",
+          unread_count: 1, // At least this message
+          last_message_content: msg.content,
+          is_fallback: false, // Default for escalation view
+        });
+      }
+    });
+
+    return Array.from(threadMap.values());
   },
 
   /**
    * Get all messages for a specific thread
    */
-  async getMessagesByThread(threadId: string) {
+  async getMessagesByThread(threadId: string): Promise<Message[]> {
     const { data, error } = await supabase
       .from("messages")
       .select("*")
@@ -280,12 +229,10 @@ export const messageService = {
 
     if (error) throw error;
 
-    const formattedMessages: Message[] = (data || []).map((msg: any) => ({
+    return (data || []).map((msg) => ({
       ...msg,
       is_acknowledged: !!msg.acknowledged_at,
     }));
-
-    return formattedMessages;
   },
 
   /**
@@ -297,12 +244,13 @@ export const messageService = {
 
     const { data: profile } = await supabase
       .from("users")
-      .select("tenant_id")
+      .select("tenant_id, id")
       .eq("auth_user_id", user.user.id)
       .single();
 
     if (!profile) throw new Error("User profile not found");
 
+    // First insert the message
     const { data, error } = await supabase
       .from("messages")
       .insert({
@@ -313,6 +261,7 @@ export const messageService = {
         status: "pending",
         thread_id: threadId,
         tenant_id: profile.tenant_id,
+        is_fallback: false
       })
       .select()
       .single();
@@ -376,9 +325,10 @@ export const messageService = {
   },
 
   /**
-   * Reclassify a thread to a different group (for fallback messages)
+   * Reclassify a thread to a different group
    */
   async reclassifyThread(threadId: string, newGroupId: string) {
+    // 1. Update the thread's resolved group
     const { error } = await supabase
       .from("message_threads")
       .update({
@@ -388,12 +338,12 @@ export const messageService = {
 
     if (error) throw error;
 
-    // Also update the is_fallback flag on messages
+    // 2. Mark all messages in this thread as NOT fallback anymore
+    // Since they are now assigned to a specific group
     const { error: msgError } = await supabase
       .from("messages")
       .update({
-        is_fallback: false,
-        resolved_group_id: newGroupId,
+        is_fallback: false
       })
       .eq("thread_id", threadId)
       .eq("is_fallback", true);
@@ -402,7 +352,7 @@ export const messageService = {
   },
 
   /**
-   * Resolve a thread (mark as completed)
+   * Resolve a thread (mark as completed/closed)
    */
   async resolveThread(threadId: string) {
     const { error } = await supabase
@@ -416,25 +366,30 @@ export const messageService = {
     if (error) throw error;
   },
 
-  /**
-   * Get unacknowledged messages (legacy method)
-   */
-  async getUnacknowledgedMessages() {
-    const { data, error } = await supabase
-      .from("messages")
-      .select("*")
-      .is("acknowledged_at", null)
-      .eq("direction", "inbound")
-      .order("created_at", { ascending: false });
+  // Helper to map Supabase response to MessageThread type
+  _mapThreadsResponse(data: any[] | null): MessageThread[] {
+    return (data || []).map((thread: any) => {
+      const messages = Array.isArray(thread.messages) ? thread.messages : [];
+      const unreadCount = messages.filter((m: any) => !m.acknowledged_at).length;
+      
+      // Sort messages to find latest
+      const sortedMessages = messages.sort((a: any, b: any) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      const lastMessage = sortedMessages[0] || { content: "", is_fallback: false };
 
-    if (error) {
-      console.error("Error fetching unacknowledged messages:", error);
-      throw error;
-    }
-
-    return (data || []).map((msg) => ({
-      ...msg,
-      is_acknowledged: false,
-    }));
-  },
+      return {
+        id: thread.id,
+        contact_phone: thread.contact_phone,
+        resolved_group_id: thread.resolved_group_id,
+        is_resolved: thread.is_resolved,
+        last_message_at: thread.last_message_at,
+        created_at: thread.created_at,
+        group_name: thread.groups?.name || "Unknown",
+        unread_count: unreadCount,
+        last_message_content: lastMessage.content,
+        is_fallback: lastMessage.is_fallback || false,
+      };
+    });
+  }
 };
