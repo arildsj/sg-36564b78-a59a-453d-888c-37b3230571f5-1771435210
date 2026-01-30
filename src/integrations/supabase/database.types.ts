@@ -394,9 +394,11 @@ export type Database = {
       gateways: {
         Row: {
           api_key: string | null
+          base_url: string | null
           created_at: string | null
           fallback_group_id: string | null
           id: string
+          is_default: boolean | null
           name: string
           phone_number: string
           status: string
@@ -405,9 +407,11 @@ export type Database = {
         }
         Insert: {
           api_key?: string | null
+          base_url?: string | null
           created_at?: string | null
           fallback_group_id?: string | null
           id?: string
+          is_default?: boolean | null
           name: string
           phone_number: string
           status?: string
@@ -416,9 +420,11 @@ export type Database = {
         }
         Update: {
           api_key?: string | null
+          base_url?: string | null
           created_at?: string | null
           fallback_group_id?: string | null
           id?: string
+          is_default?: boolean | null
           name?: string
           phone_number?: string
           status?: string

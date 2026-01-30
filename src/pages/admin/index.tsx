@@ -56,10 +56,11 @@ type Gateway = {
   name: string;
   base_url: string;
   api_key: string | null;
-  is_active: boolean;
+  status: string; // Changed from is_active boolean to status string
   is_default: boolean;
   tenant_id: string;
   created_at: string;
+  phone_number: string; // Added required field
 };
 
 export default function AdminPage() {
@@ -96,6 +97,7 @@ export default function AdminPage() {
     api_key: "",
     is_active: true,
     is_default: false,
+    phone_number: "", // Added required field
   });
 
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
@@ -232,8 +234,9 @@ export default function AdminPage() {
         name: newGateway.name,
         base_url: newGateway.base_url,
         api_key: newGateway.api_key || null,
-        is_active: newGateway.is_active,
+        status: newGateway.is_active ? 'active' : 'inactive', // Map boolean to status string
         is_default: newGateway.is_default,
+        phone_number: newGateway.phone_number,
         tenant_id: currentUser.tenant_id,
       });
 
@@ -243,6 +246,7 @@ export default function AdminPage() {
         api_key: "",
         is_active: true,
         is_default: false,
+        phone_number: "",
       });
       setShowCreateGatewayDialog(false);
       await loadData();
@@ -540,8 +544,8 @@ export default function AdminPage() {
                               <TableCell className="font-medium">{gateway.name}</TableCell>
                               <TableCell className="font-mono text-sm">{gateway.base_url}</TableCell>
                               <TableCell>
-                                <Badge variant={gateway.is_active ? "default" : "secondary"}>
-                                  {gateway.is_active ? "Aktiv" : "Inaktiv"}
+                                <Badge variant={gateway.status === 'active' ? "default" : "secondary"}>
+                                  {gateway.status === 'active' ? "Aktiv" : "Inaktiv"}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -848,6 +852,19 @@ export default function AdminPage() {
                 value={newGateway.name}
                 onChange={(e) => setNewGateway({ ...newGateway, name: e.target.value })}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="gateway-phone">Telefonnummer *</Label>
+              <Input
+                id="gateway-phone"
+                placeholder="+47..."
+                value={newGateway.phone_number}
+                onChange={(e) => setNewGateway({ ...newGateway, phone_number: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Telefonnummeret tilknyttet denne gatewayen
+              </p>
             </div>
 
             <div className="space-y-2">

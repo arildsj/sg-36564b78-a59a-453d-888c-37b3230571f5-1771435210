@@ -1,9 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type Gateway = Database["public"]["Tables"]["gateways"]["Row"];
-type GatewayInsert = Database["public"]["Tables"]["gateways"]["Insert"];
-type GatewayUpdate = Database["public"]["Tables"]["gateways"]["Update"];
+// Update type definition to match actual DB schema
+type Gateway = Database["public"]["Tables"]["gateways"]["Row"] & {
+  base_url: string | null;
+  is_default: boolean;
+};
+
+type GatewayInsert = Database["public"]["Tables"]["gateways"]["Insert"] & {
+  base_url?: string | null;
+  is_default?: boolean;
+};
+
+type GatewayUpdate = Database["public"]["Tables"]["gateways"]["Update"] & {
+  base_url?: string | null;
+  is_default?: boolean;
+};
 
 export const gatewayService = {
   async getAllGateways(): Promise<Gateway[]> {
@@ -13,7 +25,7 @@ export const gatewayService = {
       .order("name");
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Gateway[];
   },
 
   async getGatewayById(id: string): Promise<Gateway | null> {
@@ -24,30 +36,47 @@ export const gatewayService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Gateway;
   },
 
-  async createGateway(gateway: GatewayInsert): Promise<Gateway> {
+  async createGateway(gateway: any): Promise<Gateway> {
+    // Map frontend fields to DB fields
+    const dbGateway = {
+      ...gateway,
+      status: gateway.is_active ? 'active' : 'inactive',
+      // Remove fields that might not exist in type
+    };
+    delete dbGateway.is_active;
+
     const { data, error } = await supabase
       .from("gateways")
-      .insert(gateway)
+      .insert(dbGateway)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Gateway;
   },
 
-  async updateGateway(id: string, updates: GatewayUpdate): Promise<Gateway> {
+  async updateGateway(id: string, updates: any): Promise<Gateway> {
+    const dbUpdates = {
+      ...updates,
+    };
+    
+    if (updates.is_active !== undefined) {
+      dbUpdates.status = updates.is_active ? 'active' : 'inactive';
+      delete dbUpdates.is_active;
+    }
+
     const { data, error } = await supabase
       .from("gateways")
-      .update(updates)
+      .update(dbUpdates)
       .eq("id", id)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Gateway;
   },
 
   async deleteGateway(id: string): Promise<void> {
