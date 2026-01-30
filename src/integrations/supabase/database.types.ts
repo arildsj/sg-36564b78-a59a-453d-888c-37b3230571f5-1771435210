@@ -1176,6 +1176,16 @@ export type Database = {
     }
     Functions: {
       current_user_id: { Args: never; Returns: string }
+      find_or_create_thread: {
+        Args: {
+          p_contact_phone: string
+          p_gateway_id: string
+          p_is_fallback?: boolean
+          p_resolved_group_id: string
+          p_tenant_id: string
+        }
+        Returns: string
+      }
       is_group_admin_for: { Args: { group_uuid: string }; Returns: boolean }
       is_tenant_admin: { Args: never; Returns: boolean }
       user_tenant_id: { Args: never; Returns: string }
