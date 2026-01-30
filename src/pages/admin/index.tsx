@@ -24,10 +24,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { GroupHierarchy } from "@/components/GroupHierarchy";
 import { groupService } from "@/services/groupService";
 import { userService } from "@/services/userService";
-import { Users, FolderTree, Shield, Plus, Settings } from "lucide-react";
+import { gatewayService } from "@/services/gatewayService";
+import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star } from "lucide-react";
 
 type GroupNode = {
   id: string;
@@ -49,11 +51,23 @@ type User = {
   groups?: string[];
 };
 
+type Gateway = {
+  id: string;
+  name: string;
+  base_url: string;
+  api_key: string | null;
+  is_active: boolean;
+  is_default: boolean;
+  tenant_id: string;
+  created_at: string;
+};
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("groups");
   const [groups, setGroups] = useState<GroupNode[]>([]);
   const [allGroups, setAllGroups] = useState<GroupNode[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [gateways, setGateways] = useState<Gateway[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +90,16 @@ export default function AdminPage() {
     group_ids: [] as string[]
   });
 
+  const [newGateway, setNewGateway] = useState({
+    name: "",
+    base_url: "",
+    api_key: "",
+    is_active: true,
+    is_default: false,
+  });
+
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
+  const [showCreateGatewayDialog, setShowCreateGatewayDialog] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -85,10 +108,11 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [groupsData, usersData, currentUserData] = await Promise.all([
+      const [groupsData, usersData, currentUserData, gatewaysData] = await Promise.all([
         groupService.getGroupsHierarchy(),
         userService.getAllUsers(),
         userService.getCurrentUser(),
+        gatewayService.getAllGateways(),
       ]);
       setGroups(groupsData as GroupNode[]);
       
@@ -108,6 +132,7 @@ export default function AdminPage() {
       
       setUsers(usersData as User[]);
       setCurrentUser(currentUserData as unknown as User);
+      setGateways(gatewaysData as Gateway[]);
     } catch (error) {
       console.error("Failed to load admin data:", error);
     } finally {
@@ -137,7 +162,6 @@ export default function AdminPage() {
         tenant_id: currentUser.tenant_id,
       });
 
-      // Reset form and close dialog
       setNewGroup({
         name: "",
         kind: "operational",
@@ -145,8 +169,6 @@ export default function AdminPage() {
         description: "",
       });
       setShowCreateDialog(false);
-
-      // Reload data
       await loadData();
     } catch (error: any) {
       console.error("Failed to create group:", error);
@@ -192,6 +214,70 @@ export default function AdminPage() {
     }
   };
 
+  const handleCreateGateway = async () => {
+    try {
+      setCreating(true);
+
+      if (!newGateway.name.trim() || !newGateway.base_url.trim()) {
+        alert("Vennligst fyll ut navn og URL");
+        return;
+      }
+
+      if (!currentUser?.tenant_id) {
+        alert("Kan ikke opprette gateway: Mangler tenant ID");
+        return;
+      }
+
+      await gatewayService.createGateway({
+        name: newGateway.name,
+        base_url: newGateway.base_url,
+        api_key: newGateway.api_key || null,
+        is_active: newGateway.is_active,
+        is_default: newGateway.is_default,
+        tenant_id: currentUser.tenant_id,
+      });
+
+      setNewGateway({
+        name: "",
+        base_url: "",
+        api_key: "",
+        is_active: true,
+        is_default: false,
+      });
+      setShowCreateGatewayDialog(false);
+      await loadData();
+    } catch (error: any) {
+      console.error("Failed to create gateway:", error);
+      alert(`Feil ved opprettelse av gateway: ${error.message || "Ukjent feil"}`);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleSetDefaultGateway = async (gatewayId: string) => {
+    if (!currentUser?.tenant_id) return;
+    
+    try {
+      await gatewayService.setDefaultGateway(gatewayId, currentUser.tenant_id);
+      await loadData();
+    } catch (error: any) {
+      console.error("Failed to set default gateway:", error);
+      alert(`Feil ved oppdatering: ${error.message}`);
+    }
+  };
+
+  const handleDeleteGateway = async (gatewayId: string) => {
+    if (!confirm("Er du sikker på at du vil slette denne gatewayen?")) return;
+    
+    try {
+      await gatewayService.deleteGateway(gatewayId);
+      await loadData();
+    } catch (error: any) {
+      console.error("Failed to delete gateway:", error);
+      alert(`Feil ved sletting: ${error.message}`);
+    }
+  };
+
   const toggleUserGroupSelection = (groupId: string) => {
     setNewUser((prev) => ({
       ...prev,
@@ -214,7 +300,7 @@ export default function AdminPage() {
             <div>
               <h2 className="text-3xl font-bold tracking-tight text-foreground">Administrasjon</h2>
               <p className="text-muted-foreground mt-2">
-                Administrer brukere, grupper og systeminnstillinger.
+                Administrer brukere, grupper, gateways og systeminnstillinger.
               </p>
             </div>
             <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
@@ -224,7 +310,7 @@ export default function AdminPage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 lg:w-auto">
+            <TabsList className="grid w-full grid-cols-4 lg:w-auto">
               <TabsTrigger value="groups" className="gap-2">
                 <FolderTree className="h-4 w-4" />
                 Grupper
@@ -233,13 +319,17 @@ export default function AdminPage() {
                 <Users className="h-4 w-4" />
                 Brukere
               </TabsTrigger>
+              <TabsTrigger value="gateways" className="gap-2">
+                <Wifi className="h-4 w-4" />
+                Gateways
+              </TabsTrigger>
               <TabsTrigger value="roles" className="gap-2">
                 <Shield className="h-4 w-4" />
                 Roller
               </TabsTrigger>
             </TabsList>
 
-            {/* Groups Tab with Hierarchy */}
+            {/* Groups Tab */}
             <TabsContent value="groups" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -394,6 +484,95 @@ export default function AdminPage() {
                                 <Button variant="ghost" size="sm">
                                   Rediger
                                 </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Gateways Tab */}
+            <TabsContent value="gateways" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>FairGateway-administrasjon</CardTitle>
+                  <CardDescription>
+                    Konfigurer og administrer SMS-gateways for sending og mottak av meldinger.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="text-center py-8 text-muted-foreground">Laster gateways...</div>
+                  ) : gateways.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Wifi className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">Ingen gateways konfigurert ennå</p>
+                      <Button variant="outline" onClick={() => setShowCreateGatewayDialog(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Legg til første gateway
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-end mb-4">
+                        <Button onClick={() => setShowCreateGatewayDialog(true)} size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Legg til gateway
+                        </Button>
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Navn</TableHead>
+                            <TableHead>Base URL</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Standard</TableHead>
+                            <TableHead className="text-right">Handlinger</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {gateways.map((gateway) => (
+                            <TableRow key={gateway.id} className="hover:bg-accent">
+                              <TableCell className="font-medium">{gateway.name}</TableCell>
+                              <TableCell className="font-mono text-sm">{gateway.base_url}</TableCell>
+                              <TableCell>
+                                <Badge variant={gateway.is_active ? "default" : "secondary"}>
+                                  {gateway.is_active ? "Aktiv" : "Inaktiv"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {gateway.is_default ? (
+                                  <Badge variant="default" className="gap-1">
+                                    <Star className="h-3 w-3 fill-current" />
+                                    Standard
+                                  </Badge>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSetDefaultGateway(gateway.id)}
+                                  >
+                                    Sett som standard
+                                  </Button>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex gap-2 justify-end">
+                                  <Button variant="ghost" size="sm">
+                                    Rediger
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteGateway(gateway.id)}
+                                  >
+                                    Slett
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -646,6 +825,94 @@ export default function AdminPage() {
             </Button>
             <Button onClick={handleCreateUser} disabled={creating}>
               {creating ? "Oppretter..." : "Opprett bruker"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Gateway Dialog */}
+      <Dialog open={showCreateGatewayDialog} onOpenChange={setShowCreateGatewayDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Legg til ny gateway</DialogTitle>
+            <DialogDescription>
+              Konfigurer en FairGateway for sending og mottak av SMS-meldinger.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="gateway-name">Navn *</Label>
+              <Input
+                id="gateway-name"
+                placeholder="F.eks. FairGateway Produksjon"
+                value={newGateway.name}
+                onChange={(e) => setNewGateway({ ...newGateway, name: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="gateway-url">Base URL *</Label>
+              <Input
+                id="gateway-url"
+                placeholder="https://gateway.example.com"
+                value={newGateway.base_url}
+                onChange={(e) => setNewGateway({ ...newGateway, base_url: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                URL til FairGateway API (f.eks. https://gateway.fair.no eller http://localhost:8080)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="gateway-api-key">API-nøkkel (valgfri)</Label>
+              <Input
+                id="gateway-api-key"
+                type="password"
+                placeholder="API-nøkkel for autentisering"
+                value={newGateway.api_key}
+                onChange={(e) => setNewGateway({ ...newGateway, api_key: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                API-nøkkel brukes for sikker autentisering mot gateway-tjenesten
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="gateway-active">Aktiver gateway</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Kun aktive gateways brukes for sending av meldinger
+                  </p>
+                </div>
+                <Switch
+                  id="gateway-active"
+                  checked={newGateway.is_active}
+                  onCheckedChange={(checked) => setNewGateway({ ...newGateway, is_active: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="gateway-default">Sett som standard gateway</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Standard gateway brukes når ingen spesifikk gateway er valgt
+                  </p>
+                </div>
+                <Switch
+                  id="gateway-default"
+                  checked={newGateway.is_default}
+                  onCheckedChange={(checked) => setNewGateway({ ...newGateway, is_default: checked })}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateGatewayDialog(false)} disabled={creating}>
+              Avbryt
+            </Button>
+            <Button onClick={handleCreateGateway} disabled={creating}>
+              {creating ? "Legger til..." : "Legg til gateway"}
             </Button>
           </DialogFooter>
         </DialogContent>

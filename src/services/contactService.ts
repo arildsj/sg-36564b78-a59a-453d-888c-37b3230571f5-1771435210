@@ -105,19 +105,27 @@ export const contactService = {
   async searchContacts(query: string) {
     const { data, error } = await supabase
       .from("whitelisted_numbers")
-      .select("*")
+      .select(`
+        *,
+        whitelist_group_links (
+          group:groups (
+            id,
+            name
+          )
+        )
+      `)
       .or(`phone_number.ilike.%${query}%,description.ilike.%${query}%`)
       .limit(20);
       
     if (error) throw error;
     
-    return (data || []).map(c => ({
+    return (data || []).map((c: any) => ({
       id: c.id,
       phone: c.phone_number,
       name: c.description || "Ukjent navn",
       email: null,
       is_whitelisted: true,
-      groups: [] // Optimized search doesn't fetch groups
+      groups: c.whitelist_group_links?.map((l: any) => l.group).filter(Boolean) || []
     }));
   }
 };
