@@ -260,6 +260,7 @@ export const messageService = {
         direction: "outbound",
         status: "pending",
         thread_id: threadId,
+        thread_key: threadId, // Satisfy NOT NULL constraint
         tenant_id: profile.tenant_id,
         is_fallback: false
       })
@@ -349,6 +350,37 @@ export const messageService = {
       .eq("is_fallback", true);
 
     if (msgError) throw msgError;
+  },
+
+  /**
+   * Get unacknowledged messages count and details
+   */
+  async getUnacknowledgedMessages(): Promise<Message[]> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("tenant_id")
+      .eq("auth_user_id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("Profile not found");
+
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("tenant_id", profile.tenant_id)
+      .eq("direction", "inbound")
+      .is("acknowledged_at", null)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map((msg) => ({
+      ...msg,
+      is_acknowledged: false,
+    }));
   },
 
   /**
