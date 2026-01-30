@@ -17,7 +17,6 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("tenant");
   const [tenantId, setTenantId] = useState<string>("");
   const [groupIds, setGroupIds] = useState<{ [key: string]: string }>({});
-  const [createdGroups, setCreatedGroups] = useState<Array<{ id: string; name: string }>>([]);
 
   const [tenantData, setTenantData] = useState({ name: "" });
   const [users, setUsers] = useState([{ name: "", email: "", phone: "", role: "member" }]);
@@ -96,6 +95,7 @@ export default function OnboardingPage() {
         return;
       }
 
+      // First, create groups without parent relationships
       const { data, error } = await supabase
         .from("groups")
         .insert(
@@ -105,7 +105,7 @@ export default function OnboardingPage() {
             description: g.description || null,
             kind: g.kind as "structural" | "operational",
             timezone: g.timezone,
-            parent_id: g.parent_id,
+            parent_id: null, // Set parent_id in second pass
             escalation_enabled: true,
             escalation_timeout_minutes: 30,
           }))
@@ -114,14 +114,28 @@ export default function OnboardingPage() {
 
       if (error) throw error;
       
-      const ids: { [key: string]: string } = {};
-      const created: Array<{ id: string; name: string }> = [];
+      // Build name-to-id mapping
+      const nameToId: { [key: string]: string } = {};
       data.forEach((group, idx) => {
-        ids[groupsToCreate[idx].name] = group.id;
-        created.push({ id: group.id, name: group.name });
+        nameToId[groupsToCreate[idx].name] = group.id;
       });
-      setGroupIds(ids);
-      setCreatedGroups(created);
+      setGroupIds(nameToId);
+
+      // Second pass: update parent relationships
+      for (let i = 0; i < groupsToCreate.length; i++) {
+        const group = groupsToCreate[i];
+        if (group.parent_id) {
+          const parentId = nameToId[group.parent_id];
+          if (parentId) {
+            const { error: updateError } = await supabase
+              .from("groups")
+              .update({ parent_id: parentId })
+              .eq("id", nameToId[group.name]);
+            
+            if (updateError) throw updateError;
+          }
+        }
+      }
       
       setCurrentStep("gateway");
     } catch (error) {
@@ -445,10 +459,11 @@ export default function OnboardingPage() {
                           }}
                         >
                           <option value="">Ingen (rotgruppe)</option>
-                          {createdGroups
-                            .filter((g) => groups[idx].name !== g.name)
+                          {groups
+                            .map((g, gIdx) => ({ ...g, index: gIdx }))
+                            .filter((g) => g.index < idx && g.name.trim() !== "")
                             .map((g) => (
-                              <option key={g.id} value={g.id}>
+                              <option key={g.index} value={g.name}>
                                 {g.name}
                               </option>
                             ))}
