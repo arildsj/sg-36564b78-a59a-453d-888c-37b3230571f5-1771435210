@@ -13,6 +13,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { GroupHierarchy } from "@/components/GroupHierarchy";
 import { groupService } from "@/services/groupService";
 import { userService } from "@/services/userService";
@@ -40,9 +51,19 @@ type User = {
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("groups");
   const [groups, setGroups] = useState<GroupNode[]>([]);
+  const [allGroups, setAllGroups] = useState<GroupNode[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  const [newGroup, setNewGroup] = useState({
+    name: "",
+    kind: "operational" as "structural" | "operational",
+    parent_id: null as string | null,
+    description: "",
+  });
 
   useEffect(() => {
     loadData();
@@ -56,11 +77,62 @@ export default function AdminPage() {
         userService.getAllUsers(),
       ]);
       setGroups(groupsData as GroupNode[]);
+      
+      // Flatten hierarchy for parent selection
+      const flattenGroups = (groups: GroupNode[]): GroupNode[] => {
+        const flat: GroupNode[] = [];
+        const traverse = (g: GroupNode[]) => {
+          g.forEach(group => {
+            flat.push(group);
+            if (group.children) traverse(group.children);
+          });
+        };
+        traverse(groups);
+        return flat;
+      };
+      setAllGroups(flattenGroups(groupsData as GroupNode[]));
+      
       setUsers(usersData as User[]);
     } catch (error) {
       console.error("Failed to load admin data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    try {
+      setCreating(true);
+
+      if (!newGroup.name.trim()) {
+        alert("Vennligst fyll ut gruppenavn");
+        return;
+      }
+
+      await groupService.createGroup({
+        name: newGroup.name,
+        kind: newGroup.kind,
+        parent_id: newGroup.parent_id,
+        description: newGroup.description || null,
+        tenant_id: "", // Will be set by database trigger
+      });
+
+      // Reset form and close dialog
+      setNewGroup({
+        name: "",
+        kind: "operational",
+        parent_id: null,
+        description: "",
+      });
+      setShowCreateDialog(false);
+
+      // Reload data
+      await loadData();
+    } catch (error) {
+      console.error("Failed to create group:", error);
+      alert("Feil ved opprettelse av gruppe");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -80,9 +152,9 @@ export default function AdminPage() {
                 Administrer brukere, grupper og systeminnstillinger.
               </p>
             </div>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4" />
-              Opprett ny
+              Opprett ny gruppe
             </Button>
           </div>
 
@@ -118,7 +190,7 @@ export default function AdminPage() {
                     <div className="text-center py-8">
                       <FolderTree className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                       <p className="text-muted-foreground mb-4">Ingen grupper opprettet ennå</p>
-                      <Button variant="outline">
+                      <Button variant="outline" onClick={() => setShowCreateDialog(true)}>
                         <Plus className="h-4 w-4 mr-2" />
                         Opprett første gruppe
                       </Button>
@@ -311,6 +383,82 @@ export default function AdminPage() {
           </Tabs>
         </div>
       </AppLayout>
+
+      {/* Create Group Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Opprett ny gruppe</DialogTitle>
+            <DialogDescription>
+              Opprett en strukturell eller operasjonell gruppe. Operasjonelle grupper fungerer som innbokser for meldinger.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="group-name">Gruppenavn *</Label>
+              <Input
+                id="group-name"
+                placeholder="F.eks. Support, Salg, IT-avdelingen"
+                value={newGroup.name}
+                onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="group-kind">Type *</Label>
+              <select
+                id="group-kind"
+                className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                value={newGroup.kind}
+                onChange={(e) => setNewGroup({ ...newGroup, kind: e.target.value as "structural" | "operational" })}
+              >
+                <option value="operational">Operasjonell (innboks for meldinger)</option>
+                <option value="structural">Strukturell (organisering)</option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                {newGroup.kind === "operational" 
+                  ? "Operasjonelle grupper mottar og håndterer meldinger" 
+                  : "Strukturelle grupper brukes kun for organisering"}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="group-parent">Foreldregruppe (valgfri)</Label>
+              <select
+                id="group-parent"
+                className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                value={newGroup.parent_id || ""}
+                onChange={(e) => setNewGroup({ ...newGroup, parent_id: e.target.value || null })}
+              >
+                <option value="">Ingen (topp-nivå)</option>
+                {allGroups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name} ({group.kind === "operational" ? "Operasjonell" : "Strukturell"})
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Velg en foreldregruppe for å skape et hierarki
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="group-description">Beskrivelse (valgfri)</Label>
+              <Textarea
+                id="group-description"
+                placeholder="Kort beskrivelse av gruppens formål..."
+                value={newGroup.description}
+                onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)} disabled={creating}>
+              Avbryt
+            </Button>
+            <Button onClick={handleCreateGroup} disabled={creating}>
+              {creating ? "Oppretter..." : "Opprett gruppe"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
