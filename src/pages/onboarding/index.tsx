@@ -5,155 +5,153 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Users, FolderTree, Phone, Clock, MessageSquare, CheckCircle2 } from "lucide-react";
+import { authService } from "@/services/authService";
+import { Building2, UserCog, Phone, CheckCircle2 } from "lucide-react";
 
-type OnboardingStep = "tenant" | "users" | "groups" | "gateway" | "hours" | "complete";
+type OnboardingStep = "tenant" | "admin" | "gateway" | "complete";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("tenant");
   const [tenantId, setTenantId] = useState<string>("");
-  const [groupIds, setGroupIds] = useState<{ [key: string]: string }>({});
+  const [loading, setLoading] = useState(false);
 
-  const [tenantData, setTenantData] = useState({ name: "" });
-  const [users, setUsers] = useState([{ name: "", email: "", phone: "", role: "member" }]);
-  const [groups, setGroups] = useState([
-    { name: "", description: "", kind: "operational", timezone: "Europe/Oslo", parent_id: null as string | null },
-  ]);
-  const [gateway, setGateway] = useState({ name: "", phone: "" });
-  const [openingHours, setOpeningHours] = useState({
-    monday: { isOpen: true, open: "08:00", close: "16:00" },
-    tuesday: { isOpen: true, open: "08:00", close: "16:00" },
-    wednesday: { isOpen: true, open: "08:00", close: "16:00" },
-    thursday: { isOpen: true, open: "08:00", close: "16:00" },
-    friday: { isOpen: true, open: "08:00", close: "16:00" },
-    saturday: { isOpen: false, open: "", close: "" },
-    sunday: { isOpen: false, open: "", close: "" },
+  const [tenantData, setTenantData] = useState({ 
+    name: "",
+    description: "",
+    timezone: "Europe/Oslo"
+  });
+  
+  const [adminData, setAdminData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: ""
+  });
+  
+  const [gateway, setGateway] = useState({ 
+    name: "", 
+    phone: "" 
   });
 
   const steps: { id: OnboardingStep; label: string; icon: React.ReactNode }[] = [
     { id: "tenant", label: "Organisasjon", icon: <Building2 className="h-5 w-5" /> },
-    { id: "users", label: "Brukere", icon: <Users className="h-5 w-5" /> },
-    { id: "groups", label: "Grupper", icon: <FolderTree className="h-5 w-5" /> },
+    { id: "admin", label: "Administrator", icon: <UserCog className="h-5 w-5" /> },
     { id: "gateway", label: "Gateway", icon: <Phone className="h-5 w-5" /> },
-    { id: "hours", label: "Åpningstider", icon: <Clock className="h-5 w-5" /> },
     { id: "complete", label: "Fullført", icon: <CheckCircle2 className="h-5 w-5" /> },
   ];
 
   const handleCreateTenant = async () => {
     try {
+      setLoading(true);
+      
+      if (!tenantData.name.trim()) {
+        alert("Vennligst fyll ut organisasjonsnavn");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("tenants")
-        .insert({ name: tenantData.name })
+        .insert({ 
+          name: tenantData.name,
+          description: tenantData.description || null,
+          timezone: tenantData.timezone
+        })
         .select()
         .single();
 
       if (error) throw error;
+      
       setTenantId(data.id);
-      setCurrentStep("users");
+      setCurrentStep("admin");
     } catch (error) {
       console.error("Failed to create tenant:", error);
       alert("Feil ved opprettelse av organisasjon");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleCreateUsers = async () => {
+  const handleCreateAdmin = async () => {
     try {
-      const usersToCreate = users.filter((u) => u.name && u.phone);
-      if (usersToCreate.length === 0) {
-        alert("Legg til minst én bruker");
+      setLoading(true);
+
+      // Validation
+      if (!adminData.name || !adminData.email || !adminData.phone || !adminData.password) {
+        alert("Vennligst fyll ut alle feltene");
         return;
       }
 
-      const { error } = await supabase.from("users").insert(
-        usersToCreate.map((u) => ({
-          tenant_id: tenantId,
-          name: u.name,
-          email: u.email || null,
-          phone_number: u.phone,
-          role: u.role as "tenant_admin" | "group_admin" | "member",
-          status: "active",
-        }))
+      if (adminData.password !== adminData.confirmPassword) {
+        alert("Passordene matcher ikke");
+        return;
+      }
+
+      if (adminData.password.length < 6) {
+        alert("Passordet må være minst 6 tegn");
+        return;
+      }
+
+      // Create Supabase Auth user
+      const { user, error: signUpError } = await authService.signUp(
+        adminData.email, 
+        adminData.password
       );
 
-      if (error) throw error;
-      setCurrentStep("groups");
-    } catch (error) {
-      console.error("Failed to create users:", error);
-      alert("Feil ved opprettelse av brukere");
-    }
-  };
-
-  const handleCreateGroups = async () => {
-    try {
-      const groupsToCreate = groups.filter((g) => g.name);
-      if (groupsToCreate.length === 0) {
-        alert("Legg til minst én gruppe");
+      if (signUpError) {
+        console.error("Sign up error:", signUpError);
+        alert(`Feil ved opprettelse av bruker: ${signUpError.message}`);
         return;
       }
 
-      // First, create groups without parent relationships
-      const { data, error } = await supabase
-        .from("groups")
-        .insert(
-          groupsToCreate.map((g) => ({
-            tenant_id: tenantId,
-            name: g.name,
-            description: g.description || null,
-            kind: g.kind as "structural" | "operational",
-            timezone: g.timezone,
-            parent_id: null, // Set parent_id in second pass
-            escalation_enabled: true,
-            escalation_timeout_minutes: 30,
-          }))
-        )
-        .select();
-
-      if (error) throw error;
-      
-      // Build name-to-id mapping
-      const nameToId: { [key: string]: string } = {};
-      data.forEach((group, idx) => {
-        nameToId[groupsToCreate[idx].name] = group.id;
-      });
-      setGroupIds(nameToId);
-
-      // Second pass: update parent relationships
-      for (let i = 0; i < groupsToCreate.length; i++) {
-        const group = groupsToCreate[i];
-        if (group.parent_id) {
-          const parentId = nameToId[group.parent_id];
-          if (parentId) {
-            const { error: updateError } = await supabase
-              .from("groups")
-              .update({ parent_id: parentId })
-              .eq("id", nameToId[group.name]);
-            
-            if (updateError) throw updateError;
-          }
-        }
+      if (!user) {
+        alert("Bruker ble ikke opprettet");
+        return;
       }
-      
+
+      // Sign in the user immediately
+      const { user: signedInUser, error: signInError } = await authService.signIn(
+        adminData.email,
+        adminData.password
+      );
+
+      if (signInError) {
+        console.error("Sign in error:", signInError);
+        alert("Bruker opprettet, men automatisk pålogging feilet. Vennligst logg inn manuelt.");
+        return;
+      }
+
+      // Create user record in database
+      const { error: userError } = await supabase.from("users").insert({
+        id: user.id,
+        tenant_id: tenantId,
+        name: adminData.name,
+        email: adminData.email,
+        phone_number: adminData.phone,
+        role: "tenant_admin",
+        status: "active",
+      });
+
+      if (userError) throw userError;
+
       setCurrentStep("gateway");
     } catch (error) {
-      console.error("Failed to create groups:", error);
-      alert("Feil ved opprettelse av grupper");
+      console.error("Failed to create admin:", error);
+      alert("Feil ved opprettelse av administrator");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCreateGateway = async () => {
     try {
-      if (!gateway.name || !gateway.phone) {
-        alert("Fyll ut gateway-informasjon");
-        return;
-      }
+      setLoading(true);
 
-      const firstGroupId = Object.values(groupIds)[0];
-      if (!firstGroupId) {
-        alert("Ingen grupper funnet");
+      if (!gateway.name || !gateway.phone) {
+        alert("Vennligst fyll ut gateway-informasjon");
         return;
       }
 
@@ -161,75 +159,19 @@ export default function OnboardingPage() {
         tenant_id: tenantId,
         name: gateway.name,
         phone_number: gateway.phone,
-        fallback_group_id: firstGroupId,
+        fallback_group_id: null,
         status: "active",
       });
 
       if (error) throw error;
-      setCurrentStep("hours");
+      
+      setCurrentStep("complete");
     } catch (error) {
       console.error("Failed to create gateway:", error);
       alert("Feil ved opprettelse av gateway");
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleCreateOpeningHours = async () => {
-    try {
-      const dayMap = {
-        monday: 1,
-        tuesday: 2,
-        wednesday: 3,
-        thursday: 4,
-        friday: 5,
-        saturday: 6,
-        sunday: 0,
-      };
-
-      for (const groupId of Object.values(groupIds)) {
-        const hoursToInsert = Object.entries(openingHours).map(([day, hours]) => ({
-          group_id: groupId,
-          day_of_week: dayMap[day as keyof typeof dayMap],
-          is_open: hours.isOpen,
-          open_time: hours.isOpen ? hours.open : null,
-          close_time: hours.isOpen ? hours.close : null,
-        }));
-
-        const { error } = await supabase.from("opening_hours").insert(hoursToInsert);
-        if (error) throw error;
-
-        const { error: replyError } = await supabase.from("automatic_replies").insert([
-          {
-            group_id: groupId,
-            trigger_type: "outside_hours",
-            message_template: "Takk for din henvendelse. Vi er stengt. Se våre åpningstider for mer info.",
-            cooldown_minutes: 120,
-            is_active: true,
-          },
-          {
-            group_id: groupId,
-            trigger_type: "first_message",
-            message_template: "Velkommen! Din melding er mottatt og vil bli behandlet snarest.",
-            cooldown_minutes: 1440,
-            is_active: true,
-          },
-        ]);
-
-        if (replyError) throw replyError;
-      }
-
-      setCurrentStep("complete");
-    } catch (error) {
-      console.error("Failed to create opening hours:", error);
-      alert("Feil ved opprettelse av åpningstider");
-    }
-  };
-
-  const addUser = () => {
-    setUsers([...users, { name: "", email: "", phone: "", role: "member" }]);
-  };
-
-  const addGroup = () => {
-    setGroups([...groups, { name: "", description: "", kind: "operational", timezone: "Europe/Oslo", parent_id: null }]);
   };
 
   return (
@@ -295,188 +237,114 @@ export default function OnboardingPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tenant-name">Organisasjonsnavn</Label>
+                  <Label htmlFor="tenant-name">Organisasjonsnavn *</Label>
                   <Input
                     id="tenant-name"
                     placeholder="Fair Teknologi AS"
                     value={tenantData.name}
-                    onChange={(e) => setTenantData({ name: e.target.value })}
+                    onChange={(e) => setTenantData({ ...tenantData, name: e.target.value })}
                   />
                 </div>
-                <Button onClick={handleCreateTenant} className="w-full">
-                  Neste: Legg til brukere
+                <div className="space-y-2">
+                  <Label htmlFor="tenant-description">Beskrivelse (valgfri)</Label>
+                  <Input
+                    id="tenant-description"
+                    placeholder="Norsk teknologiselskap med fokus på SMS-løsninger"
+                    value={tenantData.description}
+                    onChange={(e) => setTenantData({ ...tenantData, description: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tenant-timezone">Tidssone</Label>
+                  <select
+                    id="tenant-timezone"
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                    value={tenantData.timezone}
+                    onChange={(e) => setTenantData({ ...tenantData, timezone: e.target.value })}
+                  >
+                    <option value="Europe/Oslo">Europe/Oslo (Norge)</option>
+                    <option value="Europe/Stockholm">Europe/Stockholm (Sverige)</option>
+                    <option value="Europe/Copenhagen">Europe/Copenhagen (Danmark)</option>
+                    <option value="UTC">UTC</option>
+                  </select>
+                </div>
+                <Button 
+                  onClick={handleCreateTenant} 
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? "Oppretter..." : "Neste: Opprett administrator"}
                 </Button>
               </CardContent>
             </Card>
           )}
 
-          {currentStep === "users" && (
+          {currentStep === "admin" && (
             <Card>
               <CardHeader>
-                <CardTitle>Legg til brukere</CardTitle>
+                <CardTitle>Opprett Tenant-administrator</CardTitle>
                 <CardDescription>
-                  Brukere som skal ha tilgang til systemet. Du kan legge til flere senere.
+                  Dette er hovedadministratoren for organisasjonen. Du vil bli automatisk logget inn etter opprettelse.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {users.map((user, idx) => (
-                  <div key={idx} className="grid grid-cols-2 gap-4 p-4 border rounded">
-                    <div className="space-y-2">
-                      <Label htmlFor={`user-name-${idx}`}>Navn</Label>
-                      <Input
-                        id={`user-name-${idx}`}
-                        placeholder="Ola Nordmann"
-                        value={user.name}
-                        onChange={(e) => {
-                          const newUsers = [...users];
-                          newUsers[idx].name = e.target.value;
-                          setUsers(newUsers);
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`user-email-${idx}`}>E-post</Label>
-                      <Input
-                        id={`user-email-${idx}`}
-                        type="email"
-                        placeholder="ola@example.com"
-                        value={user.email}
-                        onChange={(e) => {
-                          const newUsers = [...users];
-                          newUsers[idx].email = e.target.value;
-                          setUsers(newUsers);
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`user-phone-${idx}`}>Telefon</Label>
-                      <Input
-                        id={`user-phone-${idx}`}
-                        placeholder="+4791234567"
-                        value={user.phone}
-                        onChange={(e) => {
-                          const newUsers = [...users];
-                          newUsers[idx].phone = e.target.value;
-                          setUsers(newUsers);
-                        }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`user-role-${idx}`}>Rolle</Label>
-                      <select
-                        id={`user-role-${idx}`}
-                        className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                        value={user.role}
-                        onChange={(e) => {
-                          const newUsers = [...users];
-                          newUsers[idx].role = e.target.value;
-                          setUsers(newUsers);
-                        }}
-                      >
-                        <option value="member">Medlem</option>
-                        <option value="group_admin">Gruppe-admin</option>
-                        <option value="tenant_admin">Tenant-admin</option>
-                      </select>
-                    </div>
-                  </div>
-                ))}
-                <Button variant="outline" onClick={addUser} className="w-full">
-                  + Legg til bruker
-                </Button>
-                <Button onClick={handleCreateUsers} className="w-full">
-                  Neste: Opprett grupper
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {currentStep === "groups" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Opprett grupper</CardTitle>
-                <CardDescription>
-                  Grupper (innbokser) for å organisere meldinger. Kun operational-grupper har innbokser. Du kan bygge et hierarki ved å velge en overordnet gruppe.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {groups.map((group, idx) => (
-                  <div key={idx} className="p-4 border rounded space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor={`group-name-${idx}`}>Gruppenavn</Label>
-                        <Input
-                          id={`group-name-${idx}`}
-                          placeholder="Kundeservice"
-                          value={group.name}
-                          onChange={(e) => {
-                            const newGroups = [...groups];
-                            newGroups[idx].name = e.target.value;
-                            setGroups(newGroups);
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={`group-kind-${idx}`}>Type</Label>
-                        <select
-                          id={`group-kind-${idx}`}
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                          value={group.kind}
-                          onChange={(e) => {
-                            const newGroups = [...groups];
-                            newGroups[idx].kind = e.target.value;
-                            setGroups(newGroups);
-                          }}
-                        >
-                          <option value="operational">Operasjonell (har innboks)</option>
-                          <option value="structural">Strukturell (kun organisering)</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor={`group-desc-${idx}`}>Beskrivelse</Label>
-                        <Input
-                          id={`group-desc-${idx}`}
-                          placeholder="Behandler kundehenvendelser"
-                          value={group.description}
-                          onChange={(e) => {
-                            const newGroups = [...groups];
-                            newGroups[idx].description = e.target.value;
-                            setGroups(newGroups);
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={`group-parent-${idx}`}>Overordnet gruppe (valgfri)</Label>
-                        <select
-                          id={`group-parent-${idx}`}
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                          value={group.parent_id || ""}
-                          onChange={(e) => {
-                            const newGroups = [...groups];
-                            newGroups[idx].parent_id = e.target.value || null;
-                            setGroups(newGroups);
-                          }}
-                        >
-                          <option value="">Ingen (rotgruppe)</option>
-                          {groups
-                            .map((g, gIdx) => ({ ...g, index: gIdx }))
-                            .filter((g) => g.index < idx && g.name.trim() !== "")
-                            .map((g) => (
-                              <option key={g.index} value={g.name}>
-                                {g.name}
-                              </option>
-                            ))}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <Button variant="outline" onClick={addGroup} className="w-full">
-                  + Legg til gruppe
-                </Button>
-                <Button onClick={handleCreateGroups} className="w-full">
-                  Neste: Konfigurer gateway
+                <div className="space-y-2">
+                  <Label htmlFor="admin-name">Fullt navn *</Label>
+                  <Input
+                    id="admin-name"
+                    placeholder="Ola Nordmann"
+                    value={adminData.name}
+                    onChange={(e) => setAdminData({ ...adminData, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-email">E-post *</Label>
+                  <Input
+                    id="admin-email"
+                    type="email"
+                    placeholder="ola@fairteknologi.no"
+                    value={adminData.email}
+                    onChange={(e) => setAdminData({ ...adminData, email: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Dette vil være din påloggings-e-post
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-phone">Telefon *</Label>
+                  <Input
+                    id="admin-phone"
+                    placeholder="+4791234567"
+                    value={adminData.phone}
+                    onChange={(e) => setAdminData({ ...adminData, phone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-password">Passord *</Label>
+                  <Input
+                    id="admin-password"
+                    type="password"
+                    placeholder="Minst 6 tegn"
+                    value={adminData.password}
+                    onChange={(e) => setAdminData({ ...adminData, password: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="admin-confirm-password">Bekreft passord *</Label>
+                  <Input
+                    id="admin-confirm-password"
+                    type="password"
+                    placeholder="Skriv inn passordet på nytt"
+                    value={adminData.confirmPassword}
+                    onChange={(e) => setAdminData({ ...adminData, confirmPassword: e.target.value })}
+                  />
+                </div>
+                <Button 
+                  onClick={handleCreateAdmin} 
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? "Oppretter..." : "Neste: Konfigurer gateway"}
                 </Button>
               </CardContent>
             </Card>
@@ -492,7 +360,7 @@ export default function OnboardingPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="gateway-name">Gateway-navn</Label>
+                  <Label htmlFor="gateway-name">Gateway-navn *</Label>
                   <Input
                     id="gateway-name"
                     placeholder="FairGateway Hovedkontor"
@@ -501,76 +369,23 @@ export default function OnboardingPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="gateway-phone">Telefonnummer</Label>
+                  <Label htmlFor="gateway-phone">Telefonnummer *</Label>
                   <Input
                     id="gateway-phone"
                     placeholder="+4740123456"
                     value={gateway.phone}
                     onChange={(e) => setGateway({ ...gateway, phone: e.target.value })}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Dette er nummeret som vil motta og sende SMS-meldinger
+                  </p>
                 </div>
-                <Button onClick={handleCreateGateway} className="w-full">
-                  Neste: Sett åpningstider
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {currentStep === "hours" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Åpningstider</CardTitle>
-                <CardDescription>
-                  Standard åpningstider som gjelder for alle grupper (kan endres senere per gruppe).
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Object.entries(openingHours).map(([day, hours]) => (
-                  <div key={day} className="grid grid-cols-4 gap-4 items-center">
-                    <Label className="capitalize">{day === "monday" ? "Mandag" : day === "tuesday" ? "Tirsdag" : day === "wednesday" ? "Onsdag" : day === "thursday" ? "Torsdag" : day === "friday" ? "Fredag" : day === "saturday" ? "Lørdag" : "Søndag"}</Label>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`${day}-open`}
-                        checked={hours.isOpen}
-                        onChange={(e) => {
-                          setOpeningHours({
-                            ...openingHours,
-                            [day]: { ...hours, isOpen: e.target.checked },
-                          });
-                        }}
-                        className="h-4 w-4"
-                      />
-                      <Label htmlFor={`${day}-open`}>Åpen</Label>
-                    </div>
-                    {hours.isOpen && (
-                      <>
-                        <Input
-                          type="time"
-                          value={hours.open}
-                          onChange={(e) => {
-                            setOpeningHours({
-                              ...openingHours,
-                              [day]: { ...hours, open: e.target.value },
-                            });
-                          }}
-                        />
-                        <Input
-                          type="time"
-                          value={hours.close}
-                          onChange={(e) => {
-                            setOpeningHours({
-                              ...openingHours,
-                              [day]: { ...hours, close: e.target.value },
-                            });
-                          }}
-                        />
-                      </>
-                    )}
-                  </div>
-                ))}
-                <Button onClick={handleCreateOpeningHours} className="w-full">
-                  Fullfør oppsett
+                <Button 
+                  onClick={handleCreateGateway} 
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? "Oppretter..." : "Fullfør oppsett"}
                 </Button>
               </CardContent>
             </Card>
@@ -584,20 +399,23 @@ export default function OnboardingPage() {
                   Oppsett fullført!
                 </CardTitle>
                 <CardDescription>
-                  Organisasjonen din er nå klar til bruk. Du kan nå:
+                  Organisasjonen din er nå klar til bruk. Du er innlogget som tenant-administrator.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ul className="space-y-2 list-disc list-inside text-sm">
-                  <li>Logge inn med brukerne du opprettet</li>
-                  <li>Legge til flere grupper og brukere i Admin-panelet</li>
-                  <li>Sette brukere on-duty for å motta meldinger</li>
-                  <li>Teste systemet med simulerte SMS-meldinger</li>
-                  <li>Konfigurere routing-regler og auto-svar</li>
-                </ul>
+                <div className="p-4 bg-muted rounded-lg space-y-2">
+                  <h3 className="font-semibold text-sm">Neste steg:</h3>
+                  <ul className="space-y-1 text-sm list-disc list-inside">
+                    <li>Gå til Admin-panelet for å legge til grupper</li>
+                    <li>Opprett brukere og tildel dem til grupper</li>
+                    <li>Sett opp åpningstider per gruppe</li>
+                    <li>Konfigurer routing-regler og auto-svar</li>
+                    <li>Test systemet med SMS-simulering</li>
+                  </ul>
+                </div>
                 <div className="flex gap-4">
-                  <Button onClick={() => router.push("/simulate")} className="flex-1">
-                    Test med simulering
+                  <Button onClick={() => router.push("/admin")} className="flex-1">
+                    Gå til Admin-panel
                   </Button>
                   <Button variant="outline" onClick={() => router.push("/")} className="flex-1">
                     Gå til dashboard
