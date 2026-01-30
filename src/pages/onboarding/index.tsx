@@ -20,7 +20,6 @@ export default function OnboardingPage() {
 
   const [tenantData, setTenantData] = useState({ 
     name: "",
-    description: "",
     timezone: "Europe/Oslo"
   });
   
@@ -56,9 +55,7 @@ export default function OnboardingPage() {
       const { data, error } = await supabase
         .from("tenants")
         .insert({ 
-          name: tenantData.name,
-          description: tenantData.description || null,
-          timezone: tenantData.timezone
+          name: tenantData.name
         })
         .select()
         .single();
@@ -112,18 +109,6 @@ export default function OnboardingPage() {
         return;
       }
 
-      // Sign in the user immediately
-      const { user: signedInUser, error: signInError } = await authService.signIn(
-        adminData.email,
-        adminData.password
-      );
-
-      if (signInError) {
-        console.error("Sign in error:", signInError);
-        alert("Bruker opprettet, men automatisk pålogging feilet. Vennligst logg inn manuelt.");
-        return;
-      }
-
       // Create user record in database
       const { error: userError } = await supabase.from("users").insert({
         id: user.id,
@@ -137,6 +122,36 @@ export default function OnboardingPage() {
 
       if (userError) throw userError;
 
+      // Try to sign in automatically (will fail if email confirmation is required)
+      const { user: signedInUser, error: signInError } = await authService.signIn(
+        adminData.email,
+        adminData.password
+      );
+
+      if (signInError) {
+        // Email confirmation required - provide clear instructions
+        if (signInError.message?.includes("Email not confirmed")) {
+          alert(
+            "✅ Bruker opprettet!\n\n" +
+            "⚠️ E-postbekreftelse er påkrevd i Supabase.\n\n" +
+            "Vennligst gjør ett av følgende:\n" +
+            "1. Gå til Supabase Dashboard → Authentication → Providers → Email\n" +
+            "   og skru AV 'Confirm email' (Enable email confirmations)\n\n" +
+            "2. Eller sjekk e-posten din for bekreftelseslenke\n\n" +
+            "Deretter kan du logge inn på /settings og fortsette oppsettet."
+          );
+          // Skip gateway setup and go straight to complete with manual login instruction
+          setCurrentStep("complete");
+          return;
+        }
+        
+        console.error("Sign in error:", signInError);
+        alert("Bruker opprettet, men automatisk pålogging feilet. Vennligst logg inn manuelt.");
+        setCurrentStep("complete");
+        return;
+      }
+
+      // Successfully signed in - continue to gateway setup
       setCurrentStep("gateway");
     } catch (error) {
       console.error("Failed to create admin:", error);
@@ -246,15 +261,6 @@ export default function OnboardingPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tenant-description">Beskrivelse (valgfri)</Label>
-                  <Input
-                    id="tenant-description"
-                    placeholder="Norsk teknologiselskap med fokus på SMS-løsninger"
-                    value={tenantData.description}
-                    onChange={(e) => setTenantData({ ...tenantData, description: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="tenant-timezone">Tidssone</Label>
                   <select
                     id="tenant-timezone"
@@ -267,6 +273,9 @@ export default function OnboardingPage() {
                     <option value="Europe/Copenhagen">Europe/Copenhagen (Danmark)</option>
                     <option value="UTC">UTC</option>
                   </select>
+                  <p className="text-xs text-muted-foreground">
+                    Tidssonen brukes for åpningstider og rapporter
+                  </p>
                 </div>
                 <Button 
                   onClick={handleCreateTenant} 
@@ -396,16 +405,36 @@ export default function OnboardingPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle2 className="h-6 w-6 text-primary" />
-                  Oppsett fullført!
+                  Administrator opprettet!
                 </CardTitle>
                 <CardDescription>
-                  Organisasjonen din er nå klar til bruk. Du er innlogget som tenant-administrator.
+                  Brukeren din er opprettet. For å fortsette må du logge inn.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-2">
+                  <h3 className="font-semibold text-sm text-yellow-900 dark:text-yellow-100">
+                    ⚠️ E-postbekreftelse påkrevd
+                  </h3>
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    Supabase krever e-postbekreftelse før pålogging. Du har to alternativer:
+                  </p>
+                  <ol className="space-y-1 text-sm list-decimal list-inside text-yellow-800 dark:text-yellow-200">
+                    <li>
+                      <strong>For utvikling/testing:</strong> Gå til Supabase Dashboard → 
+                      Authentication → Providers → Email og skru AV "Confirm email"
+                    </li>
+                    <li>
+                      <strong>For produksjon:</strong> Sjekk e-posten din ({adminData.email}) 
+                      for bekreftelseslenke
+                    </li>
+                  </ol>
+                </div>
+                
                 <div className="p-4 bg-muted rounded-lg space-y-2">
-                  <h3 className="font-semibold text-sm">Neste steg:</h3>
+                  <h3 className="font-semibold text-sm">Neste steg etter pålogging:</h3>
                   <ul className="space-y-1 text-sm list-disc list-inside">
+                    <li>Gå til Settings og fullfør gateway-oppsett</li>
                     <li>Gå til Admin-panelet for å legge til grupper</li>
                     <li>Opprett brukere og tildel dem til grupper</li>
                     <li>Sett opp åpningstider per gruppe</li>
@@ -413,12 +442,13 @@ export default function OnboardingPage() {
                     <li>Test systemet med SMS-simulering</li>
                   </ul>
                 </div>
+                
                 <div className="flex gap-4">
-                  <Button onClick={() => router.push("/admin")} className="flex-1">
-                    Gå til Admin-panel
+                  <Button onClick={() => router.push("/settings")} className="flex-1">
+                    Gå til innlogging
                   </Button>
                   <Button variant="outline" onClick={() => router.push("/")} className="flex-1">
-                    Gå til dashboard
+                    Gå til forside
                   </Button>
                 </div>
               </CardContent>
