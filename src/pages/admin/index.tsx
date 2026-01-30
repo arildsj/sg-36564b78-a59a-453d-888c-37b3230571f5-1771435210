@@ -67,6 +67,17 @@ export default function AdminPage() {
     description: "",
   });
 
+  const [newUser, setNewUser] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "member",
+    password: "",
+    group_ids: [] as string[]
+  });
+
+  const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -143,6 +154,51 @@ export default function AdminPage() {
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleCreateUser = async () => {
+    try {
+      setCreating(true);
+
+      if (!newUser.name || !newUser.email || !newUser.password) {
+        alert("Vennligst fyll ut navn, e-post og passord");
+        return;
+      }
+
+      await userService.createUser({
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role as any,
+        password: newUser.password,
+        group_ids: newUser.group_ids
+      });
+
+      setNewUser({
+        name: "",
+        email: "",
+        phone: "",
+        role: "member",
+        password: "",
+        group_ids: []
+      });
+      setShowCreateUserDialog(false);
+      await loadData();
+    } catch (error: any) {
+      console.error("Failed to create user:", error);
+      alert(`Feil ved opprettelse: ${error.message}`);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const toggleUserGroupSelection = (groupId: string) => {
+    setNewUser((prev) => ({
+      ...prev,
+      group_ids: prev.group_ids.includes(groupId)
+        ? prev.group_ids.filter((id) => id !== groupId)
+        : [...prev.group_ids, groupId],
+    }));
   };
 
   return (
@@ -268,58 +324,82 @@ export default function AdminPage() {
                     <div className="text-center py-8">
                       <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                       <p className="text-muted-foreground mb-4">Ingen brukere opprettet ennå</p>
-                      <Button variant="outline">
+                      <Button variant="outline" onClick={() => setShowCreateUserDialog(true)}>
                         <Plus className="h-4 w-4 mr-2" />
                         Opprett første bruker
                       </Button>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Navn</TableHead>
-                          <TableHead>E-post</TableHead>
-                          <TableHead>Rolle</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Handlinger</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {users.map((user) => (
-                          <TableRow key={user.id} className="hover:bg-accent">
-                            <TableCell className="font-medium">{user.name}</TableCell>
-                            <TableCell>{user.email || "—"}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  user.role === "tenant_admin"
-                                    ? "default"
-                                    : user.role === "group_admin"
-                                    ? "secondary"
-                                    : "outline"
-                                }
-                              >
-                                {user.role === "tenant_admin"
-                                  ? "Tenant-admin"
-                                  : user.role === "group_admin"
-                                  ? "Gruppe-admin"
-                                  : "Medlem"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={user.status === "active" ? "default" : "destructive"}>
-                                {user.status === "active" ? "Aktiv" : "Inaktiv"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button variant="ghost" size="sm">
-                                Rediger
-                              </Button>
-                            </TableCell>
+                    <>
+                      <div className="flex justify-end mb-4">
+                        <Button onClick={() => setShowCreateUserDialog(true)} size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Ny bruker
+                        </Button>
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Navn</TableHead>
+                            <TableHead>E-post</TableHead>
+                            <TableHead>Telefon</TableHead>
+                            <TableHead>Grupper</TableHead>
+                            <TableHead>Rolle</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Handlinger</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {users.map((user) => (
+                            <TableRow key={user.id} className="hover:bg-accent">
+                              <TableCell className="font-medium">{user.name}</TableCell>
+                              <TableCell>{user.email || "—"}</TableCell>
+                              <TableCell>{(user as any).phone_number || "—"}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {user.groups && user.groups.length > 0 ? (
+                                    user.groups.map((groupName, i) => (
+                                      <Badge key={i} variant="secondary" className="text-xs">
+                                        {groupName}
+                                      </Badge>
+                                    ))
+                                  ) : (
+                                    <span className="text-muted-foreground text-xs">—</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    user.role === "tenant_admin"
+                                      ? "default"
+                                      : user.role === "group_admin"
+                                      ? "secondary"
+                                      : "outline"
+                                  }
+                                >
+                                  {user.role === "tenant_admin"
+                                    ? "Tenant-admin"
+                                    : user.role === "group_admin"
+                                    ? "Gruppe-admin"
+                                    : "Medlem"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={user.status === "active" ? "default" : "destructive"}>
+                                  {user.status === "active" ? "Aktiv" : "Inaktiv"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button variant="ghost" size="sm">
+                                  Rediger
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -464,6 +544,108 @@ export default function AdminPage() {
             </Button>
             <Button onClick={handleCreateGroup} disabled={creating}>
               {creating ? "Oppretter..." : "Opprett gruppe"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={showCreateUserDialog} onOpenChange={setShowCreateUserDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Opprett ny bruker</DialogTitle>
+            <DialogDescription>
+              Legg til en ny bruker i systemet og tildel grupper.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-name">Navn *</Label>
+                <Input
+                  id="user-name"
+                  placeholder="Fullt navn"
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="user-email">E-post *</Label>
+                <Input
+                  id="user-email"
+                  type="email"
+                  placeholder="user@example.com"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-phone">Telefon (valgfri)</Label>
+                <Input
+                  id="user-phone"
+                  placeholder="+47..."
+                  value={newUser.phone}
+                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="user-role">Rolle *</Label>
+                <select
+                  id="user-role"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                >
+                  <option value="member">Medlem</option>
+                  <option value="group_admin">Gruppe-admin</option>
+                  <option value="tenant_admin">Tenant-admin</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="user-password">Passord *</Label>
+              <Input
+                id="user-password"
+                type="password"
+                placeholder="Minst 6 tegn"
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Gruppetilhørighet</Label>
+              <div className="border rounded-lg p-4 space-y-2 max-h-48 overflow-y-auto">
+                {allGroups.filter(g => g.kind === 'operational').length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Ingen operasjonelle grupper tilgjengelig</p>
+                ) : (
+                  allGroups
+                    .filter(g => g.kind === 'operational')
+                    .map((group) => (
+                      <label key={group.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={newUser.group_ids.includes(group.id)}
+                          onChange={() => toggleUserGroupSelection(group.id)}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm font-medium">{group.name}</span>
+                      </label>
+                    ))
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateUserDialog(false)} disabled={creating}>
+              Avbryt
+            </Button>
+            <Button onClick={handleCreateUser} disabled={creating}>
+              {creating ? "Oppretter..." : "Opprett bruker"}
             </Button>
           </DialogFooter>
         </DialogContent>

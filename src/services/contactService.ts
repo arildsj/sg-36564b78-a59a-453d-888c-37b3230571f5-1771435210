@@ -1,84 +1,123 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
 
-type WhitelistedNumber = Database["public"]["Tables"]["whitelisted_numbers"]["Row"];
-type WhitelistGroupLink = Database["public"]["Tables"]["whitelist_group_links"]["Row"];
+export type Contact = {
+  id: string;
+  phone: string;
+  name: string; // Mapped from description
+  email: string | null; // Not supported in current schema, returning null
+  is_whitelisted: boolean; // Always true for this table
+  groups: Array<{ id: string; name: string }>;
+};
 
 export const contactService = {
-  async getAllContacts(): Promise<WhitelistedNumber[]> {
-    const { data, error } = await supabase
+  async getAllContacts() {
+    // 1. Get all whitelisted numbers
+    const { data: contacts, error } = await supabase
       .from("whitelisted_numbers")
       .select("*")
-      .order("phone_number");
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data || [];
-  },
 
-  async getContactById(id: string): Promise<WhitelistedNumber | null> {
-    const { data, error } = await supabase
-      .from("whitelisted_numbers")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async getContactGroups(contactId: string): Promise<string[]> {
-    const { data, error } = await supabase
+    // 2. Get all group links for these contacts
+    const { data: links, error: linksError } = await supabase
       .from("whitelist_group_links")
-      .select("group_id")
-      .eq("whitelisted_number_id", contactId);
+      .select(`
+        whitelisted_number_id,
+        group:groups (
+          id,
+          name
+        )
+      `);
 
-    if (error) throw error;
-    return (data || []).map((link) => link.group_id);
+    if (linksError) throw linksError;
+
+    // 3. Map contacts and attach groups
+    return (contacts || []).map((contact) => {
+      const contactLinks = links?.filter(
+        (l) => l.whitelisted_number_id === contact.id
+      ) || [];
+      
+      const groups = contactLinks
+        .map((l) => l.group)
+        .filter((g): g is { id: string; name: string } => !!g);
+
+      return {
+        id: contact.id,
+        phone: contact.phone_number,
+        name: contact.description || "Ukjent navn",
+        email: null,
+        is_whitelisted: true,
+        groups
+      };
+    });
   },
 
-  async createContact(
-    phoneNumber: string,
-    description?: string
-  ): Promise<WhitelistedNumber> {
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("id")
+  async createContact(contact: {
+    name: string;
+    phone: string;
+    email: string | null;
+    is_whitelisted: boolean;
+    group_ids: string[];
+  }) {
+    // 1. Get tenant_id
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("tenant_id")
+      .eq("auth_user_id", user.user.id)
       .single();
 
-    if (!tenant) throw new Error("No tenant found");
+    if (!profile) throw new Error("User profile not found");
 
-    const { data, error } = await supabase
+    // 2. Create whitelisted number
+    const { data: newContact, error } = await supabase
       .from("whitelisted_numbers")
       .insert({
-        tenant_id: tenant.id,
-        phone_number: phoneNumber,
-        description,
+        phone_number: contact.phone,
+        description: contact.name,
+        tenant_id: profile.tenant_id
       })
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+
+    // 3. Add to groups
+    if (contact.group_ids.length > 0) {
+      const links = contact.group_ids.map((groupId) => ({
+        whitelisted_number_id: newContact.id,
+        group_id: groupId
+      }));
+
+      const { error: linkError } = await supabase
+        .from("whitelist_group_links")
+        .insert(links);
+
+      if (linkError) throw linkError;
+    }
+
+    return newContact;
   },
-
-  async linkContactToGroup(contactId: string, groupId: string): Promise<void> {
-    const { error } = await supabase
-      .from("whitelist_group_links")
-      .insert({
-        whitelisted_number_id: contactId,
-        group_id: groupId,
-      });
-
+  
+  async searchContacts(query: string) {
+    const { data, error } = await supabase
+      .from("whitelisted_numbers")
+      .select("*")
+      .or(`phone_number.ilike.%${query}%,description.ilike.%${query}%`)
+      .limit(20);
+      
     if (error) throw error;
-  },
-
-  async unlinkContactFromGroup(contactId: string, groupId: string): Promise<void> {
-    const { error } = await supabase
-      .from("whitelist_group_links")
-      .delete()
-      .eq("whitelisted_number_id", contactId)
-      .eq("group_id", groupId);
-
-    if (error) throw error;
-  },
+    
+    return (data || []).map(c => ({
+      id: c.id,
+      phone: c.phone_number,
+      name: c.description || "Ukjent navn",
+      email: null,
+      is_whitelisted: true,
+      groups: [] // Optimized search doesn't fetch groups
+    }));
+  }
 };

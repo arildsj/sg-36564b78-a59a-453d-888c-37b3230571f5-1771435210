@@ -1,35 +1,31 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type Message = Database["public"]["Tables"]["messages"]["Row"];
-type MessageWithDetails = Message & {
-  group_name?: string;
-  acknowledged_by_name?: string;
+export type Message = Database["public"]["Tables"]["messages"]["Row"] & {
+  is_acknowledged: boolean;
 };
 
 export const messageService = {
-  async getMessagesByGroup(groupId: string, limit = 50): Promise<MessageWithDetails[]> {
+  async getUnacknowledgedMessages() {
     const { data, error } = await supabase
       .from("messages")
-      .select(`
-        *,
-        groups(name),
-        users(name)
-      `)
-      .eq("group_id", groupId)
-      .order("created_at", { ascending: false })
-      .limit(limit);
+      .select("*")
+      .is("acknowledged_at", null)
+      .eq("direction", "inbound")
+      .order("created_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching unacknowledged messages:", error);
+      throw error;
+    }
 
-    return (data || []).map((msg: any) => ({
+    return (data || []).map(msg => ({
       ...msg,
-      group_name: msg.groups?.name,
-      acknowledged_by_name: msg.users?.name,
+      is_acknowledged: false
     }));
   },
 
-  async getMessagesByThread(threadKey: string): Promise<Message[]> {
+  async getMessagesByThread(threadKey: string) {
     const { data, error } = await supabase
       .from("messages")
       .select("*")
@@ -37,67 +33,36 @@ export const messageService = {
       .order("created_at", { ascending: true });
 
     if (error) throw error;
-    return data || [];
-  },
-
-  async getUnacknowledgedMessages(): Promise<MessageWithDetails[]> {
-    const { data, error } = await supabase
-      .from("messages")
-      .select(`
-        *,
-        groups(name)
-      `)
-      .eq("direction", "inbound")
-      .is("acknowledged_at", null)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-
-    return (data || []).map((msg: any) => ({
+    
+    return (data || []).map(msg => ({
       ...msg,
-      group_name: msg.groups?.name,
+      is_acknowledged: !!msg.acknowledged_at
     }));
   },
 
-  async acknowledgeMessage(messageId: string, userId: string): Promise<void> {
-    const { error } = await supabase
-      .from("messages")
-      .update({
-        acknowledged_at: new Date().toISOString(),
-        acknowledged_by_user_id: userId,
-      })
-      .eq("id", messageId);
+  async sendMessage(content: string, toNumber: string, fromNumber: string, threadKey: string) {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
 
-    if (error) throw error;
-  },
-
-  async sendMessage(
-    groupId: string,
-    gatewayId: string,
-    toNumber: string,
-    content: string,
-    threadKey: string
-  ): Promise<Message> {
-    const { data: gateway } = await supabase
-      .from("gateways")
-      .select("phone_number, tenant_id")
-      .eq("id", gatewayId)
+    // Get tenant_id from current user profile
+    const { data: profile } = await supabase
+      .from("users")
+      .select("tenant_id")
+      .eq("auth_user_id", user.user.id)
       .single();
 
-    if (!gateway) throw new Error("Gateway not found");
+    if (!profile) throw new Error("User profile not found");
 
     const { data, error } = await supabase
       .from("messages")
       .insert({
-        tenant_id: gateway.tenant_id,
-        gateway_id: gatewayId,
-        group_id: groupId,
-        thread_key: threadKey,
-        direction: "outbound",
-        from_number: gateway.phone_number,
-        to_number: toNumber,
         content,
+        to_number: toNumber,
+        from_number: fromNumber,
+        direction: "outbound",
         status: "pending",
+        thread_key: threadKey,
+        tenant_id: profile.tenant_id
       })
       .select()
       .single();
@@ -105,4 +70,54 @@ export const messageService = {
     if (error) throw error;
     return data;
   },
+
+  async acknowledgeMessage(messageId: string) {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    // Get internal user id
+    const { data: profile } = await supabase
+      .from("users")
+      .select("id")
+      .eq("auth_user_id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("User profile not found");
+
+    const { error } = await supabase
+      .from("messages")
+      .update({
+        acknowledged_at: new Date().toISOString(),
+        acknowledged_by_user_id: profile.id
+      })
+      .eq("id", messageId);
+
+    if (error) throw error;
+  },
+  
+  async acknowledgeThread(threadKey: string) {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    // Get internal user id
+    const { data: profile } = await supabase
+      .from("users")
+      .select("id")
+      .eq("auth_user_id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("User profile not found");
+
+    const { error } = await supabase
+      .from("messages")
+      .update({
+        acknowledged_at: new Date().toISOString(),
+        acknowledged_by_user_id: profile.id
+      })
+      .eq("thread_key", threadKey)
+      .is("acknowledged_at", null)
+      .eq("direction", "inbound");
+
+    if (error) throw error;
+  }
 };
