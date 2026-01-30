@@ -92,7 +92,7 @@ serve(async (req) => {
       fromNumber,
       toNumber,
       payload.content,
-      payload.gateway_id
+      gateway
     );
 
     // Create message record
@@ -159,7 +159,7 @@ async function routeInboundMessage(
   fromNumber: string,
   toNumber: string,
   content: string,
-  gatewayId: string
+  gateway: any
 ): Promise<RoutingResult> {
   // Step 1: Check for existing thread (reply scenario)
   const { data: existingThread } = await supabase
@@ -186,7 +186,7 @@ async function routeInboundMessage(
     .select(`
       id,
       contact_id,
-      whitelisted_number_group_links (
+      whitelist_group_links (
         group_id,
         groups (
           id,
@@ -204,7 +204,7 @@ async function routeInboundMessage(
   if (whitelistMatches && whitelistMatches.length > 0) {
     // Extract operational groups from whitelist links
     candidateGroups = whitelistMatches
-      .flatMap((wn: any) => wn.whitelisted_number_group_links || [])
+      .flatMap((wn: any) => wn.whitelist_group_links || [])
       .filter((link: any) => link.groups?.group_kind === "operational" && link.groups?.is_active)
       .map((link: any) => link.group_id);
   }
@@ -213,9 +213,9 @@ async function routeInboundMessage(
   if (candidateGroups.length > 0) {
     const { data: routingRules } = await supabase
       .from("routing_rules")
-      .select("id, group_id, rule_type, pattern")
+      .select("id, target_group_id, rule_type, pattern")
       .eq("tenant_id", tenantId)
-      .in("group_id", candidateGroups)
+      .in("target_group_id", candidateGroups)
       .eq("is_active", true)
       .is("deleted_at", null)
       .order("priority", { ascending: false });
@@ -223,9 +223,9 @@ async function routeInboundMessage(
     if (routingRules && routingRules.length > 0) {
       for (const rule of routingRules) {
         if (matchesRoutingRule(content, rule.rule_type, rule.pattern)) {
-          const threadId = await createOrGetThread(supabase, tenantId, fromNumber, rule.group_id);
+          const threadId = await createOrGetThread(supabase, tenantId, fromNumber, rule.target_group_id);
           return {
-            resolved_group_id: rule.group_id,
+            resolved_group_id: rule.target_group_id,
             routing_rule_id: rule.id,
             thread_id: threadId,
             is_fallback: false,
@@ -245,16 +245,11 @@ async function routeInboundMessage(
   }
 
   // Step 4: Unknown sender → fallback
-  const { data: fallback } = await supabase
-    .from("gateway_fallback_inboxes")
-    .select("operational_group_id")
-    .eq("gateway_id", gatewayId)
-    .single();
-
   let fallbackGroupId: string;
 
-  if (fallback?.operational_group_id) {
-    fallbackGroupId = fallback.operational_group_id;
+  if (gateway.fallback_group_id) {
+    // Use gateway-specific fallback group
+    fallbackGroupId = gateway.fallback_group_id;
   } else {
     // Use tenant-level fallback (first operational group)
     const { data: tenantFallback } = await supabase
