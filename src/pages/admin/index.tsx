@@ -25,11 +25,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GroupHierarchy } from "@/components/GroupHierarchy";
 import { groupService } from "@/services/groupService";
 import { userService } from "@/services/userService";
 import { gatewayService } from "@/services/gatewayService";
-import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star } from "lucide-react";
+import { routingRuleService } from "@/services/routingRuleService";
+import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2 } from "lucide-react";
 
 type GroupNode = {
   id: string;
@@ -56,11 +58,29 @@ type Gateway = {
   name: string;
   base_url: string;
   api_key: string | null;
-  status: string; // Changed from is_active boolean to status string
+  status: string;
   is_default: boolean;
   tenant_id: string;
   created_at: string;
-  phone_number: string; // Added required field
+  phone_number: string;
+};
+
+type RoutingRule = {
+  id: string;
+  gateway_id: string;
+  target_group_id: string;
+  priority: number;
+  rule_type: "prefix" | "keyword" | "fallback";
+  pattern: string | null;
+  is_active: boolean;
+  gateway?: {
+    id: string;
+    name: string;
+  };
+  target_group?: {
+    id: string;
+    name: string;
+  };
 };
 
 export default function AdminPage() {
@@ -69,6 +89,7 @@ export default function AdminPage() {
   const [allGroups, setAllGroups] = useState<GroupNode[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [gateways, setGateways] = useState<Gateway[]>([]);
+  const [routingRules, setRoutingRules] = useState<RoutingRule[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,11 +118,21 @@ export default function AdminPage() {
     api_key: "",
     is_active: true,
     is_default: false,
-    phone_number: "", // Added required field
+    phone_number: "",
+  });
+
+  const [newRoutingRule, setNewRoutingRule] = useState({
+    gateway_id: "",
+    target_group_id: "",
+    priority: 10,
+    rule_type: "fallback" as "prefix" | "keyword" | "fallback",
+    pattern: "",
+    is_active: true,
   });
 
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
   const [showCreateGatewayDialog, setShowCreateGatewayDialog] = useState(false);
+  const [showCreateRoutingRuleDialog, setShowCreateRoutingRuleDialog] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -110,15 +141,15 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [groupsData, usersData, currentUserData, gatewaysData] = await Promise.all([
+      const [groupsData, usersData, currentUserData, gatewaysData, routingRulesData] = await Promise.all([
         groupService.getGroupsHierarchy(),
         userService.getAllUsers(),
         userService.getCurrentUser(),
         gatewayService.getAllGateways(),
+        routingRuleService.getRoutingRules(),
       ]);
       setGroups(groupsData as GroupNode[]);
       
-      // Flatten hierarchy for parent selection
       const flattenGroups = (groups: GroupNode[]): GroupNode[] => {
         const flat: GroupNode[] = [];
         const traverse = (g: GroupNode[]) => {
@@ -135,6 +166,7 @@ export default function AdminPage() {
       setUsers(usersData as User[]);
       setCurrentUser(currentUserData as unknown as User);
       setGateways(gatewaysData as Gateway[]);
+      setRoutingRules(routingRulesData as RoutingRule[]);
     } catch (error) {
       console.error("Failed to load admin data:", error);
     } finally {
@@ -234,7 +266,7 @@ export default function AdminPage() {
         name: newGateway.name,
         base_url: newGateway.base_url,
         api_key: newGateway.api_key || null,
-        status: newGateway.is_active ? 'active' : 'inactive', // Map boolean to status string
+        status: newGateway.is_active ? 'active' : 'inactive',
         is_default: newGateway.is_default,
         phone_number: newGateway.phone_number,
         tenant_id: currentUser.tenant_id,
@@ -255,6 +287,64 @@ export default function AdminPage() {
       alert(`Feil ved opprettelse av gateway: ${error.message || "Ukjent feil"}`);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleCreateRoutingRule = async () => {
+    try {
+      setCreating(true);
+
+      if (!newRoutingRule.gateway_id || !newRoutingRule.target_group_id) {
+        alert("Vennligst velg gateway og målgruppe");
+        return;
+      }
+
+      await routingRuleService.createRoutingRule({
+        gateway_id: newRoutingRule.gateway_id,
+        target_group_id: newRoutingRule.target_group_id,
+        priority: newRoutingRule.priority,
+        rule_type: newRoutingRule.rule_type,
+        pattern: newRoutingRule.pattern || undefined,
+        is_active: newRoutingRule.is_active,
+      });
+
+      setNewRoutingRule({
+        gateway_id: "",
+        target_group_id: "",
+        priority: 10,
+        rule_type: "fallback",
+        pattern: "",
+        is_active: true,
+      });
+      setShowCreateRoutingRuleDialog(false);
+      await loadData();
+    } catch (error: any) {
+      console.error("Failed to create routing rule:", error);
+      alert(`Feil ved opprettelse av routing rule: ${error.message || "Ukjent feil"}`);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDeleteRoutingRule = async (id: string) => {
+    if (!confirm("Er du sikker på at du vil slette denne routing rule?")) return;
+    
+    try {
+      await routingRuleService.deleteRoutingRule(id);
+      await loadData();
+    } catch (error: any) {
+      console.error("Failed to delete routing rule:", error);
+      alert(`Feil ved sletting: ${error.message}`);
+    }
+  };
+
+  const handleToggleRoutingRule = async (id: string, isActive: boolean) => {
+    try {
+      await routingRuleService.toggleRoutingRule(id, isActive);
+      await loadData();
+    } catch (error: any) {
+      console.error("Failed to toggle routing rule:", error);
+      alert(`Feil ved oppdatering: ${error.message}`);
     }
   };
 
@@ -314,7 +404,7 @@ export default function AdminPage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto">
               <TabsTrigger value="groups" className="gap-2">
                 <FolderTree className="h-4 w-4" />
                 Grupper
@@ -326,6 +416,10 @@ export default function AdminPage() {
               <TabsTrigger value="gateways" className="gap-2">
                 <Wifi className="h-4 w-4" />
                 Gateways
+              </TabsTrigger>
+              <TabsTrigger value="routing" className="gap-2">
+                <GitBranch className="h-4 w-4" />
+                Routing
               </TabsTrigger>
               <TabsTrigger value="roles" className="gap-2">
                 <Shield className="h-4 w-4" />
@@ -533,6 +627,7 @@ export default function AdminPage() {
                           <TableRow>
                             <TableHead>Navn</TableHead>
                             <TableHead>Base URL</TableHead>
+                            <TableHead>Telefonnummer</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Standard</TableHead>
                             <TableHead className="text-right">Handlinger</TableHead>
@@ -543,6 +638,7 @@ export default function AdminPage() {
                             <TableRow key={gateway.id} className="hover:bg-accent">
                               <TableCell className="font-medium">{gateway.name}</TableCell>
                               <TableCell className="font-mono text-sm">{gateway.base_url}</TableCell>
+                              <TableCell>{gateway.phone_number}</TableCell>
                               <TableCell>
                                 <Badge variant={gateway.status === 'active' ? "default" : "secondary"}>
                                   {gateway.status === 'active' ? "Aktiv" : "Inaktiv"}
@@ -577,6 +673,91 @@ export default function AdminPage() {
                                     Slett
                                   </Button>
                                 </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Routing Rules Tab */}
+            <TabsContent value="routing" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Gateway-til-gruppe routing</CardTitle>
+                  <CardDescription>
+                    Konfigurer hvilke grupper som er tilknyttet hver gateway. Når meldinger kommer inn til en gateway, rutes de automatisk til riktig gruppe basert på disse reglene.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="text-center py-8 text-muted-foreground">Laster routing rules...</div>
+                  ) : routingRules.length === 0 ? (
+                    <div className="text-center py-8">
+                      <GitBranch className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground mb-4">Ingen routing rules konfigurert ennå</p>
+                      <Button variant="outline" onClick={() => setShowCreateRoutingRuleDialog(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Opprett første routing rule
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-end mb-4">
+                        <Button onClick={() => setShowCreateRoutingRuleDialog(true)} size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Ny routing rule
+                        </Button>
+                      </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Gateway</TableHead>
+                            <TableHead>Målgruppe</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Mønster</TableHead>
+                            <TableHead>Prioritet</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Handlinger</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {routingRules.map((rule) => (
+                            <TableRow key={rule.id} className="hover:bg-accent">
+                              <TableCell className="font-medium">
+                                {rule.gateway?.name || "—"}
+                              </TableCell>
+                              <TableCell>
+                                {rule.target_group?.name || "—"}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">
+                                  {rule.rule_type === "prefix" ? "Prefiks" : 
+                                   rule.rule_type === "keyword" ? "Nøkkelord" : "Fallback"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-mono text-sm">
+                                {rule.pattern || "—"}
+                              </TableCell>
+                              <TableCell>{rule.priority}</TableCell>
+                              <TableCell>
+                                <Switch
+                                  checked={rule.is_active}
+                                  onCheckedChange={(checked) => handleToggleRoutingRule(rule.id, checked)}
+                                />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteRoutingRule(rule.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -930,6 +1111,122 @@ export default function AdminPage() {
             </Button>
             <Button onClick={handleCreateGateway} disabled={creating}>
               {creating ? "Legger til..." : "Legg til gateway"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Routing Rule Dialog */}
+      <Dialog open={showCreateRoutingRuleDialog} onOpenChange={setShowCreateRoutingRuleDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Opprett routing rule</DialogTitle>
+            <DialogDescription>
+              Koble en gateway til en målgruppe. Innkommende meldinger til denne gatewayen vil automatisk rutes til den valgte gruppen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="rule-gateway">Gateway *</Label>
+              <Select value={newRoutingRule.gateway_id} onValueChange={(value) => setNewRoutingRule({ ...newRoutingRule, gateway_id: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Velg gateway" />
+                </SelectTrigger>
+                <SelectContent>
+                  {gateways.map((gw) => (
+                    <SelectItem key={gw.id} value={gw.id}>
+                      {gw.name} ({gw.phone_number})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rule-group">Målgruppe *</Label>
+              <Select value={newRoutingRule.target_group_id} onValueChange={(value) => setNewRoutingRule({ ...newRoutingRule, target_group_id: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Velg målgruppe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allGroups.filter(g => g.kind === 'operational').map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Meldinger som kommer til gatewayen vil bli rutet til denne gruppen
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rule-type">Regeltype *</Label>
+              <Select value={newRoutingRule.rule_type} onValueChange={(value: any) => setNewRoutingRule({ ...newRoutingRule, rule_type: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fallback">Fallback (standard routing)</SelectItem>
+                  <SelectItem value="prefix">Prefiks (basert på meldingsinnhold)</SelectItem>
+                  <SelectItem value="keyword">Nøkkelord (basert på meldingsinnhold)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(newRoutingRule.rule_type === "prefix" || newRoutingRule.rule_type === "keyword") && (
+              <div className="space-y-2">
+                <Label htmlFor="rule-pattern">Mønster *</Label>
+                <Input
+                  id="rule-pattern"
+                  placeholder={newRoutingRule.rule_type === "prefix" ? "F.eks. SUPPORT" : "F.eks. hjelp"}
+                  value={newRoutingRule.pattern}
+                  onChange={(e) => setNewRoutingRule({ ...newRoutingRule, pattern: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {newRoutingRule.rule_type === "prefix" 
+                    ? "Meldinger som starter med dette prefikset rutes til gruppen" 
+                    : "Meldinger som inneholder dette nøkkelordet rutes til gruppen"}
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="rule-priority">Prioritet</Label>
+              <Input
+                id="rule-priority"
+                type="number"
+                min="0"
+                max="100"
+                value={newRoutingRule.priority}
+                onChange={(e) => setNewRoutingRule({ ...newRoutingRule, priority: parseInt(e.target.value) || 10 })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Høyere tall = høyere prioritet (0-100). Fallback-regler bør ha lavest prioritet.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="rule-active">Aktiver regel</Label>
+                <p className="text-xs text-muted-foreground">
+                  Kun aktive regler brukes for routing
+                </p>
+              </div>
+              <Switch
+                id="rule-active"
+                checked={newRoutingRule.is_active}
+                onCheckedChange={(checked) => setNewRoutingRule({ ...newRoutingRule, is_active: checked })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateRoutingRuleDialog(false)} disabled={creating}>
+              Avbryt
+            </Button>
+            <Button onClick={handleCreateRoutingRule} disabled={creating}>
+              {creating ? "Oppretter..." : "Opprett regel"}
             </Button>
           </DialogFooter>
         </DialogContent>
