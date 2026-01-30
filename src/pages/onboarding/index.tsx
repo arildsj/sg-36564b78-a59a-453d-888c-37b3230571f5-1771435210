@@ -17,11 +17,12 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("tenant");
   const [tenantId, setTenantId] = useState<string>("");
   const [groupIds, setGroupIds] = useState<{ [key: string]: string }>({});
+  const [createdGroups, setCreatedGroups] = useState<Array<{ id: string; name: string }>>([]);
 
   const [tenantData, setTenantData] = useState({ name: "" });
   const [users, setUsers] = useState([{ name: "", email: "", phone: "", role: "member" }]);
   const [groups, setGroups] = useState([
-    { name: "", description: "", kind: "operational", timezone: "Europe/Oslo" },
+    { name: "", description: "", kind: "operational", timezone: "Europe/Oslo", parent_id: null as string | null },
   ]);
   const [gateway, setGateway] = useState({ name: "", phone: "" });
   const [openingHours, setOpeningHours] = useState({
@@ -104,6 +105,7 @@ export default function OnboardingPage() {
             description: g.description || null,
             kind: g.kind as "structural" | "operational",
             timezone: g.timezone,
+            parent_id: g.parent_id,
             escalation_enabled: true,
             escalation_timeout_minutes: 30,
           }))
@@ -113,10 +115,13 @@ export default function OnboardingPage() {
       if (error) throw error;
       
       const ids: { [key: string]: string } = {};
+      const created: Array<{ id: string; name: string }> = [];
       data.forEach((group, idx) => {
         ids[groupsToCreate[idx].name] = group.id;
+        created.push({ id: group.id, name: group.name });
       });
       setGroupIds(ids);
+      setCreatedGroups(created);
       
       setCurrentStep("gateway");
     } catch (error) {
@@ -210,7 +215,7 @@ export default function OnboardingPage() {
   };
 
   const addGroup = () => {
-    setGroups([...groups, { name: "", description: "", kind: "operational", timezone: "Europe/Oslo" }]);
+    setGroups([...groups, { name: "", description: "", kind: "operational", timezone: "Europe/Oslo", parent_id: null }]);
   };
 
   return (
@@ -376,7 +381,7 @@ export default function OnboardingPage() {
               <CardHeader>
                 <CardTitle>Opprett grupper</CardTitle>
                 <CardDescription>
-                  Grupper (innbokser) for å organisere meldinger. Kun operational-grupper har innbokser.
+                  Grupper (innbokser) for å organisere meldinger. Kun operational-grupper har innbokser. Du kan bygge et hierarki ved å velge en overordnet gruppe.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -413,18 +418,42 @@ export default function OnboardingPage() {
                         </select>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`group-desc-${idx}`}>Beskrivelse</Label>
-                      <Input
-                        id={`group-desc-${idx}`}
-                        placeholder="Behandler kundehenvendelser"
-                        value={group.description}
-                        onChange={(e) => {
-                          const newGroups = [...groups];
-                          newGroups[idx].description = e.target.value;
-                          setGroups(newGroups);
-                        }}
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor={`group-desc-${idx}`}>Beskrivelse</Label>
+                        <Input
+                          id={`group-desc-${idx}`}
+                          placeholder="Behandler kundehenvendelser"
+                          value={group.description}
+                          onChange={(e) => {
+                            const newGroups = [...groups];
+                            newGroups[idx].description = e.target.value;
+                            setGroups(newGroups);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`group-parent-${idx}`}>Overordnet gruppe (valgfri)</Label>
+                        <select
+                          id={`group-parent-${idx}`}
+                          className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                          value={group.parent_id || ""}
+                          onChange={(e) => {
+                            const newGroups = [...groups];
+                            newGroups[idx].parent_id = e.target.value || null;
+                            setGroups(newGroups);
+                          }}
+                        >
+                          <option value="">Ingen (rotgruppe)</option>
+                          {createdGroups
+                            .filter((g) => groups[idx].name !== g.name)
+                            .map((g) => (
+                              <option key={g.id} value={g.id}>
+                                {g.name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
                 ))}

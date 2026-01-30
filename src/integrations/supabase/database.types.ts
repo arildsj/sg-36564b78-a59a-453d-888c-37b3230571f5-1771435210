@@ -488,6 +488,7 @@ export type Database = {
           kind: string
           name: string
           parent_group_id: string | null
+          parent_id: string | null
           tenant_id: string
           timezone: string | null
           updated_at: string | null
@@ -501,6 +502,7 @@ export type Database = {
           kind: string
           name: string
           parent_group_id?: string | null
+          parent_id?: string | null
           tenant_id: string
           timezone?: string | null
           updated_at?: string | null
@@ -514,6 +516,7 @@ export type Database = {
           kind?: string
           name?: string
           parent_group_id?: string | null
+          parent_id?: string | null
           tenant_id?: string
           timezone?: string | null
           updated_at?: string | null
@@ -522,6 +525,13 @@ export type Database = {
           {
             foreignKeyName: "groups_parent_group_id_fkey"
             columns: ["parent_group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_parent_id_fkey"
+            columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
