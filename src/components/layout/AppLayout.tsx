@@ -9,7 +9,10 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  X
+  X,
+  Home,
+  MessageSquare,
+  Cog
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,12 +21,13 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-const NAV_ITEMS = [
-  { label: "Oversikt", href: "/", icon: LayoutDashboard },
-  { label: "Innboks", href: "/inbox", icon: Inbox },
-  { label: "Kontakter", href: "/contacts", icon: Users },
-  { label: "Admin", href: "/admin", icon: Shield },
-  { label: "Innstillinger", href: "/settings", icon: Settings },
+const navItems = [
+  { href: "/", label: "Dashboard", icon: <Home className="h-5 w-5" /> },
+  { href: "/inbox", label: "Innboks", icon: <Inbox className="h-5 w-5" /> },
+  { href: "/contacts", label: "Kontakter", icon: <Users className="h-5 w-5" /> },
+  { href: "/simulate", label: "Simulering", icon: <MessageSquare className="h-5 w-5" /> },
+  { href: "/admin", label: "Admin", icon: <Settings className="h-5 w-5" /> },
+  { href: "/settings", label: "Innstillinger", icon: <Cog className="h-5 w-5" /> },
 ];
 
 export function AppLayout({ children }: AppLayoutProps) {
@@ -66,7 +70,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive = router.pathname === item.href || router.pathname.startsWith(item.href + "/");
             return (
               <Link
@@ -79,7 +83,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     : "text-foreground hover:bg-accent hover:text-accent-foreground"
                 )}
               >
-                <item.icon className="h-5 w-5" aria-hidden="true" />
+                {item.icon}
                 {item.label}
               </Link>
             );
