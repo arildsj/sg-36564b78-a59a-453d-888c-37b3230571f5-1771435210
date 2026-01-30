@@ -10,42 +10,104 @@ import { groupService } from "@/services/groupService";
 import { messageService } from "@/services/messageService";
 import { userService } from "@/services/userService";
 
+type DashboardStats = {
+  unacknowledged: number;
+  operationalGroups: number;
+  onDutyUsers: number;
+  avgResponseTime: string;
+};
+
+type RecentMessage = {
+  id: string;
+  from_number: string;
+  content: string;
+  created_at: string;
+  is_acknowledged: boolean;
+};
+
+type GroupStatus = {
+  id: string;
+  name: string;
+  on_duty_count: number;
+};
+
 export default function HomePage() {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DashboardStats>({
     unacknowledged: 0,
     operationalGroups: 0,
     onDutyUsers: 0,
+    avgResponseTime: "—",
   });
+  const [recentMessages, setRecentMessages] = useState<RecentMessage[]>([]);
+  const [groupStatuses, setGroupStatuses] = useState<GroupStatus[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadStats() {
-      try {
-        const [unackMessages, groups] = await Promise.all([
-          messageService.getUnacknowledgedMessages(),
-          groupService.getOperationalGroups(),
-        ]);
-
-        let totalOnDuty = 0;
-        for (const group of groups) {
-          const onDutyUsers = await userService.getOnDutyUsersForGroup(group.id);
-          totalOnDuty += onDutyUsers.length;
-        }
-
-        setStats({
-          unacknowledged: unackMessages.length,
-          operationalGroups: groups.length,
-          onDutyUsers: totalOnDuty,
-        });
-      } catch (error) {
-        console.error("Failed to load stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadStats();
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Load unacknowledged messages
+      const unackMessages = await messageService.getUnacknowledgedMessages();
+      
+      // Load operational groups
+      const groups = await groupService.getOperationalGroups();
+
+      // Count on-duty users across all groups
+      let totalOnDuty = 0;
+      const groupStatusData: GroupStatus[] = [];
+      
+      for (const group of groups) {
+        const onDutyUsers = await userService.getOnDutyUsersForGroup(group.id);
+        totalOnDuty += onDutyUsers.length;
+        groupStatusData.push({
+          id: group.id,
+          name: group.name,
+          on_duty_count: onDutyUsers.length,
+        });
+      }
+
+      // Get recent messages (limit to 5)
+      const messages = unackMessages.slice(0, 5).map(msg => ({
+        id: msg.id,
+        from_number: msg.from_number,
+        content: msg.content,
+        created_at: msg.created_at,
+        is_acknowledged: msg.is_acknowledged,
+      }));
+
+      setStats({
+        unacknowledged: unackMessages.length,
+        operationalGroups: groups.length,
+        onDutyUsers: totalOnDuty,
+        avgResponseTime: "—", // TODO: Calculate from actual data
+      });
+
+      setRecentMessages(messages);
+      setGroupStatuses(groupStatusData);
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return "nå";
+    if (diffMins < 60) return `${diffMins} min`;
+    if (diffHours < 24) return `${diffHours}t siden`;
+    return `${diffDays}d siden`;
+  };
 
   return (
     <>
@@ -115,7 +177,7 @@ export default function HomePage() {
                 <AlertCircle className="h-5 w-5 text-primary" aria-hidden="true" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-foreground">12 min</div>
+                <div className="text-3xl font-bold text-foreground">{stats.avgResponseTime}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Siste 24 timer
                 </p>
@@ -135,26 +197,29 @@ export default function HomePage() {
                 <div className="space-y-4">
                   {loading ? (
                     <p className="text-muted-foreground text-center py-8">Laster...</p>
+                  ) : recentMessages.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Inbox className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+                      <p className="text-muted-foreground">Ingen meldinger ennå</p>
+                    </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="flex items-start justify-between border-b pb-3">
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">+47 987 65 432</p>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Hei, jeg lurer på status på min bestilling?
-                          </p>
+                      {recentMessages.map((msg) => (
+                        <div key={msg.id} className="flex items-start justify-between border-b pb-3">
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">{msg.from_number}</p>
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {msg.content}
+                            </p>
+                          </div>
+                          <Badge 
+                            variant={msg.is_acknowledged ? "outline" : "destructive"} 
+                            className="ml-2"
+                          >
+                            {formatTimeAgo(msg.created_at)}
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="ml-2">2t siden</Badge>
-                      </div>
-                      <div className="flex items-start justify-between border-b pb-3">
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">+47 998 87 766</p>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Hva er prisen på deres tjeneste?
-                          </p>
-                        </div>
-                        <Badge variant="destructive" className="ml-2">10 min</Badge>
-                      </div>
+                      ))}
                     </div>
                   )}
                   <Link href="/inbox">
@@ -177,22 +242,31 @@ export default function HomePage() {
                 <div className="space-y-4">
                   {loading ? (
                     <p className="text-muted-foreground text-center py-8">Laster...</p>
+                  ) : groupStatuses.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+                      <p className="text-muted-foreground">Ingen operative grupper opprettet</p>
+                      <Link href="/admin">
+                        <Button variant="outline" className="mt-4">
+                          Opprett første gruppe
+                        </Button>
+                      </Link>
+                    </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between border-b pb-3">
-                        <div>
-                          <p className="font-medium text-foreground">Kundeservice</p>
-                          <p className="text-sm text-muted-foreground">1 on-duty</p>
+                      {groupStatuses.slice(0, 5).map((group) => (
+                        <div key={group.id} className="flex items-center justify-between border-b pb-3">
+                          <div>
+                            <p className="font-medium text-foreground">{group.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {group.on_duty_count} on-duty
+                            </p>
+                          </div>
+                          <Badge variant={group.on_duty_count > 0 ? "default" : "outline"}>
+                            {group.on_duty_count > 0 ? "Åpen" : "Stengt"}
+                          </Badge>
                         </div>
-                        <Badge variant="default">Åpen</Badge>
-                      </div>
-                      <div className="flex items-center justify-between border-b pb-3">
-                        <div>
-                          <p className="font-medium text-foreground">Teknisk Support</p>
-                          <p className="text-sm text-muted-foreground">1 on-duty</p>
-                        </div>
-                        <Badge variant="default">Åpen</Badge>
-                      </div>
+                      ))}
                     </div>
                   )}
                   <Link href="/admin">
