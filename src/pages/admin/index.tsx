@@ -300,7 +300,7 @@ export default function AdminPage() {
                                 }
                               >
                                 {user.role === "tenant_admin"
-                                  ? "Leier-admin"
+                                  ? "Tenant-admin"
                                   : user.role === "group_admin"
                                   ? "Gruppe-admin"
                                   : "Medlem"}
@@ -338,7 +338,7 @@ export default function AdminPage() {
                   <div className="border rounded-lg p-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-lg">Leier-administrator</h3>
+                        <h3 className="font-semibold text-lg">Tenant-administrator</h3>
                         <p className="text-sm text-muted-foreground mt-1">
                           Full tilgang til alle funksjoner innenfor leieren (organisasjonen).
                         </p>
