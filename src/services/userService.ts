@@ -34,9 +34,12 @@ export const userService = {
       .from("users")
       .select("*")
       .eq("auth_user_id", authData.user.id)
-      .single();
+      .maybeSingle();
 
-    if (error) return null;
+    if (error) {
+      console.error("Error fetching current user:", error);
+      return null;
+    }
     return data;
   },
 
