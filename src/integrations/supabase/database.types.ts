@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -551,6 +551,67 @@ export type Database = {
           },
         ]
       }
+      message_threads: {
+        Row: {
+          contact_phone: string
+          created_at: string
+          gateway_id: string
+          id: string
+          is_resolved: boolean
+          last_message_at: string
+          resolved_at: string | null
+          resolved_group_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          contact_phone: string
+          created_at?: string
+          gateway_id: string
+          id?: string
+          is_resolved?: boolean
+          last_message_at?: string
+          resolved_at?: string | null
+          resolved_group_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          contact_phone?: string
+          created_at?: string
+          gateway_id?: string
+          id?: string
+          is_resolved?: boolean
+          last_message_at?: string
+          resolved_at?: string | null
+          resolved_group_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_threads_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: false
+            referencedRelation: "gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_threads_resolved_group_id_fkey"
+            columns: ["resolved_group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_threads_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           acknowledged_at: string | null
@@ -563,9 +624,11 @@ export type Database = {
           gateway_id: string | null
           group_id: string | null
           id: string
+          is_fallback: boolean
           media_urls: string[] | null
           status: string | null
           tenant_id: string
+          thread_id: string | null
           thread_key: string
           to_number: string
           updated_at: string | null
@@ -581,9 +644,11 @@ export type Database = {
           gateway_id?: string | null
           group_id?: string | null
           id?: string
+          is_fallback?: boolean
           media_urls?: string[] | null
           status?: string | null
           tenant_id: string
+          thread_id?: string | null
           thread_key: string
           to_number: string
           updated_at?: string | null
@@ -599,9 +664,11 @@ export type Database = {
           gateway_id?: string | null
           group_id?: string | null
           id?: string
+          is_fallback?: boolean
           media_urls?: string[] | null
           status?: string | null
           tenant_id?: string
+          thread_id?: string | null
           thread_key?: string
           to_number?: string
           updated_at?: string | null
@@ -633,6 +700,13 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "message_threads"
             referencedColumns: ["id"]
           },
         ]
