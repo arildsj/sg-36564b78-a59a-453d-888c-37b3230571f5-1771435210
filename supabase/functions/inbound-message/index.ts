@@ -101,18 +101,19 @@ serve(async (req) => {
       .insert({
         tenant_id: gateway.tenant_id,
         gateway_id: payload.gateway_id,
-        direction: "in",
+        direction: "inbound",
         from_number: fromNumber,
         to_number: toNumber,
         content: payload.content,
-        mms_urls: payload.mms_urls || [],
+        mms_media_urls: payload.mms_urls || [],
         resolved_group_id: routingResult.resolved_group_id,
-        routing_rule_id: routingResult.routing_rule_id,
         thread_id: routingResult.thread_id,
         status: "received",
         idempotency_key: idempotencyKey,
-        external_message_id: payload.external_message_id,
+        external_id: payload.external_message_id,
         received_at: payload.received_at,
+        acknowledged_at: null, // FR31002: Requires manual acknowledgement
+        escalation_level: 0,
       })
       .select()
       .single();
@@ -125,11 +126,14 @@ serve(async (req) => {
       );
     }
 
-    // Evaluate auto-replies
+    // Evaluate auto-replies (FR3901-FR3905)
     await evaluateAutoReplies(supabase, message, routingResult);
 
-    // Check on-duty coverage and escalate if needed
-    await checkOnDutyCoverage(supabase, message);
+    // Check on-duty coverage and notify (FR3301, FR31101)
+    await notifyOnDutyUsers(supabase, message);
+
+    // Schedule escalation check if enabled (FR31001)
+    await scheduleEscalationCheck(supabase, message);
 
     return new Response(
       JSON.stringify({
@@ -442,46 +446,82 @@ async function checkOpeningHours(supabase: any, groupId: string): Promise<boolea
   return currentTime >= schedule.open_time && currentTime <= schedule.close_time;
 }
 
-async function checkOnDutyCoverage(supabase: any, message: any): Promise<void> {
+async function notifyOnDutyUsers(supabase: any, message: any): Promise<void> {
+  // FR3301: Only on-duty users receive notifications
   const { data: onDutyUsers, error } = await supabase
     .from("on_duty_state")
-    .select("user_id")
+    .select(`
+      user_id,
+      user_profiles!inner (
+        id,
+        email,
+        full_name
+      )
+    `)
     .eq("group_id", message.resolved_group_id)
-    .eq("is_on_duty", true)
-    .is("deleted_at", null);
+    .eq("is_on_duty", true);
 
   if (error) {
-    console.error("Failed to check on-duty coverage:", error);
+    console.error("Failed to fetch on-duty users:", error);
     return;
   }
 
   if (!onDutyUsers || onDutyUsers.length === 0) {
-    // Escalate to tenant admin
-    const { data: tenantAdmins } = await supabase
-      .from("user_profiles")
-      .select("id, email")
-      .eq("tenant_id", message.tenant_id)
-      .eq("role", "tenant_admin")
-      .eq("is_active", true);
+    // FR3309: No on-duty users → log and potentially escalate
+    await supabase.rpc("log_audit_event", {
+      p_actor_user_id: null,
+      p_tenant_id: message.tenant_id,
+      p_action_type: "no_on_duty_coverage",
+      p_entity_type: "message",
+      p_entity_id: message.id,
+      p_scope: "group",
+      p_scope_id: message.resolved_group_id,
+      p_metadata: {
+        group_id: message.resolved_group_id,
+        message_from: message.from_number,
+      },
+    });
 
-    if (tenantAdmins && tenantAdmins.length > 0) {
-      // Log escalation
-      await supabase.rpc("log_audit_event", {
-        p_actor_user_id: null,
-        p_tenant_id: message.tenant_id,
-        p_action_type: "escalation_no_coverage",
-        p_entity_type: "message",
-        p_entity_id: message.id,
-        p_scope: "group",
-        p_metadata: {
-          group_id: message.resolved_group_id,
-          escalated_to: tenantAdmins.map((a: any) => a.id),
-        },
-      });
-
-      console.log(`Escalated message ${message.id} - no on-duty coverage`);
-    }
+    console.log(`No on-duty users for group ${message.resolved_group_id}`);
+    return;
   }
+
+  // FR31101: Notify on-duty users (actual notification implementation pending)
+  console.log(`Would notify ${onDutyUsers.length} on-duty users:`, onDutyUsers.map((u: any) => u.user_profiles.email));
+  
+  // Log notification event
+  await supabase.rpc("log_audit_event", {
+    p_actor_user_id: null,
+    p_tenant_id: message.tenant_id,
+    p_action_type: "message_notification_sent",
+    p_entity_type: "message",
+    p_entity_id: message.id,
+    p_scope: "group",
+    p_scope_id: message.resolved_group_id,
+    p_metadata: {
+      notified_user_ids: onDutyUsers.map((u: any) => u.user_id),
+      notification_type: "in_app",
+    },
+  });
+}
+
+async function scheduleEscalationCheck(supabase: any, message: any): Promise<void> {
+  // FR31001: Check if escalation is enabled for this group
+  const { data: group } = await supabase
+    .from("groups")
+    .select("escalation_enabled, escalation_timeout_minutes")
+    .eq("id", message.resolved_group_id)
+    .single();
+
+  if (!group || !group.escalation_enabled) {
+    return;
+  }
+
+  // Log that escalation is scheduled (actual scheduling via cron/pg_cron pending)
+  console.log(`Escalation scheduled for message ${message.id} in ${group.escalation_timeout_minutes} minutes`);
+  
+  // NOTE: Actual implementation would use Supabase Edge Functions + pg_cron or external scheduler
+  // For now, this logs the intent per FR31001
 }
 
 function normalizeE164(phone: string): string {

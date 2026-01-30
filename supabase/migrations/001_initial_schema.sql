@@ -70,6 +70,8 @@ CREATE TABLE groups (
   description TEXT,
   path TEXT[], -- Materialized path for hierarchy queries
   depth INTEGER NOT NULL DEFAULT 0,
+  escalation_enabled BOOLEAN NOT NULL DEFAULT false,
+  escalation_timeout_minutes INTEGER NOT NULL DEFAULT 30,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
@@ -271,6 +273,10 @@ CREATE TABLE messages (
   idempotency_key TEXT UNIQUE,
   external_id TEXT, -- FairGateway message ID
   sent_by_user_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
+  acknowledged_at TIMESTAMPTZ,
+  acknowledged_by_user_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
+  escalated_at TIMESTAMPTZ,
+  escalation_level INTEGER NOT NULL DEFAULT 0,
   received_at TIMESTAMPTZ,
   sent_at TIMESTAMPTZ,
   delivered_at TIMESTAMPTZ,
@@ -288,6 +294,8 @@ CREATE INDEX idx_messages_direction ON messages(tenant_id, direction, created_at
 CREATE INDEX idx_messages_status ON messages(status) WHERE deleted_at IS NULL;
 CREATE INDEX idx_messages_idempotency ON messages(idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_messages_external_id ON messages(external_id) WHERE external_id IS NOT NULL;
+CREATE INDEX idx_messages_unacknowledged ON messages(resolved_group_id, acknowledged_at, created_at) WHERE direction = 'inbound' AND acknowledged_at IS NULL AND deleted_at IS NULL;
+CREATE INDEX idx_messages_escalation ON messages(escalated_at, escalation_level) WHERE direction = 'inbound' AND deleted_at IS NULL;
 
 -- ============================================================================
 -- ROUTING RULES: Dynamic message routing logic
@@ -523,6 +531,39 @@ CREATE TABLE simulation_events (
 CREATE INDEX idx_simulation_events_scenario ON simulation_events(scenario_id, delay_seconds);
 
 -- ============================================================================
+-- ESCALATION EVENTS: Track escalation history
+-- ============================================================================
+CREATE TABLE escalation_events (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  escalation_level INTEGER NOT NULL,
+  escalated_to_user_ids UUID[],
+  escalated_to_group_id UUID REFERENCES groups(id) ON DELETE SET NULL,
+  reason TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_escalation_events_message ON escalation_events(message_id, created_at DESC);
+CREATE INDEX idx_escalation_events_group ON escalation_events(escalated_to_group_id, created_at DESC) WHERE escalated_to_group_id IS NOT NULL;
+
+-- ============================================================================
+-- NOTIFICATION PREFERENCES: User notification settings
+-- ============================================================================
+CREATE TABLE notification_preferences (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
+  notification_type TEXT NOT NULL CHECK (notification_type IN ('email', 'push', 'sms', 'in_app')),
+  is_enabled BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, group_id, notification_type)
+);
+
+CREATE INDEX idx_notification_prefs_user ON notification_preferences(user_id);
+CREATE INDEX idx_notification_prefs_group ON notification_preferences(group_id) WHERE group_id IS NOT NULL;
+
+-- ============================================================================
 -- TRIGGERS: Updated_at automation
 -- ============================================================================
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -556,3 +597,4 @@ CREATE TRIGGER update_bulk_campaigns_updated_at BEFORE UPDATE ON bulk_campaigns 
 CREATE TRIGGER update_bulk_recipients_updated_at BEFORE UPDATE ON bulk_recipients FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER update_import_jobs_updated_at BEFORE UPDATE ON import_jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER update_simulation_scenarios_updated_at BEFORE UPDATE ON simulation_scenarios FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER update_notification_preferences_updated_at BEFORE UPDATE ON notification_preferences FOR EACH ROW EXECUTE FUNCTION update_updated_at();

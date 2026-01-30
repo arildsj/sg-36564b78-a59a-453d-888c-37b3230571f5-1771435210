@@ -1,6 +1,6 @@
 # SeMSe + FairGateway: Runtime Logic Specification
 
-## PROMPT 2 Implementation: Deterministic Workflows
+## PROMPT 2 Implementation: Deterministic Workflows + FR Compliance
 
 ---
 
@@ -16,15 +16,16 @@
 3. **Phone Normalization**: Convert to E.164 format
 4. **Thread Resolution**: Check for existing thread (reply scenario)
 5. **Sender Classification**:
-   - **Known**: Whitelisted number → resolve candidate groups
-   - **Unknown**: Route to fallback inbox
-6. **Routing Rule Evaluation**: Apply rules by priority (descending)
+   - **Known**: Whitelisted number → resolve candidate groups (FR3401-FR3407)
+   - **Unknown**: Route to fallback inbox (FR3703-FR3705)
+6. **Routing Rule Evaluation**: Apply rules by priority (descending) (FR3702)
 7. **Thread Creation**: Deterministic thread binding
-8. **Message Persistence**: Create message record
-9. **Auto-Reply Evaluation**: Check conditions and cooldown
-10. **Coverage Check**: Escalate if no on-duty users
+8. **Message Persistence**: Create message record (unacknowledged by default - FR31002)
+9. **Auto-Reply Evaluation**: Check conditions and cooldown (FR3901-FR3905)
+10. **On-Duty Notification**: Notify only on-duty users (FR3301, FR31101)
+11. **Escalation Scheduling**: Schedule escalation check if enabled (FR31001)
 
-### Routing Rule Types
+### Routing Rule Types (FR3702)
 
 | Rule Type | Matching Logic | Example |
 |-----------|----------------|---------|
@@ -36,7 +37,7 @@
 
 **First Match Wins**: Evaluation stops at first matching rule
 
-### Thread Binding
+### Thread Binding (FR3701)
 
 **Rule**: Replies MUST return to originating operational group
 
@@ -44,70 +45,133 @@
 
 **Guarantee**: Same contact + group = same thread
 
+### Fallback Inbox (FR3703-FR3706)
+
+**Configuration**: Each FairGateway instance has exactly one fallback inbox (FR3704)
+
+**Behavior**:
+- Unknown senders → fallback inbox
+- Messages remain until manual classification (FR3705)
+- All classification logged (FR3706)
+
 ---
 
-## 2. OPENING HOURS & AUTO-REPLIES
+## 2. MESSAGE ACKNOWLEDGEMENT & ESCALATION
 
-### Opening Hours Evaluation
+### Acknowledgement Tracking (FR31002)
 
-**Timezone-Aware**: All times evaluated in group's configured timezone
+**Endpoint**: `supabase/functions/acknowledge-message`
+
+**Definition**: A message is acknowledged when an authorized user:
+- Opens the message in the inbox
+- Assigns the message to themselves or another user
+- Replies to the message
+
+**Implementation**:
+- `acknowledged_at` timestamp set on first acknowledgement action
+- `acknowledged_by_user_id` records who acknowledged
+- Only inbound messages require acknowledgement
+- Acknowledgement is idempotent (cannot be unacknowledged)
+
+**Audit**: All acknowledgements logged (FR31003)
+
+### Escalation Logic (FR31001-FR31003)
+
+**Endpoint**: `supabase/functions/escalate-messages` (scheduled via cron)
+
+**Configuration** (per operational group):
+- `escalation_enabled`: Boolean flag
+- `escalation_timeout_minutes`: Time before escalation (default: 30 minutes)
+
+**Escalation Levels**:
+1. **Level 1** (First escalation): Notify ALL group members (not just on-duty)
+2. **Level 2** (Second escalation): Notify tenant administrators
+3. **Level 3+**: Capped (no further escalation)
+
+**Trigger**: Unacknowledged inbound message exceeds timeout threshold
+
+**Process**:
+1. Find all groups with `escalation_enabled = true`
+2. Query unacknowledged messages older than `escalation_timeout_minutes`
+3. Increment `escalation_level` on message
+4. Create `escalation_events` record
+5. Notify escalation targets
+6. Log escalation event (FR31003)
+
+**Prevention**: Acknowledging a message stops all future escalation
+
+---
+
+## 3. OPENING HOURS & AUTO-REPLIES
+
+### Opening Hours Evaluation (FR3801-FR3803)
+
+**Timezone-Aware**: All times evaluated in group's configured timezone (FR3803)
 
 **Priority**:
-1. Date exceptions (highest)
-2. Weekly schedule
+1. Date exceptions (highest) (FR3802)
+2. Weekly schedule (FR3802)
 3. Default to closed if no schedule
 
 **Function**: `checkOpeningHours(groupId)` → boolean
 
-### Auto-Reply Conditions
+### Auto-Reply Conditions (FR3901-FR3905)
 
 **Trigger Types**:
-- `outside_hours`: Send only when group is closed
+- `outside_hours`: Send only when group is closed (FR3902)
 - `keyword`: Match trigger_keywords (case-insensitive, partial match)
-- `first_message`: Send on thread creation (not implemented yet)
+- `first_message`: Send on thread creation
 
-**Cooldown**: Per-thread cooldown prevents spam (configurable minutes)
+**Cooldown**: Per-thread cooldown prevents spam (FR3904)
 
 **Execution**:
-- Only sent if NO on-duty users available
-- Logged with `is_auto_reply = true`
-- Linked to triggering message via `triggered_by_message_id`
+- Sent without requiring on-duty users (FR3903)
+- Logged with triggering message link (FR3905)
+- Multiple templates supported per group (FR3902)
 
 **Priority**: First matching auto-reply wins
 
 ---
 
-## 3. ON-DUTY COVERAGE & ESCALATION
+## 4. ON-DUTY COVERAGE & NOTIFICATIONS
 
-### On-Duty State
+### On-Duty State (FR3301-FR3309)
 
-**Scope**: Per user, per operational group
+**Scope**: Per user, per operational group (FR3302)
 
 **Rules**:
-- Only on-duty users receive message notifications
-- Minimum on-duty count enforced (prevent all-off scenario)
-- Last on-duty user cannot toggle off
+- Only on-duty users receive message notifications (FR3301)
+- User may be on-duty in multiple groups simultaneously (FR3304)
+- Only group members can be set on-duty (FR3305)
+- Users can manage their own on-duty status (FR3306)
+- Group admins can manage others' status (FR3307)
+- Minimum on-duty count enforced (FR3308)
+- Last on-duty user cannot toggle off (prevents zero coverage)
 
-### Escalation Logic
+**Access vs. Notification** (FR3303):
+- On-duty status controls notification/responsibility ONLY
+- Does NOT grant additional access rights
+- Access is controlled by group membership + RLS
 
-**Trigger**: Message arrives with NO on-duty users in resolved group
+### No Coverage Fallback (FR3309)
 
-**Action**:
-1. Identify tenant admins
-2. Log audit event: `escalation_no_coverage`
-3. Notify admins (implementation pending)
+**Trigger**: Inbound message arrives with NO on-duty users
 
-**Determinism**: Always escalate, never drop messages
+**Actions**:
+1. Log "no_on_duty_coverage" audit event
+2. Message still routed to group inbox
+3. Auto-reply may be sent (if configured)
+4. Escalation scheduled (if enabled)
 
 ---
 
-## 4. CSV IMPORTS
+## 5. CSV IMPORTS (FR3501-FR3503)
 
 ### Import Types
 
-1. **Users**: Create auth users + profiles
-2. **Whitelisted Numbers**: Bulk whitelist creation
-3. **Whitelist-Group Links**: Associate numbers with groups
+1. **Users** (FR3501): Create auth users + profiles
+2. **Whitelisted Numbers** (FR3502): Bulk whitelist creation
+3. **Whitelist-Group Links** (FR3503): Associate numbers with groups
 
 ### Validation Rules
 
@@ -139,7 +203,7 @@
 
 ---
 
-## 5. BULK SMS CAMPAIGNS
+## 6. BULK SMS CAMPAIGNS
 
 ### Campaign Execution Flow
 
@@ -176,7 +240,32 @@
 
 ---
 
-## 6. SIMULATION / DEMO MODE
+## 7. AUDIT LOG & COMPLIANCE (FR3601-FR3606)
+
+### Logged Events
+
+| Event Type | FR-ID | Trigger |
+|------------|-------|---------|
+| Group created/updated/deleted | FR3601 | Admin action |
+| Group membership changed | FR3602 | Add/remove user |
+| On-duty status changed | FR3603 | Toggle on/off |
+| Opening hours updated | FR3604 | Schedule change |
+| Auto-reply triggered/suppressed | FR3605 | Message evaluation |
+| Message routed/classified/escalated | FR3606 | Routing/escalation |
+| Message acknowledged | FR31002 | User action |
+| Escalation event | FR31003 | Timeout reached |
+
+### Audit Log Properties
+
+**Immutable**: NO UPDATE or DELETE allowed
+
+**Security**: SECURITY DEFINER function for writes
+
+**Traceability**: All actions linked to `actor_user_id` (FR31202)
+
+---
+
+## 8. SIMULATION / DEMO MODE
 
 ### Scenario Structure
 
@@ -210,52 +299,130 @@
 
 **Implementation**: Service role key used internally, but RLS policies enforced
 
-### Seed Scenarios
+---
 
-**Required Scenarios**:
-1. Known sender → correct operational group
-2. Unknown sender → fallback inbox
-3. Keyword routing (e.g., "HELP" → support group)
-4. Auto-reply outside hours
-5. Escalation (no on-duty coverage)
+## 9. WEB APPLICATION REQUIREMENTS (FR31101-FR31106)
+
+### Message Notifications (FR31101)
+
+**Trigger**: Inbound message arrives for group where user is on-duty
+
+**Delivery Methods**:
+- In-app notification (real-time)
+- Email (configurable)
+- Push notification (if enabled)
+- SMS (escalation only)
+
+**RLS**: Notifications only for groups user has access to (FR31203)
+
+### Inbox Interface (FR31102-FR31103)
+
+**Features**:
+- View messages in authorized groups (FR31102)
+- Reply to messages (FR31102)
+- Acknowledge messages (FR31002)
+- Display group list (FR31103)
+- Filter by group, status, date
+
+### Group Status Dashboard (FR31104)
+
+**Display per group**:
+- Current on-duty users (count + names)
+- Open/closed status (based on opening hours)
+- Unacknowledged message count
+- Last message received timestamp
+
+### Admin Controls (FR31105)
+
+**Group Management**:
+- Toggle on-duty status (self + others if admin)
+- Configure opening hours
+- Manage auto-reply templates
+- View/edit routing rules
+
+### Fallback Inbox View (FR31106)
+
+**Dedicated Interface**:
+- Show messages in fallback inbox
+- Manual classification UI (move to operational group)
+- Classification logged (FR3706)
 
 ---
 
-## 7. EDGE FUNCTIONS SUMMARY
+## 10. SECURITY & ACCESS CONTROL (FR31201-FR31203)
 
-| Function | Purpose | Idempotent |
-|----------|---------|------------|
-| `inbound-message` | Process incoming SMS/MMS | ✅ Yes |
-| `outbound-message` | Send via FairGateway | ✅ Yes |
-| `delivery-webhook` | Track delivery status | ✅ Yes |
-| `bulk-campaign` | Execute bulk SMS | ❌ No |
-| `csv-import` | Validate & import data | ✅ Partial |
-| `simulate-scenario` | Demo mode execution | ✅ Yes |
+### Least-Privilege Enforcement (FR31201)
+
+**Tenant Admin**:
+- Full tenant-wide access
+- Manage all groups, users, gateways
+- View all messages in tenant
+
+**Group Admin**:
+- Manage assigned groups + subtree
+- Manage group memberships
+- Configure opening hours, auto-replies
+
+**Member**:
+- View/reply to messages in assigned groups
+- Manage own on-duty status
+- View group status
+
+### Audit Traceability (FR31202)
+
+**Requirements**:
+- All admin actions logged
+- All operational actions logged
+- User identity captured in audit log
+- System actions logged with `actor_user_id = null`
+
+### Notification Security (FR31203)
+
+**Implementation**:
+- Notification shows "New message in [Group Name]"
+- Content NOT exposed in notification
+- User must open app to view content
+- RLS enforced on message content access
 
 ---
 
-## 8. FUNCTIONAL REQUIREMENTS MAPPING
+## 11. EDGE FUNCTIONS SUMMARY
 
-### FR Coverage (PROMPT 2)
-
-| FR-ID | Requirement | Implementation |
-|-------|-------------|----------------|
-| FR-001 | Tenant isolation | RLS + tenant_id checks |
-| FR-002 | Hierarchical groups | Materialized path queries |
-| FR-003 | Message routing | `inbound-message` function |
-| FR-004 | Thread continuity | Thread key determinism |
-| FR-005 | Opening hours | Timezone-aware evaluation |
-| FR-006 | Auto-replies | Condition + cooldown logic |
-| FR-007 | On-duty state | Per-user-group state |
-| FR-008 | Escalation | Tenant admin notification |
-| FR-009 | Bulk campaigns | Round-robin distribution |
-| FR-010 | CSV imports | All-or-nothing validation |
-| FR-011 | Simulation mode | RLS-compliant scenarios |
-| FR-012 | Audit logging | Automatic triggers |
+| Function | Purpose | FR Coverage | Idempotent |
+|----------|---------|-------------|------------|
+| `inbound-message` | Process incoming SMS/MMS | FR3701-FR3706 | ✅ Yes |
+| `outbound-message` | Send via FairGateway | - | ✅ Yes |
+| `delivery-webhook` | Track delivery status | - | ✅ Yes |
+| `bulk-campaign` | Execute bulk SMS | - | ❌ No |
+| `csv-import` | Validate & import data | FR3501-FR3503 | ✅ Partial |
+| `simulate-scenario` | Demo mode execution | - | ✅ Yes |
+| `escalate-messages` | Escalate unacknowledged | FR31001-FR31003 | ✅ Yes |
+| `acknowledge-message` | Mark as acknowledged | FR31002 | ✅ Yes |
 
 ---
 
-## 9. ERROR HANDLING & RESILIENCE
+## 12. FUNCTIONAL REQUIREMENTS MAPPING
+
+### Complete FR Coverage
+
+| FR-ID Range | Category | Implementation Status |
+|-------------|----------|----------------------|
+| FR3101-FR3109 | Group structure | ✅ Schema + RLS |
+| FR3201-FR3208 | User management | ✅ Schema + RLS |
+| FR3301-FR3309 | On-duty state | ✅ Schema + Logic + RLS |
+| FR3401-FR3407 | Whitelisted numbers | ✅ Schema + RLS |
+| FR3501-FR3503 | CSV imports | ✅ Edge Function |
+| FR3601-FR3606 | Audit logging | ✅ Schema + Triggers |
+| FR3701-FR3706 | Message routing | ✅ Edge Function |
+| FR3801-FR3803 | Opening hours | ✅ Schema + Logic |
+| FR3901-FR3905 | Auto-replies | ✅ Schema + Logic |
+| FR31001-FR31003 | Escalation | ✅ Schema + Edge Functions |
+| FR31101-FR31106 | Web application | ⏳ UI Pending |
+| FR31201-FR31203 | Security | ✅ RLS + Audit |
+
+---
+
+## 13. ERROR HANDLING & RESILIENCE
 
 ### Retry Strategy
 
@@ -277,17 +444,19 @@
 
 ---
 
-## 10. PERFORMANCE CONSIDERATIONS
+## 14. PERFORMANCE CONSIDERATIONS
 
 ### Indexing
 
 - Composite indexes on: `tenant_id + entity_id`
 - GIN indexes on: `path[]` (group hierarchy), `trigger_keywords` (auto-replies)
+- Specialized indexes on: `acknowledged_at`, `escalated_at` for escalation queries
 
 ### Rate Limiting
 
 - Bulk campaigns: 100ms delay between sends
 - Auto-replies: Per-thread cooldown
+- Escalation checks: Run via cron (every 5 minutes)
 
 ### Caching
 
@@ -297,16 +466,18 @@
 
 ---
 
-## Next Steps (Awaiting PROMPT 3 - UI Implementation)
+## Next Steps (UI Implementation)
 
 1. Frontend components (inbox, admin panels)
-2. Real-time subscriptions (new messages)
-3. FairGateway API integration
-4. Notification system (email/push)
-5. Reporting & analytics dashboards
+2. Real-time subscriptions (new messages, on-duty changes)
+3. Message acknowledgement UI
+4. Fallback inbox classification interface
+5. Group status dashboard
+6. Notification system (email/push)
+7. Reporting & analytics dashboards
 
 ---
 
-**Document Status**: ✅ Complete for PROMPT 2
-**Schema Compatibility**: ✅ Aligned with PROMPT 1
-**Production Ready**: ⚠️ Edge Functions tested, UI pending
+**Document Status**: ✅ Complete for PROMPT 2 + FR Compliance
+**Schema Compatibility**: ✅ Aligned with PROMPT 1 + FR Catalog
+**Production Ready**: ⚠️ Backend complete, UI pending
