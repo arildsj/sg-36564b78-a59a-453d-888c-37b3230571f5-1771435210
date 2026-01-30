@@ -137,9 +137,9 @@ export default function AdminPage() {
 
       // Reload data
       await loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create group:", error);
-      alert("Feil ved opprettelse av gruppe");
+      alert(`Feil ved opprettelse av gruppe: ${error.message || "Ukjent feil"}`);
     } finally {
       setCreating(false);
     }
