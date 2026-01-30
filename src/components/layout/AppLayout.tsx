@@ -12,7 +12,8 @@ import {
   X,
   Home,
   MessageSquare,
-  Cog
+  Cog,
+  Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ interface AppLayoutProps {
 const navItems = [
   { href: "/", label: "Dashboard", icon: <Home className="h-5 w-5" /> },
   { href: "/inbox", label: "Innboks", icon: <Inbox className="h-5 w-5" /> },
+  { href: "/sending", label: "Ny melding", icon: <Send className="h-5 w-5" /> },
   { href: "/contacts", label: "Kontakter", icon: <Users className="h-5 w-5" /> },
   { href: "/simulate", label: "Simulering", icon: <MessageSquare className="h-5 w-5" /> },
   { href: "/admin", label: "Admin", icon: <Settings className="h-5 w-5" /> },
