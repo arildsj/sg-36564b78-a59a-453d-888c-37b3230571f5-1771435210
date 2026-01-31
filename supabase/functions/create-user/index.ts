@@ -12,6 +12,14 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body first
+    const { email, password, phone } = await req.json();
+
+    if (!email || !password) {
+      throw new Error("Email and password are required");
+    }
+
+    // Create Supabase client with the user's JWT to verify they are authenticated
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -22,7 +30,7 @@ serve(async (req) => {
       }
     );
 
-    // Get current user to verify they are tenant admin
+    // Verify the caller is authenticated
     const {
       data: { user },
     } = await supabaseClient.auth.getUser();
@@ -31,21 +39,26 @@ serve(async (req) => {
       throw new Error("Not authenticated");
     }
 
-    // Verify role and tenant (this requires database access)
-    // For now we trust the client-side check + RLS, but strictly speaking
-    // we should verify user.role === 'tenant_admin' here too.
-    
+    // Verify the caller is a tenant_admin by checking users table
+    const { data: callerProfile, error: profileError } = await supabaseClient
+      .from("users")
+      .select("role, tenant_id")
+      .eq("auth_user_id", user.id)
+      .single();
+
+    if (profileError || !callerProfile) {
+      throw new Error("Could not verify user profile");
+    }
+
+    if (callerProfile.role !== "tenant_admin") {
+      throw new Error("Only tenant administrators can create users");
+    }
+
     // Create Supabase Admin client to manage auth users
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
-
-    const { email, password, phone } = await req.json();
-
-    if (!email || !password) {
-      throw new Error("Email and password are required");
-    }
 
     // Create auth user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -54,17 +67,20 @@ serve(async (req) => {
       email_confirm: true, // Auto-confirm for manually created users
       phone,
       user_metadata: {
-        // We can add metadata here if needed
+        created_by_tenant_admin: user.id,
+        tenant_id: callerProfile.tenant_id,
       }
     });
 
     if (authError) throw authError;
 
+    // Return the created user data
     return new Response(JSON.stringify(authData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
+    console.error("Error in create-user:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
