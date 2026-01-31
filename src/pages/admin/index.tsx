@@ -364,6 +364,18 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!confirm("Er du sikker på at du vil slette denne gruppen? Dette kan ikke angres.")) return;
+    
+    try {
+      await groupService.deleteGroup(groupId);
+      await loadData();
+    } catch (error: any) {
+      console.error("Failed to delete group:", error);
+      alert(`Feil ved sletting: ${error.message}`);
+    }
+  };
+
   const handleToggleRoutingRule = async (id: string, isActive: boolean) => {
     try {
       await routingRuleService.toggleRoutingRule(id, isActive);
