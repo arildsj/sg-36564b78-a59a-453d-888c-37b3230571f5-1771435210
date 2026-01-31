@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { userService } from "@/services/userService";
 import {
   Inbox,
   Users,
@@ -35,6 +36,18 @@ const navItems = [
 export function AppLayout({ children }: AppLayoutProps) {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [demoUser, setDemoUser] = useState<any>(null);
+
+  useEffect(() => {
+    // Check if we are in demo mode
+    const impersonated = userService.getImpersonatedUser();
+    setDemoUser(impersonated);
+  }, []);
+
+  const handleExitDemo = () => {
+    userService.setImpersonatedUser(null);
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
@@ -46,8 +59,23 @@ export function AppLayout({ children }: AppLayoutProps) {
         Hopp til hovedinnhold
       </a>
 
+      {/* Demo Mode Banner */}
+      {demoUser && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-black px-4 py-1 text-center text-sm font-medium flex justify-center items-center gap-4">
+          <span>
+            🎭 DEMO MODE: Du ser nå systemet som <strong>{demoUser.name}</strong>
+          </span>
+          <button 
+            onClick={handleExitDemo}
+            className="bg-black/20 hover:bg-black/30 px-3 py-0.5 rounded text-xs transition-colors"
+          >
+            Avslutt demo
+          </button>
+        </div>
+      )}
+
       {/* Mobile Header */}
-      <header className="md:hidden flex items-center justify-between p-4 border-b bg-card">
+      <header className={cn("md:hidden flex items-center justify-between p-4 border-b bg-card", demoUser && "mt-8")}>
         <div className="font-bold text-xl text-primary">SeMSe</div>
         <Button
           variant="ghost"
@@ -63,10 +91,11 @@ export function AppLayout({ children }: AppLayoutProps) {
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-40 w-64 transform bg-card border-r transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:h-screen flex flex-col",
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
+          demoUser && "mt-8 md:mt-0 pt-0" /* Adjust for banner on mobile, simpler on desktop */
         )}
       >
-        <div className="p-6 border-b">
+        <div className={cn("p-6 border-b", demoUser && "md:pt-10")}>
           <h1 className="text-2xl font-bold text-primary tracking-tight">SeMSe</h1>
           <p className="text-sm text-muted-foreground mt-1">FairGateway</p>
         </div>
