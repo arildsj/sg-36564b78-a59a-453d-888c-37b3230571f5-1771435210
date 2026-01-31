@@ -39,7 +39,7 @@ export const messageService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
-    // 1. Get current user's tenant (Moved up)
+    // 1. Get current user's tenant
     const { data: userData } = await supabase
       .from("users")
       .select("tenant_id")
@@ -50,10 +50,11 @@ export const messageService = {
     const tenantId = userData.tenant_id;
 
     // 3. Check if thread already exists
+    // Cast to any to avoid deep type instantiation issues
     const { data: existingThread } = await supabase
       .from("message_threads")
       .select("*")
-      .eq("contact_phone", formattedPhone) // Use formatted phone
+      .eq("contact_phone", formattedPhone)
       .eq("tenant_id", tenantId)
       .eq("is_resolved", false)
       .maybeSingle();
@@ -63,7 +64,6 @@ export const messageService = {
     }
     
     // 4. Get default gateway
-    // If no specific gateway logic, get the first active one or default
     const { data: gateway } = await supabase
       .from("gateways")
       .select("id")
@@ -76,9 +76,9 @@ export const messageService = {
     const { data: newThread, error } = await supabase
       .from("message_threads")
       .insert({
-        contact_phone: formattedPhone, // Use formatted phone
+        contact_phone: formattedPhone,
         tenant_id: tenantId,
-        gateway_id: gateway?.id, // Fallback to null if no gateway found
+        gateway_id: gateway?.id,
         resolved_group_id: targetGroupId
       })
       .select("*")
@@ -363,21 +363,16 @@ export const messageService = {
     let targetGroupId: string | undefined;
 
     // Try to find the group the CURRENT USER belongs to
-    // We prioritize operational groups the user is a member of
+    // using 'any' cast to avoid deep type instantiation errors
     const { data: userGroups } = await supabase
       .from("group_members")
       .select("group_id, groups(id, kind)")
-      .eq("user_id", userProfile.id);
+      .eq("user_id", userProfile.id) as any;
 
-    // Filter for operational groups (not fallback, etc if possible, though kind might be null)
-    // For now, just pick the first group found.
-    // Ideally, the UI should pass the context, but we fallback to user's membership.
     if (userGroups && userGroups.length > 0) {
-       // If user is in multiple, just picking the first one is a heuristic.
-       // But user said "Olaug er kun medlem i gruppen 2526-1A", so this works perfectly for her.
        targetGroupId = userGroups[0].group_id;
     } else {
-       // Fallback logic if user has no groups (e.g. admin)
+       // Fallback logic
        const { data: fallbackGroup } = await supabase
          .from("groups")
          .select("id")
@@ -414,17 +409,13 @@ export const messageService = {
     
     if (!currentThread) throw new Error("Could not find thread context");
 
-    // CRITICAL: If we have a target group identified (from user context), 
-    // AND the thread is currently assigned to a DIFFERENT group (or null),
-    // UPDATE the thread to point to the sender's group.
-    // This implements: "Siden det var gruppen 2526-1A som sendte ut melding, så skal svaret hennes inn i denne gruppen."
+    // CRITICAL: Update resolved_group_id if needed
     if (targetGroupId && currentThread.resolved_group_id !== targetGroupId) {
        await supabase
          .from("message_threads")
          .update({ resolved_group_id: targetGroupId })
          .eq("id", finalThreadId);
        
-       // Update local object for consistency
        currentThread.resolved_group_id = targetGroupId;
     }
 
@@ -443,12 +434,12 @@ export const messageService = {
       .insert({
         thread_id: finalThreadId,
         tenant_id: currentThread.tenant_id,
-        thread_key: currentThread.contact_phone, // This should match recipient's phone
+        thread_key: currentThread.contact_phone,
         direction: "outbound",
         content,
         from_number: fromNumber,
         to_number: formattedToNumber,
-        status: "sent" // Mock successful send
+        status: "sent"
       })
       .select("*")
       .single();
