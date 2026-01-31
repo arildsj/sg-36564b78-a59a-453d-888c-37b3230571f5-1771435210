@@ -126,63 +126,71 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="border-2 hover:border-primary transition-colors">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Ubehandlede meldinger</CardTitle>
-                <Inbox className="h-5 w-5 text-primary" aria-hidden="true" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">
-                  {loading ? "..." : stats.unacknowledged}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Venter på bekreftelse
-                </p>
-              </CardContent>
-            </Card>
+            <Link href="/inbox" className="block">
+              <Card className="border-2 hover:border-primary transition-colors cursor-pointer h-full">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Ubehandlede meldinger</CardTitle>
+                  <Inbox className="h-5 w-5 text-primary" aria-hidden="true" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-foreground">
+                    {loading ? "..." : stats.unacknowledged}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Venter på bekreftelse
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
 
-            <Card className="border-2 hover:border-primary transition-colors">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Operative grupper</CardTitle>
-                <Users className="h-5 w-5 text-primary" aria-hidden="true" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">
-                  {loading ? "..." : stats.operationalGroups}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Aktive innbokser
-                </p>
-              </CardContent>
-            </Card>
+            <Link href="/admin" className="block">
+              <Card className="border-2 hover:border-primary transition-colors cursor-pointer h-full">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Operative grupper</CardTitle>
+                  <Users className="h-5 w-5 text-primary" aria-hidden="true" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-foreground">
+                    {loading ? "..." : stats.operationalGroups}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Aktive innbokser
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
 
-            <Card className="border-2 hover:border-primary transition-colors">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">On-duty brukere</CardTitle>
-                <Clock className="h-5 w-5 text-primary" aria-hidden="true" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">
-                  {loading ? "..." : stats.onDutyUsers}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Aktive operatører
-                </p>
-              </CardContent>
-            </Card>
+            <Link href="/admin" className="block">
+              <Card className="border-2 hover:border-primary transition-colors cursor-pointer h-full">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">On-duty brukere</CardTitle>
+                  <Clock className="h-5 w-5 text-primary" aria-hidden="true" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-foreground">
+                    {loading ? "..." : stats.onDutyUsers}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Aktive operatører
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
 
-            <Card className="border-2 hover:border-primary transition-colors">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Gjennomsnittlig svartid</CardTitle>
-                <AlertCircle className="h-5 w-5 text-primary" aria-hidden="true" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">{stats.avgResponseTime}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Siste 24 timer
-                </p>
-              </CardContent>
-            </Card>
+            <Link href="/admin" className="block">
+              <Card className="border-2 hover:border-primary transition-colors cursor-pointer h-full">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Gjennomsnittlig svartid</CardTitle>
+                  <AlertCircle className="h-5 w-5 text-primary" aria-hidden="true" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-foreground">{stats.avgResponseTime}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Siste 24 timer
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -205,20 +213,22 @@ export default function HomePage() {
                   ) : (
                     <div className="space-y-3">
                       {recentMessages.map((msg) => (
-                        <div key={msg.id} className="flex items-start justify-between border-b pb-3">
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">{msg.from_number}</p>
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {msg.content}
-                            </p>
+                        <Link href="/inbox" key={msg.id} className="block group">
+                          <div className="flex items-start justify-between border-b pb-3 group-hover:bg-muted/50 p-2 rounded transition-colors -mx-2">
+                            <div className="flex-1">
+                              <p className="font-medium text-foreground">{msg.from_number}</p>
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                {msg.content}
+                              </p>
+                            </div>
+                            <Badge 
+                              variant={msg.is_acknowledged ? "outline" : "destructive"} 
+                              className="ml-2"
+                            >
+                              {formatTimeAgo(msg.created_at)}
+                            </Badge>
                           </div>
-                          <Badge 
-                            variant={msg.is_acknowledged ? "outline" : "destructive"} 
-                            className="ml-2"
-                          >
-                            {formatTimeAgo(msg.created_at)}
-                          </Badge>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   )}
@@ -255,17 +265,19 @@ export default function HomePage() {
                   ) : (
                     <div className="space-y-3">
                       {groupStatuses.slice(0, 5).map((group) => (
-                        <div key={group.id} className="flex items-center justify-between border-b pb-3">
-                          <div>
-                            <p className="font-medium text-foreground">{group.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {group.on_duty_count} on-duty
-                            </p>
+                        <Link href="/admin" key={group.id} className="block group">
+                          <div className="flex items-center justify-between border-b pb-3 group-hover:bg-muted/50 p-2 rounded transition-colors -mx-2">
+                            <div>
+                              <p className="font-medium text-foreground">{group.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {group.on_duty_count} on-duty
+                              </p>
+                            </div>
+                            <Badge variant={group.on_duty_count > 0 ? "default" : "outline"}>
+                              {group.on_duty_count > 0 ? "Åpen" : "Stengt"}
+                            </Badge>
                           </div>
-                          <Badge variant={group.on_duty_count > 0 ? "default" : "outline"}>
-                            {group.on_duty_count > 0 ? "Åpen" : "Stengt"}
-                          </Badge>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   )}
