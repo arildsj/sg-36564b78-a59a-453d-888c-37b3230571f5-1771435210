@@ -21,17 +21,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { GroupHierarchy } from "@/components/GroupHierarchy";
 import { groupService } from "@/services/groupService";
 import { userService } from "@/services/userService";
 import { gatewayService } from "@/services/gatewayService";
 import { routingRuleService } from "@/services/routingRuleService";
-import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2 } from "lucide-react";
+import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog } from "lucide-react";
 
 type GroupNode = {
   id: string;
@@ -91,6 +98,8 @@ export default function AdminPage() {
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [routingRules, setRoutingRules] = useState<RoutingRule[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [realUser, setRealUser] = useState<User | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -141,9 +150,10 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [groupsData, usersData, currentUserData, gatewaysData, routingRulesData] = await Promise.all([
+      const [groupsData, usersData, currentUserData, realUserData, gatewaysData, routingRulesData] = await Promise.all([
         groupService.getGroupsHierarchy(),
         userService.getAllUsers(),
+        userService.getCurrentUserWithDemo(),
         userService.getCurrentUser(),
         gatewayService.getAllGateways(),
         routingRuleService.getRoutingRules(),
@@ -165,6 +175,8 @@ export default function AdminPage() {
       
       setUsers(usersData as User[]);
       setCurrentUser(currentUserData as unknown as User);
+      setRealUser(realUserData as unknown as User);
+      setIsDemoMode(currentUserData?.id !== realUserData?.id);
       setGateways(gatewaysData as Gateway[]);
       setRoutingRules(routingRulesData as RoutingRule[]);
     } catch (error) {
@@ -172,6 +184,25 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSwitchUser = (userId: string) => {
+    const selectedUser = users.find(u => u.id === userId);
+    if (selectedUser) {
+      userService.setImpersonatedUser(selectedUser);
+      setCurrentUser(selectedUser);
+      setIsDemoMode(true);
+      // Reload page to apply new user context
+      window.location.reload();
+    }
+  };
+
+  const handleExitDemoMode = () => {
+    userService.setImpersonatedUser(null);
+    setIsDemoMode(false);
+    setCurrentUser(realUser);
+    // Reload page to apply real user context
+    window.location.reload();
   };
 
   const handleCreateGroup = async () => {
@@ -381,6 +412,22 @@ export default function AdminPage() {
     }));
   };
 
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case "tenant_admin": return "default";
+      case "group_admin": return "secondary";
+      default: return "outline";
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "tenant_admin": return "Tenant-admin";
+      case "group_admin": return "Gruppe-admin";
+      default: return "Medlem";
+    }
+  };
+
   return (
     <>
       <Head>
@@ -390,6 +437,26 @@ export default function AdminPage() {
 
       <AppLayout>
         <div className="space-y-6">
+          {/* Demo Mode Warning */}
+          {isDemoMode && (
+            <Alert variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-900 dark:text-amber-100">Demo-modus aktivert</AlertTitle>
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                Du viser systemet som <strong>{currentUser?.name}</strong> ({getRoleLabel(currentUser?.role || "")}).
+                Dette er kun for presentasjons- og demo-formål.
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="ml-4 border-amber-600 text-amber-900 hover:bg-amber-100 dark:text-amber-100 dark:hover:bg-amber-900/30"
+                  onClick={handleExitDemoMode}
+                >
+                  Gå tilbake til {realUser?.name}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-bold tracking-tight text-foreground">Administrasjon</h2>
@@ -397,10 +464,46 @@ export default function AdminPage() {
                 Administrer brukere, grupper, gateways og systeminnstillinger.
               </p>
             </div>
-            <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4" />
-              Opprett ny gruppe
-            </Button>
+            <div className="flex items-center gap-4">
+              {/* User Switcher for Demo */}
+              <Card className="p-3">
+                <div className="flex items-center gap-3">
+                  <UserCog className="h-5 w-5 text-muted-foreground" />
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Aktiv bruker (Demo)</Label>
+                    <Select value={currentUser?.id} onValueChange={handleSwitchUser}>
+                      <SelectTrigger className="w-[280px] h-9">
+                        <SelectValue>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{currentUser?.name}</span>
+                            <Badge variant={getRoleBadgeVariant(currentUser?.role || "")} className="text-xs">
+                              {getRoleLabel(currentUser?.role || "")}
+                            </Badge>
+                          </div>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{user.name}</span>
+                              <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
+                                {getRoleLabel(user.role)}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </Card>
+
+              <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
+                <Plus className="h-4 w-4" />
+                Opprett ny gruppe
+              </Button>
+            </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -557,20 +660,8 @@ export default function AdminPage() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge
-                                  variant={
-                                    user.role === "tenant_admin"
-                                      ? "default"
-                                      : user.role === "group_admin"
-                                      ? "secondary"
-                                      : "outline"
-                                  }
-                                >
-                                  {user.role === "tenant_admin"
-                                    ? "Tenant-admin"
-                                    : user.role === "group_admin"
-                                    ? "Gruppe-admin"
-                                    : "Medlem"}
+                                <Badge variant={getRoleBadgeVariant(user.role)}>
+                                  {getRoleLabel(user.role)}
                                 </Badge>
                               </TableCell>
                               <TableCell>

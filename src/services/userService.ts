@@ -43,6 +43,43 @@ export const userService = {
     return data;
   },
 
+  /**
+   * DEMO MODE: Get impersonated user from localStorage
+   * Used for presentations and demos to show different user perspectives
+   */
+  getImpersonatedUser(): User | null {
+    if (typeof window === "undefined") return null;
+    const stored = localStorage.getItem("semse_demo_user");
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * DEMO MODE: Set user to impersonate (for demos/presentations)
+   */
+  setImpersonatedUser(user: User | null): void {
+    if (typeof window === "undefined") return;
+    if (user) {
+      localStorage.setItem("semse_demo_user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("semse_demo_user");
+    }
+  },
+
+  /**
+   * DEMO MODE: Get current user with impersonation support
+   * Returns impersonated user if set, otherwise real current user
+   */
+  async getCurrentUserWithDemo(): Promise<User | null> {
+    const impersonated = this.getImpersonatedUser();
+    if (impersonated) return impersonated;
+    return this.getCurrentUser();
+  },
+
   async getOnDutyStatus(groupId: string, userId: string): Promise<OnDutyStatus | null> {
     const { data, error } = await supabase
       .from("on_duty_status")
