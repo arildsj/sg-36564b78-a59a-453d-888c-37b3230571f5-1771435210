@@ -549,7 +549,7 @@ export default function AdminPage() {
                 <CardContent>
                   {loading ? (
                     <div className="text-center py-8 text-muted-foreground">Laster grupper...</div>
-                  ) : groups.length === 0 ? (
+                  ) : allGroups.length === 0 ? (
                     <div className="text-center py-8">
                       <FolderTree className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                       <p className="text-muted-foreground mb-4">Ingen grupper opprettet ennå</p>
@@ -571,42 +571,52 @@ export default function AdminPage() {
                           <TableRow>
                             <TableHead>Navn</TableHead>
                             <TableHead>Type</TableHead>
+                            <TableHead>Forelder</TableHead>
                             <TableHead>Medlemmer</TableHead>
                             <TableHead>På vakt</TableHead>
                             <TableHead className="text-right">Handlinger</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {groups.map((group) => (
-                            <TableRow key={group.id} className="hover:bg-accent">
-                              <TableCell className="font-medium">{group.name}</TableCell>
-                              <TableCell>
-                                <Badge className="ml-2" variant={group.kind === "operational" ? "default" : "secondary"}>
-                                  {group.kind === "operational" ? "Operasjonell" : "Strukturell"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <span className="font-semibold">{group.member_count || 0}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="font-semibold text-green-600">{group.on_duty_count || 0}</span>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex gap-2 justify-end">
-                                  <Button variant="ghost" size="sm">
-                                    Rediger
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteGroup(group.id)}
-                                  >
-                                    Slett
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {allGroups.map((group) => {
+                            const parentGroup = allGroups.find(g => g.id === group.parent_id);
+                            return (
+                              <TableRow key={group.id} className="hover:bg-accent">
+                                <TableCell className="font-medium">
+                                  {group.parent_id && "└─ "}
+                                  {group.name}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge className="ml-2" variant={group.kind === "operational" ? "default" : "secondary"}>
+                                    {group.kind === "operational" ? "Operasjonell" : "Strukturell"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {parentGroup ? parentGroup.name : "—"}
+                                </TableCell>
+                                <TableCell>
+                                  <span className="font-semibold">{group.member_count || 0}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="font-semibold text-green-600">{group.on_duty_count || 0}</span>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex gap-2 justify-end">
+                                    <Button variant="ghost" size="sm">
+                                      Rediger
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDeleteGroup(group.id)}
+                                    >
+                                      Slett
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </>
