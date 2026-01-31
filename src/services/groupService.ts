@@ -35,11 +35,10 @@ export const groupService = {
   },
 
   async getGroupsHierarchy(): Promise<GroupWithMembers[]> {
-    // First, get all groups with basic info
+    // First, get all groups with basic info AND member count
     const { data, error } = await supabase
       .from("groups")
-      .select("*")
-      .order("name");
+      .select("*, group_memberships(count)");
 
     console.log("getGroupsHierarchy raw data:", { data, error });
 
@@ -55,7 +54,7 @@ export const groupService = {
 
     const groups: GroupWithMembers[] = (data || []).map((group: any) => ({
       ...group,
-      member_count: 0,
+      member_count: group.group_memberships?.[0]?.count || 0,
       on_duty_count: 0,
       children: [],
     }));

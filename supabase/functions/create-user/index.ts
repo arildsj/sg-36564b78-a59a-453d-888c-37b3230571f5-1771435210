@@ -7,39 +7,42 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // Parse request body first
-    const { email, password, phone } = await req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    if (!email || !password) {
-      throw new Error("Email and password are required");
+    // Get the authorization header from the request
+    const authHeader = req.headers.get("Authorization");
+
+    if (!authHeader) {
+      throw new Error("Missing Authorization header");
     }
 
-    // Create Supabase client with the user's JWT to verify they are authenticated
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: req.headers.get("Authorization")! },
-        },
-      }
-    );
+    // Create a Supabase client with the user's JWT to verify authentication
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    });
 
-    // Verify the caller is authenticated
+    // Verify the user is authenticated
     const {
       data: { user },
+      error: userError,
     } = await supabaseClient.auth.getUser();
 
-    if (!user) {
-      throw new Error("Not authenticated");
+    if (userError || !user) {
+      console.error("Auth error:", userError);
+      throw new Error("Invalid token or user not authenticated");
     }
 
-    // Verify the caller is a tenant_admin by checking users table
+    // Verify the caller is a tenant_admin
     const { data: callerProfile, error: profileError } = await supabaseClient
       .from("users")
       .select("role, tenant_id")
@@ -47,6 +50,7 @@ serve(async (req) => {
       .single();
 
     if (profileError || !callerProfile) {
+      console.error("Profile error:", profileError);
       throw new Error("Could not verify user profile");
     }
 
@@ -54,25 +58,32 @@ serve(async (req) => {
       throw new Error("Only tenant administrators can create users");
     }
 
-    // Create Supabase Admin client to manage auth users
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    // Parse request body
+    const { email, password, phone } = await req.json();
 
-    // Create auth user
+    if (!email || !password) {
+      throw new Error("Email and password are required");
+    }
+
+    // Create Supabase Admin client to manage auth users (requires service role key)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Create the new user in Supabase Auth
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm for manually created users
+      email_confirm: true, // Auto-confirm the user
       phone,
       user_metadata: {
         created_by_tenant_admin: user.id,
         tenant_id: callerProfile.tenant_id,
-      }
+      },
     });
 
-    if (authError) throw authError;
+    if (authError) {
+      console.error("Create user error:", authError);
+      throw authError;
+    }
 
     // Return the created user data
     return new Response(JSON.stringify(authData), {
@@ -80,7 +91,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    console.error("Error in create-user:", error);
+    console.error("Error in create-user function:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,

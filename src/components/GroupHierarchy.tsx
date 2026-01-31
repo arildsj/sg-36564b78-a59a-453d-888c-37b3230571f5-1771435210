@@ -89,8 +89,8 @@ function GroupNode({ group, level, onSelectGroup, selectedGroupId }: GroupNodePr
             {group.kind === "operational" ? "Operativ" : "Strukturell"}
           </Badge>
 
-          {group.member_count !== undefined && group.member_count > 0 && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          {group.member_count !== undefined && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground ml-2">
               <Users className="h-3 w-3" />
               <span>{group.member_count}</span>
             </div>
