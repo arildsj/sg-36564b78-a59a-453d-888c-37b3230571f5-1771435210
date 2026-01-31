@@ -63,6 +63,7 @@ type GroupNode = {
 
 type User = Database["public"]["Tables"]["users"]["Row"] & {
   groups?: string[];
+  group_ids?: string[];
 };
 
 type Gateway = {
@@ -324,7 +325,12 @@ export default function AdminPage() {
   };
 
   const handleOpenEditUser = (user: User) => {
-    setEditUser(user);
+    // Ensure we have group_ids initialized
+    const userToEdit = {
+      ...user,
+      group_ids: user.group_ids || []
+    };
+    setEditUser(userToEdit);
     setShowEditUserDialog(true);
   };
 
@@ -344,7 +350,8 @@ export default function AdminPage() {
         email: editUser.email,
         phone: (editUser as any).phone_number || "",
         role: editUser.role as any,
-        group_ids: editUser.groups || []
+        group_ids: editUser.group_ids || [],
+        status: editUser.status
       });
 
       setEditUser(null);
@@ -1288,13 +1295,13 @@ export default function AdminPage() {
                         <label key={group.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded">
                           <input
                             type="checkbox"
-                            checked={editUser.groups?.includes(group.id) || false}
+                            checked={editUser.group_ids?.includes(group.id) || false}
                             onChange={() => {
-                              const currentGroups = editUser.groups || [];
-                              const newGroups = currentGroups.includes(group.id)
-                                ? currentGroups.filter(id => id !== group.id)
-                                : [...currentGroups, group.id];
-                              setEditUser({ ...editUser, groups: newGroups });
+                              const currentGroupIds = editUser.group_ids || [];
+                              const newGroupIds = currentGroupIds.includes(group.id)
+                                ? currentGroupIds.filter(id => id !== group.id)
+                                : [...currentGroupIds, group.id];
+                              setEditUser({ ...editUser, group_ids: newGroupIds });
                             }}
                             className="rounded border-gray-300"
                           />

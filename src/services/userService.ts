@@ -5,10 +5,10 @@ type User = Database["public"]["Tables"]["users"]["Row"];
 type OnDutyStatus = Database["public"]["Tables"]["on_duty_status"]["Row"];
 
 export const userService = {
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(): Promise<(User & { groups: string[], group_ids: string[] })[]> {
     const { data, error } = await supabase
       .from("users")
-      .select("*")
+      .select("*, group_memberships(group:groups(id, name))")
       .order("name");
 
     console.log("getAllUsers result:", { data, error });
@@ -18,7 +18,56 @@ export const userService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []).map((user: any) => ({
+      ...user,
+      groups: user.group_memberships?.map((gm: any) => gm.group?.name).filter(Boolean) || [],
+      group_ids: user.group_memberships?.map((gm: any) => gm.group?.id).filter(Boolean) || []
+    }));
+  },
+
+  async updateUser(userId: string, updates: {
+    name: string;
+    email: string;
+    phone: string;
+    role: "tenant_admin" | "group_admin" | "member";
+    group_ids: string[];
+    status?: string;
+  }) {
+    // 1. Update User Profile
+    const { error: profileError } = await supabase
+      .from("users")
+      .update({
+        name: updates.name,
+        email: updates.email,
+        phone_number: updates.phone,
+        role: updates.role,
+        status: updates.status
+      })
+      .eq("id", userId);
+
+    if (profileError) throw new Error(`Failed to update user profile: ${profileError.message}`);
+
+    // 2. Update Group Memberships
+    // Simple strategy: Remove all and re-add (transaction would be better but RLS handles it per row)
+    
+    // Get existing to minimize churn if needed, but delete-insert is robust for full sync
+    const { error: deleteError } = await supabase
+      .from("group_memberships")
+      .delete()
+      .eq("user_id", userId);
+
+    if (deleteError) throw new Error(`Failed to clear existing groups: ${deleteError.message}`);
+
+    if (updates.group_ids && updates.group_ids.length > 0) {
+      const { error: insertError } = await supabase
+        .from("group_memberships")
+        .insert(updates.group_ids.map(gid => ({
+          user_id: userId,
+          group_id: gid
+        })));
+
+      if (insertError) throw new Error(`Failed to add new groups: ${insertError.message}`);
+    }
   },
 
   async getUserById(id: string): Promise<User | null> {
