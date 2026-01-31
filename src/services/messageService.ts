@@ -2,8 +2,18 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatPhoneNumber } from "@/lib/utils";
 
-export type Message = Database["public"]["Tables"]["messages"]["Row"];
+export type Message = Database["public"]["Tables"]["messages"]["Row"] & {
+  is_acknowledged?: boolean;
+};
+
 export type MessageThread = Database["public"]["Tables"]["message_threads"]["Row"];
+
+export type ExtendedMessageThread = MessageThread & {
+  group_name?: string;
+  unread_count?: number;
+  last_message_content?: string;
+  is_fallback?: boolean;
+};
 
 export const messageService = {
   /**
@@ -122,7 +132,7 @@ export const messageService = {
   /**
    * Get all message threads for a specific group
    */
-  async getThreadsByGroup(groupId: string): Promise<MessageThread[]> {
+  async getThreadsByGroup(groupId: string): Promise<ExtendedMessageThread[]> {
     const { data, error } = await supabase
       .from("message_threads")
       .select(`
@@ -153,7 +163,7 @@ export const messageService = {
   /**
    * Get all threads across all groups for current user
    */
-  async getAllThreads(): Promise<MessageThread[]> {
+  async getAllThreads(): Promise<ExtendedMessageThread[]> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -197,7 +207,7 @@ export const messageService = {
   /**
    * Get fallback threads (threads with fallback messages)
    */
-  async getFallbackThreads(): Promise<MessageThread[]> {
+  async getFallbackThreads(): Promise<ExtendedMessageThread[]> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -243,7 +253,7 @@ export const messageService = {
   /**
    * Get escalated threads (unacknowledged messages past threshold)
    */
-  async getEscalatedThreads(thresholdMinutes: number = 30): Promise<MessageThread[]> {
+  async getEscalatedThreads(thresholdMinutes: number = 30): Promise<ExtendedMessageThread[]> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -289,7 +299,7 @@ export const messageService = {
     if (error) throw error;
 
     // Map these messages to a unique list of threads
-    const threadMap = new Map<string, MessageThread>();
+    const threadMap = new Map<string, ExtendedMessageThread>();
     
     (data || []).forEach((msg: any) => {
       const thread = msg.message_threads;
@@ -597,7 +607,7 @@ export const messageService = {
   },
 
   // Helper to map Supabase response to MessageThread type
-  _mapThreadsResponse(data: any[] | null): MessageThread[] {
+  _mapThreadsResponse(data: any[] | null): ExtendedMessageThread[] {
     return (data || []).map((thread: any) => {
       const messages = Array.isArray(thread.messages) ? thread.messages : [];
       const unreadCount = messages.filter((m: any) => !m.acknowledged_at).length;

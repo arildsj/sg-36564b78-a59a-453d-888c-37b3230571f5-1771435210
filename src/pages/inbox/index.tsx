@@ -34,21 +34,21 @@ import {
   Archive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { messageService, type MessageThread, type Message } from "@/services/messageService";
-import { groupService } from "@/services/groupService";
+import { 
+  messageService, 
+  type Message, 
+  type MessageThread,
+  type ExtendedMessageThread 
+} from "@/services/messageService";
+import { groupService, type Group } from "@/services/groupService";
 import { supabase } from "@/integrations/supabase/client";
-
-type Group = {
-  id: string;
-  name: string;
-};
 
 export default function InboxPage() {
   const [activeTab, setActiveTab] = useState<"all" | "fallback" | "escalated">("all");
-  const [threads, setThreads] = useState<MessageThread[]>([]);
+  const [threads, setThreads] = useState<ExtendedMessageThread[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedThread, setSelectedThread] = useState<MessageThread | null>(null);
-  const [replyText, setReplyText] = useState("");
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -57,6 +57,25 @@ export default function InboxPage() {
   // Reclassification dialog state
   const [reclassifyDialogOpen, setReclassifyDialogOpen] = useState(false);
   const [reclassifyTargetGroup, setReclassifyTargetGroup] = useState<string>("");
+
+  const selectedThread = threads.find((t) => t.id === selectedThreadId);
+
+  // Filter threads based on search query
+  const filteredThreads = threads.filter((thread) => {
+    const matchesSearch = 
+      thread.contact_phone.includes(searchQuery) || 
+      (thread.group_name && thread.group_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (thread.last_message_content && thread.last_message_content.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+    // Filter by view mode
+    if (viewMode === "all") return matchesSearch;
+    if (viewMode === "fallback") return matchesSearch && thread.is_fallback;
+    if (viewMode === "escalated") return matchesSearch; // Escalated view logic handles fetching
+    if (viewMode === "resolved") return matchesSearch && thread.is_resolved;
+    
+    // For specific group view
+    return matchesSearch && thread.resolved_group_id === viewMode;
+  });
 
   useEffect(() => {
     loadGroups();
@@ -100,7 +119,7 @@ export default function InboxPage() {
   const loadThreads = async () => {
     try {
       setLoading(true);
-      let loadedThreads: MessageThread[] = [];
+      let loadedThreads: ExtendedMessageThread[] = [];
 
       if (activeTab === "all") {
         loadedThreads = await messageService.getAllThreads();
@@ -144,19 +163,19 @@ export default function InboxPage() {
   };
 
   const handleSendReply = async () => {
-    if (!replyText.trim() || !selectedThread) return;
+    if (!newMessage.trim() || !selectedThread) return;
 
     try {
       setSending(true);
 
       await messageService.sendMessage(
-        replyText,
+        newMessage,
         selectedThread.contact_phone,
         "+47 900 00 000", // TODO: Get from gateway config
         selectedThread.id
       );
 
-      setReplyText("");
+      setNewMessage("");
       // Message update handled by subscription
     } catch (error) {
       console.error("Failed to send reply:", error);
@@ -450,8 +469,8 @@ export default function InboxPage() {
                         >
                           <Textarea
                             placeholder="Skriv svar..."
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
@@ -464,7 +483,7 @@ export default function InboxPage() {
                           />
                           <Button
                             type="submit"
-                            disabled={!replyText.trim() || sending}
+                            disabled={!newMessage.trim() || sending}
                             className="h-[50px] w-[50px] rounded-full p-0 flex-none shrink-0"
                             size="icon"
                           >
