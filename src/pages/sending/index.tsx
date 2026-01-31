@@ -24,6 +24,11 @@ export default function SendingPage() {
   const [sending, setSending] = useState(false);
   const [loadingContacts, setLoadingContacts] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [searching, setSearching] = useState(false);
+
   useEffect(() => {
     loadGroups();
   }, []);
@@ -77,6 +82,40 @@ export default function SendingPage() {
     }
   };
 
+  const handleSearchContacts = async (query: string) => {
+    setSearchQuery(query);
+    
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      setSearching(true);
+      const results = await contactService.getContactsByUserAccess();
+      
+      // Filter results based on search query
+      const filtered = results.filter((c: any) => 
+        c.name.toLowerCase().includes(query.toLowerCase()) ||
+        c.phone.toLowerCase().includes(query.toLowerCase())
+      );
+      
+      setSearchResults(filtered.slice(0, 10));
+    } catch (error) {
+      console.error("Search failed:", error);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSelectContact = (contact: any) => {
+    setSelectedContact(contact);
+    setPhoneNumber(contact.phone);
+    setSearchQuery(contact.name);
+    setSearchResults([]);
+  };
+
   const handleSend = async () => {
     if (!message.trim()) {
       alert("Vennligst skriv en melding");
@@ -84,7 +123,7 @@ export default function SendingPage() {
     }
     
     if (recipientType === "single" && !phoneNumber.trim()) {
-      alert("Vennligst fyll inn telefonnummer");
+      alert("Vennligst velg en kontakt eller skriv inn telefonnummer");
       return;
     }
     
@@ -97,16 +136,21 @@ export default function SendingPage() {
       setSending(true);
 
       if (recipientType === "single") {
+        // Get thread_key for this contact (use phone as thread key)
+        const threadKey = phoneNumber;
+        
         // Send to single recipient
         await messageService.sendMessage(
           message,
           phoneNumber,
           "+4790000000", // Default sender (should come from gateway)
-          phoneNumber // Thread key is phone number
+          threadKey // Thread key is phone number
         );
         alert("Melding sendt!");
         setMessage("");
         setPhoneNumber("");
+        setSelectedContact(null);
+        setSearchQuery("");
       } else {
         // Bulk send to group contacts
         if (groupContacts.length === 0) {
@@ -187,12 +231,78 @@ export default function SendingPage() {
 
               {recipientType === "single" ? (
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Telefonnummer</Label>
+                  <Label htmlFor="contact-search">Søk etter kontakt</Label>
+                  <div className="relative">
+                    <Input
+                      id="contact-search"
+                      placeholder="Søk på navn eller telefonnummer..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearchContacts(e.target.value)}
+                      onFocus={() => {
+                        if (searchQuery.length >= 2) {
+                          handleSearchContacts(searchQuery);
+                        }
+                      }}
+                    />
+                    {searching && (
+                      <div className="absolute right-3 top-3">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+                    
+                    {searchResults.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {searchResults.map((contact) => (
+                          <button
+                            key={contact.id}
+                            type="button"
+                            className="w-full text-left px-4 py-3 hover:bg-accent transition-colors flex items-center gap-3 border-b last:border-b-0"
+                            onClick={() => handleSelectContact(contact)}
+                          >
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex-1">
+                              <p className="font-medium">{contact.name}</p>
+                              <p className="text-sm text-muted-foreground">{contact.phone}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {selectedContact && (
+                    <div className="flex items-center gap-2 p-3 bg-accent/50 rounded-md border">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{selectedContact.name}</p>
+                        <p className="text-xs text-muted-foreground">{selectedContact.phone}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedContact(null);
+                          setPhoneNumber("");
+                          setSearchQuery("");
+                        }}
+                      >
+                        Fjern
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-muted-foreground">
+                    Eller skriv inn telefonnummer direkte (f.eks. +47 123 45 678)
+                  </p>
                   <Input
-                    id="phone"
                     placeholder="+47 123 45 678"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={(e) => {
+                      setPhoneNumber(e.target.value);
+                      setSelectedContact(null);
+                      setSearchQuery("");
+                    }}
                   />
                 </div>
               ) : (

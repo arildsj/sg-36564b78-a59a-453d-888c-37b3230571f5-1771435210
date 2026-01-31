@@ -129,6 +129,62 @@ export const contactService = {
     }));
   },
 
+  async getContactsByUserAccess() {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("tenant_id, role, group_memberships(group_id)")
+      .eq("auth_user_id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("User profile not found");
+
+    // Tenant-admin sees all contacts
+    if (profile.role === "tenant-admin") {
+      return this.getAllContacts();
+    }
+
+    // Regular users see only contacts in groups they belong to
+    const userGroupIds = (profile.group_memberships || []).map((m: any) => m.group_id);
+    
+    if (userGroupIds.length === 0) {
+      return []; // No group access = no contacts
+    }
+
+    const { data, error } = await supabase
+      .from("whitelist_group_links")
+      .select(`
+        whitelisted_number:whitelisted_numbers (
+          id,
+          phone_number,
+          description
+        )
+      `)
+      .in("group_id", userGroupIds);
+
+    if (error) throw error;
+
+    // Deduplicate contacts (a contact can be in multiple groups)
+    const contactMap = new Map();
+    (data || []).forEach((link: any) => {
+      const contact = link.whitelisted_number;
+      if (contact && !contactMap.has(contact.id)) {
+        contactMap.set(contact.id, {
+          id: contact.id,
+          phone: contact.phone_number,
+          name: contact.description || "Ukjent navn",
+          email: null,
+          is_whitelisted: true,
+          groups: []
+        });
+      }
+    });
+
+    return Array.from(contactMap.values());
+  },
+
   async updateContact(id: string, contact: {
     name: string;
     phone: string;
