@@ -156,8 +156,11 @@ export default function AdminPage() {
   });
 
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
+  const [showEditUserDialog, setShowEditUserDialog] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
   const [showCreateGatewayDialog, setShowCreateGatewayDialog] = useState(false);
   const [showCreateRoutingRuleDialog, setShowCreateRoutingRuleDialog] = useState(false);
+  const [showAuditDialog, setShowAuditDialog] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -315,6 +318,41 @@ export default function AdminPage() {
     } catch (error: any) {
       console.error("Failed to create user:", error);
       alert(`Feil ved opprettelse: ${error.message}`);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleOpenEditUser = (user: User) => {
+    setEditUser(user);
+    setShowEditUserDialog(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editUser) return;
+    
+    try {
+      setCreating(true);
+
+      if (!editUser.name || !editUser.email) {
+        alert("Vennligst fyll ut navn og e-post");
+        return;
+      }
+
+      await userService.updateUser(editUser.id, {
+        name: editUser.name,
+        email: editUser.email,
+        phone: (editUser as any).phone_number || "",
+        role: editUser.role as any,
+        group_ids: editUser.groups || []
+      });
+
+      setEditUser(null);
+      setShowEditUserDialog(false);
+      await loadData();
+    } catch (error: any) {
+      console.error("Failed to update user:", error);
+      alert(`Feil ved oppdatering: ${error.message}`);
     } finally {
       setCreating(false);
     }
@@ -694,7 +732,7 @@ export default function AdminPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" onClick={() => handleOpenEditUser(user)}>
                                   Rediger
                                 </Button>
                               </TableCell>
@@ -1176,6 +1214,117 @@ export default function AdminPage() {
             </Button>
             <Button onClick={handleCreateUser} disabled={creating}>
               {creating ? "Oppretter..." : "Opprett bruker"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditUserDialog} onOpenChange={setShowEditUserDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Rediger bruker</DialogTitle>
+            <DialogDescription>
+              Oppdater brukerinformasjon og gruppetilhørighet.
+            </DialogDescription>
+          </DialogHeader>
+          {editUser && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-user-name">Navn *</Label>
+                  <Input
+                    id="edit-user-name"
+                    placeholder="Fullt navn"
+                    value={editUser.name}
+                    onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-user-email">E-post *</Label>
+                  <Input
+                    id="edit-user-email"
+                    type="email"
+                    placeholder="user@example.com"
+                    value={editUser.email || ""}
+                    onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-user-phone">Telefon</Label>
+                  <Input
+                    id="edit-user-phone"
+                    placeholder="+47..."
+                    value={(editUser as any).phone_number || ""}
+                    onChange={(e) => setEditUser({ ...editUser, phone_number: e.target.value } as any)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-user-role">Rolle *</Label>
+                  <select
+                    id="edit-user-role"
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                    value={editUser.role}
+                    onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
+                  >
+                    <option value="member">Medlem</option>
+                    <option value="group_admin">Gruppe-admin</option>
+                    <option value="tenant_admin">Tenant-admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Gruppetilhørighet</Label>
+                <div className="border rounded-lg p-4 space-y-2 max-h-48 overflow-y-auto">
+                  {allGroups.filter(g => g.kind === 'operational').length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Ingen operasjonelle grupper tilgjengelig</p>
+                  ) : (
+                    allGroups
+                      .filter(g => g.kind === 'operational')
+                      .map((group) => (
+                        <label key={group.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={editUser.groups?.includes(group.id) || false}
+                            onChange={() => {
+                              const currentGroups = editUser.groups || [];
+                              const newGroups = currentGroups.includes(group.id)
+                                ? currentGroups.filter(id => id !== group.id)
+                                : [...currentGroups, group.id];
+                              setEditUser({ ...editUser, groups: newGroups });
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <span className="text-sm font-medium">{group.name}</span>
+                        </label>
+                      ))
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-user-status">Status</Label>
+                <select
+                  id="edit-user-status"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                  value={editUser.status}
+                  onChange={(e) => setEditUser({ ...editUser, status: e.target.value })}
+                >
+                  <option value="active">Aktiv</option>
+                  <option value="inactive">Inaktiv</option>
+                </select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditUserDialog(false)} disabled={creating}>
+              Avbryt
+            </Button>
+            <Button onClick={handleUpdateUser} disabled={creating}>
+              {creating ? "Oppdaterer..." : "Lagre endringer"}
             </Button>
           </DialogFooter>
         </DialogContent>
