@@ -11,9 +11,10 @@ const corsHeaders = {
 
 interface ImportRequest {
   tenant_id: string;
-  import_type: "users" | "whitelisted_numbers" | "whitelist_group_links";
+  import_type: "users" | "whitelisted_numbers" | "whitelist_group_links" | "contacts";
   csv_data: string; // Base64 encoded CSV
   created_by_user_id: string;
+  group_id?: string; // Optional target group for all contacts
 }
 
 serve(async (req) => {
@@ -92,7 +93,12 @@ serve(async (req) => {
     }
 
     // Process import
-    const result = await processImport(supabase, payload.import_type, rows, payload.tenant_id);
+    let result;
+    if (payload.import_type === "contacts") {
+      result = await batchImportContacts(supabase, rows, payload.tenant_id, payload.group_id);
+    } else {
+      result = await processImport(supabase, payload.import_type, rows, payload.tenant_id);
+    }
 
     // Update import job
     await supabase
@@ -128,14 +134,21 @@ function parseCSV(content: string): any[] {
   const lines = content.trim().split("\n");
   if (lines.length < 2) return [];
 
-  const headers = lines[0].split(",").map((h) => h.trim());
+  // Detect delimiter (simple check on header row)
+  const headerLine = lines[0];
+  const delimiter = headerLine.includes(";") ? ";" : ",";
+
+  const headers = headerLine.split(delimiter).map((h) => h.trim().replace(/^"|"$/g, ""));
   const rows = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(",").map((v) => v.trim());
+    // Handle quotes basic parsing or split by delimiter
+    // For simplicity using split, but ideally should use a library for quoted values containing delimiter
+    const values = lines[i].split(delimiter).map((v) => v.trim().replace(/^"|"$/g, ""));
     const row: any = {};
     headers.forEach((header, index) => {
-      row[header] = values[index] || "";
+      // Normalize header keys to lowercase for easier matching
+      row[header.toLowerCase()] = values[index] || "";
     });
     rows.push(row);
   }
@@ -156,6 +169,23 @@ async function validateImport(
     const lineNum = i + 2; // CSV line number (header is 1)
 
     switch (importType) {
+      case "contacts":
+        // Flexible validation for contacts
+        // Required: Name
+        const name = row.navn || row.name || row.full_name;
+        if (!name) {
+          errors.push(`Line ${lineNum}: Missing Name (Navn/Name)`);
+        }
+        
+        // Validation for relationships if present
+        const relation = row.relasjon || row.relation || row.type;
+        const relatedTo = row.tilhører || row.tilhorer || row.related_to || row.subject;
+        
+        if (relation && !relatedTo) {
+           errors.push(`Line ${lineNum}: Relation specified but missing 'Tilhører'/'Related To' field`);
+        }
+        break;
+
       case "users":
         if (!row.email || !isValidEmail(row.email)) {
           errors.push(`Line ${lineNum}: Invalid email`);
@@ -324,6 +354,148 @@ async function importWhitelistGroupLink(supabase: any, row: any, tenantId: strin
       },
       { onConflict: "whitelisted_number_id,group_id" }
     );
+}
+
+async function batchImportContacts(
+  supabase: any,
+  rows: any[],
+  tenantId: string,
+  targetGroupId?: string
+): Promise<{ success: number; failed: number }> {
+  let success = 0;
+  let failed = 0;
+  
+  // Normalize rows
+  const contacts = rows.map(row => ({
+    name: row.navn || row.name || row.full_name,
+    phone: row.tlf || row.telefon || row.phone || row.mobile || row.mobil,
+    email: row.epost || row.email || row.mail,
+    group: row.gruppe || row.klasse || row.group || row.class,
+    relation: row.relasjon || row.relation || row.type,
+    relatedTo: row.tilhører || row.tilhorer || row.related_to || row.subject || row.belongs_to,
+    externalId: row.ekstern_id || row.external_id || row.id,
+    row_data: row // Keep original for reference
+  })).filter(c => c.name); // Filter empty names
+
+  // 1. Resolve Groups (if group names provided in CSV)
+  const groupNames = [...new Set(contacts.map(c => c.group).filter(Boolean))];
+  const groupMap = new Map<string, string>(); // Name -> ID
+  
+  if (groupNames.length > 0) {
+    const { data: groups } = await supabase
+      .from("groups")
+      .select("id, name")
+      .eq("tenant_id", tenantId)
+      .in("name", groupNames);
+      
+    groups?.forEach((g: any) => groupMap.set(g.name, g.id));
+  }
+
+  // 2. PASS 1: Create/Upsert Contacts
+  for (const contact of contacts) {
+    try {
+      // Determine group ID (priority: CSV specific > global target > null)
+      let groupId = contact.group ? groupMap.get(contact.group) : targetGroupId;
+      
+      const contactData = {
+        tenant_id: tenantId,
+        name: contact.name,
+        phone_number: contact.phone || null,
+        email: contact.email || null,
+        group_id: groupId || null,
+        external_id: contact.externalId || null,
+        metadata: { imported: true }
+      };
+
+      // Upsert based on Phone (if present) OR External ID (if present) OR Name+Tenant (fallback)
+      let matchQuery = supabase.from("contacts").select("id");
+      
+      if (contact.externalId) {
+        // Find by external ID
+        const { data } = await supabase.from("contacts").select("id").eq("tenant_id", tenantId).eq("external_id", contact.externalId).single();
+        if (data) {
+             await supabase.from("contacts").update(contactData).eq("id", data.id);
+        } else {
+             await supabase.from("contacts").insert(contactData);
+        }
+      } else if (contact.phone) {
+        // Upsert by phone (constraint handles this)
+        await supabase.from("contacts").upsert(contactData, { onConflict: "tenant_id, phone_number" });
+      } else {
+        // Insert new (name only contacts like students often don't have unique keys other than name)
+        // Check if exists by name in group to avoid duplicates?
+        // For now, simple insert or update if we can find a loose match could be dangerous.
+        // Let's rely on name matching for "Subject" lookup later, but create new for safety if no ID/Phone.
+        // Actually, for "Elev" without phone, we risk duplicates. 
+        // Let's try to find by Name + Group if possible.
+        let query = supabase.from("contacts").select("id").eq("tenant_id", tenantId).eq("name", contact.name);
+        if (groupId) query = query.eq("group_id", groupId);
+        
+        const { data } = await query.maybeSingle();
+        if (data) {
+           await supabase.from("contacts").update(contactData).eq("id", data.id);
+        } else {
+           await supabase.from("contacts").insert(contactData);
+        }
+      }
+      success++;
+    } catch (e) {
+      console.error("Error importing contact:", e);
+      failed++;
+    }
+  }
+
+  // 3. PASS 2: Create Relationships
+  // We need to fetch all contacts we just worked on to resolve IDs
+  // This is a bit heavy, but safe. Or we could have cached IDs in Pass 1.
+  // Let's just lookup subjects by Name dynamically.
+  
+  const relationRows = contacts.filter(c => c.relation && c.relatedTo);
+  
+  for (const row of relationRows) {
+    try {
+      // Find the "Subject" (the student)
+      // Look for name match.
+      const { data: subject } = await supabase
+        .from("contacts")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("name", row.relatedTo)
+        .limit(1)
+        .maybeSingle();
+        
+      if (!subject) {
+        console.warn(`Could not find subject '${row.relatedTo}' for relation`);
+        continue;
+      }
+
+      // Find the "Related" (the parent/guardian - CURRENT ROW)
+      // We look up by phone if available, or name
+      let relatedQuery = supabase.from("contacts").select("id").eq("tenant_id", tenantId);
+      if (row.phone) relatedQuery = relatedQuery.eq("phone_number", row.phone);
+      else relatedQuery = relatedQuery.eq("name", row.name);
+      
+      const { data: related } = await relatedQuery.limit(1).maybeSingle();
+
+      if (!related) {
+         continue; 
+      }
+      
+      // Upsert relationship
+      await supabase.from("contact_relationships").upsert({
+        tenant_id: tenantId,
+        subject_contact_id: subject.id,
+        related_contact_id: related.id,
+        relationship_type: row.relation
+      }, { onConflict: "subject_contact_id, related_contact_id" });
+      
+    } catch (e) {
+      console.error("Error creating relationship:", e);
+      // We don't count this as a main "failed" row since the contact itself was likely created
+    }
+  }
+
+  return { success, failed };
 }
 
 function isValidEmail(email: string): boolean {

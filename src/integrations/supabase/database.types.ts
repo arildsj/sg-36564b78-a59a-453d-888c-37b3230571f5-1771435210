@@ -279,6 +279,112 @@ export type Database = {
           },
         ]
       }
+      contact_relationships: {
+        Row: {
+          created_at: string | null
+          id: string
+          priority: number | null
+          related_contact_id: string
+          relationship_type: string
+          subject_contact_id: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          priority?: number | null
+          related_contact_id: string
+          relationship_type: string
+          subject_contact_id: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          priority?: number | null
+          related_contact_id?: string
+          relationship_type?: string
+          subject_contact_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_relationships_related_contact_id_fkey"
+            columns: ["related_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_relationships_subject_contact_id_fkey"
+            columns: ["subject_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_relationships_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          external_id: string | null
+          group_id: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          phone_number: string | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          external_id?: string | null
+          group_id?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          phone_number?: string | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          external_id?: string | null
+          group_id?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          phone_number?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       csv_import_jobs: {
         Row: {
           created_at: string | null
