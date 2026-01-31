@@ -141,10 +141,10 @@ export default function InboxPage() {
       // Preserve selection if still valid, or select first
       if (loadedThreads.length > 0) {
         if (!selectedThread || !loadedThreads.find(t => t.id === selectedThread.id)) {
-          setSelectedThread(loadedThreads[0]);
+          setSelectedThreadId(loadedThreads[0].id);
         }
       } else {
-        setSelectedThread(null);
+        setSelectedThreadId(null);
       }
     } catch (error) {
       console.error("Failed to load threads:", error);
@@ -216,7 +216,7 @@ export default function InboxPage() {
 
     try {
       await messageService.resolveThread(selectedThread.id);
-      setSelectedThread(null);
+      setSelectedThreadId(null);
       await loadThreads();
     } catch (error) {
       console.error("Failed to resolve thread:", error);
