@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Clock, MessageSquare, Bell, Save } from "lucide-react";
+import { Clock, MessageSquare, Bell, Save, Network } from "lucide-react";
+import { RoutingRulesTab } from "@/components/settings/RoutingRulesTab";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = React.useState("hours");
@@ -49,6 +50,10 @@ export default function SettingsPage() {
               <TabsTrigger value="notifications" className="gap-2">
                 <Bell className="h-4 w-4" />
                 Varsler
+              </TabsTrigger>
+              <TabsTrigger value="routing" className="gap-2">
+                <Network className="h-4 w-4" />
+                Routing
               </TabsTrigger>
             </TabsList>
 
@@ -298,6 +303,11 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Routing Rules Tab */}
+            <TabsContent value="routing" className="space-y-4">
+              <RoutingRulesTab />
             </TabsContent>
           </Tabs>
         </div>
