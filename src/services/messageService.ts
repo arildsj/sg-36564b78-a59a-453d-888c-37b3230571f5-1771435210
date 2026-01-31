@@ -25,6 +25,43 @@ export type MessageThread = {
 
 export const messageService = {
   /**
+   * Find or create a message thread for a contact
+   */
+  async findOrCreateThread(contactPhone: string, tenantId: string, fallbackGroupId: string): Promise<string> {
+    // Normalize phone number
+    const normalizedPhone = contactPhone.replace(/\s+/g, '');
+    
+    // Try to find existing thread
+    const { data: existingThread } = await supabase
+      .from("message_threads")
+      .select("id")
+      .eq("contact_phone", normalizedPhone)
+      .eq("tenant_id", tenantId)
+      .eq("is_resolved", false)
+      .single();
+
+    if (existingThread) {
+      return existingThread.id;
+    }
+
+    // Create new thread
+    const { data: newThread, error } = await supabase
+      .from("message_threads")
+      .insert({
+        contact_phone: normalizedPhone,
+        tenant_id: tenantId,
+        resolved_group_id: fallbackGroupId,
+        is_resolved: false,
+        last_message_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (error) throw error;
+    return newThread.id;
+  },
+
+  /**
    * Get all message threads for a specific group
    */
   async getThreadsByGroup(groupId: string): Promise<MessageThread[]> {
@@ -233,6 +270,59 @@ export const messageService = {
       ...msg,
       is_acknowledged: !!msg.acknowledged_at,
     }));
+  },
+
+  /**
+   * Send a message (finds or creates thread automatically)
+   */
+  async sendMessage(content: string, toNumber: string, fromNumber: string) {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("tenant_id, id")
+      .eq("auth_user_id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("User profile not found");
+
+    // Get fallback group for this tenant
+    const { data: fallbackGroup } = await supabase
+      .from("groups")
+      .select("id")
+      .eq("tenant_id", profile.tenant_id)
+      .eq("kind", "fallback")
+      .single();
+
+    if (!fallbackGroup) throw new Error("No fallback group found");
+
+    // Find or create thread
+    const threadId = await this.findOrCreateThread(
+      toNumber,
+      profile.tenant_id,
+      fallbackGroup.id
+    );
+
+    // Insert the message
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        content,
+        to_number: toNumber,
+        from_number: fromNumber,
+        direction: "outbound",
+        status: "pending",
+        thread_id: threadId,
+        thread_key: toNumber,
+        tenant_id: profile.tenant_id,
+        is_fallback: false
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   },
 
   /**

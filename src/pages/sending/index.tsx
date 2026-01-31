@@ -156,15 +156,11 @@ export default function SendingPage() {
       setSending(true);
 
       if (recipientType === "single") {
-        // Get thread_key for this contact (use phone as thread key)
-        const threadKey = phoneNumber;
-        
-        // Send to single recipient
+        // Send to single recipient (thread will be created automatically)
         await messageService.sendMessage(
           message,
           phoneNumber,
-          "+4790000000", // Default sender (should come from gateway)
-          threadKey // Thread key is phone number
+          "+4790000000" // Default sender (should come from gateway)
         );
         alert("Melding sendt!");
         setMessage("");
@@ -183,8 +179,7 @@ export default function SendingPage() {
           messageService.sendMessage(
             message,
             contact.phone_number,
-            "+4790000000", // Default sender
-            contact.phone_number // Thread key
+            "+4790000000" // Default sender
           )
         );
 
