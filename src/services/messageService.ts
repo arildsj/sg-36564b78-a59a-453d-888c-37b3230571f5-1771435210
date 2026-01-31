@@ -52,7 +52,7 @@ export const messageService = {
     // 3. Check if thread already exists
     const { data: existingThread } = await supabase
       .from("message_threads")
-      .select()
+      .select("*")
       .eq("contact_phone", formattedPhone) // Use formatted phone
       .eq("tenant_id", tenantId)
       .eq("is_resolved", false)
@@ -81,7 +81,7 @@ export const messageService = {
         gateway_id: gateway?.id, // Fallback to null if no gateway found
         resolved_group_id: targetGroupId
       })
-      .select()
+      .select("*")
       .single();
 
     if (error) throw error;
@@ -347,91 +347,86 @@ export const messageService = {
     const formattedToNumber = formatPhoneNumber(toNumber);
     let finalThreadId = threadId;
 
-    // If no threadId provided OR if threadId is not a valid UUID (e.g. phone number), find or create one
-    // Also protect against threadId being passed as an object/invalid string
-    const isValidUUID = (id: string | undefined) => 
-      id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    // Get User Context regardless
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) throw new Error("User not authenticated");
+    
+    const { data: userProfile } = await supabase
+     .from("users")
+     .select("id, tenant_id")
+     .eq("auth_user_id", userData.user.id)
+     .single();
+     
+    if (!userProfile) throw new Error("User profile not found");
 
-    if (!finalThreadId || !isValidUUID(finalThreadId)) {
-       // We need to find the correct tenant and group context
-       const { data: userData } = await supabase.auth.getUser();
-       if (!userData.user) throw new Error("User not authenticated");
-       
-       const { data: userProfile } = await supabase
-        .from("users")
-        .select("tenant_id")
-        .eq("auth_user_id", userData.user.id)
-        .single();
-        
-       if (!userProfile) throw new Error("User profile not found");
-       
-       // CRITICAL FIX: When sending to a contact, we must use the RECIPIENT's phone as contact_phone
-       // so that when they reply, the inbound-message Edge Function finds the SAME thread
-       // This ensures replies go to the correct group that initiated the conversation
-       
-       // Default logic: Find a group for this message
-       // Try fallback group first
-       let targetGroupId: string | undefined;
-       
+    // Logic to determine Target Group ID if creating/updating thread
+    let targetGroupId: string | undefined;
+
+    // Try to find the group the CURRENT USER belongs to
+    // We prioritize operational groups the user is a member of
+    const { data: userGroups } = await supabase
+      .from("group_members")
+      .select("group_id, groups(id, kind)")
+      .eq("user_id", userProfile.id);
+
+    // Filter for operational groups (not fallback, etc if possible, though kind might be null)
+    // For now, just pick the first group found.
+    // Ideally, the UI should pass the context, but we fallback to user's membership.
+    if (userGroups && userGroups.length > 0) {
+       // If user is in multiple, just picking the first one is a heuristic.
+       // But user said "Olaug er kun medlem i gruppen 2526-1A", so this works perfectly for her.
+       targetGroupId = userGroups[0].group_id;
+    } else {
+       // Fallback logic if user has no groups (e.g. admin)
        const { data: fallbackGroup } = await supabase
          .from("groups")
          .select("id")
          .eq("tenant_id", userProfile.tenant_id)
          .eq("kind", "fallback")
          .maybeSingle();
-         
-       if (fallbackGroup) {
-         targetGroupId = fallbackGroup.id;
-       } else {
-         // Try finding any group
-         const { data: anyGroup } = await supabase
-            .from("groups")
-            .select("id")
-            .eq("tenant_id", userProfile.tenant_id)
-            .limit(1)
-            .maybeSingle();
-            
-         if (anyGroup) {
-            targetGroupId = anyGroup.id;
-         } else {
-            // Create a default group if absolutely none exist
-             const { data: newGroup, error: createError } = await supabase
-              .from("groups")
-              .insert({
-                name: "Generell Innboks",
-                kind: "fallback",
-                tenant_id: userProfile.tenant_id,
-                description: "Automatisk opprettet innboks"
-              })
-              .select()
-              .single();
-              
-             if (!createError && newGroup) {
-                targetGroupId = newGroup.id;
-             }
-         }
-       }
+       
+       targetGroupId = fallbackGroup?.id;
+    }
 
+
+    // If no threadId provided OR if threadId is not a valid UUID (e.g. phone number), find or create one
+    // Also protect against threadId being passed as an object/invalid string
+    const isValidUUID = (id: string | undefined) => 
+      id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    if (!finalThreadId || !isValidUUID(finalThreadId)) {
        // CRITICAL: Use recipient's phone (toNumber) as contact_phone for thread
        // This ensures when recipient replies, their reply finds this thread
        const thread = await this.findOrCreateThread(formattedToNumber, targetGroupId);
        finalThreadId = thread.id;
     }
     
-    // Ensure we have the thread details (specifically tenant_id and contact_phone for thread_key)
-    // If we reused an existing threadId passed in, we might need to fetch it to be sure
+    // Ensure we have the thread details
     let currentThread: MessageThread | null = null;
-    
     if (finalThreadId) {
         const { data } = await supabase
             .from("message_threads")
             .select("*")
             .eq("id", finalThreadId)
             .single();
-        currentThread = data;
+        currentThread = data as MessageThread;
     }
     
     if (!currentThread) throw new Error("Could not find thread context");
+
+    // CRITICAL: If we have a target group identified (from user context), 
+    // AND the thread is currently assigned to a DIFFERENT group (or null),
+    // UPDATE the thread to point to the sender's group.
+    // This implements: "Siden det var gruppen 2526-1A som sendte ut melding, så skal svaret hennes inn i denne gruppen."
+    if (targetGroupId && currentThread.resolved_group_id !== targetGroupId) {
+       await supabase
+         .from("message_threads")
+         .update({ resolved_group_id: targetGroupId })
+         .eq("id", finalThreadId);
+       
+       // Update local object for consistency
+       currentThread.resolved_group_id = targetGroupId;
+    }
 
     // MOCK SENDING to external API (simulated)
     console.log("🚀 MOCK API SENDING:", {
@@ -455,7 +450,7 @@ export const messageService = {
         to_number: formattedToNumber,
         status: "sent" // Mock successful send
       })
-      .select()
+      .select("*")
       .single();
 
     if (insertError) throw insertError;
@@ -471,7 +466,7 @@ export const messageService = {
         .eq("id", finalThreadId);
     }
 
-    return messageData;
+    return messageData as Message;
   },
 
   /**
