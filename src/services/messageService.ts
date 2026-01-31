@@ -311,7 +311,7 @@ export const messageService = {
       const { data: userData } = await supabase
         .from("users")
         .select("tenant_id")
-        .eq("auth_user_id", user.id)
+        .eq("auth_user_id", user.user.id)
         .single();
 
       if (!userData) throw new Error("User not found");
