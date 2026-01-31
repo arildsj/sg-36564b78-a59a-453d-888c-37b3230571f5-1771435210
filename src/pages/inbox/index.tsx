@@ -371,17 +371,16 @@ export default function InboxPage() {
                             </p>
                           </div>
                           <div className="flex gap-2">
-                            {selectedThread.is_fallback && (
-                              <Button
-                                onClick={() => setReclassifyDialogOpen(true)}
-                                variant="outline"
-                                size="sm"
-                                className="gap-2"
-                              >
-                                <FolderInput className="h-4 w-4" />
-                                <span className="hidden sm:inline">Omklassifiser</span>
-                              </Button>
-                            )}
+                            <Button
+                              onClick={() => setReclassifyDialogOpen(true)}
+                              variant="outline"
+                              size="sm"
+                              className="gap-2"
+                            >
+                              <FolderInput className="h-4 w-4" />
+                              <span className="hidden sm:inline">Flytt samtalen</span>
+                            </Button>
+                            
                             {hasUnacknowledged && (
                               <Button 
                                 onClick={handleAcknowledge} 
@@ -499,9 +498,9 @@ export default function InboxPage() {
       <Dialog open={reclassifyDialogOpen} onOpenChange={setReclassifyDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Omklassifiser samtale</DialogTitle>
+            <DialogTitle>Flytt samtale</DialogTitle>
             <DialogDescription>
-              Flytt denne samtalen til en annen gruppe. Meldingen vil forsvinne fra "Ukjente avsendere" og vises i den valgte gruppens innboks.
+              Flytt denne samtalen til en annen gruppe. Samtalen vil forsvinne fra denne innboksen og vises hos den valgte gruppen.
             </DialogDescription>
           </DialogHeader>
 
@@ -542,7 +541,7 @@ export default function InboxPage() {
               Avbryt
             </Button>
             <Button onClick={handleReclassify} disabled={!reclassifyTargetGroup}>
-              Omklassifiser og flytt
+              Flytt samtalen
             </Button>
           </DialogFooter>
         </DialogContent>

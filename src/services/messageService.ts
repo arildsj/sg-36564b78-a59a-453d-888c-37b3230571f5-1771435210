@@ -162,6 +162,18 @@ export const messageService = {
 
     if (!profile) throw new Error("Profile not found");
 
+    // Get user's group memberships to filter threads
+    const { data: memberships } = await db
+      .from("group_memberships")
+      .select("group_id")
+      .eq("user_id", profile.id);
+
+    const userGroupIds = memberships?.map((m: any) => m.group_id) || [];
+
+    // If user has no groups, return empty array (except if tenant admin?)
+    // For now, strict filtering based on membership
+    if (userGroupIds.length === 0) return [];
+
     const { data, error } = await db
       .from("message_threads")
       .select(`
@@ -181,6 +193,7 @@ export const messageService = {
       `)
       .eq("tenant_id", profile.tenant_id)
       .eq("is_resolved", false)
+      .in("resolved_group_id", userGroupIds) // Only show threads for my groups
       .order("last_message_at", { ascending: false });
 
     if (error) {
