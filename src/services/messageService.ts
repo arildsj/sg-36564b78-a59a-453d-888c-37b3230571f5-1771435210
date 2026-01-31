@@ -8,7 +8,18 @@ export type Message = Database["public"]["Tables"]["messages"]["Row"] & {
 
 export type MessageThread = Database["public"]["Tables"]["message_threads"]["Row"];
 
-export type ExtendedMessageThread = MessageThread & {
+// Simplified type to avoid deep type instantiation issues
+export type ExtendedMessageThread = {
+  id: string;
+  tenant_id: string;
+  gateway_id: string | null;
+  contact_phone: string;
+  resolved_group_id: string | null;
+  is_resolved: boolean;
+  resolved_at: string | null;
+  last_message_at: string | null;
+  created_at: string;
+  updated_at: string;
   group_name?: string;
   unread_count?: number;
   last_message_content?: string;
@@ -38,88 +49,37 @@ export const messageService = {
     if (!userData) throw new Error("User not found");
     const tenantId = userData.tenant_id;
 
-    // Try to find existing thread
+    // 3. Check if thread already exists
     const { data: existingThread } = await supabase
       .from("message_threads")
-      .select("*") // Select all fields
-      .eq("contact_phone", formattedPhone)
+      .select()
+      .eq("contact_phone", contactPhone)
       .eq("tenant_id", tenantId)
       .eq("is_resolved", false)
-      .single();
+      .maybeSingle();
 
     if (existingThread) {
       return existingThread;
     }
-
-    // If no thread exists, we need to find a gateway to assign it to
-    // Note: tenantId is already fetched above
-
-    // 2. Try to find an explicit fallback group
-    const { data: fallbackGroup, error: fallbackError } = await supabase
-      .from("groups")
-      .select("id")
-      .eq("tenant_id", tenantId)
-      .eq("kind", "fallback")
-      .maybeSingle(); 
-
-    let resolvedTargetGroupId = targetGroupId || fallbackGroup?.id;
-
-    // 3. If no fallback group, try to find ANY operational group to use as fallback
-    if (!resolvedTargetGroupId) {
-      const { data: anyGroup } = await supabase
-        .from("groups")
-        .select("id")
-        .eq("tenant_id", tenantId)
-        .eq("kind", "operational")
-        .limit(1)
-        .maybeSingle();
-      
-      resolvedTargetGroupId = anyGroup?.id;
-    }
-
-    if (!resolvedTargetGroupId) {
-       // Last resort: Create a default fallback group if absolutely nothing exists
-       console.log("No groups found, creating default fallback group...");
-       const { data: newGroup, error: createError } = await supabase
-        .from("groups")
-        .insert({
-          tenant_id: tenantId,
-          name: "Generell Innboks",
-          kind: "fallback",
-          description: "Automatisk opprettet innboks for meldinger"
-        })
-        .select()
-        .single();
-        
-       if (createError) {
-         console.error("Failed to create fallback group:", createError);
-         throw new Error("Kunne ikke finne eller opprette en meldingsgruppe. Kontakt administrator.");
-       }
-       resolvedTargetGroupId = newGroup.id;
-    }
     
     // 4. Get default gateway
+    // If no specific gateway logic, get the first active one or default
     const { data: gateway } = await supabase
       .from("gateways")
       .select("id")
       .eq("tenant_id", tenantId)
+      .eq("is_active", true)
       .limit(1)
       .single();
-
-    if (!gateway) {
-      console.warn("No gateway found for tenant, cannot create thread properly linked to gateway.");
-    }
 
     // Create new thread
     const { data: newThread, error } = await supabase
       .from("message_threads")
       .insert({
-        contact_phone: formattedPhone,
+        contact_phone: contactPhone,
         tenant_id: tenantId,
-        resolved_group_id: resolvedTargetGroupId,
-        is_resolved: false,
-        last_message_at: new Date().toISOString(),
-        gateway_id: gateway?.id // Include gateway_id
+        gateway_id: gateway?.id, // Fallback to null if no gateway found (though RLS might block)
+        resolved_group_id: targetGroupId
       })
       .select()
       .single();
@@ -156,7 +116,8 @@ export const messageService = {
       throw error;
     }
 
-    return this._mapThreadsResponse(data);
+    // Cast data to any to avoid deep type instantiation issues with complex joins
+    return this._mapThreadsResponse(data as any);
   },
 
   /**
@@ -200,7 +161,8 @@ export const messageService = {
       throw error;
     }
 
-    return this._mapThreadsResponse(data);
+    // Cast data to any to avoid deep type instantiation issues
+    return this._mapThreadsResponse(data as any);
   },
 
   /**
@@ -246,7 +208,7 @@ export const messageService = {
     if (error) throw error;
 
     // Use our mapper, but we know these are fallback threads
-    return this._mapThreadsResponse(data).map(t => ({ ...t, is_fallback: true }));
+    return this._mapThreadsResponse(data as any).map(t => ({ ...t, is_fallback: true }));
   },
 
   /**
@@ -337,137 +299,130 @@ export const messageService = {
   /**
    * Send a message (finds or creates thread automatically if threadId not provided)
    */
-  async sendMessage(content: string, toNumber: string, fromNumber: string, threadId?: string) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error("Not authenticated");
-
-    const { data: profile } = await supabase
-      .from("users")
-      .select("tenant_id, id")
-      .eq("auth_user_id", user.user.id)
-      .single();
-
-    if (!profile) throw new Error("User profile not found");
-
+  async sendMessage(
+    content: string,
+    toNumber: string,
+    fromNumber: string,
+    threadId?: string
+  ): Promise<Message> {
+    const formattedToNumber = formatPhoneNumber(toNumber);
     let finalThreadId = threadId;
 
-    // If no threadId provided, find or create one
-    if (!finalThreadId) {
-      // 1. Get current user's tenant
-      const { data: userData } = await supabase
+    // If no threadId provided OR if threadId is not a valid UUID (e.g. phone number), find or create one
+    // Also protect against threadId being passed as an object/invalid string
+    const isValidUUID = (id: string | undefined) => 
+      id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    if (!finalThreadId || !isValidUUID(finalThreadId)) {
+       // We need to find the correct tenant and group context
+       const { data: userData } = await supabase.auth.getUser();
+       if (!userData.user) throw new Error("User not authenticated");
+       
+       const { data: userProfile } = await supabase
         .from("users")
         .select("tenant_id")
-        .eq("auth_user_id", user.user.id)
+        .eq("id", userData.user.id)
         .single();
-
-      if (!userData) throw new Error("User not found");
-      const tenantId = userData.tenant_id;
-
-      // 2. Try to find an explicit fallback group
-      const { data: fallbackGroup, error: fallbackError } = await supabase
-        .from("groups")
-        .select("id")
-        .eq("tenant_id", tenantId)
-        .eq("kind", "fallback")
-        .maybeSingle(); // Changed from single() to maybeSingle() to avoid 406 error
-
-      let targetGroupId = fallbackGroup?.id;
-
-      // 3. If no fallback group, try to find ANY operational group to use as fallback
-      if (!targetGroupId) {
-        const { data: anyGroup } = await supabase
-          .from("groups")
-          .select("id")
-          .eq("tenant_id", tenantId)
-          .eq("kind", "operational")
-          .limit(1)
-          .maybeSingle();
         
-        targetGroupId = anyGroup?.id;
-      }
-
-      if (!targetGroupId) {
-         // Last resort: Create a default fallback group if absolutely nothing exists
-         console.log("No groups found, creating default fallback group...");
-         const { data: newGroup, error: createError } = await supabase
-          .from("groups")
-          .insert({
-            tenant_id: tenantId,
-            name: "Generell Innnboks",
-            kind: "fallback",
-            description: "Automatisk opprettet innboks for meldinger"
-          })
-          .select()
-          .single();
-          
-         if (createError) {
-           console.error("Failed to create fallback group:", createError);
-           throw new Error("Kunne ikke finne eller opprette en meldingsgruppe. Kontakt administrator.");
+       if (!userProfile) throw new Error("User profile not found");
+       
+       // Default logic: Find a group for this message
+       // Try fallback group first
+       let targetGroupId: string | undefined;
+       
+       const { data: fallbackGroup } = await supabase
+         .from("groups")
+         .select("id")
+         .eq("tenant_id", userProfile.tenant_id)
+         .eq("kind", "fallback")
+         .maybeSingle();
+         
+       if (fallbackGroup) {
+         targetGroupId = fallbackGroup.id;
+       } else {
+         // Try finding any group
+         const { data: anyGroup } = await supabase
+            .from("groups")
+            .select("id")
+            .eq("tenant_id", userProfile.tenant_id)
+            .limit(1)
+            .maybeSingle();
+            
+         if (anyGroup) {
+            targetGroupId = anyGroup.id;
+         } else {
+            // Create a default group if absolutely none exist
+             const { data: newGroup, error: createError } = await supabase
+              .from("groups")
+              .insert({
+                name: "Generell Innboks",
+                kind: "fallback",
+                tenant_id: userProfile.tenant_id,
+                description: "Automatisk opprettet innboks"
+              })
+              .select()
+              .single();
+              
+             if (!createError && newGroup) {
+                targetGroupId = newGroup.id;
+             }
          }
-         targetGroupId = newGroup.id;
-      }
-      
-      // 4. Get default gateway
-      const { data: gateway } = await supabase
-        .from("gateways")
-        .select("id")
-        .eq("tenant_id", tenantId)
-        .limit(1)
-        .single();
+       }
 
-      if (!gateway) {
-        console.warn("No gateway found for tenant, cannot create thread properly linked to gateway.");
-        // In a real scenario, we should probably fail or have a default. 
-        // For now, we'll try to proceed, but if DB enforces it, it will fail.
-        // Let's assume there is at least one gateway or the constraint allows null (but TS said it's required).
-      }
-
-      // Find or create thread
-      finalThreadId = await this.findOrCreateThread(
-        toNumber,
-        targetGroupId
-      );
+       const thread = await this.findOrCreateThread(formattedToNumber, targetGroupId);
+       finalThreadId = thread.id;
     }
+    
+    // Ensure we have the thread details (specifically tenant_id and contact_phone for thread_key)
+    // If we reused an existing threadId passed in, we might need to fetch it to be sure
+    let currentThread: MessageThread | null = null;
+    
+    if (finalThreadId) {
+        const { data } = await supabase
+            .from("message_threads")
+            .select("*")
+            .eq("id", finalThreadId)
+            .single();
+        currentThread = data;
+    }
+    
+    if (!currentThread) throw new Error("Could not find thread context");
 
-    // Insert the message
-    const { data: messageData, error } = await supabase
+    // MOCK SENDING to external API (simulated)
+    console.log("🚀 MOCK API SENDING:", {
+      to: formattedToNumber,
+      from: fromNumber,
+      content,
+      threadId: finalThreadId
+    });
+
+    // Store in database
+    const { data: messageData, error: insertError } = await supabase
       .from("messages")
       .insert({
-        content,
-        to_number: toNumber,
-        from_number: fromNumber,
-        direction: "outbound",
-        status: "pending",
         thread_id: finalThreadId,
-        thread_key: toNumber,
-        tenant_id: profile.tenant_id,
-        is_fallback: false
+        tenant_id: currentThread.tenant_id,     // Explicitly set tenant_id
+        thread_key: currentThread.contact_phone, // Use contact phone as thread key
+        direction: "outbound",
+        content,
+        from_number: fromNumber,
+        to_number: formattedToNumber,
+        status: "sent" // Mock successful send
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (insertError) throw insertError;
 
-    // 3. Send to external API (FairGateway)
-    // For now, we mock this as requested
-    console.log("🚀 MOCK API SENDING:", {
-      to: messageData.to_number,
-      from: messageData.from_number,
-      content: messageData.content,
-      gatewayId: messageData.gateway_id
-    });
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Update message status to sent
-    const { error: updateError } = await supabase
-      .from("messages")
-      .update({ status: "sent" })
-      .eq("id", messageData.id);
-
-    if (updateError) {
-      console.error("Failed to update message status:", updateError);
+    // Update thread timestamp
+    if (finalThreadId) {
+      await supabase
+        .from("message_threads")
+        .update({ 
+          last_message_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", finalThreadId);
     }
 
     return messageData;
