@@ -415,54 +415,29 @@ export default function InboxPage() {
                               <div
                                 key={msg.id}
                                 className={cn(
-                                  "flex flex-col max-w-[85%] mb-4",
-                                  msg.direction === "outbound" ? "ml-auto items-end" : "mr-auto items-start"
+                                  "flex flex-col max-w-[85%] rounded-lg p-3 shadow-sm",
+                                  msg.direction === "outbound"
+                                    ? "ml-auto bg-primary text-primary-foreground rounded-br-none" // Outbound: Primary color, sharp bottom-right
+                                    : "mr-auto bg-white border border-gray-200 text-gray-800 rounded-bl-none" // Inbound: White with border, sharp bottom-left
                                 )}
                               >
-                                <div
-                                  className={cn(
-                                    "rounded-2xl px-4 py-2 text-sm shadow-sm",
-                                    msg.direction === "outbound"
-                                      ? "bg-blue-600 text-white rounded-br-none"
-                                      : "bg-white dark:bg-card border-2 border-green-200 text-foreground rounded-bl-none"
-                                  )}
-                                >
-                                  {msg.is_fallback && msg.direction === "inbound" && (
-                                    <div className="mb-1 pb-1 border-b border-border/10 flex items-center gap-1 text-xs opacity-90">
-                                       <AlertTriangle className="h-3 w-3 text-yellow-500" />
-                                       <span>Ukjent avsender</span>
-                                    </div>
-                                  )}
-                                  {msg.direction === "inbound" && (
-                                    <div className="mb-1 pb-1 border-b border-green-500/20 flex items-center gap-1 text-xs text-green-700 font-medium">
-                                       <span>← Innkommende</span>
-                                    </div>
-                                  )}
-                                  {msg.direction === "outbound" && (
-                                    <div className="mb-1 pb-1 border-b border-white/20 flex items-center gap-1 text-xs text-blue-100 font-medium">
-                                       <span>Utgående →</span>
-                                    </div>
-                                  )}
-                                  <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                                </div>
-                                <div className="flex items-center gap-2 mt-1 px-1">
-                                  <span className="text-[10px] text-muted-foreground">
-                                    {new Date(msg.created_at).toLocaleString("no-NO", {
-                                      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-                                    })}
-                                  </span>
-                                  {msg.direction === "inbound" && msg.is_acknowledged && (
-                                    <div className="flex items-center gap-1 text-[10px] text-green-600 font-medium">
-                                      <CheckCheck className="h-3 w-3" />
-                                      <span>Mottatt</span>
-                                    </div>
-                                  )}
-                                  {msg.direction === "inbound" && !msg.is_acknowledged && (
-                                    <span className="text-[10px] text-amber-600 font-medium animate-pulse">
-                                      Ubehandlet
-                                    </span>
-                                  )}
-                                </div>
+                                {msg.is_fallback && msg.direction === "inbound" && (
+                                  <div className="mb-1 pb-1 border-b border-border/10 flex items-center gap-1 text-xs opacity-90">
+                                     <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                                     <span>Ukjent avsender</span>
+                                  </div>
+                                )}
+                                {msg.direction === "inbound" && (
+                                  <div className="mb-1 pb-1 border-b border-green-500/20 flex items-center gap-1 text-xs text-green-700 font-medium">
+                                     <span>← Innkommende</span>
+                                  </div>
+                                )}
+                                {msg.direction === "outbound" && (
+                                  <div className="mb-1 pb-1 border-b border-white/20 flex items-center gap-1 text-xs text-blue-100 font-medium">
+                                     <span>Utgående →</span>
+                                  </div>
+                                )}
+                                <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                               </div>
                             ))
                           )}

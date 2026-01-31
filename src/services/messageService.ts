@@ -2,15 +2,31 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatPhoneNumber } from "@/lib/utils";
 
-export type Message = Database["public"]["Tables"]["messages"]["Row"] & {
+// Define simpler types to avoid TS deep instantiation errors with complex Supabase types
+export type Message = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  tenant_id: string;
+  thread_id: string | null;
+  thread_key: string | null;
+  direction: "inbound" | "outbound";
+  content: string;
+  from_number: string;
+  to_number: string;
+  status: string;
+  provider_message_id: string | null;
+  error_message: string | null;
+  acknowledged_at: string | null;
+  acknowledged_by_user_id: string | null;
+  is_fallback?: boolean;
   is_acknowledged?: boolean;
 };
 
-export type MessageThread = Database["public"]["Tables"]["message_threads"]["Row"];
-
-// Simplified type to avoid deep type instantiation issues
-export type ExtendedMessageThread = {
+export type MessageThread = {
   id: string;
+  created_at: string;
+  updated_at: string;
   tenant_id: string;
   gateway_id: string | null;
   contact_phone: string;
@@ -18,8 +34,9 @@ export type ExtendedMessageThread = {
   is_resolved: boolean;
   resolved_at: string | null;
   last_message_at: string | null;
-  created_at: string;
-  updated_at: string;
+};
+
+export type ExtendedMessageThread = MessageThread & {
   group_name?: string;
   unread_count?: number;
   last_message_content?: string;
@@ -36,44 +53,42 @@ export const messageService = {
   ): Promise<MessageThread> {
     const formattedPhone = formatPhoneNumber(contactPhone);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("User not authenticated");
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) throw new Error("User not authenticated");
 
     // 1. Get current user's tenant
     const { data: userData } = await supabase
       .from("users")
       .select("tenant_id")
-      .eq("auth_user_id", user.id)
+      .eq("auth_user_id", authData.user.id)
       .single();
 
     if (!userData) throw new Error("User not found");
     const tenantId = userData.tenant_id;
 
     // 3. Check if thread already exists
-    // Cast to any to avoid deep type instantiation issues
-    const { data: existingThread } = await supabase
+    // Use 'any' cast for query builder to avoid deep type issues
+    const { data: existingThread } = await (supabase
       .from("message_threads")
       .select("*")
       .eq("contact_phone", formattedPhone)
       .eq("tenant_id", tenantId)
-      .eq("is_resolved", false)
-      .maybeSingle();
+      .eq("is_resolved", false) as any).maybeSingle();
 
     if (existingThread) {
       return existingThread as MessageThread;
     }
     
     // 4. Get default gateway
-    const { data: gateway } = await supabase
+    const { data: gateway } = await (supabase
       .from("gateways")
       .select("id")
       .eq("tenant_id", tenantId)
       .eq("is_active", true)
-      .limit(1)
-      .single();
+      .limit(1) as any).single();
 
     // Create new thread
-    const { data: newThread, error } = await supabase
+    const { data: newThread, error } = await (supabase
       .from("message_threads")
       .insert({
         contact_phone: formattedPhone,
@@ -82,7 +97,7 @@ export const messageService = {
         resolved_group_id: targetGroupId
       })
       .select("*")
-      .single();
+      .single() as any);
 
     if (error) throw error;
     return newThread as MessageThread;
@@ -92,71 +107,39 @@ export const messageService = {
    * Get all message threads for a specific group
    */
   async getThreadsByGroup(groupId: string): Promise<ExtendedMessageThread[]> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error("Not authenticated");
-
-    // Get user's tenant_id
-    const { data: profile } = await supabase
-      .from("users")
-      .select("tenant_id")
-      .eq("auth_user_id", user.user.id)
-      .single();
-
-    if (!profile) throw new Error("Profile not found");
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) throw new Error("Not authenticated");
 
     // First, get all threads for the group
-    const { data: threads, error: threadsError } = await supabase
+    const { data: threads, error: threadsError } = await (supabase
       .from("message_threads")
-      .select("*")
+      .select("*, groups(name)")
       .eq("resolved_group_id", groupId)
       .eq("is_resolved", false)
-      .order("last_message_at", { ascending: false });
+      .order("last_message_at", { ascending: false }) as any);
 
     if (threadsError) {
       console.error("Error fetching threads by group:", threadsError);
       throw threadsError;
     }
 
+    if (!threads || threads.length === 0) return [];
+
     // Then, get all messages for these threads
-    const threadIds = (threads || []).map((t: any) => t.id);
-    const { data: messages, error: messagesError } = await supabase
+    const threadIds = threads.map((t: any) => t.id);
+    
+    const { data: messages, error: messagesError } = await (supabase
       .from("messages")
       .select("*")
       .in("thread_id", threadIds)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true }) as any);
 
     if (messagesError) {
       console.error("Error fetching messages for threads:", messagesError);
       throw messagesError;
     }
 
-    // Map threads to ExtendedMessageThread with message data
-    const threadMap = new Map<string, ExtendedMessageThread>();
-    (threads || []).forEach((t: any) => {
-      threadMap.set(t.id, {
-        ...t,
-        group_name: t.groups?.name || "Unknown",
-        unread_count: 0,
-        last_message_content: "",
-        is_fallback: false,
-      });
-    });
-
-    // Update thread data with message information
-    (messages || []).forEach((m: any) => {
-      const thread = threadMap.get(m.thread_id);
-      if (thread) {
-        if (!m.acknowledged_at) {
-          thread.unread_count = (thread.unread_count || 0) + 1;
-        }
-        if (!thread.last_message_content || new Date(m.created_at) > new Date(thread.last_message_content)) {
-          thread.last_message_content = m.content;
-          thread.is_fallback = m.is_fallback || false;
-        }
-      }
-    });
-
-    return Array.from(threadMap.values());
+    return this._mapThreadsResponse(threads, messages);
   },
 
   /**
@@ -166,7 +149,6 @@ export const messageService = {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
-    // Get user's tenant_id
     const { data: profile } = await supabase
       .from("users")
       .select("tenant_id")
@@ -175,7 +157,7 @@ export const messageService = {
 
     if (!profile) throw new Error("Profile not found");
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
       .from("message_threads")
       .select(`
         *,
@@ -188,20 +170,20 @@ export const messageService = {
           content,
           created_at,
           acknowledged_at,
-          is_fallback
+          is_fallback,
+          direction
         )
       `)
       .eq("tenant_id", profile.tenant_id)
       .eq("is_resolved", false)
-      .order("last_message_at", { ascending: false });
+      .order("last_message_at", { ascending: false }) as any);
 
     if (error) {
       console.error("Error fetching all threads:", error);
       throw error;
     }
 
-    // Cast data to any to avoid deep type instantiation issues
-    return this._mapThreadsResponse(data as any);
+    return this._mapThreadsResponse(data);
   },
 
   /**
@@ -219,11 +201,7 @@ export const messageService = {
 
     if (!profile) throw new Error("Profile not found");
 
-    // We look for threads where the resolved_group is the fallback group OR messages are flagged as fallback
-    // Simplest approach: check threads with messages that have is_fallback=true
-    
-    // First, let's find threads that contain fallback messages
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
       .from("message_threads")
       .select(`
         *,
@@ -242,12 +220,11 @@ export const messageService = {
       .eq("tenant_id", profile.tenant_id)
       .eq("is_resolved", false)
       .eq("messages.is_fallback", true)
-      .order("last_message_at", { ascending: false });
+      .order("last_message_at", { ascending: false }) as any);
 
     if (error) throw error;
 
-    // Use our mapper, but we know these are fallback threads
-    return this._mapThreadsResponse(data as any).map(t => ({ ...t, is_fallback: true }));
+    return this._mapThreadsResponse(data).map(t => ({ ...t, is_fallback: true }));
   },
 
   /**
@@ -268,8 +245,7 @@ export const messageService = {
     const thresholdTime = new Date();
     thresholdTime.setMinutes(thresholdTime.getMinutes() - thresholdMinutes);
 
-    // Find messages that are unacknowledged and older than threshold
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
       .from("messages")
       .select(`
         id,
@@ -285,6 +261,10 @@ export const messageService = {
           created_at,
           last_message_at,
           is_resolved,
+          tenant_id,
+          gateway_id,
+          updated_at,
+          resolved_at,
           groups (
             name
           )
@@ -294,22 +274,30 @@ export const messageService = {
       .eq("direction", "inbound")
       .is("acknowledged_at", null)
       .lt("created_at", thresholdTime.toISOString())
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true }) as any);
 
     if (error) throw error;
 
-    // Map these messages to a unique list of threads
     const threadMap = new Map<string, ExtendedMessageThread>();
     
     (data || []).forEach((msg: any) => {
       const thread = msg.message_threads;
       if (!threadMap.has(thread.id)) {
         threadMap.set(thread.id, {
-          ...thread, // Spread original thread properties
+          id: thread.id,
+          contact_phone: thread.contact_phone,
+          resolved_group_id: thread.resolved_group_id,
+          created_at: thread.created_at,
+          last_message_at: thread.last_message_at,
+          is_resolved: thread.is_resolved,
+          tenant_id: thread.tenant_id,
+          gateway_id: thread.gateway_id,
+          updated_at: thread.updated_at,
+          resolved_at: thread.resolved_at,
           group_name: thread.groups?.name || "Unknown",
-          unread_count: 1, // At least this message
+          unread_count: 1,
           last_message_content: msg.content,
-          is_fallback: false, // Default for escalation view
+          is_fallback: false,
         });
       }
     });
@@ -321,15 +309,15 @@ export const messageService = {
    * Get all messages for a specific thread
    */
   async getMessagesByThread(threadId: string): Promise<Message[]> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
       .from("messages")
       .select("*")
       .eq("thread_id", threadId)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true }) as any);
 
     if (error) throw error;
 
-    return (data || []).map((msg) => ({
+    return (data || []).map((msg: any) => ({
       ...msg,
       is_acknowledged: !!msg.acknowledged_at,
     }));
@@ -363,14 +351,16 @@ export const messageService = {
     let targetGroupId: string | undefined;
 
     // Try to find the group the CURRENT USER belongs to
-    // using 'any' cast to avoid deep type instantiation errors
-    const { data: userGroups } = await supabase
+    // We use correct table 'group_memberships'
+    const { data: userGroups } = await (supabase
       .from("group_memberships")
       .select("group_id, groups(id, kind)")
-      .eq("user_id", userProfile.id) as any;
+      .eq("user_id", userProfile.id) as any);
 
     if (userGroups && userGroups.length > 0) {
-       targetGroupId = userGroups[0].group_id;
+       // Prefer operational groups if available, otherwise just take the first one
+       const operationalGroup = userGroups.find((g: any) => g.groups?.kind === 'operational');
+       targetGroupId = operationalGroup ? operationalGroup.group_id : userGroups[0].group_id;
     } else {
        // Fallback logic
        const { data: fallbackGroup } = await supabase
@@ -383,15 +373,10 @@ export const messageService = {
        targetGroupId = fallbackGroup?.id;
     }
 
-
-    // If no threadId provided OR if threadId is not a valid UUID (e.g. phone number), find or create one
-    // Also protect against threadId being passed as an object/invalid string
     const isValidUUID = (id: string | undefined) => 
       id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
     if (!finalThreadId || !isValidUUID(finalThreadId)) {
-       // CRITICAL: Use recipient's phone (toNumber) as contact_phone for thread
-       // This ensures when recipient replies, their reply finds this thread
        const thread = await this.findOrCreateThread(formattedToNumber, targetGroupId);
        finalThreadId = thread.id;
     }
@@ -409,7 +394,8 @@ export const messageService = {
     
     if (!currentThread) throw new Error("Could not find thread context");
 
-    // CRITICAL: Update resolved_group_id if needed
+    // CRITICAL: Update resolved_group_id if the sender is in a specific group
+    // This ensures replies come back to this group
     if (targetGroupId && currentThread.resolved_group_id !== targetGroupId) {
        await supabase
          .from("message_threads")
@@ -425,11 +411,12 @@ export const messageService = {
       from: fromNumber,
       content,
       threadId: finalThreadId,
-      threadContactPhone: currentThread.contact_phone
+      threadContactPhone: currentThread.contact_phone,
+      routedToGroup: targetGroupId
     });
 
     // Store in database
-    const { data: messageData, error: insertError } = await supabase
+    const { data: messageData, error: insertError } = await (supabase
       .from("messages")
       .insert({
         thread_id: finalThreadId,
@@ -442,7 +429,7 @@ export const messageService = {
         status: "sent"
       })
       .select("*")
-      .single();
+      .single() as any);
 
     if (insertError) throw insertError;
 
@@ -518,7 +505,6 @@ export const messageService = {
    * Reclassify a thread to a different group
    */
   async reclassifyThread(threadId: string, newGroupId: string) {
-    // 1. Update the thread's resolved group
     const { error } = await supabase
       .from("message_threads")
       .update({
@@ -528,8 +514,6 @@ export const messageService = {
 
     if (error) throw error;
 
-    // 2. Mark all messages in this thread as NOT fallback anymore
-    // Since they are now assigned to a specific group
     const { error: msgError } = await supabase
       .from("messages")
       .update({
@@ -556,17 +540,17 @@ export const messageService = {
 
     if (!profile) throw new Error("Profile not found");
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
       .from("messages")
       .select("*")
       .eq("tenant_id", profile.tenant_id)
       .eq("direction", "inbound")
       .is("acknowledged_at", null)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }) as any);
 
     if (error) throw error;
 
-    return (data || []).map((msg) => ({
+    return (data || []).map((msg: any) => ({
       ...msg,
       is_acknowledged: false,
     }));
@@ -588,24 +572,62 @@ export const messageService = {
   },
 
   // Helper to map Supabase response to MessageThread type
-  _mapThreadsResponse(data: any[] | null): ExtendedMessageThread[] {
-    return (data || []).map((thread: any) => {
-      const messages = Array.isArray(thread.messages) ? thread.messages : [];
-      const unreadCount = messages.filter((m: any) => !m.acknowledged_at).length;
-      
-      // Sort messages to find latest
-      const sortedMessages = messages.sort((a: any, b: any) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      const lastMessage = sortedMessages[0] || { content: "", is_fallback: false };
-
-      return {
-        ...thread, // Spread all properties from the DB row (id, tenant_id, gateway_id, etc.)
-        group_name: thread.groups?.name || "Unknown",
-        unread_count: unreadCount,
-        last_message_content: lastMessage.content,
-        is_fallback: lastMessage.is_fallback || false,
-      };
+  _mapThreadsResponse(threads: any[] | null, messages: any[] | null = null): ExtendedMessageThread[] {
+    const threadMap = new Map<string, ExtendedMessageThread>();
+    
+    (threads || []).forEach((t: any) => {
+      threadMap.set(t.id, {
+        id: t.id,
+        tenant_id: t.tenant_id,
+        gateway_id: t.gateway_id,
+        contact_phone: t.contact_phone,
+        resolved_group_id: t.resolved_group_id,
+        is_resolved: t.is_resolved,
+        resolved_at: t.resolved_at,
+        last_message_at: t.last_message_at,
+        created_at: t.created_at,
+        updated_at: t.updated_at,
+        group_name: t.groups?.name || "Unknown",
+        unread_count: 0,
+        last_message_content: "",
+        is_fallback: false,
+      });
     });
+
+    // If messages are provided separately (getThreadsByGroup), use them
+    if (messages) {
+      messages.forEach((m: any) => {
+        const thread = threadMap.get(m.thread_id);
+        if (thread) {
+           if (!m.acknowledged_at && m.direction === 'inbound') {
+            thread.unread_count = (thread.unread_count || 0) + 1;
+          }
+          if (!thread.last_message_content || new Date(m.created_at) > new Date(thread.last_message_at || 0)) {
+            thread.last_message_content = m.content;
+            thread.is_fallback = m.is_fallback || false;
+          }
+        }
+      });
+    } else {
+      // If messages are nested (getAllThreads), use them
+      (threads || []).forEach((t: any) => {
+        const thread = threadMap.get(t.id);
+        if (thread && Array.isArray(t.messages)) {
+          const threadMessages = t.messages;
+          thread.unread_count = threadMessages.filter((m: any) => !m.acknowledged_at && m.direction === 'inbound').length;
+          
+          const sortedMessages = threadMessages.sort((a: any, b: any) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+          const lastMessage = sortedMessages[0];
+          if (lastMessage) {
+            thread.last_message_content = lastMessage.content;
+            thread.is_fallback = lastMessage.is_fallback || false;
+          }
+        }
+      });
+    }
+
+    return Array.from(threadMap.values());
   }
 };
