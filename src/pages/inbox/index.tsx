@@ -45,6 +45,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function InboxPage() {
   const [activeTab, setActiveTab] = useState<"all" | "fallback" | "escalated">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [threads, setThreads] = useState<ExtendedMessageThread[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
@@ -67,14 +68,13 @@ export default function InboxPage() {
       (thread.group_name && thread.group_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (thread.last_message_content && thread.last_message_content.toLowerCase().includes(searchQuery.toLowerCase()));
       
-    // Filter by view mode
-    if (viewMode === "all") return matchesSearch;
-    if (viewMode === "fallback") return matchesSearch && thread.is_fallback;
-    if (viewMode === "escalated") return matchesSearch; // Escalated view logic handles fetching
-    if (viewMode === "resolved") return matchesSearch && thread.is_resolved;
+    // Filter by view mode (mapped from activeTab)
+    if (activeTab === "all") return matchesSearch;
+    if (activeTab === "fallback") return matchesSearch && thread.is_fallback;
+    if (activeTab === "escalated") return matchesSearch; // Escalated view logic handles fetching
     
     // For specific group view
-    return matchesSearch && thread.resolved_group_id === viewMode;
+    return matchesSearch && thread.resolved_group_id === selectedGroupFilter;
   });
 
   useEffect(() => {
@@ -308,10 +308,10 @@ export default function InboxPage() {
                         threads.map((thread) => (
                           <button
                             key={thread.id}
-                            onClick={() => setSelectedThread(thread)}
+                            onClick={() => setSelectedThreadId(thread.id)}
                             className={cn(
                               "w-full text-left p-3 rounded-lg border transition-all hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
-                              selectedThread?.id === thread.id
+                              selectedThreadId === thread.id
                                 ? "bg-primary/5 border-primary/50 shadow-sm"
                                 : "bg-card hover:bg-accent/50"
                             )}

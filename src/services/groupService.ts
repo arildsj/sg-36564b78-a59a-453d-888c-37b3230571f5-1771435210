@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type Group = Database["public"]["Tables"]["groups"]["Row"];
+export type Group = Database["public"]["Tables"]["groups"]["Row"];
 type GroupInsert = Database["public"]["Tables"]["groups"]["Insert"];
 type GroupUpdate = Database["public"]["Tables"]["groups"]["Update"];
 

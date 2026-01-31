@@ -28,21 +28,7 @@ export const messageService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
-    // Try to find existing thread
-    const { data: existingThread } = await supabase
-      .from("message_threads")
-      .select("id")
-      .eq("contact_phone", formattedPhone)
-      .eq("tenant_id", user.tenant_id)
-      .eq("is_resolved", false)
-      .single();
-
-    if (existingThread) {
-      return existingThread;
-    }
-
-    // If no thread exists, we need to find a gateway to assign it to
-    // 1. Get current user's tenant
+    // 1. Get current user's tenant (Moved up)
     const { data: userData } = await supabase
       .from("users")
       .select("tenant_id")
@@ -52,18 +38,34 @@ export const messageService = {
     if (!userData) throw new Error("User not found");
     const tenantId = userData.tenant_id;
 
+    // Try to find existing thread
+    const { data: existingThread } = await supabase
+      .from("message_threads")
+      .select("*") // Select all fields
+      .eq("contact_phone", formattedPhone)
+      .eq("tenant_id", tenantId)
+      .eq("is_resolved", false)
+      .single();
+
+    if (existingThread) {
+      return existingThread;
+    }
+
+    // If no thread exists, we need to find a gateway to assign it to
+    // Note: tenantId is already fetched above
+
     // 2. Try to find an explicit fallback group
     const { data: fallbackGroup, error: fallbackError } = await supabase
       .from("groups")
       .select("id")
       .eq("tenant_id", tenantId)
       .eq("kind", "fallback")
-      .maybeSingle(); // Changed from single() to maybeSingle() to avoid 406 error
+      .maybeSingle(); 
 
-    let targetGroupId = fallbackGroup?.id;
+    let resolvedTargetGroupId = targetGroupId || fallbackGroup?.id;
 
     // 3. If no fallback group, try to find ANY operational group to use as fallback
-    if (!targetGroupId) {
+    if (!resolvedTargetGroupId) {
       const { data: anyGroup } = await supabase
         .from("groups")
         .select("id")
@@ -72,17 +74,17 @@ export const messageService = {
         .limit(1)
         .maybeSingle();
       
-      targetGroupId = anyGroup?.id;
+      resolvedTargetGroupId = anyGroup?.id;
     }
 
-    if (!targetGroupId) {
+    if (!resolvedTargetGroupId) {
        // Last resort: Create a default fallback group if absolutely nothing exists
        console.log("No groups found, creating default fallback group...");
        const { data: newGroup, error: createError } = await supabase
         .from("groups")
         .insert({
           tenant_id: tenantId,
-          name: "Generell Innnboks",
+          name: "Generell Innboks",
           kind: "fallback",
           description: "Automatisk opprettet innboks for meldinger"
         })
@@ -93,7 +95,7 @@ export const messageService = {
          console.error("Failed to create fallback group:", createError);
          throw new Error("Kunne ikke finne eller opprette en meldingsgruppe. Kontakt administrator.");
        }
-       targetGroupId = newGroup.id;
+       resolvedTargetGroupId = newGroup.id;
     }
     
     // 4. Get default gateway
@@ -106,9 +108,6 @@ export const messageService = {
 
     if (!gateway) {
       console.warn("No gateway found for tenant, cannot create thread properly linked to gateway.");
-      // In a real scenario, we should probably fail or have a default. 
-      // For now, we'll try to proceed, but if DB enforces it, it will fail.
-      // Let's assume there is at least one gateway or the constraint allows null (but TS said it's required).
     }
 
     // Create new thread
@@ -117,12 +116,12 @@ export const messageService = {
       .insert({
         contact_phone: formattedPhone,
         tenant_id: tenantId,
-        resolved_group_id: targetGroupId,
+        resolved_group_id: resolvedTargetGroupId,
         is_resolved: false,
         last_message_at: new Date().toISOString(),
         gateway_id: gateway?.id // Include gateway_id
       })
-      .select("id")
+      .select()
       .single();
 
     if (error) throw error;
@@ -305,12 +304,7 @@ export const messageService = {
       const thread = msg.message_threads;
       if (!threadMap.has(thread.id)) {
         threadMap.set(thread.id, {
-          id: thread.id,
-          contact_phone: thread.contact_phone,
-          resolved_group_id: thread.resolved_group_id,
-          is_resolved: thread.is_resolved,
-          last_message_at: msg.created_at, // Use message time for sorting in escalation view
-          created_at: thread.created_at,
+          ...thread, // Spread original thread properties
           group_name: thread.groups?.name || "Unknown",
           unread_count: 1, // At least this message
           last_message_content: msg.content,
@@ -619,12 +613,7 @@ export const messageService = {
       const lastMessage = sortedMessages[0] || { content: "", is_fallback: false };
 
       return {
-        id: thread.id,
-        contact_phone: thread.contact_phone,
-        resolved_group_id: thread.resolved_group_id,
-        is_resolved: thread.is_resolved,
-        last_message_at: thread.last_message_at,
-        created_at: thread.created_at,
+        ...thread, // Spread all properties from the DB row (id, tenant_id, gateway_id, etc.)
         group_name: thread.groups?.name || "Unknown",
         unread_count: unreadCount,
         last_message_content: lastMessage.content,
