@@ -12,9 +12,9 @@ const corsHeaders = {
 interface ImportRequest {
   tenant_id: string;
   import_type: "users" | "whitelisted_numbers" | "whitelist_group_links" | "contacts";
-  csv_data: string; // Base64 encoded CSV
+  csv_data: string;
   created_by_user_id: string;
-  group_id?: string; // Optional target group for all contacts
+  group_id?: string;
 }
 
 serve(async (req) => {
@@ -37,7 +37,6 @@ serve(async (req) => {
       );
     }
 
-    // Create import job
     const { data: importJob, error: jobError } = await supabase
       .from("import_jobs")
       .insert({
@@ -56,7 +55,6 @@ serve(async (req) => {
       );
     }
 
-    // Decode and parse CSV
     const csvContent = atob(payload.csv_data);
     const rows = parseCSV(csvContent);
 
@@ -72,7 +70,6 @@ serve(async (req) => {
       );
     }
 
-    // Validate entire file before applying
     const validationResult = await validateImport(supabase, payload.import_type, rows, payload.tenant_id);
 
     if (!validationResult.valid) {
@@ -92,7 +89,6 @@ serve(async (req) => {
       );
     }
 
-    // Process import
     let result;
     if (payload.import_type === "contacts") {
       result = await batchImportContacts(supabase, rows, payload.tenant_id, payload.group_id);
@@ -100,7 +96,6 @@ serve(async (req) => {
       result = await processImport(supabase, payload.import_type, rows, payload.tenant_id);
     }
 
-    // Update import job
     await supabase
       .from("import_jobs")
       .update({
@@ -131,11 +126,9 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  const lines = content.trim().split("
-");
+  const lines = content.trim().split("\n");
   if (lines.length < 2) return [];
 
-  // Detect delimiter (simple check on header row)
   const headerLine = lines[0];
   const delimiter = headerLine.includes(";") ? ";" : ",";
 
@@ -143,12 +136,9 @@ function parseCSV(content: string): any[] {
   const rows = [];
 
   for (let i = 1; i < lines.length; i++) {
-    // Handle quotes basic parsing or split by delimiter
-    // For simplicity using split, but ideally should use a library for quoted values containing delimiter
     const values = lines[i].split(delimiter).map((v) => v.trim().replace(/^"|"$/g, ""));
     const row: any = {};
     headers.forEach((header, index) => {
-      // Normalize header keys to lowercase for easier matching
       row[header.toLowerCase()] = values[index] || "";
     });
     rows.push(row);
@@ -167,18 +157,15 @@ async function validateImport(
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const lineNum = i + 2; // CSV line number (header is 1)
+    const lineNum = i + 2;
 
     switch (importType) {
       case "contacts":
-        // Flexible validation for contacts
-        // Required: Name
         const name = row.navn || row.name || row.full_name;
         if (!name) {
           errors.push(`Line ${lineNum}: Missing Name (Navn/Name)`);
         }
         
-        // Validation for relationships if present
         const relation = row.relasjon || row.relation || row.type;
         const relatedTo = row.tilhører || row.tilhorer || row.related_to || row.subject;
         
@@ -259,7 +246,6 @@ async function processImport(
 }
 
 async function importUser(supabase: any, row: any, tenantId: string): Promise<void> {
-  // Create auth user first
   const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
     email: row.email,
     email_confirm: true,
@@ -270,7 +256,6 @@ async function importUser(supabase: any, row: any, tenantId: string): Promise<vo
 
   if (authError) throw authError;
 
-  // Create user profile
   await supabase.from("user_profiles").insert({
     id: authUser.user.id,
     tenant_id: tenantId,
@@ -282,7 +267,6 @@ async function importUser(supabase: any, row: any, tenantId: string): Promise<vo
 }
 
 async function importWhitelistedNumber(supabase: any, row: any, tenantId: string): Promise<void> {
-  // Check if contact exists
   let contactId = null;
 
   if (row.contact_name || row.contact_email) {
@@ -310,7 +294,6 @@ async function importWhitelistedNumber(supabase: any, row: any, tenantId: string
     }
   }
 
-  // Insert whitelisted number (idempotent)
   await supabase
     .from("whitelisted_numbers")
     .upsert(
@@ -325,7 +308,6 @@ async function importWhitelistedNumber(supabase: any, row: any, tenantId: string
 }
 
 async function importWhitelistGroupLink(supabase: any, row: any, tenantId: string): Promise<void> {
-  // Resolve group
   const { data: group } = await supabase
     .from("groups")
     .select("id")
@@ -335,7 +317,6 @@ async function importWhitelistGroupLink(supabase: any, row: any, tenantId: strin
 
   if (!group) throw new Error(`Group not found: ${row.group_name || row.group_id}`);
 
-  // Resolve whitelisted number
   const { data: whitelistedNumber } = await supabase
     .from("whitelisted_numbers")
     .select("id")
@@ -345,7 +326,6 @@ async function importWhitelistGroupLink(supabase: any, row: any, tenantId: strin
 
   if (!whitelistedNumber) throw new Error(`Whitelisted number not found: ${row.phone_number}`);
 
-  // Create link (idempotent)
   await supabase
     .from("whitelisted_number_group_links")
     .upsert(
@@ -366,7 +346,6 @@ async function batchImportContacts(
   let success = 0;
   let failed = 0;
   
-  // Normalize rows
   const contacts = rows.map(row => ({
     name: row.navn || row.name || row.full_name,
     phone: row.tlf || row.telefon || row.phone || row.mobile || row.mobil,
@@ -375,12 +354,11 @@ async function batchImportContacts(
     relation: row.relasjon || row.relation || row.type,
     relatedTo: row.tilhører || row.tilhorer || row.related_to || row.subject || row.belongs_to,
     externalId: row.ekstern_id || row.external_id || row.id,
-    row_data: row // Keep original for reference
-  })).filter(c => c.name); // Filter empty names
+    row_data: row
+  })).filter(c => c.name);
 
-  // 1. Resolve Groups (if group names provided in CSV)
   const groupNames = [...new Set(contacts.map(c => c.group).filter(Boolean))];
-  const groupMap = new Map<string, string>(); // Name -> ID
+  const groupMap = new Map<string, string>();
   
   if (groupNames.length > 0) {
     const { data: groups } = await supabase
@@ -392,10 +370,8 @@ async function batchImportContacts(
     groups?.forEach((g: any) => groupMap.set(g.name, g.id));
   }
 
-  // 2. PASS 1: Create/Upsert Contacts
   for (const contact of contacts) {
     try {
-      // Determine group ID (priority: CSV specific > global target > null)
       let groupId = contact.group ? groupMap.get(contact.group) : targetGroupId;
       
       const contactData = {
@@ -408,11 +384,7 @@ async function batchImportContacts(
         metadata: { imported: true }
       };
 
-      // Upsert based on Phone (if present) OR External ID (if present) OR Name+Tenant (fallback)
-      let matchQuery = supabase.from("contacts").select("id");
-      
       if (contact.externalId) {
-        // Find by external ID
         const { data } = await supabase.from("contacts").select("id").eq("tenant_id", tenantId).eq("external_id", contact.externalId).single();
         if (data) {
              await supabase.from("contacts").update(contactData).eq("id", data.id);
@@ -420,15 +392,8 @@ async function batchImportContacts(
              await supabase.from("contacts").insert(contactData);
         }
       } else if (contact.phone) {
-        // Upsert by phone (constraint handles this)
         await supabase.from("contacts").upsert(contactData, { onConflict: "tenant_id, phone_number" });
       } else {
-        // Insert new (name only contacts like students often don't have unique keys other than name)
-        // Check if exists by name in group to avoid duplicates?
-        // For now, simple insert or update if we can find a loose match could be dangerous.
-        // Let's rely on name matching for "Subject" lookup later, but create new for safety if no ID/Phone.
-        // Actually, for "Elev" without phone, we risk duplicates. 
-        // Let's try to find by Name + Group if possible.
         let query = supabase.from("contacts").select("id").eq("tenant_id", tenantId).eq("name", contact.name);
         if (groupId) query = query.eq("group_id", groupId);
         
@@ -446,17 +411,10 @@ async function batchImportContacts(
     }
   }
 
-  // 3. PASS 2: Create Relationships
-  // We need to fetch all contacts we just worked on to resolve IDs
-  // This is a bit heavy, but safe. Or we could have cached IDs in Pass 1.
-  // Let's just lookup subjects by Name dynamically.
-  
   const relationRows = contacts.filter(c => c.relation && c.relatedTo);
   
   for (const row of relationRows) {
     try {
-      // Find the "Subject" (the student)
-      // Look for name match.
       const { data: subject } = await supabase
         .from("contacts")
         .select("id")
@@ -470,8 +428,6 @@ async function batchImportContacts(
         continue;
       }
 
-      // Find the "Related" (the parent/guardian - CURRENT ROW)
-      // We look up by phone if available, or name
       let relatedQuery = supabase.from("contacts").select("id").eq("tenant_id", tenantId);
       if (row.phone) relatedQuery = relatedQuery.eq("phone_number", row.phone);
       else relatedQuery = relatedQuery.eq("name", row.name);
@@ -482,7 +438,6 @@ async function batchImportContacts(
          continue; 
       }
       
-      // Upsert relationship
       await supabase.from("contact_relationships").upsert({
         tenant_id: tenantId,
         subject_contact_id: subject.id,
@@ -492,7 +447,6 @@ async function batchImportContacts(
       
     } catch (e) {
       console.error("Error creating relationship:", e);
-      // We don't count this as a main "failed" row since the contact itself was likely created
     }
   }
 
