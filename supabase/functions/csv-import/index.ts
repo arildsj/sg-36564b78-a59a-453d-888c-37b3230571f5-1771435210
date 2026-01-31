@@ -163,14 +163,14 @@ async function validateImport(
       case "contacts":
         const name = row.navn || row.name || row.full_name;
         if (!name) {
-          errors.push(`Line ${lineNum}: Missing Name (Navn/Name)`);
+          errors.push(`Line ${lineNum}: Missing Name`);
         }
         
         const relation = row.relasjon || row.relation || row.type;
-        const relatedTo = row.tilhører || row.tilhorer || row.related_to || row.subject;
+        const relatedTo = row.tilhorer || row.related_to || row.subject;
         
         if (relation && !relatedTo) {
-           errors.push(`Line ${lineNum}: Relation specified but missing 'Tilhører'/'Related To' field`);
+           errors.push(`Line ${lineNum}: Relation specified but missing related field`);
         }
         break;
 
@@ -188,7 +188,7 @@ async function validateImport(
 
       case "whitelisted_numbers":
         if (!row.phone_number || !isValidE164(row.phone_number)) {
-          errors.push(`Line ${lineNum}: Invalid phone_number (must be E.164)`);
+          errors.push(`Line ${lineNum}: Invalid phone_number`);
         }
         break;
 
@@ -352,7 +352,7 @@ async function batchImportContacts(
     email: row.epost || row.email || row.mail,
     group: row.gruppe || row.klasse || row.group || row.class,
     relation: row.relasjon || row.relation || row.type,
-    relatedTo: row.tilhører || row.tilhorer || row.related_to || row.subject || row.belongs_to,
+    relatedTo: row.tilhorer || row.related_to || row.subject || row.belongs_to,
     externalId: row.ekstern_id || row.external_id || row.id,
     row_data: row
   })).filter(c => c.name);
@@ -424,7 +424,7 @@ async function batchImportContacts(
         .maybeSingle();
         
       if (!subject) {
-        console.warn(`Could not find subject '${row.relatedTo}' for relation`);
+        console.warn(`Could not find subject for relation`);
         continue;
       }
 

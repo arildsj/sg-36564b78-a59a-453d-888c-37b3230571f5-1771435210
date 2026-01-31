@@ -245,5 +245,69 @@ export const contactService = {
     if (data?.error) throw new Error(data.error);
 
     return data;
+  },
+
+  async getRelationships(contactId: string) {
+    // Get relationships where this contact is the 'related_contact' (e.g. they are the parent)
+    const { data: asRelated, error: error1 } = await supabase
+      .from("contact_relationships")
+      .select(`
+        id,
+        relationship_type,
+        subject:contacts!subject_contact_id(id, name, group_id)
+      `)
+      .eq("related_contact_id", contactId);
+
+    if (error1) throw error1;
+
+    // Get relationships where this contact is the 'subject' (e.g. they are the student)
+    const { data: asSubject, error: error2 } = await supabase
+      .from("contact_relationships")
+      .select(`
+        id,
+        relationship_type,
+        related:contacts!related_contact_id(id, name, phone_number)
+      `)
+      .eq("subject_contact_id", contactId);
+
+    if (error2) throw error2;
+
+    return {
+      asRelated: asRelated || [],
+      asSubject: asSubject || []
+    };
+  },
+
+  async addRelationship(subjectId: string, relatedId: string, type: string) {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("tenant_id")
+      .eq("auth_user_id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("User profile not found");
+
+    const { error } = await supabase
+      .from("contact_relationships")
+      .insert({
+        tenant_id: profile.tenant_id,
+        subject_contact_id: subjectId,
+        related_contact_id: relatedId,
+        relationship_type: type
+      });
+
+    if (error) throw error;
+  },
+
+  async removeRelationship(relationshipId: string) {
+    const { error } = await supabase
+      .from("contact_relationships")
+      .delete()
+      .eq("id", relationshipId);
+
+    if (error) throw error;
   }
 };

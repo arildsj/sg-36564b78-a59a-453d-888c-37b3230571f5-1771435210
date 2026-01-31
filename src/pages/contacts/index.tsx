@@ -67,6 +67,16 @@ export default function ContactsPage() {
     is_whitelisted: true,
     group_ids: [] as string[],
   });
+  
+  // Relationship state
+  const [relationships, setRelationships] = useState<{
+    asRelated: any[],
+    asSubject: any[]
+  }>({ asRelated: [], asSubject: [] });
+  const [newRelSubject, setNewRelSubject] = useState("");
+  const [newRelType, setNewRelType] = useState("Foresatt");
+  const [isSearchingRel, setIsSearchingRel] = useState(false);
+  const [relSearchResults, setRelSearchResults] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
@@ -100,7 +110,7 @@ export default function ContactsPage() {
     setShowDialog(true);
   };
 
-  const handleOpenEdit = (contact: Contact) => {
+  const handleOpenEdit = async (contact: Contact) => {
     setEditingContact(contact);
     setFormData({
       name: contact.name,
@@ -109,6 +119,16 @@ export default function ContactsPage() {
       is_whitelisted: contact.is_whitelisted,
       group_ids: contact.groups.map(g => g.id),
     });
+    
+    // Load relationships
+    try {
+      const rels = await contactService.getRelationships(contact.id);
+      setRelationships(rels);
+    } catch (e) {
+      console.error("Failed to load relationships", e);
+      setRelationships({ asRelated: [], asSubject: [] });
+    }
+    
     setShowDialog(true);
   };
 
@@ -163,6 +183,51 @@ export default function ContactsPage() {
       alert(`Feil ved sletting: ${error.message}`);
     } finally {
       setSubmitting(false);
+    }
+  };
+  
+  const searchPotentialRelations = async (query: string) => {
+    setNewRelSubject(query);
+    if (query.length < 2) {
+      setRelSearchResults([]);
+      return;
+    }
+    
+    setIsSearchingRel(true);
+    try {
+      // Use existing search but filter in UI or backend ideally
+      // For now reusing searchContacts which searches whitelisted numbers
+      const results = await contactService.searchContacts(query);
+      setRelSearchResults(results.filter(c => c.id !== editingContact?.id));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSearchingRel(false);
+    }
+  };
+
+  const handleAddRelationship = async (subjectId: string) => {
+    if (!editingContact) return;
+    try {
+      await contactService.addRelationship(subjectId, editingContact.id, newRelType);
+      const rels = await contactService.getRelationships(editingContact.id);
+      setRelationships(rels);
+      setNewRelSubject("");
+      setRelSearchResults([]);
+    } catch (e) {
+      console.error(e);
+      alert("Kunne ikke legge til relasjon");
+    }
+  };
+
+  const handleRemoveRelationship = async (relId: string) => {
+    if (!editingContact) return;
+    try {
+      await contactService.removeRelationship(relId);
+      const rels = await contactService.getRelationships(editingContact.id);
+      setRelationships(rels);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -405,6 +470,76 @@ export default function ContactsPage() {
                 Velg hvilke grupper denne kontakten tilhører. Meldinger fra dette nummeret vil automatisk bli rutet til disse gruppene.
               </p>
             </div>
+            
+            {editingContact && (
+              <div className="space-y-2 border-t pt-4">
+                <Label>Relasjoner</Label>
+                <div className="text-sm text-muted-foreground mb-2">
+                  Koble denne kontakten til andre (f.eks. barn/elever).
+                </div>
+                
+                {/* List existing relationships */}
+                <div className="space-y-2 mb-4">
+                  {relationships.asRelated.map((rel: any) => (
+                    <div key={rel.id} className="flex items-center justify-between bg-secondary/20 p-2 rounded">
+                      <div className="flex items-center gap-2">
+                         <Badge variant="outline">{rel.relationship_type}</Badge>
+                         <span>til <strong>{rel.subject?.name}</strong></span>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => handleRemoveRelationship(rel.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  {relationships.asRelated.length === 0 && (
+                    <div className="text-sm text-muted-foreground italic">Ingen relasjoner registrert.</div>
+                  )}
+                </div>
+
+                {/* Add new relationship */}
+                <div className="flex flex-col gap-2 p-3 bg-secondary/10 rounded-md">
+                  <span className="text-sm font-medium">Legg til ny relasjon:</span>
+                  <div className="flex gap-2">
+                    <select 
+                      className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
+                      value={newRelType}
+                      onChange={(e) => setNewRelType(e.target.value)}
+                    >
+                      <option value="Foresatt">Foresatt</option>
+                      <option value="Mor">Mor</option>
+                      <option value="Far">Far</option>
+                      <option value="Verge">Verge</option>
+                      <option value="Søsken">Søsken</option>
+                      <option value="Annet">Annet</option>
+                    </select>
+                    <div className="relative flex-1">
+                      <Input 
+                        placeholder="Søk etter navn..." 
+                        value={newRelSubject}
+                        onChange={(e) => searchPotentialRelations(e.target.value)}
+                        className="h-9"
+                      />
+                      {relSearchResults.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 bg-popover text-popover-foreground border rounded-md shadow-md mt-1 z-50 max-h-40 overflow-y-auto">
+                          {relSearchResults.map(res => (
+                            <div 
+                              key={res.id}
+                              className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
+                              onClick={() => handleAddRelationship(res.id)}
+                            >
+                              {res.name} {res.phone ? `(${res.phone})` : ''}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Søk opp personen denne kontakten er {newRelType?.toLowerCase()} til.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)} disabled={submitting}>
