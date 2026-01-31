@@ -606,7 +606,7 @@ export default function AdminPage() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <>
                       <div className="flex justify-end">
                         <Button onClick={() => setShowCreateDialog(true)} size="sm">
                           <Plus className="h-4 w-4 mr-2" />
@@ -618,7 +618,7 @@ export default function AdminPage() {
                         onSelectGroup={handleSelectGroup}
                         selectedGroupId={selectedGroup?.id}
                       />
-                    </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -913,7 +913,7 @@ export default function AdminPage() {
                           auditLogs.map((log) => (
                             <TableRow key={log.id}>
                               <TableCell className="whitespace-nowrap font-mono text-xs">
-                                {new Date(log.timestamp).toLocaleString()}
+                                {new Date(log.created_at).toLocaleString()}
                               </TableCell>
                               <TableCell>{log.user_email}</TableCell>
                               <TableCell>
@@ -922,11 +922,11 @@ export default function AdminPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-sm">
-                                <span className="font-semibold">{log.resource_type}</span>
-                                {log.resource_id && <span className="text-xs text-muted-foreground block truncate max-w-[100px]">{log.resource_id}</span>}
+                                <span className="font-semibold">{log.entity_type}</span>
+                                {log.entity_id && <span className="text-xs text-muted-foreground block truncate max-w-[100px]">{log.entity_id}</span>}
                               </TableCell>
                               <TableCell className="text-xs font-mono text-muted-foreground max-w-[300px] truncate">
-                                {JSON.stringify(log.details)}
+                                {JSON.stringify(log.changes)}
                               </TableCell>
                             </TableRow>
                           ))

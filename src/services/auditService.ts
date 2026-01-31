@@ -2,12 +2,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type AuditLogEntry = {
   id: string;
-  timestamp: string;
+  created_at: string;
+  tenant_id: string;
   user_id: string | null;
   action: string;
-  resource_type: string;
-  resource_id: string | null;
-  details: any;
+  entity_type: string;
+  entity_id: string | null;
+  changes: any;
   ip_address: string | null;
   user_agent: string | null;
   user_email?: string; // Joined field
@@ -21,7 +22,7 @@ export const auditService = {
         *,
         user:users(email)
       `)
-      .order("timestamp", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(limit);
 
     if (error) {
