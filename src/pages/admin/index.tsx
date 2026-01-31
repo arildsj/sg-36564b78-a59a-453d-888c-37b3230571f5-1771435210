@@ -39,6 +39,7 @@ import { userService } from "@/services/userService";
 import { gatewayService } from "@/services/gatewayService";
 import { routingRuleService } from "@/services/routingRuleService";
 import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog } from "lucide-react";
+import type { Database } from "@/integrations/supabase/types";
 
 type GroupNode = {
   id: string;
@@ -50,13 +51,7 @@ type GroupNode = {
   children?: GroupNode[];
 };
 
-type User = {
-  id: string;
-  name: string;
-  email: string | null;
-  role: string;
-  status: string;
-  tenant_id: string;
+type User = Database["public"]["Tables"]["users"]["Row"] & {
   groups?: string[];
 };
 
@@ -552,48 +547,57 @@ export default function AdminPage() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      <div className="border rounded-lg p-4">
-                        <GroupHierarchy
-                          groups={groups}
-                          onSelectGroup={setSelectedGroup}
-                          selectedGroupId={selectedGroup?.id}
-                        />
+                    <>
+                      <div className="flex justify-end mb-4">
+                        <Button onClick={() => setShowCreateDialog(true)} size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Opprett ny gruppe
+                        </Button>
                       </div>
-
-                      {selectedGroup && (
-                        <div className="border rounded-lg p-4 bg-accent/50">
-                          <h3 className="font-semibold text-lg mb-2">{selectedGroup.name}</h3>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Type:</span>
-                              <Badge className="ml-2" variant={selectedGroup.kind === "operational" ? "default" : "secondary"}>
-                                {selectedGroup.kind === "operational" ? "Operasjonell" : "Strukturell"}
-                              </Badge>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Medlemmer:</span>
-                              <span className="ml-2 font-semibold">{selectedGroup.member_count || 0}</span>
-                            </div>
-                            {selectedGroup.kind === "operational" && (
-                              <div>
-                                <span className="text-muted-foreground">På vakt:</span>
-                                <span className="ml-2 font-semibold text-green-600">{selectedGroup.on_duty_count || 0}</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex gap-2 mt-4">
-                            <Button variant="outline" size="sm" className="gap-2">
-                              <Settings className="h-4 w-4" />
-                              Konfigurer
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              Administrer medlemmer
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Navn</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Medlemmer</TableHead>
+                            <TableHead>På vakt</TableHead>
+                            <TableHead className="text-right">Handlinger</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {groups.map((group) => (
+                            <TableRow key={group.id} className="hover:bg-accent">
+                              <TableCell className="font-medium">{group.name}</TableCell>
+                              <TableCell>
+                                <Badge className="ml-2" variant={group.kind === "operational" ? "default" : "secondary"}>
+                                  {group.kind === "operational" ? "Operasjonell" : "Strukturell"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-semibold">{group.member_count || 0}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-semibold text-green-600">{group.on_duty_count || 0}</span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex gap-2 justify-end">
+                                  <Button variant="ghost" size="sm">
+                                    Rediger
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteGroup(group.id)}
+                                  >
+                                    Slett
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </>
                   )}
                 </CardContent>
               </Card>
