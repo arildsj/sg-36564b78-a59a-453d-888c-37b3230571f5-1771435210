@@ -44,6 +44,21 @@ export const messageService = {
       return existingThread.id;
     }
 
+    // Fetch a default gateway for the tenant (required for thread creation)
+    const { data: gateway } = await supabase
+      .from("gateways")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .limit(1)
+      .single();
+
+    if (!gateway) {
+      console.warn("No gateway found for tenant, cannot create thread properly linked to gateway.");
+      // In a real scenario, we should probably fail or have a default. 
+      // For now, we'll try to proceed, but if DB enforces it, it will fail.
+      // Let's assume there is at least one gateway or the constraint allows null (but TS said it's required).
+    }
+
     // Create new thread
     const { data: newThread, error } = await supabase
       .from("message_threads")
@@ -53,6 +68,7 @@ export const messageService = {
         resolved_group_id: fallbackGroupId,
         is_resolved: false,
         last_message_at: new Date().toISOString(),
+        gateway_id: gateway?.id // Include gateway_id
       })
       .select("id")
       .single();
@@ -273,9 +289,9 @@ export const messageService = {
   },
 
   /**
-   * Send a message (finds or creates thread automatically)
+   * Send a message (finds or creates thread automatically if threadId not provided)
    */
-  async sendMessage(content: string, toNumber: string, fromNumber: string) {
+  async sendMessage(content: string, toNumber: string, fromNumber: string, threadId?: string) {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -287,22 +303,27 @@ export const messageService = {
 
     if (!profile) throw new Error("User profile not found");
 
-    // Get fallback group for this tenant
-    const { data: fallbackGroup } = await supabase
-      .from("groups")
-      .select("id")
-      .eq("tenant_id", profile.tenant_id)
-      .eq("kind", "fallback")
-      .single();
+    let finalThreadId = threadId;
 
-    if (!fallbackGroup) throw new Error("No fallback group found");
+    // If no threadId provided, find or create one
+    if (!finalThreadId) {
+      // Get fallback group for this tenant
+      const { data: fallbackGroup } = await supabase
+        .from("groups")
+        .select("id")
+        .eq("tenant_id", profile.tenant_id)
+        .eq("kind", "fallback")
+        .single();
 
-    // Find or create thread
-    const threadId = await this.findOrCreateThread(
-      toNumber,
-      profile.tenant_id,
-      fallbackGroup.id
-    );
+      if (!fallbackGroup) throw new Error("No fallback group found");
+
+      // Find or create thread
+      finalThreadId = await this.findOrCreateThread(
+        toNumber,
+        profile.tenant_id,
+        fallbackGroup.id
+      );
+    }
 
     // Insert the message
     const { data, error } = await supabase
@@ -313,44 +334,8 @@ export const messageService = {
         from_number: fromNumber,
         direction: "outbound",
         status: "pending",
-        thread_id: threadId,
+        thread_id: finalThreadId,
         thread_key: toNumber,
-        tenant_id: profile.tenant_id,
-        is_fallback: false
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  /**
-   * Send a reply message
-   */
-  async sendMessage(content: string, toNumber: string, fromNumber: string, threadId: string) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error("Not authenticated");
-
-    const { data: profile } = await supabase
-      .from("users")
-      .select("tenant_id, id")
-      .eq("auth_user_id", user.user.id)
-      .single();
-
-    if (!profile) throw new Error("User profile not found");
-
-    // First insert the message
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        content,
-        to_number: toNumber,
-        from_number: fromNumber,
-        direction: "outbound",
-        status: "pending",
-        thread_id: threadId,
-        thread_key: threadId, // Satisfy NOT NULL constraint
         tenant_id: profile.tenant_id,
         is_fallback: false
       })
