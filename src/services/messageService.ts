@@ -53,13 +53,13 @@ export const messageService = {
     const { data: existingThread } = await supabase
       .from("message_threads")
       .select()
-      .eq("contact_phone", contactPhone)
+      .eq("contact_phone", formattedPhone) // Use formatted phone
       .eq("tenant_id", tenantId)
       .eq("is_resolved", false)
       .maybeSingle();
 
     if (existingThread) {
-      return existingThread;
+      return existingThread as MessageThread;
     }
     
     // 4. Get default gateway
@@ -76,16 +76,16 @@ export const messageService = {
     const { data: newThread, error } = await supabase
       .from("message_threads")
       .insert({
-        contact_phone: contactPhone,
+        contact_phone: formattedPhone, // Use formatted phone
         tenant_id: tenantId,
-        gateway_id: gateway?.id, // Fallback to null if no gateway found (though RLS might block)
+        gateway_id: gateway?.id, // Fallback to null if no gateway found
         resolved_group_id: targetGroupId
       })
       .select()
       .single();
 
     if (error) throw error;
-    return newThread;
+    return newThread as MessageThread;
   },
 
   /**
