@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Phone, Mail, UserPlus, Pencil, Trash2 } from "lucide-react";
+import { Search, Plus, Phone, Mail, UserPlus, Pencil, Trash2, Upload } from "lucide-react";
 import { contactService, type Contact } from "@/services/contactService";
 import { groupService } from "@/services/groupService";
 
@@ -51,7 +51,12 @@ export default function ContactsPage() {
   // Dialog states
   const [showDialog, setShowDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Import state
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importGroupId, setImportGroupId] = useState<string>("");
   
   // Edit/Create state
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -161,6 +166,25 @@ export default function ContactsPage() {
     }
   };
 
+  const handleImport = async () => {
+    if (!importFile) return;
+    
+    try {
+      setSubmitting(true);
+      await contactService.importContacts(importFile, importGroupId || undefined);
+      setShowImportDialog(false);
+      setImportFile(null);
+      setImportGroupId("");
+      await loadData();
+      alert("Import fullført!");
+    } catch (error: any) {
+      console.error("Import failed:", error);
+      alert(`Import feilet: ${error.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  
   const confirmDelete = (contact: Contact) => {
     setEditingContact(contact);
     setShowDeleteDialog(true);
@@ -201,6 +225,10 @@ export default function ContactsPage() {
             <Button className="gap-2" onClick={handleOpenCreate}>
               <Plus className="h-4 w-4" />
               Legg til kontakt
+            </Button>
+            <Button variant="outline" className="gap-2 ml-2" onClick={() => setShowImportDialog(true)}>
+              <Upload className="h-4 w-4" />
+              Importer
             </Button>
           </div>
 
@@ -410,6 +438,53 @@ export default function ContactsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Importer kontakter</DialogTitle>
+            <DialogDescription>
+              Last opp en CSV-fil med kontakter. Støtter kolonner som Navn, Telefon, Epost, Gruppe, Relasjon, Tilhører.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Velg fil (CSV)</Label>
+              <Input 
+                type="file" 
+                accept=".csv"
+                onChange={(e) => setImportFile(e.target.files?.[0] || null)} 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Standard gruppe (valgfritt)</Label>
+              <select 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={importGroupId}
+                onChange={(e) => setImportGroupId(e.target.value)}
+              >
+                <option value="">Ingen gruppe valgt</option>
+                {groups.filter(g => g.kind === 'operational').map(g => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Alle kontakter i filen vil bli lagt til i denne gruppen hvis ikke "Gruppe" er spesifisert i filen.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImportDialog(false)} disabled={submitting}>
+              Avbryt
+            </Button>
+            <Button onClick={handleImport} disabled={!importFile || submitting}>
+              {submitting ? "Importerer..." : "Start import"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

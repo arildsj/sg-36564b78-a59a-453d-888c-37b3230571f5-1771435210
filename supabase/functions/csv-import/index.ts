@@ -131,7 +131,8 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  const lines = content.trim().split("\n");
+  const lines = content.trim().split("
+");
   if (lines.length < 2) return [];
 
   // Detect delimiter (simple check on header row)

@@ -202,5 +202,48 @@ export const contactService = {
         is_whitelisted: true,
         groups: [] // We don't need the full group list here for this view
       }));
+  },
+
+  async importContacts(file: File, groupId?: string) {
+    // 1. Convert file to Base64
+    const base64Content = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove data URL prefix (e.g., "data:text/csv;base64,")
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    // 2. Get tenant and user
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("tenant_id")
+      .eq("auth_user_id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("User profile not found");
+
+    // 3. Call Edge Function
+    const { data, error } = await supabase.functions.invoke("csv-import", {
+      body: {
+        tenant_id: profile.tenant_id,
+        created_by_user_id: user.user.id,
+        import_type: "contacts",
+        csv_data: base64Content,
+        group_id: groupId
+      }
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    return data;
   }
 };
