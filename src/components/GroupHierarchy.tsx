@@ -8,6 +8,7 @@ type GroupNode = {
   name: string;
   kind: "structural" | "operational";
   parent_id: string | null;
+  description?: string;
   member_count?: number;
   on_duty_count?: number;
   children?: GroupNode[];
@@ -79,7 +80,12 @@ function GroupNode({ group, level, onSelectGroup, selectedGroupId }: GroupNodePr
           <FolderTree className="h-4 w-4 text-muted-foreground" />
         )}
 
-        <span className="font-medium flex-1">{group.name}</span>
+        <div className="flex-1 flex items-baseline gap-2">
+          <span className="font-medium">{group.name}</span>
+          {group.description && (
+            <span className="text-sm text-muted-foreground">- {group.description}</span>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           <Badge
@@ -89,12 +95,10 @@ function GroupNode({ group, level, onSelectGroup, selectedGroupId }: GroupNodePr
             {group.kind === "operational" ? "Operativ" : "Strukturell"}
           </Badge>
 
-          {group.member_count !== undefined && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground ml-2">
-              <Users className="h-3 w-3" />
-              <span>{group.member_count}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground ml-2">
+            <Users className="h-3 w-3" />
+            <span>{group.member_count ?? 0}</span>
+          </div>
 
           {group.kind === "operational" && group.on_duty_count !== undefined && group.on_duty_count > 0 && (
             <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
