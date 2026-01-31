@@ -11,7 +11,13 @@ export const userService = {
       .select("*")
       .order("name");
 
-    if (error) throw error;
+    console.log("getAllUsers result:", { data, error });
+
+    if (error) {
+      console.error("Error fetching users:", error);
+      throw error;
+    }
+
     return data || [];
   },
 

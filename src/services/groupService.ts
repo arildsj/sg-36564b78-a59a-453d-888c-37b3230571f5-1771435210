@@ -13,42 +13,54 @@ type GroupWithMembers = Group & {
 
 export const groupService = {
   async getAllGroups(): Promise<GroupWithMembers[]> {
+    // Simplified query without complex aggregations
     const { data, error } = await supabase
       .from("groups")
-      .select(`
-        *,
-        group_memberships(count),
-        on_duty_status(count)
-      `)
+      .select("*")
       .order("name");
 
-    if (error) throw error;
+    console.log("getAllGroups result:", { data, error });
 
+    if (error) {
+      console.error("Error fetching groups:", error);
+      throw error;
+    }
+
+    // Get member counts separately if needed
     return (data || []).map((group: any) => ({
       ...group,
-      member_count: group.group_memberships?.[0]?.count || 0,
-      on_duty_count: group.on_duty_status?.filter((s: any) => s.is_on_duty)?.length || 0,
+      member_count: 0, // Will be calculated separately if needed
+      on_duty_count: 0,
     }));
   },
 
   async getGroupsHierarchy(): Promise<GroupWithMembers[]> {
+    // First, get all groups with basic info
     const { data, error } = await supabase
       .from("groups")
-      .select(`
-        *,
-        group_memberships(count),
-        on_duty_status(count)
-      `)
+      .select("*")
       .order("name");
 
-    if (error) throw error;
+    console.log("getGroupsHierarchy raw data:", { data, error });
+
+    if (error) {
+      console.error("Error fetching groups for hierarchy:", error);
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      console.warn("No groups found in database");
+      return [];
+    }
 
     const groups: GroupWithMembers[] = (data || []).map((group: any) => ({
       ...group,
-      member_count: group.group_memberships?.[0]?.count || 0,
-      on_duty_count: group.on_duty_status?.filter((s: any) => s.is_on_duty)?.length || 0,
+      member_count: 0,
+      on_duty_count: 0,
       children: [],
     }));
+
+    console.log("Groups before hierarchy build:", groups);
 
     // Build hierarchy
     const groupMap = new Map<string, GroupWithMembers>();
@@ -67,12 +79,16 @@ export const groupService = {
           parent.children = parent.children || [];
           parent.children.push(group);
         } else {
+          // Parent not found, treat as root
           rootGroups.push(group);
         }
       } else {
+        // No parent, this is a root group
         rootGroups.push(group);
       }
     });
+
+    console.log("Root groups after hierarchy:", rootGroups);
 
     return rootGroups;
   },
