@@ -191,5 +191,20 @@ export const userService = {
     }
 
     return userProfile;
+  },
+
+  async getUsersByGroup(groupId: string): Promise<User[]> {
+    const { data, error } = await supabase
+      .from("group_memberships")
+      .select("user:users(*)")
+      .eq("group_id", groupId);
+
+    if (error) {
+      console.error("Error fetching group members:", error);
+      throw error;
+    }
+
+    // Filter out any null users (shouldn't happen with inner join implicit in select, but safe to do)
+    return data.map((d) => d.user).filter((u): u is User => u !== null);
   }
 };

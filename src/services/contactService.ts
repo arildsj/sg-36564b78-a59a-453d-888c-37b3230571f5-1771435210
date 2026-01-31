@@ -178,5 +178,29 @@ export const contactService = {
       .eq("id", id);
 
     if (error) throw error;
+  },
+
+  async getContactsByGroup(groupId: string): Promise<Contact[]> {
+    const { data, error } = await supabase
+      .from("whitelist_group_links")
+      .select(`
+        whitelisted_number:whitelisted_numbers (*)
+      `)
+      .eq("group_id", groupId);
+
+    if (error) throw error;
+
+    // Transform to Contact type
+    return (data || [])
+      .map((link: any) => link.whitelisted_number)
+      .filter((contact): contact is any => !!contact)
+      .map((contact) => ({
+        id: contact.id,
+        phone: contact.phone_number,
+        name: contact.description || "Ukjent navn",
+        email: null,
+        is_whitelisted: true,
+        groups: [] // We don't need the full group list here for this view
+      }));
   }
 };
