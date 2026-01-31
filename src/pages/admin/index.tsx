@@ -46,7 +46,8 @@ import { userService } from "@/services/userService";
 import { gatewayService } from "@/services/gatewayService";
 import { routingRuleService } from "@/services/routingRuleService";
 import { contactService } from "@/services/contactService";
-import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog, Clock, Phone } from "lucide-react";
+import { auditService, type AuditLogEntry } from "@/services/auditService";
+import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog, Clock, Phone, FileText, Activity } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type GroupNode = {
@@ -98,7 +99,7 @@ type Contact = {
   id: string;
   phone: string;
   name: string | null;
-  groups: string[];
+  groups: { id: string; name: string }[];
 };
 
 export default function AdminPage() {
@@ -110,6 +111,7 @@ export default function AdminPage() {
   const [routingRules, setRoutingRules] = useState<RoutingRule[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [realUser, setRealUser] = useState<User | null>(null);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null);
   const [groupMembers, setGroupMembers] = useState<User[]>([]);
@@ -172,6 +174,17 @@ export default function AdminPage() {
         gatewayService.getAllGateways(),
         routingRuleService.getRoutingRules(),
       ]);
+
+      // Fetch audit logs separately to not block main data if it fails (e.g. RLS)
+      try {
+        if (currentUserData?.role === 'tenant_admin') {
+          const logs = await auditService.getAuditLogs(100);
+          setAuditLogs(logs);
+        }
+      } catch (e) {
+        console.error("Could not fetch audit logs:", e);
+      }
+
       setGroups(groupsData as GroupNode[]);
       
       const flattenGroups = (groups: GroupNode[]): GroupNode[] => {
@@ -562,6 +575,10 @@ export default function AdminPage() {
                 <GitBranch className="h-4 w-4" />
                 Routing
               </TabsTrigger>
+              <TabsTrigger value="audit" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Revisjon
+              </TabsTrigger>
               <TabsTrigger value="roles" className="gap-2">
                 <Shield className="h-4 w-4" />
                 Roller
@@ -861,6 +878,62 @@ export default function AdminPage() {
                       </Table>
                     </>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="audit" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Revisjonslogg (Audit Log)</CardTitle>
+                  <CardDescription>
+                    Oversikt over sikkerhetshendelser og endringer i systemet. Loggen oppfyller krav til NIS2 og GDPR.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tidspunkt</TableHead>
+                          <TableHead>Bruker</TableHead>
+                          <TableHead>Handling</TableHead>
+                          <TableHead>Ressurs</TableHead>
+                          <TableHead>Detaljer</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {auditLogs.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                              Ingen loggføringer funnet eller manglende tilgang.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          auditLogs.map((log) => (
+                            <TableRow key={log.id}>
+                              <TableCell className="whitespace-nowrap font-mono text-xs">
+                                {new Date(log.timestamp).toLocaleString()}
+                              </TableCell>
+                              <TableCell>{log.user_email}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {log.action}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                <span className="font-semibold">{log.resource_type}</span>
+                                {log.resource_id && <span className="text-xs text-muted-foreground block truncate max-w-[100px]">{log.resource_id}</span>}
+                              </TableCell>
+                              <TableCell className="text-xs font-mono text-muted-foreground max-w-[300px] truncate">
+                                {JSON.stringify(log.details)}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
