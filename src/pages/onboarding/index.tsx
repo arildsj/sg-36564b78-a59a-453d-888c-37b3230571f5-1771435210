@@ -104,7 +104,7 @@ export default function OnboardingPage() {
 
       // Create user record in database
       const { error: userError } = await supabase.from("users").insert({
-        auth_user_id: user.id,
+        id: user.id,
         tenant_id: tenantId,
         name: adminData.name,
         email: adminData.email,

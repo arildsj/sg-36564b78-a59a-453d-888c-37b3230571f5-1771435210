@@ -22,6 +22,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -38,7 +45,8 @@ import { groupService } from "@/services/groupService";
 import { userService } from "@/services/userService";
 import { gatewayService } from "@/services/gatewayService";
 import { routingRuleService } from "@/services/routingRuleService";
-import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog } from "lucide-react";
+import { contactService } from "@/services/contactService";
+import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog, Clock, Phone } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type GroupNode = {
@@ -46,6 +54,7 @@ type GroupNode = {
   name: string;
   kind: "structural" | "operational";
   parent_id: string | null;
+  description?: string | null;
   member_count?: number;
   on_duty_count?: number;
   children?: GroupNode[];
@@ -85,6 +94,13 @@ type RoutingRule = {
   };
 };
 
+type Contact = {
+  id: string;
+  phone: string;
+  name: string | null;
+  groups: string[];
+};
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("groups");
   const [groups, setGroups] = useState<GroupNode[]>([]);
@@ -96,8 +112,11 @@ export default function AdminPage() {
   const [realUser, setRealUser] = useState<User | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null);
+  const [groupMembers, setGroupMembers] = useState<User[]>([]);
+  const [groupContacts, setGroupContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showGroupDetails, setShowGroupDetails] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const [newGroup, setNewGroup] = useState({
@@ -187,7 +206,6 @@ export default function AdminPage() {
       userService.setImpersonatedUser(selectedUser);
       setCurrentUser(selectedUser);
       setIsDemoMode(true);
-      // Reload page to apply new user context
       window.location.reload();
     }
   };
@@ -196,8 +214,23 @@ export default function AdminPage() {
     userService.setImpersonatedUser(null);
     setIsDemoMode(false);
     setCurrentUser(realUser);
-    // Reload page to apply real user context
     window.location.reload();
+  };
+
+  const handleSelectGroup = async (group: GroupNode) => {
+    setSelectedGroup(group);
+    setShowGroupDetails(true);
+    
+    try {
+      const [members, contacts] = await Promise.all([
+        userService.getUsersByGroup(group.id),
+        contactService.getContactsByGroup(group.id),
+      ]);
+      setGroupMembers(members as User[]);
+      setGroupContacts(contacts);
+    } catch (error) {
+      console.error("Failed to load group details:", error);
+    }
   };
 
   const handleCreateGroup = async () => {
@@ -444,7 +477,6 @@ export default function AdminPage() {
 
       <AppLayout>
         <div className="space-y-6">
-          {/* Demo Mode Warning */}
           {isDemoMode && (
             <Alert variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -472,7 +504,6 @@ export default function AdminPage() {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              {/* User Switcher for Demo */}
               <Card className="p-3">
                 <div className="flex items-center gap-3">
                   <UserCog className="h-5 w-5 text-muted-foreground" />
@@ -537,19 +568,18 @@ export default function AdminPage() {
               </TabsTrigger>
             </TabsList>
 
-            {/* Groups Tab */}
             <TabsContent value="groups" className="space-y-4">
               <Card>
                 <CardHeader>
                   <CardTitle>Gruppehierarki</CardTitle>
                   <CardDescription>
-                    Hierarkisk visning av alle strukturelle og operasjonelle grupper. Operasjonelle grupper (innbokser) vises med <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 bg-primary rounded"></span> blå ikon</span>, strukturelle grupper med <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 bg-muted-foreground rounded"></span> grå ikon</span>.
+                    Hierarkisk visning av alle strukturelle og operasjonelle grupper. Klikk på en gruppe for å se detaljer, medlemmer og kontakter.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {loading ? (
                     <div className="text-center py-8 text-muted-foreground">Laster grupper...</div>
-                  ) : allGroups.length === 0 ? (
+                  ) : groups.length === 0 ? (
                     <div className="text-center py-8">
                       <FolderTree className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                       <p className="text-muted-foreground mb-4">Ingen grupper opprettet ennå</p>
@@ -559,73 +589,24 @@ export default function AdminPage() {
                       </Button>
                     </div>
                   ) : (
-                    <>
-                      <div className="flex justify-end mb-4">
+                    <div className="space-y-4">
+                      <div className="flex justify-end">
                         <Button onClick={() => setShowCreateDialog(true)} size="sm">
                           <Plus className="h-4 w-4 mr-2" />
                           Opprett ny gruppe
                         </Button>
                       </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Navn</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Forelder</TableHead>
-                            <TableHead>Medlemmer</TableHead>
-                            <TableHead>På vakt</TableHead>
-                            <TableHead className="text-right">Handlinger</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {allGroups.map((group) => {
-                            const parentGroup = allGroups.find(g => g.id === group.parent_id);
-                            return (
-                              <TableRow key={group.id} className="hover:bg-accent">
-                                <TableCell className="font-medium">
-                                  {group.parent_id && "└─ "}
-                                  {group.name}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge className="ml-2" variant={group.kind === "operational" ? "default" : "secondary"}>
-                                    {group.kind === "operational" ? "Operasjonell" : "Strukturell"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  {parentGroup ? parentGroup.name : "—"}
-                                </TableCell>
-                                <TableCell>
-                                  <span className="font-semibold">{group.member_count || 0}</span>
-                                </TableCell>
-                                <TableCell>
-                                  <span className="font-semibold text-green-600">{group.on_duty_count || 0}</span>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex gap-2 justify-end">
-                                    <Button variant="ghost" size="sm">
-                                      Rediger
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeleteGroup(group.id)}
-                                    >
-                                      Slett
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </>
+                      <GroupHierarchy 
+                        groups={groups} 
+                        onSelectGroup={handleSelectGroup}
+                        selectedGroupId={selectedGroup?.id}
+                      />
+                    </div>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* Users Tab */}
             <TabsContent value="users" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -710,7 +691,6 @@ export default function AdminPage() {
               </Card>
             </TabsContent>
 
-            {/* Gateways Tab */}
             <TabsContent value="gateways" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -801,7 +781,6 @@ export default function AdminPage() {
               </Card>
             </TabsContent>
 
-            {/* Routing Rules Tab */}
             <TabsContent value="routing" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -886,7 +865,6 @@ export default function AdminPage() {
               </Card>
             </TabsContent>
 
-            {/* Roles Tab */}
             <TabsContent value="roles" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -954,7 +932,6 @@ export default function AdminPage() {
         </div>
       </AppLayout>
 
-      {/* Create Group Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent>
           <DialogHeader>
@@ -1030,7 +1007,6 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create User Dialog */}
       <Dialog open={showCreateUserDialog} onOpenChange={setShowCreateUserDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -1132,7 +1108,6 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create Gateway Dialog */}
       <Dialog open={showCreateGatewayDialog} onOpenChange={setShowCreateGatewayDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -1233,7 +1208,6 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Create Routing Rule Dialog */}
       <Dialog open={showCreateRoutingRuleDialog} onOpenChange={setShowCreateRoutingRuleDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -1348,6 +1322,100 @@ export default function AdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Sheet open={showGroupDetails} onOpenChange={setShowGroupDetails}>
+        <SheetContent className="w-[600px] sm:w-[700px] overflow-y-auto">
+          {selectedGroup && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  {selectedGroup.name}
+                  <Badge variant={selectedGroup.kind === "operational" ? "default" : "secondary"}>
+                    {selectedGroup.kind === "operational" ? "Operasjonell" : "Strukturell"}
+                  </Badge>
+                </SheetTitle>
+                <SheetDescription>
+                  {selectedGroup.description || "Ingen beskrivelse tilgjengelig"}
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="font-semibold">Medlemmer ({groupMembers.length})</h3>
+                  </div>
+                  {groupMembers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Ingen medlemmer i denne gruppen</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {groupMembers.map((member) => (
+                        <div key={member.id} className="flex items-center justify-between p-2 border rounded-lg">
+                          <div>
+                            <p className="font-medium">{member.name}</p>
+                            <p className="text-sm text-muted-foreground">{member.email}</p>
+                          </div>
+                          <Badge variant={getRoleBadgeVariant(member.role)}>
+                            {getRoleLabel(member.role)}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="font-semibold">Hvitelistede kontakter ({groupContacts.length})</h3>
+                  </div>
+                  {groupContacts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Ingen kontakter tilknyttet denne gruppen</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {groupContacts.map((contact) => (
+                        <div key={contact.id} className="flex items-center justify-between p-2 border rounded-lg">
+                          <div>
+                            <p className="font-medium">{contact.name || "Uten navn"}</p>
+                            <p className="text-sm text-muted-foreground font-mono">{contact.phone}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {selectedGroup.kind === "operational" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-muted-foreground" />
+                      <h3 className="font-semibold">Åpningstider</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Konfigurasjon av åpningstider kommer snart
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-4">
+                  <Button variant="outline" className="flex-1">
+                    Rediger gruppe
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => {
+                      setShowGroupDetails(false);
+                      handleDeleteGroup(selectedGroup.id);
+                    }}
+                  >
+                    Slett gruppe
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

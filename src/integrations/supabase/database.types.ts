@@ -1175,6 +1175,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_audit_logs: { Args: never; Returns: undefined }
       current_user_id: { Args: never; Returns: string }
       find_or_create_thread: {
         Args: {
@@ -1185,6 +1186,29 @@ export type Database = {
           p_tenant_id: string
         }
         Returns: string
+      }
+      get_entity_audit_trail: {
+        Args: { p_entity_id: string; p_entity_type: string; p_limit?: number }
+        Returns: {
+          action: string
+          changes: Json
+          created_at: string
+          id: string
+          user_email: string
+          user_name: string
+        }[]
+      }
+      get_tenant_audit_activity: {
+        Args: { p_limit?: number; p_tenant_id: string }
+        Returns: {
+          action: string
+          changes: Json
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          user_name: string
+        }[]
       }
       is_group_admin_for: { Args: { group_uuid: string }; Returns: boolean }
       is_tenant_admin: { Args: never; Returns: boolean }
