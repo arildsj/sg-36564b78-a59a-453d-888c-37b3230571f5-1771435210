@@ -92,21 +92,37 @@ export default function SendingPage() {
 
     try {
       setSearching(true);
-      console.log("Searching for contacts with query:", query);
+      console.log("🔍 Searching for contacts with query:", query);
       
-      const results = await contactService.getContactsByUserAccess();
-      console.log("Fetched contacts:", results);
+      // Try user-access-filtered search first
+      let results = await contactService.getContactsByUserAccess();
+      console.log("📋 Fetched contacts by user access:", results);
       
-      // Filter results based on search query
-      const filtered = results.filter((c: any) => 
-        c.name.toLowerCase().includes(query.toLowerCase()) ||
-        c.phone.toLowerCase().includes(query.toLowerCase())
-      );
+      // If no results from access-based search, try direct search as fallback
+      if (!results || results.length === 0) {
+        console.log("⚠️ No contacts from user access, trying direct search...");
+        results = await contactService.searchContacts(query);
+        console.log("📋 Fetched contacts from direct search:", results);
+      }
       
-      console.log("Filtered results:", filtered);
+      // Filter results based on search query (case-insensitive)
+      const queryLower = query.toLowerCase();
+      const filtered = results.filter((c: any) => {
+        const nameMatch = c.name?.toLowerCase().includes(queryLower);
+        const phoneMatch = c.phone?.toLowerCase().includes(queryLower) || 
+                          c.phone?.replace(/\s+/g, '').includes(queryLower.replace(/\s+/g, ''));
+        console.log(`   Checking ${c.name} (${c.phone}): name=${nameMatch}, phone=${phoneMatch}`);
+        return nameMatch || phoneMatch;
+      });
+      
+      console.log("✅ Filtered results:", filtered);
       setSearchResults(filtered.slice(0, 10));
+      
+      if (filtered.length === 0) {
+        console.log("⚠️ No results matched your search query");
+      }
     } catch (error) {
-      console.error("Search failed:", error);
+      console.error("❌ Search failed:", error);
       setSearchResults([]);
     } finally {
       setSearching(false);
