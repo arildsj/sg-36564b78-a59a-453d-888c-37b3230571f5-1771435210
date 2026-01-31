@@ -229,14 +229,14 @@ export default function InboxPage() {
   return (
     <>
       <Head>
-        <title>Innboks | SeMSe</title>
-        <meta name="description" content="Behandle innkommende meldinger" />
+        <title>Samtaler | SeMSe</title>
+        <meta name="description" content="Behandle innkommende og utgående meldinger" />
       </Head>
 
       <AppLayout>
         <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
           <div className="flex-none">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">Innboks</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">Samtaler</h2>
             <p className="text-muted-foreground mt-2">
               Håndter meldinger fra dine grupper. Kun meldinger fra grupper du er vakt i vises her.
             </p>
@@ -424,13 +424,23 @@ export default function InboxPage() {
                                     "rounded-2xl px-4 py-2 text-sm shadow-sm",
                                     msg.direction === "outbound"
                                       ? "bg-blue-600 text-white rounded-br-none"
-                                      : "bg-white dark:bg-card border text-foreground rounded-bl-none"
+                                      : "bg-white dark:bg-card border-2 border-green-200 text-foreground rounded-bl-none"
                                   )}
                                 >
                                   {msg.is_fallback && msg.direction === "inbound" && (
                                     <div className="mb-1 pb-1 border-b border-border/10 flex items-center gap-1 text-xs opacity-90">
                                        <AlertTriangle className="h-3 w-3 text-yellow-500" />
                                        <span>Ukjent avsender</span>
+                                    </div>
+                                  )}
+                                  {msg.direction === "inbound" && (
+                                    <div className="mb-1 pb-1 border-b border-green-500/20 flex items-center gap-1 text-xs text-green-700 font-medium">
+                                       <span>← Innkommende</span>
+                                    </div>
+                                  )}
+                                  {msg.direction === "outbound" && (
+                                    <div className="mb-1 pb-1 border-b border-white/20 flex items-center gap-1 text-xs text-blue-100 font-medium">
+                                       <span>Utgående →</span>
                                     </div>
                                   )}
                                   <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>

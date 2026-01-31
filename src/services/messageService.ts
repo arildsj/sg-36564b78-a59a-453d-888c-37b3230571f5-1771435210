@@ -92,32 +92,71 @@ export const messageService = {
    * Get all message threads for a specific group
    */
   async getThreadsByGroup(groupId: string): Promise<ExtendedMessageThread[]> {
-    const { data, error } = await supabase
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    // Get user's tenant_id
+    const { data: profile } = await supabase
+      .from("users")
+      .select("tenant_id")
+      .eq("auth_user_id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("Profile not found");
+
+    // First, get all threads for the group
+    const { data: threads, error: threadsError } = await supabase
       .from("message_threads")
-      .select(`
-        *,
-        groups (
-          name
-        ),
-        messages (
-          id,
-          content,
-          created_at,
-          acknowledged_at,
-          is_fallback
-        )
-      `)
+      .select("*")
       .eq("resolved_group_id", groupId)
       .eq("is_resolved", false)
       .order("last_message_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching threads by group:", error);
-      throw error;
+    if (threadsError) {
+      console.error("Error fetching threads by group:", threadsError);
+      throw threadsError;
     }
 
-    // Cast data to any to avoid deep type instantiation issues with complex joins
-    return this._mapThreadsResponse(data as any);
+    // Then, get all messages for these threads
+    const threadIds = (threads || []).map((t: any) => t.id);
+    const { data: messages, error: messagesError } = await supabase
+      .from("messages")
+      .select("*")
+      .in("thread_id", threadIds)
+      .order("created_at", { ascending: true });
+
+    if (messagesError) {
+      console.error("Error fetching messages for threads:", messagesError);
+      throw messagesError;
+    }
+
+    // Map threads to ExtendedMessageThread with message data
+    const threadMap = new Map<string, ExtendedMessageThread>();
+    (threads || []).forEach((t: any) => {
+      threadMap.set(t.id, {
+        ...t,
+        group_name: t.groups?.name || "Unknown",
+        unread_count: 0,
+        last_message_content: "",
+        is_fallback: false,
+      });
+    });
+
+    // Update thread data with message information
+    (messages || []).forEach((m: any) => {
+      const thread = threadMap.get(m.thread_id);
+      if (thread) {
+        if (!m.acknowledged_at) {
+          thread.unread_count = (thread.unread_count || 0) + 1;
+        }
+        if (!thread.last_message_content || new Date(m.created_at) > new Date(thread.last_message_content)) {
+          thread.last_message_content = m.content;
+          thread.is_fallback = m.is_fallback || false;
+        }
+      }
+    });
+
+    return Array.from(threadMap.values());
   },
 
   /**
@@ -321,10 +360,14 @@ export const messageService = {
        const { data: userProfile } = await supabase
         .from("users")
         .select("tenant_id")
-        .eq("id", userData.user.id)
+        .eq("auth_user_id", userData.user.id)
         .single();
         
        if (!userProfile) throw new Error("User profile not found");
+       
+       // CRITICAL FIX: When sending to a contact, we must use the RECIPIENT's phone as contact_phone
+       // so that when they reply, the inbound-message Edge Function finds the SAME thread
+       // This ensures replies go to the correct group that initiated the conversation
        
        // Default logic: Find a group for this message
        // Try fallback group first
@@ -369,6 +412,8 @@ export const messageService = {
          }
        }
 
+       // CRITICAL: Use recipient's phone (toNumber) as contact_phone for thread
+       // This ensures when recipient replies, their reply finds this thread
        const thread = await this.findOrCreateThread(formattedToNumber, targetGroupId);
        finalThreadId = thread.id;
     }
@@ -393,7 +438,8 @@ export const messageService = {
       to: formattedToNumber,
       from: fromNumber,
       content,
-      threadId: finalThreadId
+      threadId: finalThreadId,
+      threadContactPhone: currentThread.contact_phone
     });
 
     // Store in database
@@ -401,8 +447,8 @@ export const messageService = {
       .from("messages")
       .insert({
         thread_id: finalThreadId,
-        tenant_id: currentThread.tenant_id,     // Explicitly set tenant_id
-        thread_key: currentThread.contact_phone, // Use contact phone as thread key
+        tenant_id: currentThread.tenant_id,
+        thread_key: currentThread.contact_phone, // This should match recipient's phone
         direction: "outbound",
         content,
         from_number: fromNumber,
