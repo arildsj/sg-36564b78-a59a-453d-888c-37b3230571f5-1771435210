@@ -16,7 +16,7 @@ export type AuditLogEntry = {
 export const auditService = {
   async getAuditLogs(limit = 50): Promise<AuditLogEntry[]> {
     const { data, error } = await supabase
-      .from("security_audit_log")
+      .from("audit_log")
       .select(`
         *,
         user:users(email)
