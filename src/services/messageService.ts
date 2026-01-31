@@ -67,28 +67,32 @@ export const messageService = {
     const tenantId = userData.tenant_id;
 
     // 3. Check if thread already exists
-    // Use 'any' cast for query builder to avoid deep type issues
-    const { data: existingThread } = await (supabase
+    // Use 'any' cast to break TS inference chain completely
+    const threadQuery: any = supabase
       .from("message_threads")
       .select("*")
       .eq("contact_phone", formattedPhone)
       .eq("tenant_id", tenantId)
-      .eq("is_resolved", false) as any).maybeSingle();
+      .eq("is_resolved", false);
+      
+    const { data: existingThread } = await threadQuery.maybeSingle();
 
     if (existingThread) {
       return existingThread as MessageThread;
     }
     
     // 4. Get default gateway
-    const { data: gateway } = await (supabase
+    const gatewayQuery: any = supabase
       .from("gateways")
       .select("id")
       .eq("tenant_id", tenantId)
       .eq("is_active", true)
-      .limit(1) as any).single();
+      .limit(1);
+
+    const { data: gateway } = await gatewayQuery.single();
 
     // Create new thread
-    const { data: newThread, error } = await (supabase
+    const insertQuery: any = supabase
       .from("message_threads")
       .insert({
         contact_phone: formattedPhone,
@@ -96,8 +100,9 @@ export const messageService = {
         gateway_id: gateway?.id,
         resolved_group_id: targetGroupId
       })
-      .select("*")
-      .single() as any);
+      .select("*");
+      
+    const { data: newThread, error } = await insertQuery.single();
 
     if (error) throw error;
     return newThread as MessageThread;
@@ -111,12 +116,14 @@ export const messageService = {
     if (!authData.user) throw new Error("Not authenticated");
 
     // First, get all threads for the group
-    const { data: threads, error: threadsError } = await (supabase
+    const threadsQuery: any = supabase
       .from("message_threads")
       .select("*, groups(name)")
       .eq("resolved_group_id", groupId)
       .eq("is_resolved", false)
-      .order("last_message_at", { ascending: false }) as any);
+      .order("last_message_at", { ascending: false });
+
+    const { data: threads, error: threadsError } = await threadsQuery;
 
     if (threadsError) {
       console.error("Error fetching threads by group:", threadsError);
@@ -128,11 +135,13 @@ export const messageService = {
     // Then, get all messages for these threads
     const threadIds = threads.map((t: any) => t.id);
     
-    const { data: messages, error: messagesError } = await (supabase
+    const messagesQuery: any = supabase
       .from("messages")
       .select("*")
       .in("thread_id", threadIds)
-      .order("created_at", { ascending: true }) as any);
+      .order("created_at", { ascending: true });
+      
+    const { data: messages, error: messagesError } = await messagesQuery;
 
     if (messagesError) {
       console.error("Error fetching messages for threads:", messagesError);
@@ -157,7 +166,7 @@ export const messageService = {
 
     if (!profile) throw new Error("Profile not found");
 
-    const { data, error } = await (supabase
+    const threadsQuery: any = supabase
       .from("message_threads")
       .select(`
         *,
@@ -176,7 +185,9 @@ export const messageService = {
       `)
       .eq("tenant_id", profile.tenant_id)
       .eq("is_resolved", false)
-      .order("last_message_at", { ascending: false }) as any);
+      .order("last_message_at", { ascending: false });
+
+    const { data, error } = await threadsQuery;
 
     if (error) {
       console.error("Error fetching all threads:", error);
@@ -201,7 +212,7 @@ export const messageService = {
 
     if (!profile) throw new Error("Profile not found");
 
-    const { data, error } = await (supabase
+    const threadsQuery: any = supabase
       .from("message_threads")
       .select(`
         *,
@@ -220,7 +231,9 @@ export const messageService = {
       .eq("tenant_id", profile.tenant_id)
       .eq("is_resolved", false)
       .eq("messages.is_fallback", true)
-      .order("last_message_at", { ascending: false }) as any);
+      .order("last_message_at", { ascending: false });
+
+    const { data, error } = await threadsQuery;
 
     if (error) throw error;
 
@@ -245,7 +258,7 @@ export const messageService = {
     const thresholdTime = new Date();
     thresholdTime.setMinutes(thresholdTime.getMinutes() - thresholdMinutes);
 
-    const { data, error } = await (supabase
+    const messagesQuery: any = supabase
       .from("messages")
       .select(`
         id,
@@ -274,7 +287,9 @@ export const messageService = {
       .eq("direction", "inbound")
       .is("acknowledged_at", null)
       .lt("created_at", thresholdTime.toISOString())
-      .order("created_at", { ascending: true }) as any);
+      .order("created_at", { ascending: true });
+
+    const { data, error } = await messagesQuery;
 
     if (error) throw error;
 
@@ -309,11 +324,13 @@ export const messageService = {
    * Get all messages for a specific thread
    */
   async getMessagesByThread(threadId: string): Promise<Message[]> {
-    const { data, error } = await (supabase
+    const messagesQuery: any = supabase
       .from("messages")
       .select("*")
       .eq("thread_id", threadId)
-      .order("created_at", { ascending: true }) as any);
+      .order("created_at", { ascending: true });
+
+    const { data, error } = await messagesQuery;
 
     if (error) throw error;
 
@@ -352,10 +369,12 @@ export const messageService = {
 
     // Try to find the group the CURRENT USER belongs to
     // We use correct table 'group_memberships'
-    const { data: userGroups } = await (supabase
+    const groupsQuery: any = supabase
       .from("group_memberships")
       .select("group_id, groups(id, kind)")
-      .eq("user_id", userProfile.id) as any);
+      .eq("user_id", userProfile.id);
+
+    const { data: userGroups } = await groupsQuery;
 
     if (userGroups && userGroups.length > 0) {
        // Prefer operational groups if available, otherwise just take the first one
@@ -363,12 +382,14 @@ export const messageService = {
        targetGroupId = operationalGroup ? operationalGroup.group_id : userGroups[0].group_id;
     } else {
        // Fallback logic
-       const { data: fallbackGroup } = await supabase
+       const fallbackQuery: any = supabase
          .from("groups")
          .select("id")
          .eq("tenant_id", userProfile.tenant_id)
          .eq("kind", "fallback")
          .maybeSingle();
+
+       const { data: fallbackGroup } = await fallbackQuery;
        
        targetGroupId = fallbackGroup?.id;
     }
@@ -416,7 +437,7 @@ export const messageService = {
     });
 
     // Store in database
-    const { data: messageData, error: insertError } = await (supabase
+    const insertMsgQuery: any = supabase
       .from("messages")
       .insert({
         thread_id: finalThreadId,
@@ -428,8 +449,9 @@ export const messageService = {
         to_number: formattedToNumber,
         status: "sent"
       })
-      .select("*")
-      .single() as any);
+      .select("*");
+
+    const { data: messageData, error: insertError } = await insertMsgQuery.single();
 
     if (insertError) throw insertError;
 
@@ -540,13 +562,15 @@ export const messageService = {
 
     if (!profile) throw new Error("Profile not found");
 
-    const { data, error } = await (supabase
+    const query: any = supabase
       .from("messages")
       .select("*")
       .eq("tenant_id", profile.tenant_id)
       .eq("direction", "inbound")
       .is("acknowledged_at", null)
-      .order("created_at", { ascending: false }) as any);
+      .order("created_at", { ascending: false });
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
