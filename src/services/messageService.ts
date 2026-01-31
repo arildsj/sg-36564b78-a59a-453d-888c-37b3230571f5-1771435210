@@ -365,7 +365,7 @@ export const messageService = {
     // Try to find the group the CURRENT USER belongs to
     // using 'any' cast to avoid deep type instantiation errors
     const { data: userGroups } = await supabase
-      .from("group_members")
+      .from("group_memberships")
       .select("group_id, groups(id, kind)")
       .eq("user_id", userProfile.id) as any;
 
