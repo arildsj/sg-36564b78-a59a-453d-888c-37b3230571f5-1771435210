@@ -127,5 +127,56 @@ export const contactService = {
       is_whitelisted: true,
       groups: c.whitelist_group_links?.map((l: any) => l.group).filter(Boolean) || []
     }));
+  },
+
+  async updateContact(id: string, contact: {
+    name: string;
+    phone: string;
+    email: string | null;
+    is_whitelisted: boolean;
+    group_ids: string[];
+  }) {
+    // 1. Update basic info
+    const { error: updateError } = await supabase
+      .from("whitelisted_numbers")
+      .update({
+        phone_number: contact.phone,
+        description: contact.name,
+      })
+      .eq("id", id);
+
+    if (updateError) throw updateError;
+
+    // 2. Sync groups (Simple strategy: Delete all, then re-insert)
+    // First delete existing links
+    const { error: deleteLinksError } = await supabase
+      .from("whitelist_group_links")
+      .delete()
+      .eq("whitelisted_number_id", id);
+
+    if (deleteLinksError) throw deleteLinksError;
+
+    // Then insert new links
+    if (contact.group_ids.length > 0) {
+      const links = contact.group_ids.map((groupId) => ({
+        whitelisted_number_id: id,
+        group_id: groupId
+      }));
+
+      const { error: insertLinksError } = await supabase
+        .from("whitelist_group_links")
+        .insert(links);
+
+      if (insertLinksError) throw insertLinksError;
+    }
+  },
+
+  async deleteContact(id: string) {
+    const { error } = await supabase
+      .from("whitelisted_numbers")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
   }
 };

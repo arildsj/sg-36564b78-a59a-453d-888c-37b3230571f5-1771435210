@@ -22,18 +22,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Plus, Phone, Mail, UserPlus } from "lucide-react";
-import { contactService } from "@/services/contactService";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Plus, Phone, Mail, UserPlus, Pencil, Trash2 } from "lucide-react";
+import { contactService, type Contact } from "@/services/contactService";
 import { groupService } from "@/services/groupService";
-
-type Contact = {
-  id: string;
-  name: string;
-  phone: string;
-  email: string | null;
-  is_whitelisted: boolean;
-  groups: Array<{ id: string; name: string }>;
-};
 
 type Group = {
   id: string;
@@ -46,10 +47,15 @@ export default function ContactsPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [creating, setCreating] = useState(false);
-
-  const [newContact, setNewContact] = useState({
+  
+  // Dialog states
+  const [showDialog, setShowDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Edit/Create state
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
@@ -77,38 +83,87 @@ export default function ContactsPage() {
     }
   };
 
-  const handleCreateContact = async () => {
-    try {
-      setCreating(true);
+  const handleOpenCreate = () => {
+    setEditingContact(null);
+    setFormData({
+      name: "",
+      phone: "",
+      email: "",
+      is_whitelisted: true,
+      group_ids: [],
+    });
+    setShowDialog(true);
+  };
 
-      if (!newContact.name.trim() || !newContact.phone.trim()) {
+  const handleOpenEdit = (contact: Contact) => {
+    setEditingContact(contact);
+    setFormData({
+      name: contact.name,
+      phone: contact.phone,
+      email: contact.email || "",
+      is_whitelisted: contact.is_whitelisted,
+      group_ids: contact.groups.map(g => g.id),
+    });
+    setShowDialog(true);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+
+      if (!formData.name.trim() || !formData.phone.trim()) {
         alert("Vennligst fyll ut navn og telefon");
         return;
       }
 
-      await contactService.createContact({
-        name: newContact.name,
-        phone: newContact.phone,
-        email: newContact.email || null,
-        is_whitelisted: newContact.is_whitelisted,
-        group_ids: newContact.group_ids,
-      });
+      if (editingContact) {
+        await contactService.updateContact(editingContact.id, {
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email || null,
+          is_whitelisted: formData.is_whitelisted,
+          group_ids: formData.group_ids,
+        });
+      } else {
+        await contactService.createContact({
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email || null,
+          is_whitelisted: formData.is_whitelisted,
+          group_ids: formData.group_ids,
+        });
+      }
 
-      setNewContact({
-        name: "",
-        phone: "",
-        email: "",
-        is_whitelisted: true,
-        group_ids: [],
-      });
-      setShowCreateDialog(false);
+      setShowDialog(false);
       await loadData();
     } catch (error: any) {
-      console.error("Failed to create contact:", error);
-      alert(`Feil ved opprettelse: ${error.message || "Ukjent feil"}`);
+      console.error("Failed to save contact:", error);
+      alert(`Feil ved lagring: ${error.message || "Ukjent feil"}`);
     } finally {
-      setCreating(false);
+      setSubmitting(false);
     }
+  };
+
+  const handleDelete = async () => {
+    if (!editingContact) return;
+    
+    try {
+      setSubmitting(true);
+      await contactService.deleteContact(editingContact.id);
+      setShowDeleteDialog(false);
+      setEditingContact(null);
+      await loadData();
+    } catch (error: any) {
+      console.error("Failed to delete contact:", error);
+      alert(`Feil ved sletting: ${error.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const confirmDelete = (contact: Contact) => {
+    setEditingContact(contact);
+    setShowDeleteDialog(true);
   };
 
   const filteredContacts = contacts.filter(
@@ -119,7 +174,7 @@ export default function ContactsPage() {
   );
 
   const toggleGroupSelection = (groupId: string) => {
-    setNewContact((prev) => ({
+    setFormData((prev) => ({
       ...prev,
       group_ids: prev.group_ids.includes(groupId)
         ? prev.group_ids.filter((id) => id !== groupId)
@@ -143,7 +198,7 @@ export default function ContactsPage() {
                 Administrer kontakter og hvitlistede telefonnummer.
               </p>
             </div>
-            <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
+            <Button className="gap-2" onClick={handleOpenCreate}>
               <Plus className="h-4 w-4" />
               Legg til kontakt
             </Button>
@@ -186,7 +241,7 @@ export default function ContactsPage() {
                 <div className="text-center py-12">
                   <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground mb-4">Ingen kontakter registrert ennå</p>
-                  <Button variant="outline" className="gap-2" onClick={() => setShowCreateDialog(true)}>
+                  <Button variant="outline" className="gap-2" onClick={handleOpenCreate}>
                     <Plus className="h-4 w-4" />
                     Legg til første kontakt
                   </Button>
@@ -201,7 +256,6 @@ export default function ContactsPage() {
                     <TableRow>
                       <TableHead>Navn</TableHead>
                       <TableHead>Telefon</TableHead>
-                      <TableHead>E-post</TableHead>
                       <TableHead>Grupper</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Handlinger</TableHead>
@@ -209,23 +263,13 @@ export default function ContactsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredContacts.map((contact) => (
-                      <TableRow key={contact.id} className="hover:bg-accent">
+                      <TableRow key={contact.id} className="hover:bg-accent/50">
                         <TableCell className="font-medium">{contact.name}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Phone className="h-4 w-4 text-muted-foreground" />
                             {contact.phone}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          {contact.email ? (
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
-                              {contact.email}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
@@ -242,15 +286,25 @@ export default function ContactsPage() {
                         </TableCell>
                         <TableCell>
                           {contact.is_whitelisted ? (
-                            <Badge variant="default">Hvitlistet</Badge>
+                            <Badge variant="default" className="bg-green-600 hover:bg-green-700">Hvitlistet</Badge>
                           ) : (
                             <Badge variant="outline">Ikke hvitlistet</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" className="gap-2">
-                            Rediger
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(contact)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => confirmDelete(contact)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -262,13 +316,17 @@ export default function ContactsPage() {
         </div>
       </AppLayout>
 
-      {/* Create Contact Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      {/* Edit/Create Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Legg til ny kontakt</DialogTitle>
+            <DialogTitle>
+              {editingContact ? "Rediger kontakt" : "Legg til ny kontakt"}
+            </DialogTitle>
             <DialogDescription>
-              Opprett en ny kontakt og tildel til relevante grupper.
+              {editingContact 
+                ? "Oppdater kontaktinformasjon og gruppetilhørighet."
+                : "Opprett en ny kontakt og tildel til relevante grupper."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -278,8 +336,8 @@ export default function ContactsPage() {
                 <Input
                   id="contact-name"
                   placeholder="F.eks. John Doe"
-                  value={newContact.name}
-                  onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
@@ -287,67 +345,71 @@ export default function ContactsPage() {
                 <Input
                   id="contact-phone"
                   placeholder="+47 123 45 678"
-                  value={newContact.phone}
-                  onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="contact-email">E-post (valgfri)</Label>
-              <Input
-                id="contact-email"
-                type="email"
-                placeholder="john.doe@example.com"
-                value={newContact.email}
-                onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Gruppetilhørighet (valgfri)</Label>
-              <div className="border rounded-lg p-4 space-y-2 max-h-48 overflow-y-auto">
+              <Label>Gruppetilhørighet (Routing)</Label>
+              <div className="border rounded-lg p-4 space-y-2 max-h-48 overflow-y-auto bg-card">
                 {groups.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Ingen grupper tilgjengelig</p>
                 ) : (
-                  groups.map((group) => (
-                    <label key={group.id} className="flex items-center gap-2 cursor-pointer">
+                  groups.filter(g => g.kind === 'operational').map((group) => (
+                    <label key={group.id} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-accent rounded-md transition-colors">
                       <input
                         type="checkbox"
-                        checked={newContact.group_ids.includes(group.id)}
+                        checked={formData.group_ids.includes(group.id)}
                         onChange={() => toggleGroupSelection(group.id)}
-                        className="rounded"
+                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
                       />
-                      <span className="text-sm">{group.name}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {group.kind === "operational" ? "Operasjonell" : "Strukturell"}
-                      </Badge>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{group.name}</span>
+                        <span className="text-xs text-muted-foreground">Operasjonell gruppe</span>
+                      </div>
                     </label>
                   ))
                 )}
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="contact-whitelist"
-                checked={newContact.is_whitelisted}
-                onChange={(e) => setNewContact({ ...newContact, is_whitelisted: e.target.checked })}
-                className="rounded"
-              />
-              <Label htmlFor="contact-whitelist" className="cursor-pointer">
-                Hvitlist kontakten (tillat meldinger uten moderering)
-              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Velg hvilke grupper denne kontakten tilhører. Meldinger fra dette nummeret vil automatisk bli rutet til disse gruppene.
+              </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)} disabled={creating}>
+            <Button variant="outline" onClick={() => setShowDialog(false)} disabled={submitting}>
               Avbryt
             </Button>
-            <Button onClick={handleCreateContact} disabled={creating}>
-              {creating ? "Oppretter..." : "Legg til kontakt"}
+            <Button onClick={handleSubmit} disabled={submitting}>
+              {submitting ? "Lagrer..." : (editingContact ? "Lagre endringer" : "Legg til kontakt")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Er du sikker?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dette vil fjerne <strong>{editingContact?.name}</strong> ({editingContact?.phone}) fra hvitelisten.
+              Meldinger fra dette nummeret vil heretter bli behandlet som ukjente og gå til manuell fordeling.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Avbryt</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {submitting ? "Sletter..." : "Ja, slett kontakt"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
