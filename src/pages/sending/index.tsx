@@ -92,7 +92,10 @@ export default function SendingPage() {
 
     try {
       setSearching(true);
+      console.log("Searching for contacts with query:", query);
+      
       const results = await contactService.getContactsByUserAccess();
+      console.log("Fetched contacts:", results);
       
       // Filter results based on search query
       const filtered = results.filter((c: any) => 
@@ -100,6 +103,7 @@ export default function SendingPage() {
         c.phone.toLowerCase().includes(query.toLowerCase())
       );
       
+      console.log("Filtered results:", filtered);
       setSearchResults(filtered.slice(0, 10));
     } catch (error) {
       console.error("Search failed:", error);
