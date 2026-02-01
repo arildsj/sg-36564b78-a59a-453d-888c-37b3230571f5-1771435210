@@ -146,7 +146,11 @@ export default function ContactsPage() {
       setSubmitting(true);
 
       if (!formData.name.trim() || !formData.phone.trim()) {
-        toast("Vennligst fyll ut navn og telefon", { variant: "destructive" });
+        toast({
+          title: "Mangler info",
+          description: "Vennligst fyll ut navn og telefon",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -172,7 +176,11 @@ export default function ContactsPage() {
       await loadData();
     } catch (error: any) {
       console.error("Failed to save contact:", error);
-      toast(`Feil ved lagring: ${error.message || "Ukjent feil"}`, { variant: "destructive" });
+      toast({
+        title: "Feil ved lagring",
+        description: error.message || "Ukjent feil",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -189,7 +197,11 @@ export default function ContactsPage() {
       await loadData();
     } catch (error: any) {
       console.error("Failed to delete contact:", error);
-      toast(`Feil ved sletting: ${error.message}`, { variant: "destructive" });
+      toast({
+        title: "Feil ved sletting",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -225,7 +237,11 @@ export default function ContactsPage() {
       setRelSearchResults([]);
     } catch (e) {
       console.error(e);
-      toast("Kunne ikke legge til relasjon", { variant: "destructive" });
+      toast({
+        title: "Feil",
+        description: "Kunne ikke legge til relasjon",
+        variant: "destructive",
+      });
     }
   };
 

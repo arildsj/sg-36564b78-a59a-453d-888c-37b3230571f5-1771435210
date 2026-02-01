@@ -137,7 +137,11 @@ export default function OnboardingPage() {
         }
         
         console.error("Sign in error:", signInError);
-        toast({ title: "Obs", description: "Bruker opprettet, men automatisk pålogging feilet. Logg inn manuelt.", variant: "warning" });
+        toast({ 
+          title: "Obs", 
+          description: "Bruker opprettet, men automatisk pålogging feilet. Logg inn manuelt.", 
+          // variant: "warning" is not supported, using default
+        });
         setCurrentStep("complete");
         return;
       }
