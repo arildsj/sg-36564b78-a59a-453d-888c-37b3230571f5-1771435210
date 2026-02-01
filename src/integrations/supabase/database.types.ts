@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -596,6 +596,7 @@ export type Database = {
           description: string | null
           escalation_enabled: boolean | null
           escalation_timeout_minutes: number | null
+          gateway_id: string | null
           id: string
           kind: string
           name: string
@@ -610,6 +611,7 @@ export type Database = {
           description?: string | null
           escalation_enabled?: boolean | null
           escalation_timeout_minutes?: number | null
+          gateway_id?: string | null
           id?: string
           kind: string
           name: string
@@ -624,6 +626,7 @@ export type Database = {
           description?: string | null
           escalation_enabled?: boolean | null
           escalation_timeout_minutes?: number | null
+          gateway_id?: string | null
           id?: string
           kind?: string
           name?: string
@@ -634,6 +637,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "groups_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: false
+            referencedRelation: "gateways"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "groups_parent_group_id_fkey"
             columns: ["parent_group_id"]
