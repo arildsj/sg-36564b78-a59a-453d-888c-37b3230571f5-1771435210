@@ -174,12 +174,12 @@ async function simulateOutboundMessage(supabase: any, tenantId: string, event: a
     .insert({
       tenant_id: tenantId,
       gateway_id: gateway.id,
-      direction: "out",
+      direction: "outbound", // Changed from "out" to "outbound" to match enum
       from_number: gateway.from_number,
       to_number: event.to_number,
       content: event.content,
       status: "queued",
-      resolved_group_id: event.group_id,
+      group_id: event.group_id, // Changed from resolved_group_id to group_id
     })
     .select()
     .single();
@@ -237,4 +237,8 @@ async function simulateAutoReplyTest(supabase: any, tenantId: string, event: any
     matching_replies: matchingReplies?.length || 0,
     would_trigger: matchingReplies?.[0] || null,
   };
+}
+
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

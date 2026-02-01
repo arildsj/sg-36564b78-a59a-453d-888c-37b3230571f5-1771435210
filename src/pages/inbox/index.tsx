@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Head from "next/head";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +43,29 @@ import {
 import { groupService, type Group } from "@/services/groupService";
 import { supabase } from "@/integrations/supabase/client";
 
+// Hjelpefunksjon for datoformatering
+const formatMessageTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  
+  const timeStr = new Intl.DateTimeFormat('no-NO', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+
+  if (isToday) {
+    return `I dag ${timeStr}`;
+  }
+  
+  return new Intl.DateTimeFormat('no-NO', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+};
+
 export default function InboxPage() {
   const [activeTab, setActiveTab] = useState<"all" | "fallback" | "escalated">("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,6 +81,8 @@ export default function InboxPage() {
   // Reclassification dialog state
   const [reclassifyDialogOpen, setReclassifyDialogOpen] = useState(false);
   const [reclassifyTargetGroup, setReclassifyTargetGroup] = useState<string>("");
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const selectedThread = threads.find((t) => t.id === selectedThreadId);
 
@@ -107,6 +132,13 @@ export default function InboxPage() {
     }
   }, [selectedThread]);
 
+  // Auto-scroll til bunnen når meldinger oppdateres
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
   const loadGroups = async () => {
     try {
       const allGroups = await groupService.getOperationalGroups();
@@ -135,6 +167,9 @@ export default function InboxPage() {
           (t) => t.resolved_group_id === selectedGroupFilter
         );
       }
+
+      // Sorter etter nyeste melding først
+      loadedThreads.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
 
       setThreads(loadedThreads);
 
@@ -406,7 +441,7 @@ export default function InboxPage() {
                       </CardHeader>
 
                       <ScrollArea className="flex-1 p-4 bg-slate-50 dark:bg-slate-950/20">
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {messages.length === 0 ? (
                             <p className="text-muted-foreground text-center py-8 text-sm">Ingen meldinger</p>
                           ) : (
@@ -414,32 +449,40 @@ export default function InboxPage() {
                               <div
                                 key={msg.id}
                                 className={cn(
-                                  "flex flex-col max-w-[85%] rounded-lg p-3 shadow-sm",
+                                  "flex flex-col max-w-[85%] rounded-2xl px-4 py-3 shadow-sm text-sm relative group",
                                   msg.direction === "outbound"
-                                    ? "ml-auto bg-primary text-primary-foreground rounded-br-none" // Outbound: Primary color, sharp bottom-right
-                                    : "mr-auto bg-white border border-gray-200 text-gray-800 rounded-bl-none" // Inbound: White with border, sharp bottom-left
+                                    ? "ml-auto bg-blue-600 text-white rounded-br-sm" 
+                                    : "mr-auto bg-white border border-gray-100 text-gray-800 rounded-bl-sm"
                                 )}
                               >
                                 {msg.is_fallback && msg.direction === "inbound" && (
-                                  <div className="mb-1 pb-1 border-b border-border/10 flex items-center gap-1 text-xs opacity-90">
-                                     <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                                  <div className="mb-2 pb-1 border-b border-border/10 flex items-center gap-1 text-xs opacity-90 font-medium text-yellow-600">
+                                     <AlertTriangle className="h-3 w-3" />
                                      <span>Ukjent avsender</span>
                                   </div>
                                 )}
-                                {msg.direction === "inbound" && (
-                                  <div className="mb-1 pb-1 border-b border-green-500/20 flex items-center gap-1 text-xs text-green-700 font-medium">
-                                     <span>← Innkommende</span>
-                                  </div>
-                                )}
-                                {msg.direction === "outbound" && (
-                                  <div className="mb-1 pb-1 border-b border-white/20 flex items-center gap-1 text-xs text-blue-100 font-medium">
-                                     <span>Utgående →</span>
-                                  </div>
-                                )}
-                                <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                                
+                                <p className="whitespace-pre-wrap leading-relaxed text-sm md:text-base">{msg.content}</p>
+                                
+                                <div className={cn(
+                                  "mt-2 flex items-center gap-2 text-[10px] uppercase tracking-wider font-medium opacity-80",
+                                  msg.direction === "outbound" ? "justify-end text-blue-100" : "justify-start text-gray-400"
+                                )}>
+                                   <span>{formatMessageTime(msg.created_at)}</span>
+                                   {msg.direction === "outbound" ? (
+                                     <span className="flex items-center gap-1">
+                                       Utgående <Send className="h-3 w-3" />
+                                     </span>
+                                   ) : (
+                                     <span className="flex items-center gap-1">
+                                       Innkommende
+                                     </span>
+                                   )}
+                                </div>
                               </div>
                             ))
                           )}
+                          <div ref={messagesEndRef} />
                         </div>
                       </ScrollArea>
 

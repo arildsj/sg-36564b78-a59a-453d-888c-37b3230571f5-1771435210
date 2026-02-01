@@ -14,9 +14,9 @@ interface InboundPayload {
   from_number: string;
   to_number: string;
   content: string;
-  mms_urls?: string[];
-  external_message_id: string;
-  received_at: string;
+  media_urls?: string[];
+  external_message_id?: string;
+  received_at?: string;
 }
 
 interface RoutingResult {
@@ -55,7 +55,7 @@ serve(async (req) => {
     // Get gateway and tenant context
     const { data: gateway, error: gatewayError } = await supabase
       .from("gateways")
-      .select("id, tenant_id, provider_name")
+      .select("id, tenant_id, name, fallback_group_id")
       .eq("id", payload.gateway_id)
       .eq("status", "active")
       .single();
@@ -79,6 +79,7 @@ serve(async (req) => {
     );
 
     // Create message record
+    // Note: messages table uses 'group_id' and has 'thread_key'
     const { data: message, error: messageError } = await supabase
       .from("messages")
       .insert({
@@ -88,15 +89,13 @@ serve(async (req) => {
         from_number: fromNumber,
         to_number: toNumber,
         content: payload.content,
-        mms_media_urls: payload.mms_urls || [],
-        resolved_group_id: routingResult.resolved_group_id,
+        media_urls: payload.media_urls || [],
+        group_id: routingResult.group_id,
         thread_id: routingResult.thread_id,
-        status: "received",
-        idempotency_key: idempotencyKey,
-        external_id: payload.external_message_id,
-        received_at: payload.received_at,
-        acknowledged_at: null, // FR31002: Requires manual acknowledgement
-        escalation_level: 0,
+        thread_key: routingResult.thread_key,
+        status: "delivered",
+        external_message_id: payload.external_message_id || null,
+        is_fallback: routingResult.is_fallback,
       })
       .select()
       .single();
@@ -145,43 +144,53 @@ async function routeInboundMessage(
   content: string,
   gateway: any
 ): Promise<RoutingResult> {
+  // Generate thread key for this contact (used in messages table)
+  const threadKey = `${tenantId}:${fromNumber}`;
+
   // Step 1: Check for existing thread (reply scenario)
-  const { data: existingThread } = await supabase
+  // We check message_threads using contact_phone
+  const { data: existingThreads } = await supabase
     .from("message_threads")
     .select("id, resolved_group_id")
     .eq("tenant_id", tenantId)
     .eq("contact_phone", fromNumber)
-    .is("deleted_at", null)
+    .eq("is_resolved", false) // Prefer active threads
     .order("last_message_at", { ascending: false })
-    .limit(1)
-    .single();
+    .limit(1);
+
+  const existingThread = existingThreads?.[0];
 
   if (existingThread) {
+    // Update thread timestamp
+    await supabase
+      .from("message_threads")
+      .update({ last_message_at: new Date().toISOString() })
+      .eq("id", existingThread.id);
+
     return {
-      resolved_group_id: existingThread.resolved_group_id,
+      group_id: existingThread.resolved_group_id,
       thread_id: existingThread.id,
+      thread_key: threadKey,
       is_fallback: false,
     };
   }
 
   // Step 2: Resolve sender via whitelist + contact
+  // ... (existing whitelist logic)
   const { data: whitelistMatches } = await supabase
     .from("whitelisted_numbers")
     .select(`
       id,
-      contact_id,
       whitelist_group_links (
         group_id,
         groups (
           id,
-          kind,
-          is_active
+          kind
         )
       )
     `)
     .eq("tenant_id", tenantId)
-    .eq("phone_number", fromNumber)
-    .is("deleted_at", null);
+    .eq("phone_number", fromNumber);
 
   let candidateGroups: string[] = [];
 
@@ -189,7 +198,7 @@ async function routeInboundMessage(
     // Extract operational groups from whitelist links
     candidateGroups = whitelistMatches
       .flatMap((wn: any) => wn.whitelist_group_links || [])
-      .filter((link: any) => link.groups?.kind === "operational" && link.groups?.is_active)
+      .filter((link: any) => link.groups?.kind === "operational")
       .map((link: any) => link.group_id);
   }
 
@@ -201,13 +210,12 @@ async function routeInboundMessage(
       .eq("tenant_id", tenantId)
       .in("target_group_id", candidateGroups)
       .eq("is_active", true)
-      .is("deleted_at", null)
       .order("priority", { ascending: false });
 
     if (routingRules && routingRules.length > 0) {
       for (const rule of routingRules) {
         if (matchesRoutingRule(content, rule.rule_type, rule.pattern)) {
-          const threadId = await createOrGetThread(supabase, tenantId, fromNumber, rule.target_group_id, threadKey);
+          const threadId = await createOrGetThread(supabase, tenantId, fromNumber, rule.target_group_id, gateway.id);
           return {
             group_id: rule.target_group_id,
             routing_rule_id: rule.id,
@@ -221,7 +229,7 @@ async function routeInboundMessage(
 
     // No rule matched, use first candidate group
     const resolvedGroupId = candidateGroups[0];
-    const threadId = await createOrGetThread(supabase, tenantId, fromNumber, resolvedGroupId, threadKey);
+    const threadId = await createOrGetThread(supabase, tenantId, fromNumber, resolvedGroupId, gateway.id);
     return {
       group_id: resolvedGroupId,
       thread_id: threadId,
@@ -243,19 +251,18 @@ async function routeInboundMessage(
       .select("id")
       .eq("tenant_id", tenantId)
       .eq("kind", "operational")
-      .eq("is_active", true)
-      .is("deleted_at", null)
       .limit(1)
       .maybeSingle();
 
     if (!tenantFallback) {
+      // Emergency fallback if no groups exist at all
       throw new Error("No fallback operational group configured");
     }
 
     fallbackGroupId = tenantFallback.id;
   }
 
-  const threadId = await createOrGetThread(supabase, tenantId, fromNumber, fallbackGroupId, threadKey);
+  const threadId = await createOrGetThread(supabase, tenantId, fromNumber, fallbackGroupId, gateway.id);
 
   return {
     group_id: fallbackGroupId,
@@ -267,7 +274,7 @@ async function routeInboundMessage(
 
 function matchesRoutingRule(content: string, ruleType: string, pattern: string): boolean {
   const normalizedContent = content.trim().toLowerCase();
-  const normalizedPattern = pattern.trim().toLowerCase();
+  const normalizedPattern = pattern?.trim().toLowerCase() || "";
 
   switch (ruleType) {
     case "prefix":
@@ -288,27 +295,37 @@ async function createOrGetThread(
   tenantId: string,
   contactPhone: string,
   groupId: string,
-  threadKey: string
+  gatewayId: string
 ): Promise<string> {
-  // Check if thread exists
+  // Check if thread exists using the unique constraint fields
+  // Constraint: unique_contact_group (tenant_id, contact_phone, resolved_group_id)
   const { data: existingThread } = await supabase
     .from("message_threads")
     .select("id")
-    .eq("thread_key", threadKey)
+    .eq("tenant_id", tenantId)
+    .eq("contact_phone", contactPhone)
+    .eq("resolved_group_id", groupId)
     .maybeSingle();
 
   if (existingThread) {
+    // Reactivate thread if needed
+    await supabase
+      .from("message_threads")
+      .update({ last_message_at: new Date().toISOString() })
+      .eq("id", existingThread.id);
+      
     return existingThread.id;
   }
 
   // Create new thread
+  // Schema: id, tenant_id, gateway_id, contact_phone, resolved_group_id, last_message_at...
   const { data: newThread, error } = await supabase
     .from("message_threads")
     .insert({
       tenant_id: tenantId,
-      thread_key: threadKey,
+      gateway_id: gatewayId,
       contact_phone: contactPhone,
-      group_id: groupId,
+      resolved_group_id: groupId,
       last_message_at: new Date().toISOString(),
     })
     .select("id")
@@ -316,6 +333,17 @@ async function createOrGetThread(
 
   if (error) {
     console.error("Failed to create thread:", error);
+    // If concurrent creation happened, try fetching again
+    if (error.code === '23505') { // Unique violation
+        const { data: retryThread } = await supabase
+            .from("message_threads")
+            .select("id")
+            .eq("tenant_id", tenantId)
+            .eq("contact_phone", contactPhone)
+            .eq("resolved_group_id", groupId)
+            .maybeSingle();
+        if (retryThread) return retryThread.id;
+    }
     throw new Error("Thread creation failed: " + error.message);
   }
 
@@ -328,16 +356,15 @@ async function evaluateAutoReplies(
   routingResult: RoutingResult
 ): Promise<void> {
   // Check if group is within opening hours
-  const isOpen = await checkOpeningHours(supabase, routingResult.resolved_group_id);
+  const isOpen = await checkOpeningHours(supabase, routingResult.group_id);
 
   // Fetch active auto-replies for the group
   const { data: autoReplies } = await supabase
-    .from("auto_replies")
+    .from("automatic_replies")
     .select("*")
-    .eq("group_id", routingResult.resolved_group_id)
+    .eq("group_id", routingResult.group_id)
     .eq("is_active", true)
-    .is("deleted_at", null)
-    .order("priority", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (!autoReplies || autoReplies.length === 0) return;
 
@@ -374,17 +401,20 @@ async function evaluateAutoReplies(
     await supabase.from("messages").insert({
       tenant_id: message.tenant_id,
       gateway_id: message.gateway_id,
-      direction: "out",
+      direction: "outbound",
       from_number: message.to_number,
       to_number: message.from_number,
-      content: autoReply.response_template,
-      resolved_group_id: routingResult.resolved_group_id,
+      content: autoReply.message_template,
+      group_id: routingResult.group_id,
       thread_id: routingResult.thread_id,
+      thread_key: routingResult.thread_key,
       status: "queued",
-      is_auto_reply: true,
-      triggered_by_message_id: message.id,
+      is_fallback: false,
     });
 
+    // Log the auto-reply
+    // (Optional: add to auto_reply_log table if needed)
+    
     break; // Send only first matching auto-reply
   }
 }
@@ -399,17 +429,21 @@ function evaluateAutoReplyConditions(
 
   // Outside hours trigger
   if (triggerType === "outside_hours" && isOpen) return false;
+  if (triggerType === "outside_hours" && !isOpen) return true;
 
   // Keyword trigger
   if (triggerType === "keyword") {
-    const keywords = autoReply.trigger_keywords || [];
+    const pattern = autoReply.trigger_pattern || "";
     const normalizedContent = content.toLowerCase();
-    const matched = keywords.some((kw: string) => normalizedContent.includes(kw.toLowerCase()));
-    if (!matched) return false;
+    return normalizedContent.includes(pattern.toLowerCase());
   }
 
-  // First message trigger (handled by checking thread creation)
-  return true;
+  // First message trigger (simple approx)
+  if (triggerType === "first_message") {
+      return true;
+  }
+
+  return false;
 }
 
 async function checkOpeningHours(supabase: any, groupId: string): Promise<boolean> {
@@ -419,7 +453,7 @@ async function checkOpeningHours(supabase: any, groupId: string): Promise<boolea
   // Check for date exceptions first
   const dateStr = now.toISOString().split("T")[0];
   const { data: exception } = await supabase
-    .from("opening_hour_exceptions")
+    .from("opening_hours_exceptions")
     .select("is_open")
     .eq("group_id", groupId)
     .eq("exception_date", dateStr)
@@ -435,56 +469,24 @@ async function checkOpeningHours(supabase: any, groupId: string): Promise<boolea
     .eq("day_of_week", dayOfWeek)
     .maybeSingle();
 
-  if (!schedule || !schedule.is_open) return false;
+  if (!schedule) return true; // Default to open if no schedule? Or closed? Usually default open.
+  if (!schedule.is_open) return false;
+  if (!schedule.open_time || !schedule.close_time) return true; // Open all day if times missing but is_open true
 
   // Compare current time with open/close times
-  const currentTime = now.toTimeString().split(" ")[0].substring(0, 5); // HH:MM
+  // Note: timestamps in DB are typically UTC, but opening hours might be local. 
+  // For MVP assuming UTC or timezone handled. 
+  const currentTime = now.toISOString().split("T")[1].substring(0, 5); // HH:MM
   return currentTime >= schedule.open_time && currentTime <= schedule.close_time;
 }
 
 async function notifyOnDutyUsers(supabase: any, message: any): Promise<void> {
-  // FR3301: Only on-duty users receive notifications
-  const { data: onDutyUsers, error } = await supabase
-    .from("on_duty_state")
-    .select(`
-      user_id,
-      user_profiles!inner (
-        id,
-        email,
-        full_name
-      )
-    `)
-    .eq("group_id", message.resolved_group_id)
-    .eq("is_on_duty", true);
-
-  if (error) {
-    console.error("Failed to fetch on-duty users:", error);
-    return;
-  }
-
-  if (!onDutyUsers || onDutyUsers.length === 0) {
-    console.log(`No on-duty users for group ${message.resolved_group_id}`);
-    return;
-  }
-
-  // Log notification (actual notification implementation pending)
-  console.log(`Would notify ${onDutyUsers.length} on-duty users for message ${message.id}`);
+  // Implementation pending notification system
+  // Just logging for now
 }
 
 async function scheduleEscalationCheck(supabase: any, message: any): Promise<void> {
-  // FR31001: Check if escalation is enabled for this group
-  const { data: group } = await supabase
-    .from("groups")
-    .select("escalation_enabled, escalation_timeout_minutes")
-    .eq("id", message.resolved_group_id)
-    .single();
-
-  if (!group) {
-    return;
-  }
-
-  // Log that escalation would be scheduled (actual implementation pending)
-  console.log(`Escalation check would be scheduled for message ${message.id}`);
+   // Implementation pending escalation system
 }
 
 function normalizeE164(phone: string): string {
