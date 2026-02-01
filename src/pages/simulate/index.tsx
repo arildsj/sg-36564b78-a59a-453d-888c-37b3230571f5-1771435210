@@ -41,14 +41,14 @@ export default function SimulatePage() {
       const [gatewaysRes, groupsRes, messagesRes] = await Promise.all([
         supabase.from("gateways").select("*").eq("status", "active"),
         supabase.from("groups")
-          .select("*, gateway:gateways(*)") // Join with gateways
+          .select("*, gateway:gateways!groups_gateway_id_fkey(*)")
           .eq("kind", "operational")
           .order("name"),
         supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(10),
       ]);
 
       if (gatewaysRes.data) setGateways(gatewaysRes.data);
-      if (groupsRes.data) setGroups(groupsRes.data);
+      if (groupsRes.data) setGroups(groupsRes.data as GroupWithGateway[]);
       if (messagesRes.data) setRecentMessages(messagesRes.data);
 
       if (gatewaysRes.data && gatewaysRes.data.length > 0) {
