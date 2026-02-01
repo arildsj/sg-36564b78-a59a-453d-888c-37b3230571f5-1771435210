@@ -13,6 +13,13 @@ import { MessageSquare, Send, Clock } from "lucide-react";
 
 type Gateway = { id: string; name: string; phone_number: string };
 type Group = { id: string; name: string; kind: string };
+type GroupWithGateway = { 
+  id: string; 
+  name: string; 
+  kind: string; 
+  gateway_id: string | null;
+  gateway?: any;
+};
 
 export default function SimulatePage() {
   const [gateways, setGateways] = useState<Gateway[]>([]);
