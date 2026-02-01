@@ -157,12 +157,6 @@ export default function InboxPage() {
     }
   }, [selectedPhoneNumber]);
 
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
-
   const loadGroups = async () => {
     try {
       const allGroups = await groupService.getOperationalGroups();
@@ -273,6 +267,13 @@ export default function InboxPage() {
       );
 
       setMessages(allMessages);
+      
+      // Scroll to bottom after messages are loaded
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: "instant" });
+        }
+      }, 100);
     } catch (error) {
       console.error("Failed to load messages:", error);
     }

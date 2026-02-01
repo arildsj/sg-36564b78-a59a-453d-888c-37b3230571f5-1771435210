@@ -122,7 +122,7 @@ async function executeSimulationEvent(supabase: any, tenantId: string, event: an
 }
 
 async function simulateInboundMessage(supabase: any, tenantId: string, event: any): Promise<any> {
-  // Get first active gateway
+  // Get first active gateway using correct column name
   const { data: gateway } = await supabase
     .from("gateways")
     .select("id, from_number")
@@ -174,12 +174,12 @@ async function simulateOutboundMessage(supabase: any, tenantId: string, event: a
     .insert({
       tenant_id: tenantId,
       gateway_id: gateway.id,
-      direction: "outbound", // Changed from "out" to "outbound" to match enum
+      direction: "outbound",
       from_number: gateway.from_number,
       to_number: event.to_number,
       content: event.content,
       status: "queued",
-      group_id: event.group_id, // Changed from resolved_group_id to group_id
+      group_id: event.group_id,
     })
     .select()
     .single();
