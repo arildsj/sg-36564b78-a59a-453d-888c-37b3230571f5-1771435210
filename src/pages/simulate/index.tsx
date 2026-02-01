@@ -99,45 +99,83 @@ export default function SimulatePage() {
       
       // Clean phone number
       const cleanFromNumber = fromNumber.replace(/\s+/g, '');
-      const threadKey = `${gateway.phone_number}:${cleanFromNumber}`;
 
-      // 1. Create or update message thread
-      const { data: thread, error: threadError } = await supabase
+      // 1. Get tenant and gateway info
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("Not authenticated");
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("id, tenant_id")
+        .eq("auth_user_id", userData.user.id)
+        .single();
+
+      if (!profile) throw new Error("User profile not found");
+
+      const { data: gatewayData } = await supabase
+        .from("gateways")
+        .select("id")
+        .eq("tenant_id", profile.tenant_id)
+        .eq("status", "active")
+        .limit(1)
+        .single();
+
+      if (!gatewayData) throw new Error("No active gateway found");
+
+      // 2. Check if thread already exists, if not create it
+      const { data: existingThread } = await supabase
         .from("message_threads")
-        .upsert({
-          tenant_id: tenant.id,
-          gateway_id: gatewayId,
-          contact_phone: cleanFromNumber,
-          resolved_group_id: selectedGroup, // Set correct group!
-          last_message_at: new Date().toISOString(),
-          is_resolved: false
-        }, {
-          onConflict: "tenant_id, contact_phone, resolved_group_id"
-        })
-        .select()
-        .single();
+        .select("id")
+        .eq("tenant_id", profile.tenant_id)
+        .eq("contact_phone", cleanFromNumber)
+        .eq("resolved_group_id", selectedGroup)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (threadError) throw threadError;
+      let threadId: string;
 
-      // 2. Insert message linked to thread
-      const { data, error } = await supabase
-        .from("messages")
-        .insert({
-          tenant_id: tenant.id,
-          gateway_id: gatewayId,
-          group_id: selectedGroup,
-          thread_id: thread.id, // Link to thread!
-          thread_key: threadKey,
-          direction: "inbound",
-          from_number: cleanFromNumber,
-          to_number: gateway?.phone_number || "unknown",
-          content: messageContent,
-          status: "delivered",
-        })
-        .select()
-        .single();
+      if (!existingThread) {
+        // Create new thread
+        const { data: newThread, error: threadError } = await supabase
+          .from("message_threads")
+          .insert({
+            tenant_id: profile.tenant_id,
+            gateway_id: gatewayData.id,
+            contact_phone: cleanFromNumber,
+            resolved_group_id: selectedGroup,
+            last_message_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
 
-      if (error) throw error;
+        if (threadError) throw threadError;
+        threadId = newThread.id;
+      } else {
+        threadId = existingThread.id;
+
+        // Update last_message_at
+        await supabase
+          .from("message_threads")
+          .update({ last_message_at: new Date().toISOString() })
+          .eq("id", threadId);
+      }
+
+      // 3. Insert message with thread_id
+      const { error: messageError } = await supabase.from("messages").insert({
+        tenant_id: profile.tenant_id,
+        gateway_id: gatewayData.id,
+        group_id: selectedGroup,
+        thread_id: threadId,
+        thread_key: `${cleanFromNumber}-${selectedGroup}`,
+        direction: "inbound",
+        from_number: cleanFromNumber,
+        to_number: gatewayData.id,
+        content: messageContent,
+        status: "delivered",
+      });
+
+      if (messageError) throw messageError;
 
       toast({
         title: "Melding simulert",
