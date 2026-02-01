@@ -12,12 +12,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { MessageSquare, Send, Clock } from "lucide-react";
 
 type Gateway = { id: string; name: string; phone_number: string };
-type Group = { id: string; name: string; kind: string };
-type GroupWithGateway = { 
+type Group = { 
   id: string; 
   name: string; 
-  kind: string; 
-  gateway_id: string | null;
+  kind: string;
+  gateway_id: string | null; // Added this field
+};
+type GroupWithGateway = Group & { 
   gateway?: any;
 };
 
@@ -39,7 +40,10 @@ export default function SimulatePage() {
     try {
       const [gatewaysRes, groupsRes, messagesRes] = await Promise.all([
         supabase.from("gateways").select("*").eq("status", "active"),
-        supabase.from("groups").select("*").eq("kind", "operational"),
+        supabase.from("groups")
+          .select("*, gateway:gateways(*)") // Join with gateways
+          .eq("kind", "operational")
+          .order("name"),
         supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(10),
       ]);
 
@@ -59,31 +63,44 @@ export default function SimulatePage() {
   };
 
   const handleSendMessage = async () => {
-    if (!selectedGateway || !selectedGroup || !fromNumber || !messageContent) {
+    if (!selectedGroup || !fromNumber || !messageContent) {
       alert("Fyll ut alle felt");
       return;
     }
 
     setLoading(true);
     try {
-      const gateway = gateways.find((g) => g.id === selectedGateway);
-      if (!gateway) throw new Error("Gateway not found");
+      const group = groups.find((g) => g.id === selectedGroup);
+      if (!group) throw new Error("Group not found");
+      
+      // Use the group's gateway, or fallback to the first active gateway if group has none
+      const gatewayId = group.gateway_id || (gateways.length > 0 ? gateways[0].id : null);
+      
+      if (!gatewayId) {
+        alert("Ingen gateway funnet for denne gruppen. Vennligst kontakt admin.");
+        setLoading(false);
+        return;
+      }
+
+      const gateway = gateways.find(g => g.id === gatewayId) || (group as any).gateway;
 
       const { data: tenant } = await supabase.from("tenants").select("id").single();
       if (!tenant) throw new Error("Tenant not found");
-
-      const threadKey = `thread_${fromNumber.replace("+", "")}`;
+      
+      // Clean phone number
+      const cleanFromNumber = fromNumber.replace(/\s+/g, '');
+      const threadKey = `thread_${cleanFromNumber.replace("+", "")}`;
 
       const { data, error } = await supabase
         .from("messages")
         .insert({
           tenant_id: tenant.id,
-          gateway_id: selectedGateway,
+          gateway_id: gatewayId,
           group_id: selectedGroup,
           thread_key: threadKey,
           direction: "inbound",
-          from_number: fromNumber,
-          to_number: gateway.phone_number,
+          from_number: cleanFromNumber,
+          to_number: gateway?.phone_number || "unknown",
           content: messageContent,
           status: "delivered",
         })
