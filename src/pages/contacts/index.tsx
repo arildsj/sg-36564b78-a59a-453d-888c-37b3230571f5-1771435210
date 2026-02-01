@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Phone, Mail, Building2, Users, Plus, Edit, Trash2, Search, Upload, UserPlus, Pencil } from "lucide-react";
-import { contactService, type Contact, type ContactGroup } from "@/services/contactService";
+import { contactService, type Contact } from "@/services/contactService";
 import { useToast } from "@/hooks/use-toast";
 import { groupService } from "@/services/groupService";
 
@@ -272,40 +272,20 @@ export default function ContactsPage() {
   };
 
   const handleDeleteContact = async (contactId: string) => {
-    if (!confirm("Er du sikker på at du vil slette denne kontakten?")) return;
-
+    // Note: We use the confirm dialog in the UI (AlertDialog), not window.confirm
+    // But keeping this as a fallback or for direct calls
     try {
       await contactService.deleteContact(contactId);
-      loadContacts();
+      await loadData();
       toast({
         title: "Kontakt slettet",
         description: "Kontakten er fjernet",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete contact:", error);
       toast({
         title: "Feil ved sletting",
         description: "Kunne ikke slette kontakt",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteGroup = async (groupId: string) => {
-    if (!confirm("Er du sikker på at du vil slette denne gruppen?")) return;
-
-    try {
-      await contactService.deleteContactGroup(groupId);
-      loadGroups();
-      toast({
-        title: "Gruppe slettet",
-        description: "Gruppen er fjernet",
-      });
-    } catch (error) {
-      console.error("Failed to delete group:", error);
-      toast({
-        title: "Feil ved sletting",
-        description: "Kunne ikke slette gruppe",
         variant: "destructive",
       });
     }
@@ -325,44 +305,6 @@ export default function ContactsPage() {
         ? prev.group_ids.filter((id) => id !== groupId)
         : [...prev.group_ids, groupId],
     }));
-  };
-
-  const handleSaveGroup = async () => {
-    try {
-      if (!newGroup.name) {
-        toast({
-          title: "Mangler navn",
-          description: "Gruppenavn er påkrevd",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (editingGroup) {
-        await contactService.updateContactGroup(editingGroup.id, newGroup);
-        toast({
-          title: "Gruppe oppdatert",
-          description: "Gruppen er oppdatert",
-        });
-      } else {
-        await contactService.createContactGroup(newGroup);
-        toast({
-          title: "Gruppe opprettet",
-          description: "Ny gruppe er opprettet",
-        });
-      }
-
-      setGroupDialogOpen(false);
-      resetGroupForm();
-      loadGroups();
-    } catch (error) {
-      console.error("Failed to save group:", error);
-      toast({
-        title: "Feil ved lagring",
-        description: "Kunne ikke lagre gruppe",
-        variant: "destructive",
-      });
-    }
   };
 
   return (

@@ -235,7 +235,7 @@ export const userService = {
       if (membershipError) {
         console.error("Failed to add group memberships:", membershipError);
         // We don't throw here as the user is created successfully
-        alert("Bruker opprettet, men feilet ved tildeling av grupper.");
+        console.warn("Bruker opprettet, men feilet ved tildeling av grupper.");
       }
     }
 
