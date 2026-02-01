@@ -13,8 +13,10 @@ import { groupService } from "@/services/groupService";
 import { contactService } from "@/services/contactService";
 import { messageService } from "@/services/messageService";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SendingPage() {
+  const { toast } = useToast();
   const [recipientType, setRecipientType] = useState<"single" | "group">("single");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("");
@@ -138,17 +140,29 @@ export default function SendingPage() {
 
   const handleSend = async () => {
     if (!message.trim()) {
-      alert("Vennligst skriv en melding");
+      toast({
+        title: "Mangler melding",
+        description: "Vennligst skriv en melding",
+        variant: "destructive",
+      });
       return;
     }
     
     if (recipientType === "single" && !phoneNumber.trim()) {
-      alert("Vennligst velg en kontakt eller skriv inn telefonnummer");
+      toast({
+        title: "Mangler mottaker",
+        description: "Vennligst velg en kontakt eller skriv inn telefonnummer",
+        variant: "destructive",
+      });
       return;
     }
     
     if (recipientType === "group" && !selectedGroup) {
-      alert("Vennligst velg en gruppe");
+      toast({
+        title: "Mangler gruppe",
+        description: "Vennligst velg en gruppe",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -162,7 +176,12 @@ export default function SendingPage() {
           phoneNumber,
           "+4790000000" // Default sender (should come from gateway)
         );
-        alert("Melding sendt!");
+        
+        toast({
+          title: "Melding sendt!",
+          description: `Sendt til ${selectedContact?.name || phoneNumber}`,
+        });
+        
         setMessage("");
         setPhoneNumber("");
         setSelectedContact(null);
@@ -170,7 +189,11 @@ export default function SendingPage() {
       } else {
         // Bulk send to group contacts
         if (groupContacts.length === 0) {
-          alert("Ingen kontakter funnet i denne gruppen");
+          toast({
+            title: "Ingen kontakter",
+            description: "Ingen kontakter funnet i denne gruppen",
+            variant: "destructive",
+          });
           return;
         }
 
@@ -184,13 +207,22 @@ export default function SendingPage() {
         );
 
         await Promise.all(sendPromises);
-        alert(`Melding sendt til ${groupContacts.length} kontakter i gruppen!`);
+        
+        toast({
+          title: "Melding sendt!",
+          description: `Sendt til ${groupContacts.length} kontakter i gruppen`,
+        });
+        
         setMessage("");
         setSelectedGroup("");
       }
     } catch (error: any) {
       console.error("Failed to send:", error);
-      alert(`Feil ved sending: ${error.message}`);
+      toast({
+        title: "Feil ved sending",
+        description: error.message || "Kunne ikke sende melding",
+        variant: "destructive",
+      });
     } finally {
       setSending(false);
     }
