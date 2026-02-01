@@ -44,6 +44,7 @@ import {
 } from "@/services/messageService";
 import { groupService, type Group } from "@/services/groupService";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // Grouped conversation type (one per phone number)
 interface GroupedConversation {
@@ -93,6 +94,7 @@ const formatMessageTime = (dateString: string) => {
 };
 
 export default function InboxPage() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"all" | "fallback" | "escalated">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [threads, setThreads] = useState<ExtendedMessageThread[]>([]);
@@ -296,9 +298,17 @@ export default function InboxPage() {
       );
 
       setNewMessage("");
+      toast({
+        title: "Melding sendt",
+        description: "Svaret ditt er sendt",
+      });
     } catch (error) {
       console.error("Failed to send reply:", error);
-      alert("Kunne ikke sende melding");
+      toast({
+        title: "Feil ved sending",
+        description: "Kunne ikke sende melding",
+        variant: "destructive",
+      });
     } finally {
       setSending(false);
     }
@@ -328,9 +338,17 @@ export default function InboxPage() {
       setReclassifyDialogOpen(false);
       setReclassifyTargetGroup("");
       await loadThreads();
+      toast({
+        title: "Samtale flyttet",
+        description: "Samtalen er flyttet til ny gruppe",
+      });
     } catch (error) {
       console.error("Failed to reclassify thread:", error);
-      alert("Kunne ikke omklassifisere samtale");
+      toast({
+        title: "Feil ved flytting",
+        description: "Kunne ikke omklassifisere samtale",
+        variant: "destructive",
+      });
     }
   };
 
@@ -344,9 +362,17 @@ export default function InboxPage() {
       }
       setSelectedPhoneNumber(null);
       await loadThreads();
+      toast({
+        title: "Samtale løst",
+        description: "Samtalen er markert som løst",
+      });
     } catch (error) {
       console.error("Failed to resolve thread:", error);
-      alert("Kunne ikke løse samtale");
+      toast({
+        title: "Feil ved løsing",
+        description: "Kunne ikke løse samtale",
+        variant: "destructive",
+      });
     }
   };
 

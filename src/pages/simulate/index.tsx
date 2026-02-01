@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageSquare, Send, Clock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type Gateway = { id: string; name: string; phone_number: string };
 type Group = { 
@@ -23,6 +24,7 @@ type GroupWithGateway = Group & {
 };
 
 export default function SimulatePage() {
+  const { toast } = useToast();
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGateway, setSelectedGateway] = useState<string>("");
@@ -64,7 +66,11 @@ export default function SimulatePage() {
 
   const handleSendMessage = async () => {
     if (!selectedGroup || !fromNumber || !messageContent) {
-      alert("Fyll ut alle felt");
+      toast({
+        title: "Mangler informasjon",
+        description: "Fyll ut alle felt",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -77,7 +83,11 @@ export default function SimulatePage() {
       const gatewayId = group.gateway_id || (gateways.length > 0 ? gateways[0].id : null);
       
       if (!gatewayId) {
-        alert("Ingen gateway funnet for denne gruppen. Vennligst kontakt admin.");
+        toast({
+          title: "Ingen gateway funnet",
+          description: "Ingen gateway funnet for denne gruppen. Vennligst kontakt admin.",
+          variant: "destructive",
+        });
         setLoading(false);
         return;
       }
@@ -109,12 +119,19 @@ export default function SimulatePage() {
 
       if (error) throw error;
 
-      alert("✅ Melding sendt inn til systemet!");
+      toast({
+        title: "Melding sendt inn!",
+        description: "Meldingen er nå tilgjengelig i systemet",
+      });
       setMessageContent("");
       loadData();
     } catch (error) {
       console.error("Failed to send message:", error);
-      alert("❌ Feil ved sending av melding");
+      toast({
+        title: "Feil ved sending",
+        description: "Kunne ikke sende melding",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
