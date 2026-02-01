@@ -12,6 +12,7 @@ import { Send, Users, Phone, Loader2 } from "lucide-react";
 import { groupService } from "@/services/groupService";
 import { contactService } from "@/services/contactService";
 import { messageService } from "@/services/messageService";
+import { bulkService } from "@/services/bulkService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -187,7 +188,10 @@ export default function SendingPage() {
         setSelectedContact(null);
         setSearchQuery("");
       } else {
-        // Bulk send to group contacts
+        // Bulk send using robust server-side campaign system
+        const selectedGroupObj = groups.find(g => g.id === selectedGroup);
+        const groupName = selectedGroupObj?.name || "Ukjent gruppe";
+
         if (groupContacts.length === 0) {
           toast({
             title: "Ingen kontakter",
@@ -197,20 +201,16 @@ export default function SendingPage() {
           return;
         }
 
-        // Send to all contacts in the group
-        const sendPromises = groupContacts.map(contact =>
-          messageService.sendMessage(
-            message,
-            contact.phone_number,
-            "+4790000000" // Default sender
-          )
+        // Use the new bulk service which creates a campaign and triggers Edge Function
+        await bulkService.sendBulkMessage(
+          message,
+          selectedGroup,
+          groupName
         );
-
-        await Promise.all(sendPromises);
         
         toast({
-          title: "Melding sendt!",
-          description: `Sendt til ${groupContacts.length} kontakter i gruppen`,
+          title: "Kampanje startet!",
+          description: `Sender meldinger til ${groupContacts.length} kontakter i bakgrunnen.`,
         });
         
         setMessage("");
