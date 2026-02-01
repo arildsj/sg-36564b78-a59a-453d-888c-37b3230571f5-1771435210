@@ -99,14 +99,34 @@ export default function SimulatePage() {
       
       // Clean phone number
       const cleanFromNumber = fromNumber.replace(/\s+/g, '');
-      const threadKey = `thread_${cleanFromNumber.replace("+", "")}`;
+      const threadKey = `${gateway.phone_number}:${cleanFromNumber}`;
 
+      // 1. Create or update message thread
+      const { data: thread, error: threadError } = await supabase
+        .from("message_threads")
+        .upsert({
+          tenant_id: tenant.id,
+          gateway_id: gatewayId,
+          contact_phone: cleanFromNumber,
+          resolved_group_id: selectedGroup, // Set correct group!
+          last_message_at: new Date().toISOString(),
+          is_resolved: false
+        }, {
+          onConflict: "tenant_id, contact_phone, resolved_group_id"
+        })
+        .select()
+        .single();
+
+      if (threadError) throw threadError;
+
+      // 2. Insert message linked to thread
       const { data, error } = await supabase
         .from("messages")
         .insert({
           tenant_id: tenant.id,
           gateway_id: gatewayId,
           group_id: selectedGroup,
+          thread_id: thread.id, // Link to thread!
           thread_key: threadKey,
           direction: "inbound",
           from_number: cleanFromNumber,
@@ -120,12 +140,12 @@ export default function SimulatePage() {
       if (error) throw error;
 
       toast({
-        title: "Melding sendt inn!",
-        description: "Meldingen er nå tilgjengelig i systemet",
+        title: "Melding simulert",
+        description: "Tilgjengelig i Innboks",
       });
       setMessageContent("");
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to send message:", error);
       toast({
         title: "Feil ved sending",
