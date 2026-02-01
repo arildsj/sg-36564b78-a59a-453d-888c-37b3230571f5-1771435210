@@ -49,6 +49,7 @@ import { contactService } from "@/services/contactService";
 import { auditService, type AuditLogEntry } from "@/services/auditService";
 import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog, Clock, Phone, FileText, Activity } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { useToast } from "@/hooks/use-toast";
 
 type GroupNode = {
   id: string;
@@ -104,6 +105,7 @@ type Contact = {
 };
 
 export default function AdminPage() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("groups");
   const [groups, setGroups] = useState<GroupNode[]>([]);
   const [allGroups, setAllGroups] = useState<GroupNode[]>([]);
@@ -255,12 +257,12 @@ export default function AdminPage() {
       setCreating(true);
 
       if (!newGroup.name.trim()) {
-        alert("Vennligst fyll ut gruppenavn");
+        toast({ title: "Mangler gruppenavn", variant: "destructive" });
         return;
       }
 
       if (!currentUser?.tenant_id) {
-        alert("Kan ikke opprette gruppe: Mangler tenant ID");
+        toast({ title: "Feil", description: "Mangler tenant ID", variant: "destructive" });
         return;
       }
 
@@ -280,9 +282,10 @@ export default function AdminPage() {
       });
       setShowCreateDialog(false);
       await loadData();
+      toast({ title: "Gruppe opprettet" });
     } catch (error: any) {
       console.error("Failed to create group:", error);
-      alert(`Feil ved opprettelse av gruppe: ${error.message || "Ukjent feil"}`);
+      toast({ title: "Feil ved opprettelse", description: error.message, variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -293,7 +296,7 @@ export default function AdminPage() {
       setCreating(true);
 
       if (!newUser.name || !newUser.email || !newUser.password) {
-        alert("Vennligst fyll ut navn, e-post og passord");
+        toast({ title: "Mangler info", description: "Navn, e-post og passord må fylles ut", variant: "destructive" });
         return;
       }
 
@@ -316,9 +319,10 @@ export default function AdminPage() {
       });
       setShowCreateUserDialog(false);
       await loadData();
+      toast({ title: "Bruker opprettet" });
     } catch (error: any) {
       console.error("Failed to create user:", error);
-      alert(`Feil ved opprettelse: ${error.message}`);
+      toast({ title: "Feil ved opprettelse", description: error.message, variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -341,7 +345,7 @@ export default function AdminPage() {
       setCreating(true);
 
       if (!editUser.name || !editUser.email) {
-        alert("Vennligst fyll ut navn og e-post");
+        toast({ title: "Mangler info", description: "Navn og e-post må fylles ut", variant: "destructive" });
         return;
       }
 
@@ -357,9 +361,10 @@ export default function AdminPage() {
       setEditUser(null);
       setShowEditUserDialog(false);
       await loadData();
+      toast({ title: "Bruker oppdatert" });
     } catch (error: any) {
       console.error("Failed to update user:", error);
-      alert(`Feil ved oppdatering: ${error.message}`);
+      toast({ title: "Feil ved oppdatering", description: error.message, variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -370,12 +375,12 @@ export default function AdminPage() {
       setCreating(true);
 
       if (!newGateway.name.trim() || !newGateway.base_url.trim()) {
-        alert("Vennligst fyll ut navn og URL");
+        toast({ title: "Mangler info", description: "Navn og URL må fylles ut", variant: "destructive" });
         return;
       }
 
       if (!currentUser?.tenant_id) {
-        alert("Kan ikke opprette gateway: Mangler tenant ID");
+        toast({ title: "Feil", description: "Mangler tenant ID", variant: "destructive" });
         return;
       }
 
@@ -399,9 +404,10 @@ export default function AdminPage() {
       });
       setShowCreateGatewayDialog(false);
       await loadData();
+      toast({ title: "Gateway opprettet" });
     } catch (error: any) {
       console.error("Failed to create gateway:", error);
-      alert(`Feil ved opprettelse av gateway: ${error.message || "Ukjent feil"}`);
+      toast({ title: "Feil ved opprettelse", description: error.message, variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -412,7 +418,7 @@ export default function AdminPage() {
       setCreating(true);
 
       if (!newRoutingRule.gateway_id || !newRoutingRule.target_group_id) {
-        alert("Vennligst velg gateway og målgruppe");
+        toast({ title: "Mangler info", description: "Velg gateway og målgruppe", variant: "destructive" });
         return;
       }
 
@@ -435,9 +441,10 @@ export default function AdminPage() {
       });
       setShowCreateRoutingRuleDialog(false);
       await loadData();
+      toast({ title: "Routing rule opprettet" });
     } catch (error: any) {
       console.error("Failed to create routing rule:", error);
-      alert(`Feil ved opprettelse av routing rule: ${error.message || "Ukjent feil"}`);
+      toast({ title: "Feil ved opprettelse", description: error.message, variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -449,9 +456,10 @@ export default function AdminPage() {
     try {
       await routingRuleService.deleteRoutingRule(id);
       await loadData();
+      toast({ title: "Routing rule slettet" });
     } catch (error: any) {
       console.error("Failed to delete routing rule:", error);
-      alert(`Feil ved sletting: ${error.message}`);
+      toast({ title: "Feil ved sletting", description: error.message, variant: "destructive" });
     }
   };
 
@@ -461,9 +469,10 @@ export default function AdminPage() {
     try {
       await groupService.deleteGroup(groupId);
       await loadData();
+      toast({ title: "Gruppe slettet" });
     } catch (error: any) {
       console.error("Failed to delete group:", error);
-      alert(`Feil ved sletting: ${error.message}`);
+      toast({ title: "Feil ved sletting", description: error.message, variant: "destructive" });
     }
   };
 
@@ -473,7 +482,7 @@ export default function AdminPage() {
       await loadData();
     } catch (error: any) {
       console.error("Failed to toggle routing rule:", error);
-      alert(`Feil ved oppdatering: ${error.message}`);
+      toast({ title: "Feil ved oppdatering", description: error.message, variant: "destructive" });
     }
   };
 
@@ -483,9 +492,10 @@ export default function AdminPage() {
     try {
       await gatewayService.setDefaultGateway(gatewayId, currentUser.tenant_id);
       await loadData();
+      toast({ title: "Standard gateway oppdatert" });
     } catch (error: any) {
       console.error("Failed to set default gateway:", error);
-      alert(`Feil ved oppdatering: ${error.message}`);
+      toast({ title: "Feil ved oppdatering", description: error.message, variant: "destructive" });
     }
   };
 
@@ -495,9 +505,10 @@ export default function AdminPage() {
     try {
       await gatewayService.deleteGateway(gatewayId);
       await loadData();
+      toast({ title: "Gateway slettet" });
     } catch (error: any) {
       console.error("Failed to delete gateway:", error);
-      alert(`Feil ved sletting: ${error.message}`);
+      toast({ title: "Feil ved sletting", description: error.message, variant: "destructive" });
     }
   };
 

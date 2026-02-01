@@ -1,19 +1,10 @@
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -22,6 +13,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,8 +31,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Phone, Mail, UserPlus, Pencil, Trash2, Upload } from "lucide-react";
-import { contactService, type Contact } from "@/services/contactService";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Phone, Mail, Building2, Users, Plus, Edit, Trash2, Search, Upload, UserPlus, Pencil } from "lucide-react";
+import { contactService, type Contact, type ContactGroup } from "@/services/contactService";
+import { useToast } from "@/hooks/use-toast";
 import { groupService } from "@/services/groupService";
 
 type Group = {
@@ -43,6 +51,7 @@ type Group = {
 };
 
 export default function ContactsPage() {
+  const { toast } = useToast();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -137,7 +146,7 @@ export default function ContactsPage() {
       setSubmitting(true);
 
       if (!formData.name.trim() || !formData.phone.trim()) {
-        alert("Vennligst fyll ut navn og telefon");
+        toast("Vennligst fyll ut navn og telefon", { variant: "destructive" });
         return;
       }
 
@@ -163,7 +172,7 @@ export default function ContactsPage() {
       await loadData();
     } catch (error: any) {
       console.error("Failed to save contact:", error);
-      alert(`Feil ved lagring: ${error.message || "Ukjent feil"}`);
+      toast(`Feil ved lagring: ${error.message || "Ukjent feil"}`, { variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -180,7 +189,7 @@ export default function ContactsPage() {
       await loadData();
     } catch (error: any) {
       console.error("Failed to delete contact:", error);
-      alert(`Feil ved sletting: ${error.message}`);
+      toast(`Feil ved sletting: ${error.message}`, { variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -216,7 +225,7 @@ export default function ContactsPage() {
       setRelSearchResults([]);
     } catch (e) {
       console.error(e);
-      alert("Kunne ikke legge til relasjon");
+      toast("Kunne ikke legge til relasjon", { variant: "destructive" });
     }
   };
 
@@ -241,10 +250,17 @@ export default function ContactsPage() {
       setImportFile(null);
       setImportGroupId("");
       await loadData();
-      alert("Import fullført!");
+      toast({
+        title: "Import fullført!",
+        description: "Kontaktene er importert.",
+      });
     } catch (error: any) {
       console.error("Import failed:", error);
-      alert(`Import feilet: ${error.message}`);
+      toast({
+        title: "Import feilet",
+        description: error.message || "En feil oppstod under import",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -253,6 +269,46 @@ export default function ContactsPage() {
   const confirmDelete = (contact: Contact) => {
     setEditingContact(contact);
     setShowDeleteDialog(true);
+  };
+
+  const handleDeleteContact = async (contactId: string) => {
+    if (!confirm("Er du sikker på at du vil slette denne kontakten?")) return;
+
+    try {
+      await contactService.deleteContact(contactId);
+      loadContacts();
+      toast({
+        title: "Kontakt slettet",
+        description: "Kontakten er fjernet",
+      });
+    } catch (error) {
+      console.error("Failed to delete contact:", error);
+      toast({
+        title: "Feil ved sletting",
+        description: "Kunne ikke slette kontakt",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!confirm("Er du sikker på at du vil slette denne gruppen?")) return;
+
+    try {
+      await contactService.deleteContactGroup(groupId);
+      loadGroups();
+      toast({
+        title: "Gruppe slettet",
+        description: "Gruppen er fjernet",
+      });
+    } catch (error) {
+      console.error("Failed to delete group:", error);
+      toast({
+        title: "Feil ved sletting",
+        description: "Kunne ikke slette gruppe",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredContacts = contacts.filter(
@@ -269,6 +325,44 @@ export default function ContactsPage() {
         ? prev.group_ids.filter((id) => id !== groupId)
         : [...prev.group_ids, groupId],
     }));
+  };
+
+  const handleSaveGroup = async () => {
+    try {
+      if (!newGroup.name) {
+        toast({
+          title: "Mangler navn",
+          description: "Gruppenavn er påkrevd",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (editingGroup) {
+        await contactService.updateContactGroup(editingGroup.id, newGroup);
+        toast({
+          title: "Gruppe oppdatert",
+          description: "Gruppen er oppdatert",
+        });
+      } else {
+        await contactService.createContactGroup(newGroup);
+        toast({
+          title: "Gruppe opprettet",
+          description: "Ny gruppe er opprettet",
+        });
+      }
+
+      setGroupDialogOpen(false);
+      resetGroupForm();
+      loadGroups();
+    } catch (error) {
+      console.error("Failed to save group:", error);
+      toast({
+        title: "Feil ved lagring",
+        description: "Kunne ikke lagre gruppe",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

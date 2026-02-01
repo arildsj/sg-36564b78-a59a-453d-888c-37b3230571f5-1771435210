@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { authService } from "@/services/authService";
 import { Building2, UserCog, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type OnboardingStep = "tenant" | "admin" | "complete";
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("tenant");
   const [tenantId, setTenantId] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -41,7 +43,7 @@ export default function OnboardingPage() {
       setLoading(true);
       
       if (!tenantData.name.trim()) {
-        alert("Vennligst fyll ut organisasjonsnavn");
+        toast({ title: "Mangler navn", description: "Fyll ut organisasjonsnavn", variant: "destructive" });
         return;
       }
 
@@ -57,9 +59,10 @@ export default function OnboardingPage() {
       
       setTenantId(data.id);
       setCurrentStep("admin");
+      toast({ title: "Organisasjon opprettet" });
     } catch (error) {
       console.error("Failed to create tenant:", error);
-      alert("Feil ved opprettelse av organisasjon");
+      toast({ title: "Feil", description: "Kunne ikke opprette organisasjon", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -71,17 +74,17 @@ export default function OnboardingPage() {
 
       // Validation
       if (!adminData.name || !adminData.email || !adminData.phone || !adminData.password) {
-        alert("Vennligst fyll ut alle feltene");
+        toast({ title: "Mangler info", description: "Alle felt må fylles ut", variant: "destructive" });
         return;
       }
 
       if (adminData.password !== adminData.confirmPassword) {
-        alert("Passordene matcher ikke");
+        toast({ title: "Feil", description: "Passordene matcher ikke", variant: "destructive" });
         return;
       }
 
       if (adminData.password.length < 6) {
-        alert("Passordet må være minst 6 tegn");
+        toast({ title: "Svakt passord", description: "Passordet må være minst 6 tegn", variant: "destructive" });
         return;
       }
 
@@ -93,12 +96,12 @@ export default function OnboardingPage() {
 
       if (signUpError) {
         console.error("Sign up error:", signUpError);
-        alert(`Feil ved opprettelse av bruker: ${signUpError.message}`);
+        toast({ title: "Feil ved opprettelse", description: signUpError.message, variant: "destructive" });
         return;
       }
 
       if (!user) {
-        alert("Bruker ble ikke opprettet");
+        toast({ title: "Feil", description: "Bruker ble ikke opprettet", variant: "destructive" });
         return;
       }
 
@@ -124,30 +127,27 @@ export default function OnboardingPage() {
       if (signInError) {
         // Email confirmation required - provide clear instructions
         if (signInError.message?.includes("Email not confirmed")) {
-          alert(
-            "✅ Bruker opprettet!\n\n" +
-            "⚠️ E-postbekreftelse er påkrevd i Supabase.\n\n" +
-            "Vennligst gjør ett av følgende:\n" +
-            "1. Gå til Supabase Dashboard → Authentication → Providers → Email\n" +
-            "   og skru AV 'Confirm email' (Enable email confirmations)\n\n" +
-            "2. Eller sjekk e-posten din for bekreftelseslenke\n\n" +
-            "Deretter kan du logge inn på /settings."
-          );
+          toast({ 
+            title: "Sjekk e-posten din!", 
+            description: "Bekreftelsese-post er sendt. Du må bekrefte før du logger inn.",
+            duration: 10000 
+          });
           setCurrentStep("complete");
           return;
         }
         
         console.error("Sign in error:", signInError);
-        alert("Bruker opprettet, men automatisk pålogging feilet. Vennligst logg inn manuelt.");
+        toast({ title: "Obs", description: "Bruker opprettet, men automatisk pålogging feilet. Logg inn manuelt.", variant: "warning" });
         setCurrentStep("complete");
         return;
       }
 
       // Successfully signed in - go to complete
       setCurrentStep("complete");
+      toast({ title: "Administrator opprettet!", description: "Velkommen til SeMSe." });
     } catch (error) {
       console.error("Failed to create admin:", error);
-      alert("Feil ved opprettelse av administrator");
+      toast({ title: "Kritisk feil", description: "Feil ved opprettelse av administrator", variant: "destructive" });
     } finally {
       setLoading(false);
     }
