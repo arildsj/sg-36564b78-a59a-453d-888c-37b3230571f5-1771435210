@@ -261,9 +261,9 @@ export default function InboxPage() {
         allMessages.push(...threadMessages);
       }
 
-      // Sort by created_at (newest first for mobile-like display)
+      // Sort by created_at (oldest first - chronological order like traditional chat)
       allMessages.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
 
       setMessages(allMessages);
@@ -271,9 +271,9 @@ export default function InboxPage() {
       // Scroll to bottom after messages are loaded
       setTimeout(() => {
         if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ behavior: "instant" });
+          messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
-      }, 100);
+      }, 150);
     } catch (error) {
       console.error("Failed to load messages:", error);
     }
@@ -536,8 +536,7 @@ export default function InboxPage() {
                           {messages.length === 0 ? (
                             <p className="text-muted-foreground text-center py-8 text-sm">Ingen meldinger</p>
                           ) : (
-                            // Reverse to show oldest first (like a chat), newest at bottom
-                            [...messages].reverse().map((msg) => (
+                            messages.map((msg) => (
                               <div
                                 key={msg.id}
                                 className={cn(
