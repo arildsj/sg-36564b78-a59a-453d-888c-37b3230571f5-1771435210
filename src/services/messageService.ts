@@ -363,6 +363,23 @@ export const messageService = {
        
        targetGroupId = fallbackGroup?.id;
     }
+    
+    // CRITICAL: If still no group found, get ANY operational group from tenant
+    if (!targetGroupId) {
+       const { data: anyGroup } = await db
+         .from("groups")
+         .select("id")
+         .eq("tenant_id", userProfile.tenant_id)
+         .eq("kind", "operational")
+         .limit(1)
+         .maybeSingle();
+       
+       if (!anyGroup) {
+         throw new Error("No operational groups found in tenant. Please create a group first.");
+       }
+       
+       targetGroupId = anyGroup.id;
+    }
 
     const isValidUUID = (id: string | undefined) => 
       id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
