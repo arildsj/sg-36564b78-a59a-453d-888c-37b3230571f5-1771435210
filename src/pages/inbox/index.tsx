@@ -32,6 +32,8 @@ import {
   AlertTriangle,
   FolderInput,
   Archive,
+  ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -47,22 +49,34 @@ import { supabase } from "@/integrations/supabase/client";
 const formatMessageTime = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
-  const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  const isToday = date.getDate() === now.getDate() && 
+                  date.getMonth() === now.getMonth() && 
+                  date.getFullYear() === now.getFullYear();
   
-  const timeStr = new Intl.DateTimeFormat('no-NO', {
-    hour: '2-digit',
-    minute: '2-digit'
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = date.getDate() === yesterday.getDate() && 
+                      date.getMonth() === yesterday.getMonth() && 
+                      date.getFullYear() === yesterday.getFullYear();
+
+  const timeStr = new Intl.DateTimeFormat("no-NO", {
+    hour: "2-digit",
+    minute: "2-digit"
   }).format(date);
 
   if (isToday) {
     return `I dag ${timeStr}`;
   }
   
-  return new Intl.DateTimeFormat('no-NO', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit'
+  if (isYesterday) {
+    return `I går ${timeStr}`;
+  }
+  
+  return new Intl.DateTimeFormat("no-NO", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
   }).format(date);
 };
 
@@ -96,9 +110,8 @@ export default function InboxPage() {
     // Filter by view mode (mapped from activeTab)
     if (activeTab === "all") return matchesSearch;
     if (activeTab === "fallback") return matchesSearch && thread.is_fallback;
-    if (activeTab === "escalated") return matchesSearch; // Escalated view logic handles fetching
+    if (activeTab === "escalated") return matchesSearch;
     
-    // For specific group view
     return matchesSearch && thread.resolved_group_id === selectedGroupFilter;
   });
 
@@ -106,7 +119,6 @@ export default function InboxPage() {
     loadGroups();
     loadThreads();
 
-    // Subscribe to realtime updates for messages
     const channel = supabase
       .channel("inbox_updates")
       .on(
@@ -132,7 +144,6 @@ export default function InboxPage() {
     }
   }, [selectedThread]);
 
-  // Auto-scroll til bunnen når meldinger oppdateres
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -161,19 +172,16 @@ export default function InboxPage() {
         loadedThreads = await messageService.getEscalatedThreads(30);
       }
 
-      // Filter by group if selected
       if (selectedGroupFilter !== "all") {
         loadedThreads = loadedThreads.filter(
           (t) => t.resolved_group_id === selectedGroupFilter
         );
       }
 
-      // Sorter etter nyeste melding først
       loadedThreads.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
 
       setThreads(loadedThreads);
 
-      // Preserve selection if still valid, or select first
       if (loadedThreads.length > 0) {
         if (!selectedThread || !loadedThreads.find(t => t.id === selectedThread.id)) {
           setSelectedThreadId(loadedThreads[0].id);
@@ -206,12 +214,11 @@ export default function InboxPage() {
       await messageService.sendMessage(
         newMessage,
         selectedThread.contact_phone,
-        "+47 900 00 000", // TODO: Get from gateway config
+        "+47 900 00 000",
         selectedThread.id
       );
 
       setNewMessage("");
-      // Message update handled by subscription
     } catch (error) {
       console.error("Failed to send reply:", error);
       alert("Kunne ikke sende melding");
@@ -225,7 +232,6 @@ export default function InboxPage() {
 
     try {
       await messageService.acknowledgeThread(selectedThread.id);
-      // Updates handled by subscription
     } catch (error) {
       console.error("Failed to acknowledge thread:", error);
     }
@@ -238,7 +244,6 @@ export default function InboxPage() {
       await messageService.reclassifyThread(selectedThread.id, reclassifyTargetGroup);
       setReclassifyDialogOpen(false);
       setReclassifyTargetGroup("");
-      // Updates handled by subscription, but force reload to be safe
       await loadThreads();
     } catch (error) {
       console.error("Failed to reclassify thread:", error);
@@ -440,8 +445,8 @@ export default function InboxPage() {
                         </div>
                       </CardHeader>
 
-                      <ScrollArea className="flex-1 p-4 bg-slate-50 dark:bg-slate-950/20">
-                        <div className="space-y-6">
+                      <ScrollArea className="flex-1 p-6 bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950/20 dark:to-slate-900/30">
+                        <div className="space-y-4 max-w-4xl mx-auto">
                           {messages.length === 0 ? (
                             <p className="text-muted-foreground text-center py-8 text-sm">Ingen meldinger</p>
                           ) : (
@@ -449,35 +454,45 @@ export default function InboxPage() {
                               <div
                                 key={msg.id}
                                 className={cn(
-                                  "flex flex-col max-w-[85%] rounded-2xl px-4 py-3 shadow-sm text-sm relative group",
-                                  msg.direction === "outbound"
-                                    ? "ml-auto bg-blue-600 text-white rounded-br-sm" 
-                                    : "mr-auto bg-white border border-gray-100 text-gray-800 rounded-bl-sm"
+                                  "flex",
+                                  msg.direction === "outbound" ? "justify-end" : "justify-start"
                                 )}
                               >
-                                {msg.is_fallback && msg.direction === "inbound" && (
-                                  <div className="mb-2 pb-1 border-b border-border/10 flex items-center gap-1 text-xs opacity-90 font-medium text-yellow-600">
-                                     <AlertTriangle className="h-3 w-3" />
-                                     <span>Ukjent avsender</span>
+                                <div
+                                  className={cn(
+                                    "flex flex-col max-w-[75%] rounded-2xl px-4 py-3 shadow-md",
+                                    msg.direction === "outbound"
+                                      ? "bg-blue-600 text-white rounded-br-md"
+                                      : "bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-700 rounded-bl-md"
+                                  )}
+                                >
+                                  {msg.is_fallback && msg.direction === "inbound" && (
+                                    <div className="mb-2 pb-2 border-b border-yellow-400/30 flex items-center gap-1.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">
+                                      <AlertTriangle className="h-3 w-3" />
+                                      <span>Ukjent avsender</span>
+                                    </div>
+                                  )}
+                                  
+                                  <p className="whitespace-pre-wrap leading-relaxed text-sm">{msg.content}</p>
+                                  
+                                  <div className={cn(
+                                    "mt-2 flex items-center gap-2 text-[10px] font-medium",
+                                    msg.direction === "outbound" 
+                                      ? "justify-end text-blue-100" 
+                                      : "justify-start text-gray-500 dark:text-gray-400"
+                                  )}>
+                                    <span>{formatMessageTime(msg.created_at)}</span>
+                                    <span>•</span>
+                                    {msg.direction === "outbound" ? (
+                                      <span className="flex items-center gap-1">
+                                        Utgående <ArrowRight className="h-3 w-3" />
+                                      </span>
+                                    ) : (
+                                      <span className="flex items-center gap-1">
+                                        <ArrowLeft className="h-3 w-3" /> Innkommende
+                                      </span>
+                                    )}
                                   </div>
-                                )}
-                                
-                                <p className="whitespace-pre-wrap leading-relaxed text-sm md:text-base">{msg.content}</p>
-                                
-                                <div className={cn(
-                                  "mt-2 flex items-center gap-2 text-[10px] uppercase tracking-wider font-medium opacity-80",
-                                  msg.direction === "outbound" ? "justify-end text-blue-100" : "justify-start text-gray-400"
-                                )}>
-                                   <span>{formatMessageTime(msg.created_at)}</span>
-                                   {msg.direction === "outbound" ? (
-                                     <span className="flex items-center gap-1">
-                                       Utgående <Send className="h-3 w-3" />
-                                     </span>
-                                   ) : (
-                                     <span className="flex items-center gap-1">
-                                       Innkommende
-                                     </span>
-                                   )}
                                 </div>
                               </div>
                             ))
