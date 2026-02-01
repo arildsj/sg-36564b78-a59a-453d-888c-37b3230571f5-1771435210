@@ -109,6 +109,11 @@ export default function SimulatePage() {
     return date.toLocaleDateString("no-NO");
   };
 
+  const selectedGroupData = groups.find((g) => g.id === selectedGroup);
+  const gatewayInfo = selectedGroupData?.gateway_id 
+    ? `Gateway: ${(selectedGroupData as any).gateway?.phone_number || 'Laster...'}`
+    : "Ingen gateway tilknyttet";
+
   return (
     <>
       <Head>
@@ -137,26 +142,7 @@ export default function SimulatePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="gateway">Gateway (mottaker)</Label>
-                  <select
-                    id="gateway"
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                    value={selectedGateway}
-                    onChange={(e) => setSelectedGateway(e.target.value)}
-                  >
-                    {gateways.length === 0 && (
-                      <option value="">Ingen gateways funnet</option>
-                    )}
-                    {gateways.map((gw) => (
-                      <option key={gw.id} value={gw.id}>
-                        {gw.name} ({gw.phone_number})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="group">Målgruppe (routing)</Label>
+                  <Label htmlFor="group">Målgruppe</Label>
                   <select
                     id="group"
                     className="w-full h-10 px-3 rounded-md border border-input bg-background"
@@ -166,14 +152,14 @@ export default function SimulatePage() {
                     {groups.length === 0 && (
                       <option value="">Ingen grupper funnet</option>
                     )}
-                    {groups.map((g) => (
+                    {groups.map((g: any) => (
                       <option key={g.id} value={g.id}>
-                        {g.name}
+                        {g.name} ({g.gateway?.phone_number || 'Ingen gateway'})
                       </option>
                     ))}
                   </select>
                   <p className="text-xs text-muted-foreground">
-                    I produksjon vil routing skje automatisk basert på regler
+                    {gatewayInfo}
                   </p>
                 </div>
 
@@ -204,15 +190,15 @@ export default function SimulatePage() {
                 <Button 
                   onClick={handleSendMessage} 
                   className="w-full"
-                  disabled={loading || !selectedGateway || !selectedGroup}
+                  disabled={loading || !selectedGroup}
                 >
                   {loading ? "Sender..." : "Send inn melding"}
                 </Button>
 
-                {gateways.length === 0 && (
+                {groups.length === 0 && (
                   <div className="p-4 bg-destructive/10 border border-destructive/20 rounded">
                     <p className="text-sm text-destructive">
-                      ⚠️ Ingen gateways funnet. Gå til{" "}
+                      ⚠️ Ingen grupper funnet. Gå til{" "}
                       <Link href="/onboarding" className="underline font-medium">
                         Onboarding
                       </Link>{" "}
