@@ -88,9 +88,9 @@ export const messageService = {
       .from("gateways")
       .select("id")
       .eq("tenant_id", tenantId)
-      .eq("is_active", true)
+      .eq("status", "active")
       .limit(1)
-      .single();
+      .maybeSingle();
 
     // Create new thread
     const { data: newThread, error } = await db
