@@ -60,16 +60,19 @@ serve(async (req) => {
     // Update campaign status to processing
     await supabase
       .from("bulk_campaigns")
-      .update({ status: "processing", sent_at: new Date().toISOString() })
+      .update({ 
+        status: "sending",
+        sent_at: new Date().toISOString(),
+        total_recipients: campaign.bulk_recipients?.length || 0
+      })
       .eq("id", campaign_id);
 
-    // Get available gateways for load distribution
+    // Get active gateways for load distribution
     const { data: gateways } = await supabase
       .from("gateways")
-      .select("id, from_number")
+      .select("id, phone_number")
       .eq("tenant_id", campaign.tenant_id)
-      .eq("is_active", true)
-      .is("deleted_at", null);
+      .eq("status", "active");
 
     if (!gateways || gateways.length === 0) {
       await supabase
@@ -79,6 +82,28 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ error: "No active gateways available" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get user's operational group for message routing
+    const { data: userGroups } = await supabase
+      .from("group_memberships")
+      .select(`
+        group:groups!inner(id, kind)
+      `)
+      .eq("user_id", campaign.created_by_user_id);
+
+    const operationalGroup = userGroups?.find((mg: any) => mg.group?.kind === "operational")?.group;
+
+    if (!operationalGroup) {
+      await supabase
+        .from("bulk_campaigns")
+        .update({ status: "failed" })
+        .eq("id", campaign_id);
+
+      return new Response(
+        JSON.stringify({ error: "No operational group found for user" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -93,19 +118,25 @@ serve(async (req) => {
       const gateway = gateways[i % gateways.length]; // Round-robin distribution
 
       try {
-        // Create outbound message
+        // Personalize message content
+        const personalizedContent = personalizeContent(
+          campaign.message_template,
+          recipient.metadata
+        );
+
+        // Create outbound message with proper routing
         const { data: message, error: messageError } = await supabase
           .from("messages")
           .insert({
             tenant_id: campaign.tenant_id,
             gateway_id: gateway.id,
-            direction: "out",
-            from_number: gateway.from_number,
+            direction: "outbound",
+            from_number: gateway.phone_number,
             to_number: recipient.phone_number,
-            content: personalizeContent(campaign.content, recipient.metadata),
-            resolved_group_id: campaign.sending_group_id,
-            status: "queued",
-            bulk_campaign_id: campaign_id,
+            content: personalizedContent,
+            resolved_group_id: operationalGroup.id,
+            status: "pending",
+            thread_key: `${gateway.phone_number}:${recipient.phone_number}`,
           })
           .select()
           .single();
@@ -118,8 +149,9 @@ serve(async (req) => {
         await supabase
           .from("bulk_recipients")
           .update({
-            status: "queued",
-            message_id: message.id,
+            status: "sent",
+            sent_message_id: message.id,
+            sent_at: new Date().toISOString(),
           })
           .eq("id", recipient.id);
 
@@ -155,12 +187,14 @@ serve(async (req) => {
     }
 
     // Update campaign final status
-    const finalStatus = failedCount === 0 ? "completed" : "partially_failed";
+    const finalStatus = failedCount === 0 ? "completed" : failedCount === recipients.length ? "failed" : "completed";
     await supabase
       .from("bulk_campaigns")
       .update({
         status: finalStatus,
         completed_at: new Date().toISOString(),
+        sent_count: successCount,
+        failed_count: failedCount,
       })
       .eq("id", campaign_id);
 
