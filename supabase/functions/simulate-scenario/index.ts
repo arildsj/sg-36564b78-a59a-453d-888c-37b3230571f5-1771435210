@@ -127,7 +127,7 @@ async function simulateInboundMessage(supabase: any, tenantId: string, event: an
     .from("gateways")
     .select("id, from_number")
     .eq("tenant_id", tenantId)
-    .eq("is_active", true)
+    .eq("status", "active")
     .limit(1)
     .single();
 
@@ -160,7 +160,7 @@ async function simulateOutboundMessage(supabase: any, tenantId: string, event: a
     .from("gateways")
     .select("id, from_number")
     .eq("tenant_id", tenantId)
-    .eq("is_active", true)
+    .eq("status", "active")
     .limit(1)
     .single();
 
