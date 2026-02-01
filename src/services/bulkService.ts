@@ -26,7 +26,7 @@ export const bulkService = {
 
     const { data: profile } = await supabase
       .from("users")
-      .select("tenant_id")
+      .select("id, tenant_id")
       .eq("auth_user_id", user.user.id)
       .single();
 
