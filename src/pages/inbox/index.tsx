@@ -25,7 +25,6 @@ import {
 import {
   MessageSquare,
   Send,
-  Phone,
   Clock,
   CheckCheck,
   Inbox as InboxIcon,
@@ -34,32 +33,21 @@ import {
   Archive,
   ArrowRight,
   ArrowLeft,
+  Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
   messageService, 
   type Message, 
-  type MessageThread,
   type ExtendedMessageThread 
 } from "@/services/messageService";
 import { groupService, type Group } from "@/services/groupService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Grouped conversation type (one per phone number)
-interface GroupedConversation {
-  contact_phone: string;
-  group_name: string;
-  resolved_group_id: string;
-  last_message_at: string;
-  last_message_content: string;
-  unread_count: number;
-  is_fallback: boolean;
-  thread_ids: string[]; // All thread IDs for this phone number
-}
-
 // Hjelpefunksjon for datoformatering
 const formatMessageTime = (dateString: string) => {
+  if (!dateString) return "";
   const date = new Date(dateString);
   const now = new Date();
   const isToday = date.getDate() === now.getDate() && 
@@ -98,9 +86,8 @@ export default function InboxPage() {
   const [activeTab, setActiveTab] = useState<"all" | "fallback" | "escalated">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [threads, setThreads] = useState<ExtendedMessageThread[]>([]);
-  const [groupedConversations, setGroupedConversations] = useState<GroupedConversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedPhoneNumber, setSelectedPhoneNumber] = useState<string | null>(null);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -113,21 +100,21 @@ export default function InboxPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const selectedConversation = groupedConversations.find((c) => c.contact_phone === selectedPhoneNumber);
+  const selectedThread = threads.find((t) => t.id === selectedThreadId);
 
-  // Filter conversations based on search query
-  const filteredConversations = groupedConversations.filter((conv) => {
+  // Filter threads based on search query and filters
+  const filteredThreads = threads.filter((thread) => {
     const matchesSearch = 
-      conv.contact_phone.includes(searchQuery) || 
-      (conv.group_name && conv.group_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (conv.last_message_content && conv.last_message_content.toLowerCase().includes(searchQuery.toLowerCase()));
+      thread.contact_phone.includes(searchQuery) || 
+      (thread.group_name && thread.group_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (thread.last_message_content && thread.last_message_content.toLowerCase().includes(searchQuery.toLowerCase()));
       
-    // Filter by view mode
+    // Filter by view mode (Tabs)
     if (activeTab === "all") return matchesSearch;
-    if (activeTab === "fallback") return matchesSearch && conv.is_fallback;
-    if (activeTab === "escalated") return matchesSearch;
+    if (activeTab === "fallback") return matchesSearch && thread.is_fallback;
+    if (activeTab === "escalated") return matchesSearch; // Escalated logic handled in loadThreads
     
-    return matchesSearch && conv.resolved_group_id === selectedGroupFilter;
+    return matchesSearch;
   });
 
   useEffect(() => {
@@ -141,9 +128,16 @@ export default function InboxPage() {
         { event: "*", schema: "public", table: "messages" },
         () => {
           loadThreads();
-          if (selectedPhoneNumber) {
-            loadMessagesForPhone(selectedPhoneNumber);
+          if (selectedThreadId) {
+            loadMessages(selectedThreadId);
           }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "message_threads" },
+        () => {
+          loadThreads();
         }
       )
       .subscribe();
@@ -154,10 +148,10 @@ export default function InboxPage() {
   }, [activeTab, selectedGroupFilter]);
 
   useEffect(() => {
-    if (selectedPhoneNumber) {
-      loadMessagesForPhone(selectedPhoneNumber);
+    if (selectedThreadId) {
+      loadMessages(selectedThreadId);
     }
-  }, [selectedPhoneNumber]);
+  }, [selectedThreadId]);
 
   const loadGroups = async () => {
     try {
@@ -189,17 +183,13 @@ export default function InboxPage() {
 
       setThreads(loadedThreads);
 
-      // Group threads by contact_phone
-      const grouped = groupThreadsByPhone(loadedThreads);
-      setGroupedConversations(grouped);
-
-      // Auto-select first conversation if none selected
-      if (grouped.length > 0) {
-        if (!selectedPhoneNumber || !grouped.find(c => c.contact_phone === selectedPhoneNumber)) {
-          setSelectedPhoneNumber(grouped[0].contact_phone);
+      // Auto-select first thread if none selected
+      if (loadedThreads.length > 0) {
+        if (!selectedThreadId || !loadedThreads.find(t => t.id === selectedThreadId)) {
+          setSelectedThreadId(loadedThreads[0].id);
         }
       } else {
-        setSelectedPhoneNumber(null);
+        setSelectedThreadId(null);
       }
     } catch (error) {
       console.error("Failed to load threads:", error);
@@ -208,67 +198,16 @@ export default function InboxPage() {
     }
   };
 
-  const groupThreadsByPhone = (threads: ExtendedMessageThread[]): GroupedConversation[] => {
-    const phoneMap = new Map<string, ExtendedMessageThread[]>();
-
-    // Group threads by phone number
-    threads.forEach(thread => {
-      const existing = phoneMap.get(thread.contact_phone) || [];
-      existing.push(thread);
-      phoneMap.set(thread.contact_phone, existing);
-    });
-
-    // Create grouped conversations
-    const grouped: GroupedConversation[] = [];
-    phoneMap.forEach((phoneThreads, phone) => {
-      // Sort by last_message_at to get the most recent
-      phoneThreads.sort((a, b) => 
-        new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
-      );
-
-      const mostRecent = phoneThreads[0];
-      const totalUnread = phoneThreads.reduce((sum, t) => sum + t.unread_count, 0);
-      const isFallback = phoneThreads.some(t => t.is_fallback);
-
-      grouped.push({
-        contact_phone: phone,
-        group_name: mostRecent.group_name,
-        resolved_group_id: mostRecent.resolved_group_id,
-        last_message_at: mostRecent.last_message_at,
-        last_message_content: mostRecent.last_message_content,
-        unread_count: totalUnread,
-        is_fallback: isFallback,
-        thread_ids: phoneThreads.map(t => t.id),
-      });
-    });
-
-    // Sort by last message time (newest first)
-    grouped.sort((a, b) => 
-      new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
-    );
-
-    return grouped;
-  };
-
-  const loadMessagesForPhone = async (phoneNumber: string) => {
+  const loadMessages = async (threadId: string) => {
     try {
-      // Get all threads for this phone number
-      const phoneThreads = threads.filter(t => t.contact_phone === phoneNumber);
-      const threadIds = phoneThreads.map(t => t.id);
-
-      // Load messages from all threads for this phone number
-      const allMessages: Message[] = [];
-      for (const threadId of threadIds) {
-        const threadMessages = await messageService.getMessagesByThread(threadId);
-        allMessages.push(...threadMessages);
-      }
-
+      const threadMessages = await messageService.getMessagesByThread(threadId);
+      
       // Sort by created_at (oldest first - chronological order like traditional chat)
-      allMessages.sort((a, b) => 
+      threadMessages.sort((a, b) => 
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
 
-      setMessages(allMessages);
+      setMessages(threadMessages);
       
       // Scroll to bottom after messages are loaded
       setTimeout(() => {
@@ -282,19 +221,16 @@ export default function InboxPage() {
   };
 
   const handleSendReply = async () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+    if (!newMessage.trim() || !selectedThread) return;
 
     try {
       setSending(true);
 
-      // Use the first thread for this phone number to send the reply
-      const firstThreadId = selectedConversation.thread_ids[0];
-
       await messageService.sendMessage(
         newMessage,
-        selectedConversation.contact_phone,
+        selectedThread.contact_phone,
         "+47 900 00 000",
-        firstThreadId
+        selectedThread.id
       );
 
       setNewMessage("");
@@ -315,26 +251,26 @@ export default function InboxPage() {
   };
 
   const handleAcknowledge = async () => {
-    if (!selectedConversation) return;
+    if (!selectedThread) return;
 
     try {
-      // Acknowledge all threads for this phone number
-      for (const threadId of selectedConversation.thread_ids) {
-        await messageService.acknowledgeThread(threadId);
-      }
+      await messageService.acknowledgeThread(selectedThread.id);
+      await loadThreads();
+      toast({
+        title: "Tråd bekreftet",
+        description: "Alle meldinger i tråden er markert som lest",
+      });
     } catch (error) {
       console.error("Failed to acknowledge thread:", error);
     }
   };
 
   const handleReclassify = async () => {
-    if (!selectedConversation || !reclassifyTargetGroup) return;
+    if (!selectedThread || !reclassifyTargetGroup) return;
 
     try {
-      // Reclassify all threads for this phone number
-      for (const threadId of selectedConversation.thread_ids) {
-        await messageService.reclassifyThread(threadId, reclassifyTargetGroup);
-      }
+      await messageService.reclassifyThread(selectedThread.id, reclassifyTargetGroup);
+      
       setReclassifyDialogOpen(false);
       setReclassifyTargetGroup("");
       await loadThreads();
@@ -353,14 +289,11 @@ export default function InboxPage() {
   };
 
   const handleResolve = async () => {
-    if (!selectedConversation) return;
+    if (!selectedThread) return;
 
     try {
-      // Resolve all threads for this phone number
-      for (const threadId of selectedConversation.thread_ids) {
-        await messageService.resolveThread(threadId);
-      }
-      setSelectedPhoneNumber(null);
+      await messageService.resolveThread(selectedThread.id);
+      setSelectedThreadId(null);
       await loadThreads();
       toast({
         title: "Samtale løst",
@@ -390,7 +323,7 @@ export default function InboxPage() {
           <div className="flex-none">
             <h2 className="text-3xl font-bold tracking-tight text-foreground">Samtaler</h2>
             <p className="text-muted-foreground mt-2">
-              Håndter meldinger fra dine grupper. Kun meldinger fra grupper du er vakt i vises her.
+              Håndter meldinger fra dine grupper.
             </p>
           </div>
 
@@ -432,19 +365,19 @@ export default function InboxPage() {
 
             <TabsContent value={activeTab} className="flex-1 m-0 min-h-0">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-                {/* Conversation List (Grouped by Phone Number) */}
+                {/* Thread List */}
                 <Card className="lg:col-span-1 flex flex-col h-full overflow-hidden">
                   <CardHeader className="border-b py-3 px-4 flex-none">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <MessageSquare className="h-4 w-4 text-primary" />
-                      Samtaler ({groupedConversations.length})
+                      Samtaler ({filteredThreads.length})
                     </CardTitle>
                   </CardHeader>
                   <ScrollArea className="flex-1">
                     <div className="p-3 space-y-2">
                       {loading ? (
                         <p className="text-muted-foreground text-center py-8 text-sm">Laster...</p>
-                      ) : groupedConversations.length === 0 ? (
+                      ) : filteredThreads.length === 0 ? (
                         <div className="text-center py-12 px-4">
                           <InboxIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3 opacity-50" />
                           <p className="text-muted-foreground font-medium">Ingen samtaler</p>
@@ -457,13 +390,13 @@ export default function InboxPage() {
                           </p>
                         </div>
                       ) : (
-                        groupedConversations.map((conv) => (
+                        filteredThreads.map((thread) => (
                           <button
-                            key={conv.contact_phone}
-                            onClick={() => setSelectedPhoneNumber(conv.contact_phone)}
+                            key={thread.id}
+                            onClick={() => setSelectedThreadId(thread.id)}
                             className={cn(
                               "w-full text-left p-3 rounded-lg border transition-all hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
-                              selectedPhoneNumber === conv.contact_phone
+                              selectedThreadId === thread.id
                                 ? "bg-primary/5 border-primary/50 shadow-sm"
                                 : "bg-card hover:bg-accent/50"
                             )}
@@ -471,28 +404,29 @@ export default function InboxPage() {
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                                  <span className="font-semibold text-sm truncate">{conv.contact_phone}</span>
-                                  {conv.unread_count > 0 && (
+                                  <span className="font-semibold text-sm truncate">{thread.contact_phone}</span>
+                                  {(thread.unread_count || 0) > 0 && (
                                     <Badge variant="destructive" className="text-[10px] h-4 px-1">
-                                      {conv.unread_count}
+                                      {thread.unread_count}
                                     </Badge>
                                   )}
-                                  {conv.is_fallback && (
+                                  {thread.is_fallback && (
                                     <Badge variant="outline" className="text-[10px] h-4 px-1 border-yellow-500 text-yellow-600">
                                       Ukjent
                                     </Badge>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                                  <span className="font-medium text-foreground/80">{conv.group_name}</span>
-                                  <span>•</span>
-                                  <span className="flex items-center gap-1">
+                                  <Badge variant="outline" className="text-[10px] h-5 px-1 font-normal bg-muted">
+                                    {thread.group_name}
+                                  </Badge>
+                                  <span className="flex items-center gap-1 ml-auto">
                                     <Clock className="h-3 w-3" />
-                                    {new Date(conv.last_message_at).toLocaleTimeString("no-NO", {hour: '2-digit', minute:'2-digit'})}
+                                    {formatMessageTime(thread.last_message_at || "")}
                                   </span>
                                 </div>
                                 <p className="text-xs text-muted-foreground truncate line-clamp-1">
-                                  {conv.last_message_content}
+                                  {thread.last_message_content}
                                 </p>
                               </div>
                             </div>
@@ -505,22 +439,25 @@ export default function InboxPage() {
 
                 {/* Message Thread View */}
                 <Card className="lg:col-span-2 flex flex-col h-full overflow-hidden">
-                  {selectedConversation ? (
+                  {selectedThread ? (
                     <>
                       <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
                         <div className="flex items-center justify-between">
                           <div>
                             <CardTitle className="flex items-center gap-2 text-base">
-                              {selectedConversation.contact_phone}
-                              {selectedConversation.is_fallback && (
+                              {selectedThread.contact_phone}
+                              {selectedThread.is_fallback && (
                                 <Badge variant="outline" className="border-yellow-500 text-yellow-600">
                                   Ukjent avsender
                                 </Badge>
                               )}
                             </CardTitle>
-                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                              Gruppe: <span className="font-medium text-foreground">{selectedConversation.group_name}</span>
-                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-xs text-muted-foreground">Gruppe:</p>
+                              <Badge variant="secondary" className="font-medium text-foreground">
+                                {selectedThread.group_name}
+                              </Badge>
+                            </div>
                           </div>
                           <div className="flex gap-2">
                             <Button
@@ -578,6 +515,13 @@ export default function InboxPage() {
                                       : "bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-700 rounded-bl-md"
                                   )}
                                 >
+                                  {/* Debug info - can be removed later */}
+                                  {msg.group_id && msg.group_id !== selectedThread.resolved_group_id && (
+                                    <div className="mb-1 text-[9px] text-muted-foreground opacity-70">
+                                      Fra gruppe: {groups.find(g => g.id === msg.group_id)?.name || 'Ukjent'}
+                                    </div>
+                                  )}
+
                                   {msg.is_fallback && msg.direction === "inbound" && (
                                     <div className="mb-2 pb-2 border-b border-yellow-400/30 flex items-center gap-1.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">
                                       <AlertTriangle className="h-3 w-3" />
@@ -617,7 +561,7 @@ export default function InboxPage() {
                           className="flex gap-3"
                         >
                           <Textarea
-                            placeholder="Skriv svar..."
+                            placeholder={`Svar til ${selectedThread.contact_phone}...`}
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             onKeyDown={(e) => {
@@ -674,11 +618,11 @@ export default function InboxPage() {
               <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Nåværende info</p>
               <div className="flex justify-between items-center text-sm">
                 <span>Avsender:</span>
-                <span className="font-mono">{selectedConversation?.contact_phone}</span>
+                <span className="font-mono">{selectedThread?.contact_phone}</span>
               </div>
               <div className="flex justify-between items-center text-sm mt-1">
                 <span>Mottatt i:</span>
-                <span className="font-medium">{selectedConversation?.group_name}</span>
+                <span className="font-medium">{selectedThread?.group_name}</span>
               </div>
             </div>
 
@@ -690,7 +634,7 @@ export default function InboxPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {groups
-                    .filter((g) => g.id !== selectedConversation?.resolved_group_id)
+                    .filter((g) => g.id !== selectedThread?.resolved_group_id)
                     .map((group) => (
                       <SelectItem key={group.id} value={group.id}>
                         {group.name}

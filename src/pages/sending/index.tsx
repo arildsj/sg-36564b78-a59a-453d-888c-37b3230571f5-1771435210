@@ -6,446 +6,582 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Send, Users, Phone, Loader2 } from "lucide-react";
-import { groupService } from "@/services/groupService";
-import { contactService } from "@/services/contactService";
-import { messageService } from "@/services/messageService";
-import { bulkService } from "@/services/bulkService";
 import { supabase } from "@/integrations/supabase/client";
+import { Send, Users, MessageSquare, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { messageService } from "@/services/messageService";
+import { formatPhoneNumber } from "@/lib/utils";
+
+type Group = { 
+  id: string; 
+  name: string; 
+  kind: string;
+  gateway_id: string | null;
+};
+
+type Contact = {
+  id: string;
+  name: string;
+  phone_number: string;
+};
 
 export default function SendingPage() {
   const { toast } = useToast();
-  const [recipientType, setRecipientType] = useState<"single" | "group">("single");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState("");
-  const [message, setMessage] = useState("");
-  const [groups, setGroups] = useState<{id: string, name: string}[]>([]);
-  const [groupContacts, setGroupContacts] = useState<{phone_number: string, description: string | null}[]>([]);
-  const [sending, setSending] = useState(false);
-  const [loadingContacts, setLoadingContacts] = useState(false);
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [selectedContact, setSelectedContact] = useState<any>(null);
-  const [searching, setSearching] = useState(false);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<string>("");
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [recipientPhone, setRecipientPhone] = useState<string>("");
+  const [messageContent, setMessageContent] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [sendingStats, setSendingStats] = useState({ total: 0, sent: 0, failed: 0 });
 
   useEffect(() => {
-    loadGroups();
+    loadData();
   }, []);
 
-  useEffect(() => {
-    if (selectedGroup && recipientType === "group") {
-      loadGroupContacts(selectedGroup);
-    } else {
-      setGroupContacts([]);
-    }
-  }, [selectedGroup, recipientType]);
-
-  const loadGroups = async () => {
+  const loadData = async () => {
     try {
-      const allGroups = await groupService.getAllGroups();
-      // Only show operational groups for bulk messaging
-      const operationalGroups = allGroups.filter((g: any) => g.kind === 'operational');
-      setGroups(operationalGroups);
-    } catch (error) {
-      console.error("Failed to load groups:", error);
-    }
-  };
+      const [groupsRes, contactsRes] = await Promise.all([
+        supabase.from("groups").select("*").eq("kind", "operational").order("name"),
+        supabase.from("contacts").select("*").order("name"),
+      ]);
 
-  const loadGroupContacts = async (groupId: string) => {
-    try {
-      setLoadingContacts(true);
-      
-      // Get all contacts linked to this group
-      const { data, error } = await supabase
-        .from("whitelist_group_links")
-        .select(`
-          whitelisted_number:whitelisted_numbers(
-            phone_number,
-            description
-          )
-        `)
-        .eq("group_id", groupId);
+      if (groupsRes.data) setGroups(groupsRes.data);
+      if (contactsRes.data) setContacts(contactsRes.data as unknown as Contact[]);
 
-      if (error) throw error;
-
-      const contacts = data
-        ?.map((link: any) => link.whitelisted_number)
-        .filter(Boolean) || [];
-
-      setGroupContacts(contacts);
-    } catch (error) {
-      console.error("Failed to load group contacts:", error);
-      setGroupContacts([]);
-    } finally {
-      setLoadingContacts(false);
-    }
-  };
-
-  const handleSearchContacts = async (query: string) => {
-    setSearchQuery(query);
-    
-    if (query.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    try {
-      setSearching(true);
-      console.log("🔍 Searching for contacts with query:", query);
-      
-      // Try user-access-filtered search first
-      let results = await contactService.getContactsByUserAccess();
-      console.log("📋 Fetched contacts by user access:", results);
-      
-      // If no results from access-based search, try direct search as fallback
-      if (!results || results.length === 0) {
-        console.log("⚠️ No contacts from user access, trying direct search...");
-        results = await contactService.searchContacts(query);
-        console.log("📋 Fetched contacts from direct search:", results);
-      }
-      
-      // Filter results based on search query (case-insensitive)
-      const queryLower = query.toLowerCase();
-      const filtered = results.filter((c: any) => {
-        const nameMatch = c.name?.toLowerCase().includes(queryLower);
-        const phoneMatch = c.phone?.toLowerCase().includes(queryLower) || 
-                          c.phone?.replace(/\s+/g, '').includes(queryLower.replace(/\s+/g, ''));
-        console.log(`   Checking ${c.name} (${c.phone}): name=${nameMatch}, phone=${phoneMatch}`);
-        return nameMatch || phoneMatch;
-      });
-      
-      console.log("✅ Filtered results:", filtered);
-      setSearchResults(filtered.slice(0, 10));
-      
-      if (filtered.length === 0) {
-        console.log("⚠️ No results matched your search query");
+      if (groupsRes.data && groupsRes.data.length > 0) {
+        setSelectedGroup(groupsRes.data[0].id);
       }
     } catch (error) {
-      console.error("❌ Search failed:", error);
-      setSearchResults([]);
-    } finally {
-      setSearching(false);
+      console.error("Failed to load data:", error);
     }
   };
 
-  const handleSelectContact = (contact: any) => {
-    setSelectedContact(contact);
-    setPhoneNumber(contact.phone);
-    setSearchQuery(contact.name);
-    setSearchResults([]);
-  };
-
-  const handleSend = async () => {
-    if (!message.trim()) {
+  const handleSendToSingle = async () => {
+    if (!recipientPhone || !messageContent) {
       toast({
-        title: "Mangler melding",
-        description: "Vennligst skriv en melding",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (recipientType === "single" && !phoneNumber.trim()) {
-      toast({
-        title: "Mangler mottaker",
-        description: "Vennligst velg en kontakt eller skriv inn telefonnummer",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (recipientType === "group" && !selectedGroup) {
-      toast({
-        title: "Mangler gruppe",
-        description: "Vennligst velg en gruppe",
+        title: "Mangler informasjon",
+        description: "Fyll ut telefonnummer og melding",
         variant: "destructive",
       });
       return;
     }
 
+    setLoading(true);
     try {
-      setSending(true);
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("Not authenticated");
 
-      if (recipientType === "single") {
-        // Send to single recipient (thread will be created automatically)
-        await messageService.sendMessage(
-          message,
-          phoneNumber,
-          "+4790000000" // Default sender (should come from gateway)
-        );
-        
-        toast({
-          title: "Melding sendt!",
-          description: `Sendt til ${selectedContact?.name || phoneNumber}`,
-        });
-        
-        setMessage("");
-        setPhoneNumber("");
-        setSelectedContact(null);
-        setSearchQuery("");
-      } else {
-        // Bulk send using robust server-side campaign system
-        const selectedGroupObj = groups.find(g => g.id === selectedGroup);
-        const groupName = selectedGroupObj?.name || "Ukjent gruppe";
+      const { data: profile } = await supabase
+        .from("users")
+        .select("id, tenant_id")
+        .eq("auth_user_id", userData.user.id)
+        .single();
 
-        if (groupContacts.length === 0) {
-          toast({
-            title: "Ingen kontakter",
-            description: "Ingen kontakter funnet i denne gruppen",
-            variant: "destructive",
-          });
-          return;
-        }
+      if (!profile) throw new Error("User profile not found");
 
-        // Use the new bulk service which creates a campaign and triggers Edge Function
-        await bulkService.sendBulkMessage(
-          message,
-          selectedGroup,
-          groupName
-        );
-        
-        toast({
-          title: "Kampanje startet!",
-          description: `Sender meldinger til ${groupContacts.length} kontakter i bakgrunnen.`,
-        });
-        
-        setMessage("");
-        setSelectedGroup("");
-      }
+      const { data: gateway } = await supabase
+        .from("gateways")
+        .select("id, phone_number")
+        .eq("tenant_id", profile.tenant_id)
+        .eq("status", "active")
+        .limit(1)
+        .single();
+
+      if (!gateway) throw new Error("No active gateway found");
+
+      await messageService.sendMessage(
+        messageContent,
+        recipientPhone,
+        gateway.phone_number
+      );
+
+      toast({
+        title: "Melding sendt!",
+        description: `Melding sendt til ${recipientPhone}`,
+      });
+
+      setRecipientPhone("");
+      setMessageContent("");
     } catch (error: any) {
-      console.error("Failed to send:", error);
+      console.error("Failed to send message:", error);
       toast({
         title: "Feil ved sending",
         description: error.message || "Kunne ikke sende melding",
         variant: "destructive",
       });
     } finally {
-      setSending(false);
+      setLoading(false);
     }
+  };
+
+  const handleSendToGroup = async () => {
+    if (!selectedGroup || !messageContent) {
+      toast({
+        title: "Mangler informasjon",
+        description: "Velg gruppe og skriv melding",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    setSendingStats({ total: 0, sent: 0, failed: 0 });
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("Not authenticated");
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("id, tenant_id")
+        .eq("auth_user_id", userData.user.id)
+        .single();
+
+      if (!profile) throw new Error("User profile not found");
+
+      const { data: gateway } = await supabase
+        .from("gateways")
+        .select("phone_number")
+        .eq("tenant_id", profile.tenant_id)
+        .eq("status", "active")
+        .limit(1)
+        .single();
+
+      if (!gateway) throw new Error("No active gateway found");
+
+      const { data: groupMembers } = await supabase
+        .from("group_memberships")
+        .select("users(id, phone_number)")
+        .eq("group_id", selectedGroup);
+
+      if (!groupMembers || groupMembers.length === 0) {
+        toast({
+          title: "Ingen mottakere",
+          description: "Gruppen har ingen medlemmer",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const recipients = groupMembers
+        .map((m: any) => m.users?.phone_number)
+        .filter((p: string | null | undefined) => p);
+
+      setSendingStats({ total: recipients.length, sent: 0, failed: 0 });
+
+      let sent = 0;
+      let failed = 0;
+
+      for (const phone of recipients) {
+        try {
+          await messageService.sendMessage(
+            messageContent,
+            phone,
+            gateway.phone_number
+          );
+          sent++;
+          setSendingStats({ total: recipients.length, sent, failed });
+        } catch (err) {
+          console.error(`Failed to send to ${phone}:`, err);
+          failed++;
+          setSendingStats({ total: recipients.length, sent, failed });
+        }
+      }
+
+      toast({
+        title: "Utsending fullført",
+        description: `${sent} av ${recipients.length} meldinger sendt`,
+      });
+
+      setMessageContent("");
+    } catch (error: any) {
+      console.error("Failed to send to group:", error);
+      toast({
+        title: "Feil ved gruppeutsending",
+        description: error.message || "Kunne ikke sende meldinger",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendToContacts = async () => {
+    if (selectedContacts.length === 0 || !messageContent) {
+      toast({
+        title: "Mangler informasjon",
+        description: "Velg kontakter og skriv melding",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    setSendingStats({ total: selectedContacts.length, sent: 0, failed: 0 });
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("Not authenticated");
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("id, tenant_id")
+        .eq("auth_user_id", userData.user.id)
+        .single();
+
+      if (!profile) throw new Error("User profile not found");
+
+      const { data: gateway } = await supabase
+        .from("gateways")
+        .select("phone_number")
+        .eq("tenant_id", profile.tenant_id)
+        .eq("status", "active")
+        .limit(1)
+        .single();
+
+      if (!gateway) throw new Error("No active gateway found");
+
+      const selectedContactData = contacts.filter((c) =>
+        selectedContacts.includes(c.id)
+      );
+
+      let sent = 0;
+      let failed = 0;
+
+      for (const contact of selectedContactData) {
+        try {
+          await messageService.sendMessage(
+            messageContent,
+            contact.phone_number,
+            gateway.phone_number
+          );
+          sent++;
+          setSendingStats({ total: selectedContacts.length, sent, failed });
+        } catch (err) {
+          console.error(`Failed to send to ${contact.phone_number}:`, err);
+          failed++;
+          setSendingStats({ total: selectedContacts.length, sent, failed });
+        }
+      }
+
+      toast({
+        title: "Utsending fullført",
+        description: `${sent} av ${selectedContacts.length} meldinger sendt`,
+      });
+
+      setMessageContent("");
+      setSelectedContacts([]);
+    } catch (error: any) {
+      console.error("Failed to send to contacts:", error);
+      toast({
+        title: "Feil ved utsending",
+        description: error.message || "Kunne ikke sende meldinger",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleContactSelection = (contactId: string) => {
+    setSelectedContacts((prev) =>
+      prev.includes(contactId)
+        ? prev.filter((id) => id !== contactId)
+        : [...prev, contactId]
+    );
   };
 
   return (
     <>
       <Head>
-        <title>Send Melding | SeMSe</title>
-        <meta name="description" content="Send SMS til enkeltpersoner eller grupper" />
+        <title>Send melding - SeMSe 2.0</title>
       </Head>
 
       <AppLayout>
-        <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Send Melding</h1>
+            <h1 className="text-3xl font-bold text-foreground">Send SMS</h1>
             <p className="text-muted-foreground mt-2">
-              Send SMS til enkeltnumre eller hele kontaktgrupper.
+              Send meldinger til enkeltpersoner, grupper eller kontakter
             </p>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Ny melding</CardTitle>
-              <CardDescription>
-                Velg mottaker og skriv din melding.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <Label>Mottaker</Label>
-                <div className="flex gap-4">
-                  <Button
-                    type="button"
-                    variant={recipientType === "single" ? "default" : "outline"}
-                    className="flex-1 gap-2"
-                    onClick={() => setRecipientType("single")}
-                  >
-                    <Phone className="h-4 w-4" />
-                    Enkeltnummer
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={recipientType === "group" ? "default" : "outline"}
-                    className="flex-1 gap-2"
-                    onClick={() => setRecipientType("group")}
-                  >
-                    <Users className="h-4 w-4" />
-                    Kontaktgruppe (Bulk)
-                  </Button>
-                </div>
-              </div>
+          <Tabs defaultValue="single" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="single">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Enkeltmelding
+              </TabsTrigger>
+              <TabsTrigger value="group">
+                <Users className="h-4 w-4 mr-2" />
+                Send til gruppe
+              </TabsTrigger>
+              <TabsTrigger value="contacts">
+                <Users className="h-4 w-4 mr-2" />
+                Send til kontakter
+              </TabsTrigger>
+            </TabsList>
 
-              {recipientType === "single" ? (
-                <div className="space-y-2">
-                  <Label htmlFor="contact-search">Søk etter kontakt</Label>
-                  <div className="relative">
-                    <Input
-                      id="contact-search"
-                      placeholder="Søk på navn eller telefonnummer..."
-                      value={searchQuery}
-                      onChange={(e) => handleSearchContacts(e.target.value)}
-                      onFocus={() => {
-                        if (searchQuery.length >= 2) {
-                          handleSearchContacts(searchQuery);
-                        }
-                      }}
-                    />
-                    {searching && (
-                      <div className="absolute right-3 top-3">
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                      </div>
-                    )}
-                    
-                    {searchResults.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                        {searchResults.map((contact) => (
-                          <button
-                            key={contact.id}
-                            type="button"
-                            className="w-full text-left px-4 py-3 hover:bg-accent transition-colors flex items-center gap-3 border-b last:border-b-0"
-                            onClick={() => handleSelectContact(contact)}
-                          >
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <div className="flex-1">
-                              <p className="font-medium">{contact.name}</p>
-                              <p className="text-sm text-muted-foreground">{contact.phone}</p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {selectedContact && (
-                    <div className="flex items-center gap-2 p-3 bg-accent/50 rounded-md border">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{selectedContact.name}</p>
-                        <p className="text-xs text-muted-foreground">{selectedContact.phone}</p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedContact(null);
-                          setPhoneNumber("");
-                          setSearchQuery("");
-                        }}
-                      >
-                        Fjern
-                      </Button>
-                    </div>
-                  )}
-                  
-                  <p className="text-xs text-muted-foreground">
-                    Eller skriv inn telefonnummer direkte (f.eks. +47 123 45 678)
-                  </p>
-                  <Input
-                    placeholder="+47 123 45 678"
-                    value={phoneNumber}
-                    onChange={(e) => {
-                      setPhoneNumber(e.target.value);
-                      setSelectedContact(null);
-                      setSearchQuery("");
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="space-y-3">
+            <TabsContent value="single" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Send til enkeltperson</CardTitle>
+                  <CardDescription>
+                    Send en melding til ett telefonnummer. Svaret vil havne i din gruppes innboks.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="group">Velg kontaktgruppe</Label>
-                    <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Velg mottakergruppe" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {groups.map((g) => (
-                          <SelectItem key={g.id} value={g.id}>
-                            {g.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="recipient-phone">Mottakers telefonnummer</Label>
+                    <Input
+                      id="recipient-phone"
+                      placeholder="+4799999999"
+                      value={recipientPhone}
+                      onChange={(e) => setRecipientPhone(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="single-message">Melding</Label>
+                    <Textarea
+                      id="single-message"
+                      placeholder="Skriv din melding her..."
+                      rows={6}
+                      value={messageContent}
+                      onChange={(e) => setMessageContent(e.target.value)}
+                    />
                     <p className="text-xs text-muted-foreground">
-                      Meldingen sendes til alle kontakter i denne gruppen
+                      {messageContent.length} / 160 tegn
                     </p>
                   </div>
 
-                  {selectedGroup && (
-                    <div className="border rounded-lg p-4 bg-accent/50">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-semibold">Mottakere i gruppen:</h4>
-                        {loadingContacts ? (
-                          <Badge variant="outline">Laster...</Badge>
-                        ) : (
-                          <Badge variant="default">{groupContacts.length} kontakter</Badge>
+                  <Button
+                    onClick={handleSendToSingle}
+                    disabled={loading || !recipientPhone || !messageContent}
+                    className="w-full"
+                  >
+                    {loading ? "Sender..." : "Send Melding"}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="group" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Send til gruppe</CardTitle>
+                  <CardDescription>
+                    Send melding til alle medlemmer i en gruppe. Svar vil havne i avsenderens gruppes innboks.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="group-select">Velg gruppe</Label>
+                    <select
+                      id="group-select"
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                      value={selectedGroup}
+                      onChange={(e) => setSelectedGroup(e.target.value)}
+                    >
+                      {groups.length === 0 && (
+                        <option value="">Ingen grupper funnet</option>
+                      )}
+                      {groups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="group-message">Melding</Label>
+                    <Textarea
+                      id="group-message"
+                      placeholder="Skriv din melding her..."
+                      rows={6}
+                      value={messageContent}
+                      onChange={(e) => setMessageContent(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {messageContent.length} / 160 tegn
+                    </p>
+                  </div>
+
+                  {loading && sendingStats.total > 0 && (
+                    <div className="p-4 border rounded space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Sender meldinger...</span>
+                        <span>
+                          {sendingStats.sent + sendingStats.failed} / {sendingStats.total}
+                        </span>
+                      </div>
+                      <div className="flex gap-4 text-xs">
+                        <div className="flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3 text-green-500" />
+                          <span>{sendingStats.sent} sendt</span>
+                        </div>
+                        {sendingStats.failed > 0 && (
+                          <div className="flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3 text-destructive" />
+                            <span>{sendingStats.failed} feilet</span>
+                          </div>
                         )}
                       </div>
-                      {loadingContacts ? (
-                        <p className="text-sm text-muted-foreground">Laster kontakter...</p>
-                      ) : groupContacts.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">Ingen kontakter funnet i denne gruppen</p>
-                      ) : (
-                        <div className="space-y-1 max-h-32 overflow-y-auto">
-                          {groupContacts.map((contact, i) => (
-                            <div key={i} className="text-xs flex items-center gap-2">
-                              <Phone className="h-3 w-3 text-muted-foreground" />
-                              <span className="font-mono">{contact.phone_number}</span>
-                              {contact.description && (
-                                <span className="text-muted-foreground">— {contact.description}</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              <div className="space-y-2">
-                <Label htmlFor="message">Melding</Label>
-                <Textarea
-                  id="message"
-                  placeholder="Skriv din melding her..."
-                  className="min-h-[150px]"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                />
-                <div className="flex justify-between items-center">
-                  <p className="text-xs text-muted-foreground">
-                    {message.length} tegn
+                  <Button
+                    onClick={handleSendToGroup}
+                    disabled={loading || !selectedGroup || !messageContent}
+                    className="w-full"
+                  >
+                    {loading ? "Sender..." : "Send til Gruppe"}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="contacts" className="mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Velg kontakter</CardTitle>
+                    <CardDescription>
+                      {selectedContacts.length} kontakt(er) valgt
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {contacts.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-8">
+                          Ingen kontakter funnet
+                        </p>
+                      ) : (
+                        contacts.map((contact) => (
+                          <div
+                            key={contact.id}
+                            className={`p-3 border rounded cursor-pointer hover:border-primary transition-colors ${
+                              selectedContacts.includes(contact.id)
+                                ? "border-primary bg-primary/5"
+                                : ""
+                            }`}
+                            onClick={() => toggleContactSelection(contact.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">
+                                  {contact.name}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {contact.phone_number}
+                                </p>
+                              </div>
+                              {selectedContacts.includes(contact.id) && (
+                                <CheckCircle2 className="h-5 w-5 text-primary" />
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Skriv melding</CardTitle>
+                    <CardDescription>
+                      Meldingen sendes til alle valgte kontakter
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="contacts-message">Melding</Label>
+                      <Textarea
+                        id="contacts-message"
+                        placeholder="Skriv din melding her..."
+                        rows={10}
+                        value={messageContent}
+                        onChange={(e) => setMessageContent(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {messageContent.length} / 160 tegn
+                      </p>
+                    </div>
+
+                    {loading && sendingStats.total > 0 && (
+                      <div className="p-4 border rounded space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span>Sender meldinger...</span>
+                          <span>
+                            {sendingStats.sent + sendingStats.failed} / {sendingStats.total}
+                          </span>
+                        </div>
+                        <div className="flex gap-4 text-xs">
+                          <div className="flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3 text-green-500" />
+                            <span>{sendingStats.sent} sendt</span>
+                          </div>
+                          {sendingStats.failed > 0 && (
+                            <div className="flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3 text-destructive" />
+                              <span>{sendingStats.failed} feilet</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={handleSendToContacts}
+                      disabled={loading || selectedContacts.length === 0 || !messageContent}
+                      className="w-full"
+                    >
+                      {loading ? "Sender..." : `Send til ${selectedContacts.length} kontakt(er)`}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Viktig informasjon om nytt trådsystem</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <div className="flex items-start gap-2">
+                  <Badge variant="outline" className="mt-0.5">NY LOGIKK</Badge>
+                  <p>
+                    <strong>Én tråd per telefonnummer:</strong> Systemet oppretter nå kun én samtale per unikt telefonnummer, uavhengig av hvilken gruppe som sender eller mottar meldinger.
                   </p>
-                  {recipientType === "group" && groupContacts.length > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      Sendes til {groupContacts.length} mottaker{groupContacts.length !== 1 ? 'e' : ''}
-                    </p>
-                  )}
+                </div>
+                <div className="flex items-start gap-2">
+                  <Badge variant="outline" className="mt-0.5">DYNAMISK</Badge>
+                  <p>
+                    <strong>Automatisk gruppe-tildeling:</strong> Når du sender en melding til en kontakt, settes trådens gruppe automatisk til din gruppe. Hvis kontakten svarer, havner svaret i samme tråd.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Badge variant="outline" className="mt-0.5">BULK</Badge>
+                  <p>
+                    <strong>Bulk-meldinger:</strong> Når du sender til en gruppe, får hver mottaker sin egen tråd knyttet til din gruppe. Svar havner automatisk riktig.
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Badge variant="outline" className="mt-0.5">FLEKSIBELT</Badge>
+                  <p>
+                    <strong>Kontekstbasert routing:</strong> Systemet husker siste interaksjon og router nye meldinger fra samme nummer til riktig gruppe basert på historikk.
+                  </p>
                 </div>
               </div>
-
-              <Button 
-                className="w-full gap-2" 
-                size="lg" 
-                onClick={handleSend}
-                disabled={sending || !message.trim() || (recipientType === "group" && groupContacts.length === 0)}
-              >
-                {sending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Sender...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4" />
-                    {recipientType === "group" && groupContacts.length > 0
-                      ? `Send til ${groupContacts.length} kontakter`
-                      : "Send Melding"}
-                  </>
-                )}
-              </Button>
             </CardContent>
           </Card>
         </div>

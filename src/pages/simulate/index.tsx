@@ -11,13 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageSquare, Send, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { messageService } from "@/services/messageService";
+import { formatPhoneNumber } from "@/lib/utils";
 
 type Gateway = { id: string; name: string; phone_number: string };
 type Group = { 
   id: string; 
   name: string; 
   kind: string;
-  gateway_id: string | null; // Added this field
+  gateway_id: string | null;
 };
 type GroupWithGateway = Group & { 
   gateway?: any;
@@ -79,7 +81,6 @@ export default function SimulatePage() {
       const group = groups.find((g) => g.id === selectedGroup);
       if (!group) throw new Error("Group not found");
       
-      // Use the group's gateway, or fallback to the first active gateway if group has none
       const gatewayId = group.gateway_id || (gateways.length > 0 ? gateways[0].id : null);
       
       if (!gatewayId) {
@@ -93,14 +94,9 @@ export default function SimulatePage() {
       }
 
       const gateway = gateways.find(g => g.id === gatewayId) || (group as any).gateway;
+      const cleanFromNumber = formatPhoneNumber(fromNumber);
 
-      const { data: tenant } = await supabase.from("tenants").select("id").single();
-      if (!tenant) throw new Error("Tenant not found");
-      
-      // Clean phone number
-      const cleanFromNumber = fromNumber.replace(/\s+/g, '');
-
-      // 1. Get tenant and gateway info
+      // Get user context
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Not authenticated");
 
@@ -114,7 +110,7 @@ export default function SimulatePage() {
 
       const { data: gatewayData } = await supabase
         .from("gateways")
-        .select("id")
+        .select("id, phone_number")
         .eq("tenant_id", profile.tenant_id)
         .eq("status", "active")
         .limit(1)
@@ -122,13 +118,12 @@ export default function SimulatePage() {
 
       if (!gatewayData) throw new Error("No active gateway found");
 
-      // 2. Check if thread already exists, if not create it
+      // NEW LOGIC: Find or create ONE thread per phone number, set resolved_group_id to target group
       const { data: existingThread } = await supabase
         .from("message_threads")
-        .select("id")
+        .select("id, resolved_group_id")
         .eq("tenant_id", profile.tenant_id)
         .eq("contact_phone", cleanFromNumber)
-        .eq("resolved_group_id", selectedGroup)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -136,7 +131,7 @@ export default function SimulatePage() {
       let threadId: string;
 
       if (!existingThread) {
-        // Create new thread
+        // Create new thread (ONE per phone number)
         const { data: newThread, error: threadError } = await supabase
           .from("message_threads")
           .insert({
@@ -154,23 +149,26 @@ export default function SimulatePage() {
       } else {
         threadId = existingThread.id;
 
-        // Update last_message_at
+        // Update resolved_group_id to target group (inbound sets the context)
         await supabase
           .from("message_threads")
-          .update({ last_message_at: new Date().toISOString() })
+          .update({ 
+            resolved_group_id: selectedGroup,
+            last_message_at: new Date().toISOString() 
+          })
           .eq("id", threadId);
       }
 
-      // 3. Insert message with thread_id
+      // Insert message with thread_id
       const { error: messageError } = await supabase.from("messages").insert({
         tenant_id: profile.tenant_id,
         gateway_id: gatewayData.id,
         group_id: selectedGroup,
         thread_id: threadId,
-        thread_key: `${cleanFromNumber}-${selectedGroup}`,
+        thread_key: cleanFromNumber,
         direction: "inbound",
         from_number: cleanFromNumber,
-        to_number: gatewayData.id,
+        to_number: gatewayData.phone_number,
         content: messageContent,
         status: "delivered",
       });
@@ -187,7 +185,7 @@ export default function SimulatePage() {
       console.error("Failed to send message:", error);
       toast({
         title: "Feil ved sending",
-        description: "Kunne ikke sende melding",
+        description: error.message || "Kunne ikke sende melding",
         variant: "destructive",
       });
     } finally {
@@ -379,7 +377,7 @@ export default function SimulatePage() {
                   <strong>Test whitelist:</strong> Legg til nummeret i kontaktlisten først for kjent avsender-håndtering
                 </li>
                 <li>
-                  <strong>Test tråder:</strong> Send flere meldinger fra samme nummer for å se tråd-gruppering
+                  <strong>Test tråder:</strong> Send flere meldinger fra samme nummer til forskjellige grupper - alle havner i samme tråd!
                 </li>
               </ul>
             </CardContent>

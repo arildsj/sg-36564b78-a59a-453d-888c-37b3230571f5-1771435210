@@ -21,6 +21,7 @@ export type Message = {
   acknowledged_by_user_id: string | null;
   is_fallback?: boolean;
   is_acknowledged?: boolean;
+  group_id?: string;
 };
 
 export type MessageThread = {
@@ -50,6 +51,7 @@ const db = supabase as any;
 export const messageService = {
   /**
    * Find or create a message thread for a contact
+   * NEW LOGIC: One thread per phone number, dynamically update resolved_group_id
    */
   async findOrCreateThread(
     contactPhone: string,
@@ -70,7 +72,7 @@ export const messageService = {
     if (!userData) throw new Error("User not found");
     const tenantId = userData.tenant_id;
 
-    // 3. Check if thread already exists
+    // 2. Check if thread already exists (ONE thread per phone number)
     const { data: existingThread } = await db
       .from("message_threads")
       .select("*")
@@ -80,10 +82,24 @@ export const messageService = {
       .maybeSingle();
 
     if (existingThread) {
+      // Thread exists - update resolved_group_id if targetGroupId is provided
+      if (targetGroupId && existingThread.resolved_group_id !== targetGroupId) {
+        const { data: updatedThread } = await db
+          .from("message_threads")
+          .update({ 
+            resolved_group_id: targetGroupId,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existingThread.id)
+          .select("*")
+          .single();
+        
+        return updatedThread as MessageThread;
+      }
       return existingThread as MessageThread;
     }
     
-    // 4. Get default gateway
+    // 3. Get default gateway
     const { data: gateway } = await db
       .from("gateways")
       .select("id")
@@ -92,14 +108,14 @@ export const messageService = {
       .limit(1)
       .maybeSingle();
 
-    // Create new thread
+    // 4. Create new thread (one per phone number)
     const { data: newThread, error } = await db
       .from("message_threads")
       .insert({
         contact_phone: formattedPhone,
         tenant_id: tenantId,
         gateway_id: gateway?.id,
-        resolved_group_id: targetGroupId
+        resolved_group_id: targetGroupId || null
       })
       .select("*")
       .single();
@@ -163,11 +179,11 @@ export const messageService = {
     if (!profile) throw new Error("Profile not found");
 
     // RLS policies automatically filter threads to only those in groups the user is a member of
-    // No need for manual filtering - RLS handles it!
     const { data: threads, error } = await db
       .from("message_threads")
-      .select("*")
+      .select("*, groups(name)")
       .eq("tenant_id", profile.tenant_id)
+      .eq("is_resolved", false)
       .order("last_message_at", { ascending: false });
 
     if (error) {
@@ -175,7 +191,18 @@ export const messageService = {
       throw error;
     }
 
-    return this._mapThreadsResponse(threads);
+    if (!threads || threads.length === 0) return [];
+
+    // Get messages for all threads
+    const threadIds = threads.map((t: any) => t.id);
+    
+    const { data: messages } = await db
+      .from("messages")
+      .select("*")
+      .in("thread_id", threadIds)
+      .order("created_at", { ascending: true });
+
+    return this._mapThreadsResponse(threads, messages);
   },
 
   /**
@@ -200,23 +227,35 @@ export const messageService = {
         groups (
           id,
           name
-        ),
-        messages!inner (
-          id,
-          content,
-          created_at,
-          acknowledged_at,
-          is_fallback
         )
       `)
       .eq("tenant_id", profile.tenant_id)
       .eq("is_resolved", false)
-      .eq("messages.is_fallback", true)
       .order("last_message_at", { ascending: false });
 
     if (error) throw error;
 
-    return this._mapThreadsResponse(data).map((t: any) => ({ ...t, is_fallback: true }));
+    if (!data || data.length === 0) return [];
+
+    // Get messages for all threads and filter for fallback
+    const threadIds = data.map((t: any) => t.id);
+    
+    const { data: messages } = await db
+      .from("messages")
+      .select("*")
+      .in("thread_id", threadIds)
+      .eq("is_fallback", true)
+      .order("created_at", { ascending: true });
+
+    // Only include threads that have fallback messages
+    const threadsWithFallback = data.filter((t: any) => 
+      messages?.some((m: any) => m.thread_id === t.id)
+    );
+
+    return this._mapThreadsResponse(threadsWithFallback, messages).map((t: any) => ({ 
+      ...t, 
+      is_fallback: true 
+    }));
   },
 
   /**
@@ -316,7 +355,8 @@ export const messageService = {
   },
 
   /**
-   * Send a message (finds or creates thread automatically if threadId not provided)
+   * Send a message with smart thread management
+   * NEW LOGIC: Always use/create ONE thread per phone number, update resolved_group_id dynamically
    */
   async sendMessage(
     content: string,
@@ -325,9 +365,8 @@ export const messageService = {
     threadId?: string
   ): Promise<Message> {
     const formattedToNumber = formatPhoneNumber(toNumber);
-    let finalThreadId = threadId;
 
-    // Get User Context regardless
+    // Get User Context
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error("User not authenticated");
     
@@ -339,21 +378,18 @@ export const messageService = {
      
     if (!userProfile) throw new Error("User profile not found");
 
-    // Logic to determine Target Group ID if creating/updating thread
+    // Determine target group for this outgoing message (sender's group)
     let targetGroupId: string | undefined;
 
-    // Try to find the group the CURRENT USER belongs to
     const { data: userGroups } = await db
       .from("group_memberships")
       .select("group_id, groups(id, kind)")
       .eq("user_id", userProfile.id);
 
     if (userGroups && userGroups.length > 0) {
-       // Prefer operational groups if available, otherwise just take the first one
        const operationalGroup = userGroups.find((g: any) => g.groups?.kind === 'operational');
        targetGroupId = operationalGroup ? operationalGroup.group_id : userGroups[0].group_id;
     } else {
-       // Fallback logic
        const { data: fallbackGroup } = await db
          .from("groups")
          .select("id")
@@ -364,7 +400,6 @@ export const messageService = {
        targetGroupId = fallbackGroup?.id;
     }
     
-    // CRITICAL: If still no group found, get ANY operational group from tenant
     if (!targetGroupId) {
        const { data: anyGroup } = await db
          .from("groups")
@@ -381,45 +416,16 @@ export const messageService = {
        targetGroupId = anyGroup.id;
     }
 
-    const isValidUUID = (id: string | undefined) => 
-      id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    // Find or create thread (ONE per phone number, update resolved_group_id to sender's group)
+    const thread = await this.findOrCreateThread(formattedToNumber, targetGroupId);
 
-    if (!finalThreadId || !isValidUUID(finalThreadId)) {
-       const thread = await this.findOrCreateThread(formattedToNumber, targetGroupId);
-       finalThreadId = thread.id;
-    }
-    
-    // Ensure we have the thread details
-    let currentThread: MessageThread | null = null;
-    if (finalThreadId) {
-        const { data } = await db
-            .from("message_threads")
-            .select("*")
-            .eq("id", finalThreadId)
-            .single();
-        currentThread = data as MessageThread;
-    }
-    
-    if (!currentThread) throw new Error("Could not find thread context");
-
-    // CRITICAL: Update resolved_group_id if the sender is in a specific group
-    // This ensures replies come back to this group
-    if (targetGroupId && currentThread.resolved_group_id !== targetGroupId) {
-       await db
-         .from("message_threads")
-         .update({ resolved_group_id: targetGroupId })
-         .eq("id", finalThreadId);
-       
-       currentThread.resolved_group_id = targetGroupId;
-    }
-
-    // MOCK SENDING to external API (simulated)
+    // MOCK SENDING to external API
     console.log("🚀 MOCK API SENDING:", {
       to: formattedToNumber,
       from: fromNumber,
       content,
-      threadId: finalThreadId,
-      threadContactPhone: currentThread.contact_phone,
+      threadId: thread.id,
+      threadContactPhone: thread.contact_phone,
       routedToGroup: targetGroupId
     });
 
@@ -427,14 +433,15 @@ export const messageService = {
     const { data: messageData, error: insertError } = await db
       .from("messages")
       .insert({
-        thread_id: finalThreadId,
-        tenant_id: currentThread.tenant_id,
-        thread_key: currentThread.contact_phone,
+        thread_id: thread.id,
+        tenant_id: thread.tenant_id,
+        thread_key: thread.contact_phone,
         direction: "outbound",
         content,
         from_number: fromNumber,
         to_number: formattedToNumber,
-        status: "sent"
+        status: "sent",
+        group_id: targetGroupId
       })
       .select("*")
       .single();
@@ -442,15 +449,13 @@ export const messageService = {
     if (insertError) throw insertError;
 
     // Update thread timestamp
-    if (finalThreadId) {
-      await db
-        .from("message_threads")
-        .update({ 
-          last_message_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", finalThreadId);
-    }
+    await db
+      .from("message_threads")
+      .update({ 
+        last_message_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", thread.id);
 
     return messageData as Message;
   },
@@ -511,17 +516,20 @@ export const messageService = {
 
   /**
    * Reclassify a thread to a different group
+   * NEW: Simply updates resolved_group_id (one thread per phone)
    */
   async reclassifyThread(threadId: string, newGroupId: string) {
     const { error } = await db
       .from("message_threads")
       .update({
         resolved_group_id: newGroupId,
+        updated_at: new Date().toISOString()
       })
       .eq("id", threadId);
 
     if (error) throw error;
 
+    // Clear fallback flag on messages
     const { error: msgError } = await db
       .from("messages")
       .update({
@@ -602,7 +610,7 @@ export const messageService = {
       });
     });
 
-    // If messages are provided separately (getThreadsByGroup), use them
+    // If messages are provided separately, use them
     if (messages) {
       messages.forEach((m: any) => {
         const thread = threadMap.get(m.thread_id);
@@ -613,24 +621,6 @@ export const messageService = {
           if (!thread.last_message_content || new Date(m.created_at) > new Date(thread.last_message_at || 0)) {
             thread.last_message_content = m.content;
             thread.is_fallback = m.is_fallback || false;
-          }
-        }
-      });
-    } else {
-      // If messages are nested (getAllThreads), use them
-      (threads || []).forEach((t: any) => {
-        const thread = threadMap.get(t.id);
-        if (thread && Array.isArray(t.messages)) {
-          const threadMessages = t.messages;
-          thread.unread_count = threadMessages.filter((m: any) => !m.acknowledged_at && m.direction === 'inbound').length;
-          
-          const sortedMessages = threadMessages.sort((a: any, b: any) => 
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
-          const lastMessage = sortedMessages[0];
-          if (lastMessage) {
-            thread.last_message_content = lastMessage.content;
-            thread.is_fallback = lastMessage.is_fallback || false;
           }
         }
       });
