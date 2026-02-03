@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Send, Users, MessageSquare, AlertCircle, CheckCircle2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { messageService } from "@/services/messageService";
+import { contactService } from "@/services/contactService";
 import {
   Select,
   SelectContent,
