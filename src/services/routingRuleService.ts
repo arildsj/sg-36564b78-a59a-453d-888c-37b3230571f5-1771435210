@@ -117,4 +117,62 @@ export const routingRuleService = {
 
     if (error) throw error;
   },
+
+  async resolveTargetGroup(
+    content: string,
+    gatewayId: string,
+    tenantId: string
+  ): Promise<string | null> {
+    // 1. Get all active rules for this gateway sorted by priority
+    const { data: rules } = await supabase
+      .from("routing_rules")
+      .select("*")
+      .eq("gateway_id", gatewayId)
+      .eq("is_active", true)
+      .order("priority", { ascending: false });
+
+    if (rules && rules.length > 0) {
+      // 2. Evaluate rules
+      for (const rule of rules) {
+        if (rule.rule_type === "fallback") {
+          return rule.target_group_id;
+        }
+
+        if (rule.rule_type === "prefix" && rule.pattern) {
+          if (content.toUpperCase().startsWith(rule.pattern.toUpperCase())) {
+            return rule.target_group_id;
+          }
+        }
+
+        if (rule.rule_type === "keyword" && rule.pattern) {
+          if (content.toUpperCase().includes(rule.pattern.toUpperCase())) {
+            return rule.target_group_id;
+          }
+        }
+      }
+    }
+
+    // 3. If no rules matched, look for a group marked as fallback (is_fallback = true)
+    const { data: fallbackGroup } = await supabase
+      .from("groups")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("is_fallback", true)
+      .maybeSingle();
+
+    if (fallbackGroup) {
+      return fallbackGroup.id;
+    }
+
+    // 4. If no fallback group set, look for any operational group
+    const { data: anyGroup } = await supabase
+      .from("groups")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("kind", "operational")
+      .limit(1)
+      .maybeSingle();
+
+    return anyGroup?.id || null;
+  },
 };

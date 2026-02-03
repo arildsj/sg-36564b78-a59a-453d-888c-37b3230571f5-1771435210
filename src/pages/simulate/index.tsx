@@ -8,11 +8,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, Send, Clock, User } from "lucide-react";
+import { cn, formatPhoneNumber } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageSquare, Send, Clock } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { messageService } from "@/services/messageService";
-import { formatPhoneNumber } from "@/lib/utils";
 
 type Gateway = { id: string; name: string; phone_number: string };
 type Group = { 
@@ -20,21 +32,28 @@ type Group = {
   name: string; 
   kind: string;
   gateway_id: string | null;
+  gateway?: Gateway;
 };
-type GroupWithGateway = Group & { 
-  gateway?: any;
+type Contact = {
+  id: string;
+  name: string;
+  phone_number: string;
 };
 
 export default function SimulatePage() {
-  const { toast } = useToast();
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [selectedGateway, setSelectedGateway] = useState<string>("");
-  const [selectedGroup, setSelectedGroup] = useState<string>("");
-  const [fromNumber, setFromNumber] = useState<string>("+4799999999");
-  const [messageContent, setMessageContent] = useState<string>("");
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [recentMessages, setRecentMessages] = useState<any[]>([]);
+  
+  const [selectedGroup, setSelectedGroup] = useState<string>("");
+  const [fromPhone, setFromPhone] = useState<string>("");
+  const [messageContent, setMessageContent] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  
+  // Search state
+  const [fromSearchOpen, setFromSearchOpen] = useState(false);
+  const [fromSearchValue, setFromSearchValue] = useState("");
 
   useEffect(() => {
     loadData();
@@ -42,24 +61,43 @@ export default function SimulatePage() {
 
   const loadData = async () => {
     try {
-      const [gatewaysRes, groupsRes, messagesRes] = await Promise.all([
-        supabase.from("gateways").select("*").eq("status", "active"),
-        supabase.from("groups")
-          .select("*, gateway:gateways!groups_gateway_id_fkey(*)")
-          .eq("kind", "operational")
-          .order("name"),
-        supabase.from("messages").select("*").order("created_at", { ascending: false }).limit(10),
-      ]);
+      // 1. Fetch Gateways
+      const { data: gatewaysData } = await supabase
+        .from("gateways")
+        .select("*")
+        .eq("status", "active");
+      
+      if (gatewaysData) setGateways(gatewaysData);
 
-      if (gatewaysRes.data) setGateways(gatewaysRes.data);
-      if (groupsRes.data) setGroups(groupsRes.data as GroupWithGateway[]);
-      if (messagesRes.data) setRecentMessages(messagesRes.data);
+      // 2. Fetch Groups (simplified query to avoid deep typing issues)
+      const { data: groupsData } = await supabase
+        .from("groups")
+        .select("*, gateway:gateways!groups_gateway_id_fkey(*)")
+        .eq("kind", "operational")
+        .order("name");
+        
+      if (groupsData) setGroups(groupsData as any);
 
-      if (gatewaysRes.data && gatewaysRes.data.length > 0) {
-        setSelectedGateway(gatewaysRes.data[0].id);
-      }
-      if (groupsRes.data && groupsRes.data.length > 0) {
-        setSelectedGroup(groupsRes.data[0].id);
+      // 3. Fetch Contacts
+      const { data: contactsData } = await supabase
+        .from("contacts")
+        .select("*")
+        .order("name");
+        
+      if (contactsData) setContacts(contactsData);
+
+      // 4. Fetch Messages
+      const { data: messagesData } = await supabase
+        .from("messages")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+        
+      if (messagesData) setRecentMessages(messagesData);
+
+      // Set defaults
+      if (groupsData && groupsData.length > 0 && !selectedGroup) {
+        setSelectedGroup(groupsData[0].id);
       }
     } catch (error) {
       console.error("Failed to load data:", error);
@@ -67,10 +105,13 @@ export default function SimulatePage() {
   };
 
   const handleSendMessage = async () => {
-    if (!selectedGroup || !fromNumber || !messageContent) {
+    // Validering: Tillat sending hvis gruppe er valgt ELLER hvis systemet skal route automatisk (ingen gruppe valgt)
+    // Men for simulering er det best å være eksplisitt, men fallback-logikken støtter automatikk.
+    // Vi krever nummer og innhold.
+    if (!fromPhone || !messageContent) {
       toast({
         title: "Mangler informasjon",
-        description: "Fyll ut alle felt",
+        description: "Fyll ut fra-nummer og melding",
         variant: "destructive",
       });
       return;
@@ -78,25 +119,10 @@ export default function SimulatePage() {
 
     setLoading(true);
     try {
-      const group = groups.find((g) => g.id === selectedGroup);
-      if (!group) throw new Error("Group not found");
-      
-      const gatewayId = group.gateway_id || (gateways.length > 0 ? gateways[0].id : null);
-      
-      if (!gatewayId) {
-        toast({
-          title: "Ingen gateway funnet",
-          description: "Ingen gateway funnet for denne gruppen. Vennligst kontakt admin.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
+      // Clean phone number
+      const cleanFromNumber = formatPhoneNumber(fromPhone);
 
-      const gateway = gateways.find(g => g.id === gatewayId) || (group as any).gateway;
-      const cleanFromNumber = formatPhoneNumber(fromNumber);
-
-      // Get user context
+      // Get user context for tenant_id
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Not authenticated");
 
@@ -108,37 +134,45 @@ export default function SimulatePage() {
 
       if (!profile) throw new Error("User profile not found");
 
-      const { data: gatewayData } = await supabase
-        .from("gateways")
-        .select("id, phone_number")
-        .eq("tenant_id", profile.tenant_id)
-        .eq("status", "active")
-        .limit(1)
-        .single();
+      // Get Gateway
+      // Logic: If group selected, use group's gateway. If not, use first active gateway.
+      let gatewayId: string | null = null;
+      let gatewayPhone: string = "";
 
-      if (!gatewayData) throw new Error("No active gateway found");
+      if (selectedGroup) {
+        const group = groups.find(g => g.id === selectedGroup);
+        if (group?.gateway_id) {
+          gatewayId = group.gateway_id;
+          gatewayPhone = group.gateway?.phone_number || "";
+        }
+      }
 
-      // NEW LOGIC: Find or create ONE thread per phone number, set resolved_group_id to target group
+      if (!gatewayId && gateways.length > 0) {
+        gatewayId = gateways[0].id;
+        gatewayPhone = gateways[0].phone_number;
+      }
+
+      if (!gatewayId) throw new Error("No active gateway found");
+
+      // Find or Create Thread (One per contact phone)
       const { data: existingThread } = await supabase
         .from("message_threads")
-        .select("id, resolved_group_id")
+        .select("id")
         .eq("tenant_id", profile.tenant_id)
         .eq("contact_phone", cleanFromNumber)
-        .order("created_at", { ascending: false })
-        .limit(1)
         .maybeSingle();
 
       let threadId: string;
 
       if (!existingThread) {
-        // Create new thread (ONE per phone number)
         const { data: newThread, error: threadError } = await supabase
           .from("message_threads")
           .insert({
             tenant_id: profile.tenant_id,
-            gateway_id: gatewayData.id,
+            gateway_id: gatewayId,
             contact_phone: cleanFromNumber,
-            resolved_group_id: selectedGroup,
+            resolved_group_id: selectedGroup || null, // If explicit group selected, set it. If null, routing logic will handle later? 
+            // NOTE: In manual simulation, we want to force the group if selected.
             last_message_at: new Date().toISOString(),
           })
           .select("id")
@@ -148,44 +182,45 @@ export default function SimulatePage() {
         threadId = newThread.id;
       } else {
         threadId = existingThread.id;
-
-        // Update resolved_group_id to target group (inbound sets the context)
-        await supabase
-          .from("message_threads")
-          .update({ 
-            resolved_group_id: selectedGroup,
-            last_message_at: new Date().toISOString() 
-          })
-          .eq("id", threadId);
+        // Update thread to point to this group (Simulating that the message "hit" this group)
+        if (selectedGroup) {
+            await supabase
+            .from("message_threads")
+            .update({ 
+                resolved_group_id: selectedGroup,
+                last_message_at: new Date().toISOString() 
+            })
+            .eq("id", threadId);
+        }
       }
 
-      // Insert message with thread_id
+      // Insert Message
       const { error: messageError } = await supabase.from("messages").insert({
         tenant_id: profile.tenant_id,
-        gateway_id: gatewayData.id,
-        group_id: selectedGroup,
+        gateway_id: gatewayId,
+        group_id: selectedGroup || null, // Null means routing rules will pick it up (if backend trigger exists) or it stays null/fallback
         thread_id: threadId,
         thread_key: cleanFromNumber,
         direction: "inbound",
         from_number: cleanFromNumber,
-        to_number: gatewayData.phone_number,
+        to_number: gatewayPhone,
         content: messageContent,
-        status: "delivered",
+        status: "delivered", // Simulated inbound messages are "delivered" to us
       });
 
       if (messageError) throw messageError;
 
       toast({
         title: "Melding simulert",
-        description: "Tilgjengelig i Innboks",
+        description: "Meldingen er lagt i innboksen",
       });
       setMessageContent("");
-      loadData();
+      loadData(); // Refresh list
     } catch (error: any) {
       console.error("Failed to send message:", error);
       toast({
         title: "Feil ved sending",
-        description: error.message || "Kunne ikke sende melding",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -207,9 +242,9 @@ export default function SimulatePage() {
   };
 
   const selectedGroupData = groups.find((g) => g.id === selectedGroup);
-  const gatewayInfo = selectedGroupData?.gateway_id 
-    ? `Gateway: ${(selectedGroupData as any).gateway?.phone_number || 'Laster...'}`
-    : "Ingen gateway tilknyttet";
+  const gatewayInfo = selectedGroupData?.gateway?.phone_number 
+    ? `Gateway: ${selectedGroupData.gateway.phone_number}`
+    : "Automatisk valg av gateway";
 
   return (
     <>
@@ -239,19 +274,17 @@ export default function SimulatePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="group">Målgruppe</Label>
+                  <Label htmlFor="group">Målgruppe (valgfritt)</Label>
                   <select
                     id="group"
                     className="w-full h-10 px-3 rounded-md border border-input bg-background"
                     value={selectedGroup}
                     onChange={(e) => setSelectedGroup(e.target.value)}
                   >
-                    {groups.length === 0 && (
-                      <option value="">Ingen grupper funnet</option>
-                    )}
-                    {groups.map((g: any) => (
+                    <option value="">-- Automatisk routing (ingen gruppe valgt) --</option>
+                    {groups.map((g) => (
                       <option key={g.id} value={g.id}>
-                        {g.name} ({g.gateway?.phone_number || 'Ingen gateway'})
+                        {g.name}
                       </option>
                     ))}
                   </select>
@@ -261,15 +294,73 @@ export default function SimulatePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="from-number">Fra-nummer (avsender)</Label>
-                  <Input
-                    id="from-number"
-                    placeholder="+4799999999"
-                    value={fromNumber}
-                    onChange={(e) => setFromNumber(e.target.value)}
-                  />
+                  <Label>Fra-nummer (avsender)</Label>
+                  <div className="flex gap-2">
+                    <Popover open={fromSearchOpen} onOpenChange={setFromSearchOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={fromSearchOpen}
+                          className="w-full justify-between"
+                        >
+                           <User className="mr-2 h-4 w-4" />
+                           Søk kontakt...
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0" align="start">
+                        <Command>
+                          <CommandInput 
+                            placeholder="Søk navn eller nummer..." 
+                            value={fromSearchValue}
+                            onValueChange={setFromSearchValue}
+                          />
+                          <CommandList>
+                            <CommandEmpty>Ingen kontakter funnet.</CommandEmpty>
+                            <CommandGroup>
+                              {contacts
+                                .filter(contact => 
+                                  contact.name.toLowerCase().includes(fromSearchValue.toLowerCase()) ||
+                                  contact.phone_number.includes(fromSearchValue)
+                                )
+                                .slice(0, 10) // Limit results for performance
+                                .map((contact) => (
+                                  <CommandItem
+                                    key={contact.id}
+                                    value={contact.phone_number + " " + contact.name} // Include name in value for search matching
+                                    onSelect={() => {
+                                      setFromPhone(contact.phone_number);
+                                      setFromSearchOpen(false);
+                                      setFromSearchValue("");
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        fromPhone === contact.phone_number ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{contact.name}</span>
+                                      <span className="text-sm text-muted-foreground">{contact.phone_number}</span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </div>
+                    
+                    <Input
+                      type="tel"
+                      placeholder="+47..."
+                      value={fromPhone}
+                      onChange={(e) => setFromPhone(e.target.value)}
+                    />
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Bruk +47 for norske nummer
+                    Søk opp kontakt eller skriv nummer direkte i feltet til høyre
                   </p>
                 </div>
 
@@ -287,22 +378,10 @@ export default function SimulatePage() {
                 <Button 
                   onClick={handleSendMessage} 
                   className="w-full"
-                  disabled={loading || !selectedGroup}
+                  disabled={loading}
                 >
                   {loading ? "Sender..." : "Send inn melding"}
                 </Button>
-
-                {groups.length === 0 && (
-                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded">
-                    <p className="text-sm text-destructive">
-                      ⚠️ Ingen grupper funnet. Gå til{" "}
-                      <Link href="/onboarding" className="underline font-medium">
-                        Onboarding
-                      </Link>{" "}
-                      for å sette opp organisasjonen din.
-                    </p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -320,7 +399,7 @@ export default function SimulatePage() {
                 <div className="space-y-3">
                   {recentMessages.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">
-                      Ingen meldinger ennå. Send inn en test-melding!
+                      Ingen meldinger ennå.
                     </p>
                   ) : (
                     recentMessages.map((msg) => (
@@ -340,16 +419,6 @@ export default function SimulatePage() {
                           </span>
                         </div>
                         <p className="text-sm text-foreground">{msg.content}</p>
-                        <div className="mt-2 flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {msg.status}
-                          </Badge>
-                          {msg.acknowledged_at && (
-                            <Badge variant="outline" className="text-xs bg-primary/10">
-                              Bekreftet
-                            </Badge>
-                          )}
-                        </div>
                       </div>
                     ))
                   )}
@@ -357,31 +426,6 @@ export default function SimulatePage() {
               </CardContent>
             </Card>
           </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Tips for testing</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-muted-foreground list-disc list-inside">
-                <li>
-                  <strong>Test routing:</strong> Bruk nøkkelord som "KUNDE" eller "TEKNISK" i meldingen for å teste routing-regler
-                </li>
-                <li>
-                  <strong>Test åpningstider:</strong> Systemet vil sende automatisk svar utenfor åpningstid
-                </li>
-                <li>
-                  <strong>Test eskaleringer:</strong> La meldinger ligge ubehandlet for å se eskaleringsprosessen
-                </li>
-                <li>
-                  <strong>Test whitelist:</strong> Legg til nummeret i kontaktlisten først for kjent avsender-håndtering
-                </li>
-                <li>
-                  <strong>Test tråder:</strong> Send flere meldinger fra samme nummer til forskjellige grupper - alle havner i samme tråd!
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
         </div>
       </AppLayout>
     </>
