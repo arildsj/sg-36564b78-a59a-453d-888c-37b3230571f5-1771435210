@@ -114,10 +114,16 @@ export const groupService = {
     return data;
   },
 
-  async createGroup(group: GroupInsert): Promise<Group> {
+  async createGroup(group: {
+    name: string;
+    kind: "structural" | "operational";
+    parent_id: string | null;
+    description: string | null;
+    tenant_id: string;
+  }) {
     const { data, error } = await supabase
       .from("groups")
-      .insert(group)
+      .insert([group])
       .select()
       .single();
 
@@ -125,11 +131,18 @@ export const groupService = {
     return data;
   },
 
-  async updateGroup(id: string, updates: GroupUpdate): Promise<Group> {
+  async updateGroup(
+    groupId: string,
+    updates: {
+      name?: string;
+      description?: string | null;
+      is_fallback?: boolean;
+    }
+  ) {
     const { data, error } = await supabase
       .from("groups")
       .update(updates)
-      .eq("id", id)
+      .eq("id", groupId)
       .select()
       .single();
 
@@ -137,11 +150,11 @@ export const groupService = {
     return data;
   },
 
-  async deleteGroup(id: string): Promise<void> {
+  async deleteGroup(groupId: string) {
     const { error } = await supabase
       .from("groups")
       .delete()
-      .eq("id", id);
+      .eq("id", groupId);
 
     if (error) throw error;
   },

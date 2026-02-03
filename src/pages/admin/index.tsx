@@ -122,6 +122,14 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showGroupDetails, setShowGroupDetails] = useState(false);
+  const [showEditGroupDialog, setShowEditGroupDialog] = useState(false);
+  const [editGroup, setEditGroup] = useState<GroupNode | null>(null);
+  const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
+  const [showEditUserDialog, setShowEditUserDialog] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [showCreateGatewayDialog, setShowCreateGatewayDialog] = useState(false);
+  const [showCreateRoutingRuleDialog, setShowCreateRoutingRuleDialog] = useState(false);
+  const [showAuditDialog, setShowAuditDialog] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const [newGroup, setNewGroup] = useState({
@@ -157,13 +165,6 @@ export default function AdminPage() {
     pattern: "",
     is_active: true,
   });
-
-  const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
-  const [showEditUserDialog, setShowEditUserDialog] = useState(false);
-  const [editUser, setEditUser] = useState<User | null>(null);
-  const [showCreateGatewayDialog, setShowCreateGatewayDialog] = useState(false);
-  const [showCreateRoutingRuleDialog, setShowCreateRoutingRuleDialog] = useState(false);
-  const [showAuditDialog, setShowAuditDialog] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -286,6 +287,41 @@ export default function AdminPage() {
     } catch (error: any) {
       console.error("Failed to create group:", error);
       toast({ title: "Feil ved opprettelse", description: error.message, variant: "destructive" });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleEditGroup = (group: GroupNode) => {
+    setEditGroup(group);
+    setShowGroupDetails(false);
+    setShowEditGroupDialog(true);
+  };
+
+  const handleUpdateGroup = async () => {
+    if (!editGroup) return;
+    
+    try {
+      setCreating(true);
+
+      if (!editGroup.name.trim()) {
+        toast({ title: "Mangler gruppenavn", variant: "destructive" });
+        return;
+      }
+
+      await groupService.updateGroup(editGroup.id, {
+        name: editGroup.name,
+        description: editGroup.description || null,
+        is_fallback: (editGroup as any).is_fallback || false,
+      });
+
+      setEditGroup(null);
+      setShowEditGroupDialog(false);
+      await loadData();
+      toast({ title: "Gruppe oppdatert" });
+    } catch (error: any) {
+      console.error("Failed to update group:", error);
+      toast({ title: "Feil ved oppdatering", description: error.message, variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -1563,6 +1599,81 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showEditGroupDialog} onOpenChange={setShowEditGroupDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rediger gruppe</DialogTitle>
+            <DialogDescription>
+              Oppdater gruppeinformasjon og innstillinger.
+            </DialogDescription>
+          </DialogHeader>
+          {editGroup && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-group-name">Gruppenavn *</Label>
+                <Input
+                  id="edit-group-name"
+                  placeholder="F.eks. Support, Salg, IT-avdelingen"
+                  value={editGroup.name}
+                  onChange={(e) => setEditGroup({ ...editGroup, name: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-group-kind">Type</Label>
+                <Badge variant={editGroup.kind === "operational" ? "default" : "secondary"}>
+                  {editGroup.kind === "operational" ? "Operasjonell" : "Strukturell"}
+                </Badge>
+                <p className="text-xs text-muted-foreground">
+                  Type kan ikke endres etter opprettelse
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-group-description">Beskrivelse (valgfri)</Label>
+                <Textarea
+                  id="edit-group-description"
+                  placeholder="Kort beskrivelse av gruppens formål..."
+                  value={editGroup.description || ""}
+                  onChange={(e) => setEditGroup({ ...editGroup, description: e.target.value })}
+                />
+              </div>
+
+              {editGroup.kind === "operational" && (
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="edit-group-fallback" className="flex items-center gap-2">
+                        Standard innboks (Fallback)
+                        <Badge variant="outline" className="text-xs">
+                          Anbefalt
+                        </Badge>
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Meldinger som ikke matcher noen routing-regel havner her
+                      </p>
+                    </div>
+                    <Switch
+                      id="edit-group-fallback"
+                      checked={(editGroup as any).is_fallback || false}
+                      onCheckedChange={(checked) => setEditGroup({ ...editGroup, is_fallback: checked } as any)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditGroupDialog(false)} disabled={creating}>
+              Avbryt
+            </Button>
+            <Button onClick={handleUpdateGroup} disabled={creating}>
+              {creating ? "Lagrer..." : "Lagre endringer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Sheet open={showGroupDetails} onOpenChange={setShowGroupDetails}>
         <SheetContent className="w-[600px] sm:w-[700px] overflow-y-auto">
           {selectedGroup && (
@@ -1638,7 +1749,7 @@ export default function AdminPage() {
                 )}
 
                 <div className="flex gap-2 pt-4">
-                  <Button variant="outline" className="flex-1">
+                  <Button variant="outline" className="flex-1" onClick={() => handleEditGroup(selectedGroup)}>
                     Rediger gruppe
                   </Button>
                   <Button 

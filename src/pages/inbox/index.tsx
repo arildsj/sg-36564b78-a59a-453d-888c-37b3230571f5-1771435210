@@ -230,7 +230,8 @@ export default function InboxPage() {
         newMessage,
         selectedThread.contact_phone,
         "+47 900 00 000",
-        selectedThread.id
+        selectedThread.id,
+        selectedThread.resolved_group_id || undefined // Keep thread in current group when replying
       );
 
       setNewMessage("");

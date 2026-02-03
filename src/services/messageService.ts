@@ -362,7 +362,8 @@ export const messageService = {
     content: string,
     toNumber: string,
     fromNumber: string,
-    threadId?: string
+    threadId?: string,
+    explicitGroupId?: string
   ): Promise<Message> {
     const formattedToNumber = formatPhoneNumber(toNumber);
 
@@ -378,18 +379,37 @@ export const messageService = {
      
     if (!userProfile) throw new Error("User profile not found");
 
-    // Determine target group for this outgoing message (sender's group)
-    let targetGroupId: string | undefined;
+    // Determine target group for this outgoing message
+    let targetGroupId: string | undefined = explicitGroupId;
 
-    const { data: userGroups } = await db
-      .from("group_memberships")
-      .select("group_id, groups(id, kind)")
-      .eq("user_id", userProfile.id);
+    // If no explicit group provided, try to find a sensible default
+    if (!targetGroupId) {
+      const { data: userGroups } = await db
+        .from("group_memberships")
+        .select("group_id, groups(id, kind)")
+        .eq("user_id", userProfile.id);
 
-    if (userGroups && userGroups.length > 0) {
-       const operationalGroup = userGroups.find((g: any) => g.groups?.kind === 'operational');
-       targetGroupId = operationalGroup ? operationalGroup.group_id : userGroups[0].group_id;
-    } else {
+      if (userGroups && userGroups.length > 0) {
+         // Prefer operational groups
+         const operationalGroup = userGroups.find((g: any) => g.groups?.kind === 'operational');
+         targetGroupId = operationalGroup ? operationalGroup.group_id : userGroups[0].group_id;
+      } else {
+         // Fallback to finding ANY operational group in tenant (emergency fallback)
+         const { data: anyGroup } = await db
+           .from("groups")
+           .select("id")
+           .eq("tenant_id", userProfile.tenant_id)
+           .eq("kind", "operational")
+           .limit(1)
+           .maybeSingle();
+         
+         targetGroupId = anyGroup?.id;
+      }
+    }
+    
+    // Fallback logic if we STILL don't have a group (e.g. fresh tenant, no groups)
+    if (!targetGroupId) {
+       // Try to find the fallback group
        const { data: fallbackGroup } = await db
          .from("groups")
          .select("id")
@@ -399,24 +419,12 @@ export const messageService = {
        
        targetGroupId = fallbackGroup?.id;
     }
-    
+
     if (!targetGroupId) {
-       const { data: anyGroup } = await db
-         .from("groups")
-         .select("id")
-         .eq("tenant_id", userProfile.tenant_id)
-         .eq("kind", "operational")
-         .limit(1)
-         .maybeSingle();
-       
-       if (!anyGroup) {
-         throw new Error("No operational groups found in tenant. Please create a group first.");
-       }
-       
-       targetGroupId = anyGroup.id;
+       throw new Error("Could not determine sending group. Please join a group first.");
     }
 
-    // Find or create thread (ONE per phone number, update resolved_group_id to sender's group)
+    // Find or create thread (ONE per phone number, update resolved_group_id to targetGroupId)
     const thread = await this.findOrCreateThread(formattedToNumber, targetGroupId);
 
     // MOCK SENDING to external API

@@ -95,6 +95,12 @@ function GroupNode({ group, level, onSelectGroup, selectedGroupId }: GroupNodePr
             {group.kind === "operational" ? "Operativ" : "Strukturell"}
           </Badge>
 
+          {(group as any).is_fallback && (
+            <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/30 dark:text-amber-400">
+              Standard
+            </Badge>
+          )}
+
           <div className="flex items-center gap-1 text-xs text-muted-foreground ml-2">
             <Users className="h-3 w-3" />
             <span>{group.member_count ?? 0}</span>

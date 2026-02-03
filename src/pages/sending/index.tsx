@@ -96,7 +96,9 @@ export default function SendingPage() {
       await messageService.sendMessage(
         messageContent,
         recipientPhone,
-        gateway.phone_number
+        gateway.phone_number,
+        undefined, // threadId
+        groups.length > 0 ? groups[0].id : undefined // Default to first group if sending single, or add UI selector
       );
 
       toast({
@@ -182,7 +184,9 @@ export default function SendingPage() {
           await messageService.sendMessage(
             messageContent,
             phone,
-            gateway.phone_number
+            gateway.phone_number,
+            undefined, // threadId
+            selectedGroup // Explicitly use the selected group
           );
           sent++;
           setSendingStats({ total: recipients.length, sent, failed });
@@ -258,7 +262,9 @@ export default function SendingPage() {
           await messageService.sendMessage(
             messageContent,
             contact.phone_number,
-            gateway.phone_number
+            gateway.phone_number,
+            undefined,
+            groups.length > 0 ? groups[0].id : undefined // Default to first operational group for now
           );
           sent++;
           setSendingStats({ total: selectedContacts.length, sent, failed });

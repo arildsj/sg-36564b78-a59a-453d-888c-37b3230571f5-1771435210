@@ -598,6 +598,7 @@ export type Database = {
           escalation_timeout_minutes: number | null
           gateway_id: string | null
           id: string
+          is_fallback: boolean | null
           kind: string
           name: string
           parent_group_id: string | null
@@ -613,6 +614,7 @@ export type Database = {
           escalation_timeout_minutes?: number | null
           gateway_id?: string | null
           id?: string
+          is_fallback?: boolean | null
           kind: string
           name: string
           parent_group_id?: string | null
@@ -628,6 +630,7 @@ export type Database = {
           escalation_timeout_minutes?: number | null
           gateway_id?: string | null
           id?: string
+          is_fallback?: boolean | null
           kind?: string
           name?: string
           parent_group_id?: string | null
