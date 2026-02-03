@@ -76,13 +76,18 @@ export default function SendingPage() {
         .eq("kind", "operational")
         .order("name");
       
-      const { data: contactsData } = await supabase
-        .from("whitelisted_numbers")
-        .select("id, name, phone_number")
-        .order("name");
+      // Use contactService to ensure consistency with Contacts page
+      const serviceContacts = await contactService.getAllContacts();
 
       if (groupsData) setGroups(groupsData);
-      if (contactsData) setContacts(contactsData);
+      
+      if (serviceContacts) {
+        setContacts(serviceContacts.map(c => ({
+          id: c.id,
+          name: c.name,
+          phone_number: c.phone // Map 'phone' from service to 'phone_number' expected by page
+        })));
+      }
 
       if (groupsData && groupsData.length > 0) {
         setSelectedGroup(groupsData[0].id);

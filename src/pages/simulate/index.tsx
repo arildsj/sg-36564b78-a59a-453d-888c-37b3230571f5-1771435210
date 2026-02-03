@@ -24,6 +24,7 @@ import {
 import { Check, Send, Clock, User } from "lucide-react";
 import { cn, formatPhoneNumber } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { contactService } from "@/services/contactService";
 
 type Gateway = { id: string; name: string; phone_number: string };
 type Group = { 
@@ -77,14 +78,15 @@ export default function SimulatePage() {
         
       if (groupsData) setGroups(groupsData as any);
 
-      // 3. Fetch Contacts
-      const { data: contactData } = await supabase
-        .from("contacts")
-        .select("*")
-        .order("name");
+      // 3. Fetch Contacts via Service
+      const serviceContacts = await contactService.getAllContacts();
         
-      if (contactData) {
-        setContacts(contactData);
+      if (serviceContacts) {
+        setContacts(serviceContacts.map(c => ({
+          id: c.id,
+          name: c.name,
+          phone_number: c.phone
+        })));
       }
 
       // 4. Fetch Messages
