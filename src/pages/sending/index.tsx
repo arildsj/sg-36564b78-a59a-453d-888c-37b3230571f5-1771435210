@@ -77,8 +77,8 @@ export default function SendingPage() {
         .order("name");
       
       const { data: contactsData } = await supabase
-        .from("contacts")
-        .select("*")
+        .from("whitelisted_numbers")
+        .select("id, name, phone_number")
         .order("name");
 
       if (groupsData) setGroups(groupsData);
@@ -356,7 +356,7 @@ export default function SendingPage() {
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[250px] p-0" align="start">
-                          <Command>
+                          <Command shouldFilter={false}>
                             <CommandInput 
                               placeholder="Søk navn..." 
                               value={singleSearchValue}
@@ -367,8 +367,8 @@ export default function SendingPage() {
                               <CommandGroup>
                                 {contacts
                                   .filter(contact => 
-                                    contact.name.toLowerCase().includes(singleSearchValue.toLowerCase()) ||
-                                    contact.phone_number.includes(singleSearchValue)
+                                    (contact.name?.toLowerCase() || "").includes(singleSearchValue.toLowerCase()) ||
+                                    (contact.phone_number || "").includes(singleSearchValue)
                                   )
                                   .slice(0, 10)
                                   .map((contact) => (

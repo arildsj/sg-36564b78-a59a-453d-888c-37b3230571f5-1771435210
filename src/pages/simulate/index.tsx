@@ -78,12 +78,14 @@ export default function SimulatePage() {
       if (groupsData) setGroups(groupsData as any);
 
       // 3. Fetch Contacts
-      const { data: contactsData } = await supabase
+      const { data: contactData } = await supabase
         .from("contacts")
         .select("*")
         .order("name");
         
-      if (contactsData) setContacts(contactsData);
+      if (contactData) {
+        setContacts(contactData);
+      }
 
       // 4. Fetch Messages
       const { data: messagesData } = await supabase
@@ -305,7 +307,7 @@ export default function SimulatePage() {
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-[300px] p-0" align="start">
-                        <Command>
+                        <Command shouldFilter={false}>
                           <CommandInput 
                             placeholder="Søk navn eller nummer..." 
                             value={fromSearchValue}
@@ -316,8 +318,8 @@ export default function SimulatePage() {
                             <CommandGroup>
                               {contacts
                                 .filter(contact => 
-                                  contact.name.toLowerCase().includes(fromSearchValue.toLowerCase()) ||
-                                  contact.phone_number.includes(fromSearchValue)
+                                  (contact.name?.toLowerCase() || "").includes(fromSearchValue.toLowerCase()) ||
+                                  (contact.phone_number || "").includes(fromSearchValue)
                                 )
                                 .slice(0, 10)
                                 .map((contact) => (
