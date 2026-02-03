@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
-import Link from "next/link";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,7 +68,7 @@ export default function SimulatePage() {
       
       if (gatewaysData) setGateways(gatewaysData);
 
-      // 2. Fetch Groups (simplified query to avoid deep typing issues)
+      // 2. Fetch Groups
       const { data: groupsData } = await supabase
         .from("groups")
         .select("*, gateway:gateways!groups_gateway_id_fkey(*)")
@@ -105,9 +104,6 @@ export default function SimulatePage() {
   };
 
   const handleSendMessage = async () => {
-    // Validering: Tillat sending hvis gruppe er valgt ELLER hvis systemet skal route automatisk (ingen gruppe valgt)
-    // Men for simulering er det best å være eksplisitt, men fallback-logikken støtter automatikk.
-    // Vi krever nummer og innhold.
     if (!fromPhone || !messageContent) {
       toast({
         title: "Mangler informasjon",
@@ -119,10 +115,8 @@ export default function SimulatePage() {
 
     setLoading(true);
     try {
-      // Clean phone number
       const cleanFromNumber = formatPhoneNumber(fromPhone);
 
-      // Get user context for tenant_id
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Not authenticated");
 
@@ -134,8 +128,6 @@ export default function SimulatePage() {
 
       if (!profile) throw new Error("User profile not found");
 
-      // Get Gateway
-      // Logic: If group selected, use group's gateway. If not, use first active gateway.
       let gatewayId: string | null = null;
       let gatewayPhone: string = "";
 
@@ -154,7 +146,7 @@ export default function SimulatePage() {
 
       if (!gatewayId) throw new Error("No active gateway found");
 
-      // Find or Create Thread (One per contact phone)
+      // Find or Create Thread
       const { data: existingThread } = await supabase
         .from("message_threads")
         .select("id")
@@ -171,8 +163,7 @@ export default function SimulatePage() {
             tenant_id: profile.tenant_id,
             gateway_id: gatewayId,
             contact_phone: cleanFromNumber,
-            resolved_group_id: selectedGroup || null, // If explicit group selected, set it. If null, routing logic will handle later? 
-            // NOTE: In manual simulation, we want to force the group if selected.
+            resolved_group_id: selectedGroup || null,
             last_message_at: new Date().toISOString(),
           })
           .select("id")
@@ -182,7 +173,6 @@ export default function SimulatePage() {
         threadId = newThread.id;
       } else {
         threadId = existingThread.id;
-        // Update thread to point to this group (Simulating that the message "hit" this group)
         if (selectedGroup) {
             await supabase
             .from("message_threads")
@@ -198,14 +188,14 @@ export default function SimulatePage() {
       const { error: messageError } = await supabase.from("messages").insert({
         tenant_id: profile.tenant_id,
         gateway_id: gatewayId,
-        group_id: selectedGroup || null, // Null means routing rules will pick it up (if backend trigger exists) or it stays null/fallback
+        group_id: selectedGroup || null,
         thread_id: threadId,
         thread_key: cleanFromNumber,
         direction: "inbound",
         from_number: cleanFromNumber,
         to_number: gatewayPhone,
         content: messageContent,
-        status: "delivered", // Simulated inbound messages are "delivered" to us
+        status: "delivered",
       });
 
       if (messageError) throw messageError;
@@ -215,7 +205,7 @@ export default function SimulatePage() {
         description: "Meldingen er lagt i innboksen",
       });
       setMessageContent("");
-      loadData(); // Refresh list
+      loadData();
     } catch (error: any) {
       console.error("Failed to send message:", error);
       toast({
@@ -304,11 +294,17 @@ export default function SimulatePage() {
                           aria-expanded={fromSearchOpen}
                           className="w-full justify-between"
                         >
-                           <User className="mr-2 h-4 w-4" />
-                           Søk kontakt...
+                           {fromPhone ? (
+                             <span className="truncate">{fromPhone}</span>
+                           ) : (
+                             <>
+                               <User className="mr-2 h-4 w-4" />
+                               <span>Søk kontakt...</span>
+                             </>
+                           )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-full p-0" align="start">
+                      <PopoverContent className="w-[300px] p-0" align="start">
                         <Command>
                           <CommandInput 
                             placeholder="Søk navn eller nummer..." 
@@ -323,11 +319,11 @@ export default function SimulatePage() {
                                   contact.name.toLowerCase().includes(fromSearchValue.toLowerCase()) ||
                                   contact.phone_number.includes(fromSearchValue)
                                 )
-                                .slice(0, 10) // Limit results for performance
+                                .slice(0, 10)
                                 .map((contact) => (
                                   <CommandItem
                                     key={contact.id}
-                                    value={contact.phone_number + " " + contact.name} // Include name in value for search matching
+                                    value={contact.phone_number + " " + contact.name}
                                     onSelect={() => {
                                       setFromPhone(contact.phone_number);
                                       setFromSearchOpen(false);
@@ -350,13 +346,14 @@ export default function SimulatePage() {
                           </CommandList>
                         </Command>
                       </PopoverContent>
-                    </div>
+                    </Popover>
                     
                     <Input
                       type="tel"
                       placeholder="+47..."
                       value={fromPhone}
                       onChange={(e) => setFromPhone(e.target.value)}
+                      className="w-[180px]"
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
