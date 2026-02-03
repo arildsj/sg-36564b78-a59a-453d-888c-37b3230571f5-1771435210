@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -176,6 +176,7 @@ export type Database = {
           name: string
           scheduled_at: string | null
           sent_count: number | null
+          source_group_id: string | null
           status: string
           tenant_id: string
           total_recipients: number | null
@@ -191,6 +192,7 @@ export type Database = {
           name: string
           scheduled_at?: string | null
           sent_count?: number | null
+          source_group_id?: string | null
           status?: string
           tenant_id: string
           total_recipients?: number | null
@@ -206,6 +208,7 @@ export type Database = {
           name?: string
           scheduled_at?: string | null
           sent_count?: number | null
+          source_group_id?: string | null
           status?: string
           tenant_id?: string
           total_recipients?: number | null
@@ -217,6 +220,13 @@ export type Database = {
             columns: ["created_by_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_campaigns_source_group_id_fkey"
+            columns: ["source_group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
@@ -236,6 +246,8 @@ export type Database = {
           id: string
           metadata: Json | null
           phone_number: string
+          responded_at: string | null
+          response_message_id: string | null
           sent_at: string | null
           sent_message_id: string | null
           status: string
@@ -247,6 +259,8 @@ export type Database = {
           id?: string
           metadata?: Json | null
           phone_number: string
+          responded_at?: string | null
+          response_message_id?: string | null
           sent_at?: string | null
           sent_message_id?: string | null
           status?: string
@@ -258,6 +272,8 @@ export type Database = {
           id?: string
           metadata?: Json | null
           phone_number?: string
+          responded_at?: string | null
+          response_message_id?: string | null
           sent_at?: string | null
           sent_message_id?: string | null
           status?: string
@@ -268,6 +284,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "bulk_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_recipients_response_message_id_fkey"
+            columns: ["response_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
           {
@@ -735,6 +758,7 @@ export type Database = {
         Row: {
           acknowledged_at: string | null
           acknowledged_by_user_id: string | null
+          campaign_id: string | null
           content: string
           created_at: string | null
           direction: string
@@ -755,6 +779,7 @@ export type Database = {
         Insert: {
           acknowledged_at?: string | null
           acknowledged_by_user_id?: string | null
+          campaign_id?: string | null
           content: string
           created_at?: string | null
           direction: string
@@ -775,6 +800,7 @@ export type Database = {
         Update: {
           acknowledged_at?: string | null
           acknowledged_by_user_id?: string | null
+          campaign_id?: string | null
           content?: string
           created_at?: string | null
           direction?: string
@@ -798,6 +824,13 @@ export type Database = {
             columns: ["acknowledged_by_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_campaigns"
             referencedColumns: ["id"]
           },
           {
