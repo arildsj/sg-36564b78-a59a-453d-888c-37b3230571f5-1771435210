@@ -35,12 +35,12 @@ serve(async (req) => {
     }
 
     const { data: importJob, error: jobError } = await supabase
-      .from("import_jobs")
+      .from("csv_import_jobs")
       .insert({
         tenant_id: payload.tenant_id,
         import_type: payload.import_type,
         status: "processing",
-        created_by: payload.created_by_user_id,
+        created_by_user_id: payload.created_by_user_id,
       })
       .select()
       .single();
@@ -57,7 +57,7 @@ serve(async (req) => {
 
     if (rows.length === 0) {
       await supabase
-        .from("import_jobs")
+        .from("csv_import_jobs")
         .update({ status: "failed", error_message: "Empty CSV file" })
         .eq("id", importJob.id);
 
@@ -71,12 +71,12 @@ serve(async (req) => {
 
     if (!validationResult.valid) {
       await supabase
-        .from("import_jobs")
+        .from("csv_import_jobs")
         .update({
           status: "failed",
           error_message: validationResult.errors.join("; "),
-          rows_processed: 0,
-          rows_failed: rows.length,
+          processed_rows: 0,
+          error_count: rows.length,
         })
         .eq("id", importJob.id);
 
@@ -94,12 +94,14 @@ serve(async (req) => {
     }
 
     await supabase
-      .from("import_jobs")
+      .from("csv_import_jobs")
       .update({
         status: result.failed === 0 ? "completed" : "partially_failed",
-        rows_processed: result.success,
-        rows_failed: result.failed,
-        completed_at: new Date().toISOString(),
+        processed_rows: result.success,
+        success_count: result.success,
+        error_count: result.failed,
+        total_rows: rows.length,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", importJob.id);
 
