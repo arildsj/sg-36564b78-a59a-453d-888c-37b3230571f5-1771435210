@@ -46,7 +46,6 @@ import { groupService, type Group } from "@/services/groupService";
 import { bulkService, type BulkRecipient } from "@/services/bulkService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
 
 // Hjelpefunksjon for datoformatering
 const formatMessageTime = (dateString: string) => {
@@ -94,9 +93,6 @@ export default function InboxPage() {
   // Bulk view state
   const [bulkRecipients, setBulkRecipients] = useState<BulkRecipient[]>([]);
   const [bulkResponses, setBulkResponses] = useState<Message[]>([]);
-  const [selectedNonResponders, setSelectedNonResponders] = useState<string[]>([]);
-  const [reminderMessage, setReminderMessage] = useState("");
-  const [sendingReminder, setSendingReminder] = useState(false);
   const [bulkTab, setBulkTab] = useState<"responses" | "status">("responses");
 
   // Simulation dialog state
@@ -186,7 +182,6 @@ export default function InboxPage() {
       let loadedThreads: ExtendedMessageThread[] = [];
 
       if (activeTab === "all") {
-        // Use getInboxThreads to include Bulk Campaigns
         loadedThreads = await messageService.getInboxThreads();
       } else if (activeTab === "fallback") {
         loadedThreads = await messageService.getFallbackThreads();
@@ -218,20 +213,14 @@ export default function InboxPage() {
   };
 
   const loadMessages = async (threadId: string) => {
-    // Check if selected thread is a bulk campaign
     const thread = threads.find(t => t.id === threadId);
     
     if (thread?.is_bulk) {
       // LOAD BULK DATA
       try {
-        // 1. Get Details (Recipients, Non-responders)
         const details = await bulkService.getCampaignDetails(threadId);
         setBulkRecipients(details.recipients);
-        
-        // Default select all non-responders for reminder
-        setSelectedNonResponders(details.nonResponders.map(r => r.id));
 
-        // 2. Get Responses (Messages linked to campaign)
         const { data: responses } = await supabase
           .from("messages")
           .select("*")
@@ -250,14 +239,12 @@ export default function InboxPage() {
     try {
       const threadMessages = await messageService.getMessagesByThread(threadId);
       
-      // Sort by created_at (oldest first - chronological order like traditional chat)
       threadMessages.sort((a, b) => 
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
 
       setMessages(threadMessages);
       
-      // Scroll to bottom after messages are loaded
       setTimeout(() => {
         if (messagesEndRef.current) {
           messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -279,7 +266,7 @@ export default function InboxPage() {
         selectedThread.contact_phone,
         "+47 900 00 000",
         selectedThread.id,
-        selectedThread.resolved_group_id || undefined // Keep thread in current group when replying
+        selectedThread.resolved_group_id || undefined
       );
 
       setNewMessage("");
@@ -358,36 +345,6 @@ export default function InboxPage() {
     }
   };
 
-  const handleSendReminder = async () => {
-    if (!selectedThreadId || !reminderMessage || selectedNonResponders.length === 0) return;
-    
-    setSendingReminder(true);
-    try {
-      await bulkService.sendReminder(
-        selectedThreadId,
-        reminderMessage,
-        selectedNonResponders
-      );
-      
-      toast({
-        title: "Påminnelse sendt",
-        description: `Sendt til ${selectedNonResponders.length} valgte mottakere`,
-      });
-      setReminderMessage("");
-      // Reload to update stats
-      loadThreads();
-      loadMessages(selectedThreadId);
-    } catch (error: any) {
-      toast({
-        title: "Feil ved sending",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setSendingReminder(false);
-    }
-  };
-
   const handleSimulateResponse = async () => {
     if (!selectedRecipientForSim || !simulatedMessage.trim() || !selectedThreadId) return;
 
@@ -396,7 +353,6 @@ export default function InboxPage() {
       const recipient = bulkRecipients.find(r => r.id === selectedRecipientForSim);
       if (!recipient) throw new Error("Recipient not found");
 
-      // Create simulated inbound message
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not authenticated");
 
@@ -408,7 +364,6 @@ export default function InboxPage() {
 
       if (!profile) throw new Error("Profile not found");
 
-      // Insert simulated message directly
       const { error } = await supabase
         .from("messages")
         .insert({
@@ -420,7 +375,7 @@ export default function InboxPage() {
           from_number: recipient.phone_number,
           to_number: "+47 900 00 000",
           status: "received",
-          thread_id: null // Bulk responses don't have individual threads
+          thread_id: null
         });
 
       if (error) throw error;
@@ -430,7 +385,6 @@ export default function InboxPage() {
         description: `Simulert svar fra ${recipient.metadata?.name || recipient.phone_number}`,
       });
 
-      // Reset and reload
       setSimulateDialogOpen(false);
       setSelectedRecipientForSim("");
       setSimulatedMessage("");
@@ -542,7 +496,6 @@ export default function InboxPage() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap mb-1">
                                   {thread.is_bulk ? (
-                                    // BULK DISPLAY
                                     <>
                                       <span className="font-semibold text-sm truncate text-primary">
                                         {thread.subject_line || "Bulk Uten Emne"}
@@ -557,7 +510,6 @@ export default function InboxPage() {
                                       )}
                                     </>
                                   ) : (
-                                    // STANDARD DISPLAY
                                     <>
                                       <span className="font-semibold text-sm truncate">{thread.contact_phone}</span>
                                       {(thread.unread_count || 0) > 0 && (
@@ -602,66 +554,65 @@ export default function InboxPage() {
                       // === BULK CAMPAIGN DETAIL VIEW ===
                       <>
                         <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
-                           <div className="flex items-start justify-between">
-                             <div className="flex-1">
-                               <div className="flex items-center gap-2">
-                                 <Badge variant="default">Bulk-kampanje</Badge>
-                                 <span className="text-xs text-muted-foreground">ID: {selectedThread.bulk_code || 'N/A'}</span>
-                                 <Button
-                                   variant="outline"
-                                   size="sm"
-                                   className="ml-auto gap-2"
-                                   onClick={() => setSimulateDialogOpen(true)}
-                                 >
-                                   <PlayCircle className="h-4 w-4" />
-                                   Simuler svar
-                                 </Button>
-                               </div>
-                               <CardTitle className="mt-1 text-lg">{selectedThread.subject_line}</CardTitle>
-                               <p className="text-sm text-muted-foreground line-clamp-1">{selectedThread.last_message_content}</p>
-                             </div>
-                             <div className="text-right text-sm ml-4">
-                               <div className="font-medium">{selectedThread.recipient_stats?.responded} / {selectedThread.recipient_stats?.total}</div>
-                               <div className="text-xs text-muted-foreground">har svart</div>
-                             </div>
-                           </div>
-                           
-                           <Tabs value={bulkTab} onValueChange={(v: any) => setBulkTab(v)} className="mt-4">
-                             <TabsList className="w-full justify-start h-9">
-                               <TabsTrigger value="responses" className="text-xs">Innk. Svar ({bulkResponses.length})</TabsTrigger>
-                               <TabsTrigger value="status" className="text-xs">Mottakerstatus ({bulkRecipients.length})</TabsTrigger>
-                             </TabsList>
-                           </Tabs>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="default">Bulk-kampanje</Badge>
+                                <span className="text-xs text-muted-foreground">ID: {selectedThread.bulk_code || 'N/A'}</span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="ml-auto gap-2"
+                                  onClick={() => setSimulateDialogOpen(true)}
+                                >
+                                  <PlayCircle className="h-4 w-4" />
+                                  Simuler svar
+                                </Button>
+                              </div>
+                              <CardTitle className="mt-1 text-lg">{selectedThread.subject_line}</CardTitle>
+                              <p className="text-sm text-muted-foreground line-clamp-1">{selectedThread.last_message_content}</p>
+                            </div>
+                            <div className="text-right text-sm ml-4">
+                              <div className="font-medium">{selectedThread.recipient_stats?.responded} / {selectedThread.recipient_stats?.total}</div>
+                              <div className="text-xs text-muted-foreground">har svart</div>
+                            </div>
+                          </div>
+                          
+                          <Tabs value={bulkTab} onValueChange={(v: any) => setBulkTab(v)} className="mt-4">
+                            <TabsList className="w-full justify-start h-9">
+                              <TabsTrigger value="responses" className="text-xs">Innk. Svar ({bulkResponses.length})</TabsTrigger>
+                              <TabsTrigger value="status" className="text-xs">Mottakerstatus ({bulkRecipients.length})</TabsTrigger>
+                            </TabsList>
+                          </Tabs>
                         </CardHeader>
 
                         {bulkTab === "responses" ? (
-                           <ScrollArea className="flex-1 p-6 bg-slate-50 dark:bg-slate-900/20">
-                             <div className="space-y-4 max-w-4xl mx-auto">
-                               {bulkResponses.length === 0 ? (
-                                 <div className="text-center py-12 text-muted-foreground">
-                                   <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                                   <p>Ingen svar mottatt ennå</p>
-                                 </div>
-                               ) : (
-                                 bulkResponses.map(msg => (
-                                   <div key={msg.id} className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
-                                      <div className="flex justify-between items-start mb-2">
-                                        <div className="font-medium text-sm flex items-center gap-2">
-                                          {msg.from_number}
-                                          <span className="text-muted-foreground font-normal">
-                                            ({bulkRecipients.find(r => r.phone_number === msg.from_number)?.metadata?.name || 'Ukjent'})
-                                          </span>
-                                        </div>
-                                        <span className="text-xs text-muted-foreground">{formatMessageTime(msg.created_at)}</span>
+                          <ScrollArea className="flex-1 p-6 bg-slate-50 dark:bg-slate-900/20">
+                            <div className="space-y-4 max-w-4xl mx-auto">
+                              {bulkResponses.length === 0 ? (
+                                <div className="text-center py-12 text-muted-foreground">
+                                  <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                                  <p>Ingen svar mottatt ennå</p>
+                                </div>
+                              ) : (
+                                bulkResponses.map(msg => (
+                                  <div key={msg.id} className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div className="font-medium text-sm flex items-center gap-2">
+                                        {msg.from_number}
+                                        <span className="text-muted-foreground font-normal">
+                                          ({bulkRecipients.find(r => r.phone_number === msg.from_number)?.metadata?.name || 'Ukjent'})
+                                        </span>
                                       </div>
-                                      <p className="text-sm">{msg.content}</p>
-                                   </div>
-                                 ))
-                               )}
-                             </div>
-                           </ScrollArea>
+                                      <span className="text-xs text-muted-foreground">{formatMessageTime(msg.created_at)}</span>
+                                    </div>
+                                    <p className="text-sm">{msg.content}</p>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </ScrollArea>
                         ) : (
-                          // STATUS TAB - Show all recipients
                           <ScrollArea className="flex-1 p-6">
                             <div className="space-y-2 max-w-4xl mx-auto">
                               <div className="mb-4">
@@ -701,7 +652,7 @@ export default function InboxPage() {
                         )}
                       </>
                     ) : (
-                      // === STANDARD THREAD VIEW (Existing Code) ===
+                      // === STANDARD THREAD VIEW ===
                       <>
                         <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
                           <div className="flex items-center justify-between">
@@ -777,7 +728,6 @@ export default function InboxPage() {
                                         : "bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-700 rounded-bl-md"
                                     )}
                                   >
-                                    {/* Debug info - can be removed later */}
                                     {msg.group_id && msg.group_id !== selectedThread.resolved_group_id && (
                                       <div className="mb-1 text-[9px] text-muted-foreground opacity-70">
                                         Fra gruppe: {groups.find(g => g.id === msg.group_id)?.name || 'Ukjent'}
