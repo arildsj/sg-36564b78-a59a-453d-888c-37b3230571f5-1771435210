@@ -47,7 +47,7 @@ import { gatewayService } from "@/services/gatewayService";
 import { routingRuleService } from "@/services/routingRuleService";
 import { contactService } from "@/services/contactService";
 import { auditService, type AuditLogEntry } from "@/services/auditService";
-import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog, Clock, Phone, FileText, Activity } from "lucide-react";
+import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog, Clock, Phone, FileText, Activity, Edit2 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -649,67 +649,164 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5 lg:w-auto">
-              <TabsTrigger value="groups" className="gap-2">
-                <FolderTree className="h-4 w-4" />
-                Grupper
-              </TabsTrigger>
-              <TabsTrigger value="users" className="gap-2">
-                <Users className="h-4 w-4" />
-                Brukere
-              </TabsTrigger>
-              <TabsTrigger value="gateways" className="gap-2">
-                <Wifi className="h-4 w-4" />
-                Gateways
-              </TabsTrigger>
-              <TabsTrigger value="routing" className="gap-2">
-                <GitBranch className="h-4 w-4" />
-                Routing
-              </TabsTrigger>
-              <TabsTrigger value="audit" className="gap-2">
-                <FileText className="h-4 w-4" />
-                Revisjon
-              </TabsTrigger>
-              <TabsTrigger value="roles" className="gap-2">
-                <Shield className="h-4 w-4" />
-                Roller
-              </TabsTrigger>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="groups">Grupper</TabsTrigger>
+              <TabsTrigger value="users">Brukere</TabsTrigger>
+              <TabsTrigger value="gateways">Gateways</TabsTrigger>
             </TabsList>
 
             <TabsContent value="groups" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold">Operative grupper</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Administrer innbokser og organisasjonsenheter
+                  </p>
+                </div>
+                <Button onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ny gruppe
+                </Button>
+              </div>
+
               <Card>
-                <CardHeader>
-                  <CardTitle>Gruppehierarki</CardTitle>
-                  <CardDescription>
-                    Hierarkisk visning av alle strukturelle og operasjonelle grupper. Klikk på en gruppe for å se detaljer, medlemmer og kontakter.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="text-center py-8 text-muted-foreground">Laster grupper...</div>
-                  ) : groups.length === 0 ? (
-                    <div className="text-center py-8">
-                      <FolderTree className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground mb-4">Ingen grupper opprettet ennå</p>
-                      <Button variant="outline" onClick={() => setShowCreateDialog(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Opprett første gruppe
-                      </Button>
+                <CardContent className="p-0">
+                  {groups.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+                      <p className="text-muted-foreground">Ingen grupper opprettet ennå</p>
                     </div>
                   ) : (
                     <>
-                      <div className="flex justify-end">
-                        <Button onClick={() => setShowCreateDialog(true)} size="sm">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Opprett ny gruppe
-                        </Button>
+                      {/* Desktop Table */}
+                      <div className="hidden md:block">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Navn</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>On-duty</TableHead>
+                              <TableHead>Hierarchi</TableHead>
+                              <TableHead className="text-right">Handlinger</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {groups.map((group) => (
+                              <TableRow key={group.id}>
+                                <TableCell className="font-medium">{group.name}</TableCell>
+                                <TableCell>
+                                  <Badge variant={group.kind === "operational" ? "default" : "secondary"}>
+                                    {group.kind === "operational" ? "Operasjonell" : "Strukturell"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={(group.on_duty_count || 0) > 0 ? "default" : "outline"}>
+                                    {group.on_duty_count || 0} aktive
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {group.parent_id ? (
+                                    <Badge variant="secondary">
+                                      Under: {allGroups.find(g => g.id === group.parent_id)?.name}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground text-sm">Toppnivå</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedGroup(group);
+                                      setShowGroupDetails(true);
+                                    }}
+                                  >
+                                    <Users className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditGroup(group);
+                                      setShowEditGroupDialog(true);
+                                    }}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteGroup(group.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       </div>
-                      <GroupHierarchy 
-                        groups={groups} 
-                        onSelectGroup={handleSelectGroup}
-                        selectedGroupId={selectedGroup?.id}
-                      />
+
+                      {/* Mobile Card View */}
+                      <div className="md:hidden p-4 space-y-3">
+                        {groups.map((group) => (
+                          <Card key={group.id} className="p-4">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-base truncate">{group.name}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {group.kind === "operational" ? "Operasjonell" : "Strukturell"}
+                                </p>
+                              </div>
+                              <Badge variant={(group.on_duty_count || 0) > 0 ? "default" : "outline"}>
+                                {group.on_duty_count || 0} aktive
+                              </Badge>
+                            </div>
+                            
+                            {group.parent_id && (
+                              <Badge variant="secondary" className="mb-3">
+                                Under: {allGroups.find(g => g.id === group.parent_id)?.name}
+                              </Badge>
+                            )}
+                            
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedGroup(group);
+                                  setShowGroupDetails(true);
+                                }}
+                                className="flex-1"
+                              >
+                                <Users className="h-4 w-4 mr-2" />
+                                Brukere
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditGroup(group);
+                                  setShowEditGroupDialog(true);
+                                }}
+                                className="h-9 w-9 p-0"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteGroup(group.id)}
+                                className="h-9 w-9 p-0"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
                     </>
                   )}
                 </CardContent>

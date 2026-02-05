@@ -390,15 +390,20 @@ export default function InboxPage() {
         throw new Error("Mottaker ikke funnet");
       }
 
-      // Normalize phone number to E.164 format (+XXXXXXXXXXX)
+      // Normalize phone number
       const normalizedPhone = recipient.phone_number.replace(/[\s\-\(\)]/g, "");
-      const phoneWithPlus = normalizedPhone.startsWith("+") ? normalizedPhone : `+${normalizedPhone}`;
-
-      // Validate phone format matches constraint (+ followed by 8-15 digits)
-      if (!/^\+[0-9]{8,15}$/.test(phoneWithPlus)) {
+      
+      // Check if it's alphanumeric (1-11 chars) or numeric E.164
+      const isAlphanumeric = /^[A-Za-z0-9]{1,11}$/.test(normalizedPhone);
+      const phoneWithPlus = isAlphanumeric 
+        ? normalizedPhone  // Keep alphanumeric as-is (e.g., "Dalanekraft")
+        : (normalizedPhone.startsWith("+") ? normalizedPhone : `+${normalizedPhone}`);
+      
+      // Validate format
+      if (!isAlphanumeric && !/^\+[0-9]{8,15}$/.test(phoneWithPlus)) {
         toast({
           title: "Ugyldig telefonnummer",
-          description: "Telefonnummeret må være i formatet +XXXXXXXXXXX (8-15 siffer)",
+          description: "Telefonnummeret må være enten alfanumerisk (1-11 tegn) eller E.164-format (+XXXXXXXXXXX)",
           variant: "destructive",
         });
         return;

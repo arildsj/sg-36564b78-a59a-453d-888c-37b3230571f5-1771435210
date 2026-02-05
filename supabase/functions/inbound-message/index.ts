@@ -439,14 +439,19 @@ async function scheduleEscalationCheck(supabase: any, message: any): Promise<voi
 }
 
 function normalizeE164(phone: string): string {
-  const isNumeric = /^[\d\s\-\+\(\)]+$/.test(phone);
+  if (!phone) return "";
   
-  if (!isNumeric) {
-    return phone;
+  const trimmed = phone.trim();
+  
+  // Check if it has letters -> Alphanumeric Sender ID
+  if (/[a-zA-Z]/.test(trimmed)) {
+    // Keep only alphanumeric characters and ensure max 11 chars
+    return trimmed.replace(/[^a-zA-Z0-9]/g, "").substring(0, 11);
   }
   
-  let normalized = phone.replace(/[^\d+]/g, "");
-  if (!normalized.startsWith("+")) {
+  // Standard phone number normalization
+  let normalized = trimmed.replace(/[^\d+]/g, "");
+  if (normalized.length > 0 && !normalized.startsWith("+")) {
     normalized = "+" + normalized;
   }
   return normalized;

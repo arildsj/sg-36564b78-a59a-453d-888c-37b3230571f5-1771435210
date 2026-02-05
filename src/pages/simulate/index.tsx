@@ -143,7 +143,7 @@ export default function SimulatePage() {
       const { data, error } = await supabase.functions.invoke("inbound-message", {
         body: {
           gateway_id: gatewayId,
-          from_number: fromPhone,
+          from_number: fromPhone.trim(),
           to_number: gatewayPhone,
           content: messageContent,
           received_at: new Date().toISOString(),
