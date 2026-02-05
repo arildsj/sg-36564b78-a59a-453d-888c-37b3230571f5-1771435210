@@ -88,29 +88,69 @@ serve(async (req) => {
   }
 });
 
-function parseCSV(content: string): any[] {
-  const normalizedContent = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  const allLines = normalizedContent.split("\n");
-  const lines = allLines.filter(line => line.trim().length > 0);
-  
-  if (lines.length < 2) return [];
-
-  const firstLine = lines[0];
-  const separator = firstLine.includes(";") ? ";" : ",";
-  const headers = firstLine.split(separator).map(h => h.trim().toLowerCase());
-  
-  const rows: any[] = [];
-  for (let i = 1; i < lines.length; i++) {
-    const currentLine = lines[i];
-    const values = currentLine.split(separator);
-    const row: any = {};
-    headers.forEach((h, idx) => {
-      row[h] = values[idx] ? values[idx].trim() : null;
-    });
-    rows.push(row);
+function parseCSV(text: string): any[] {
+  const lf = String.fromCharCode(10);
+  const cr = String.fromCharCode(13);
+  let normalized = "";
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (char === cr) {
+      if (text[i + 1] === lf) {
+        normalized += lf;
+        i++;
+      } else {
+        normalized += lf;
+      }
+    } else {
+      normalized += char;
+    }
   }
   
-  return rows.filter(row => Object.values(row).some(v => v !== null && v !== ""));
+  const allLines = normalized.split(lf);
+  const lines = [];
+  for (let i = 0; i < allLines.length; i++) {
+    const trimmed = allLines[i].trim();
+    if (trimmed.length > 0) {
+      lines.push(trimmed);
+    }
+  }
+  
+  if (lines.length < 2) {
+    return [];
+  }
+
+  const firstLine = lines[0];
+  const sep = firstLine.includes(";") ? ";" : ",";
+  const headerParts = firstLine.split(sep);
+  const headers = [];
+  for (let i = 0; i < headerParts.length; i++) {
+    headers.push(headerParts[i].trim().toLowerCase());
+  }
+  
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(sep);
+    const row: any = {};
+    for (let j = 0; j < headers.length; j++) {
+      const h = headers[j];
+      const v = values[j];
+      row[h] = v ? v.trim() : null;
+    }
+    
+    let hasValue = false;
+    for (const key in row) {
+      if (row[key] !== null && row[key] !== "") {
+        hasValue = true;
+        break;
+      }
+    }
+    
+    if (hasValue) {
+      rows.push(row);
+    }
+  }
+  
+  return rows;
 }
 
 async function validateImport(supabase: any, type: string, rows: any[], tenant_id: string) {
