@@ -121,17 +121,7 @@ export default function SimulatePage() {
     try {
       const cleanFromNumber = formatPhoneNumber(fromPhone);
 
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("Not authenticated");
-
-      const { data: profile } = await supabase
-        .from("users")
-        .select("id, tenant_id")
-        .eq("auth_user_id", userData.user.id)
-        .single();
-
-      if (!profile) throw new Error("User profile not found");
-
+      // Get gateway info
       let gatewayId: string | null = null;
       let gatewayPhone: string = "";
 
@@ -150,92 +140,29 @@ export default function SimulatePage() {
 
       if (!gatewayId) throw new Error("No active gateway found");
 
-      // NEW: Check for active Bulk Campaigns matching this sender (6 hour rule)
-      const sixHoursAgo = new Date();
-      sixHoursAgo.setHours(sixHoursAgo.getHours() - 6);
-
-      // Find ANY active campaign for the tenant (simplified matching)
-      // In a real scenario, we'd check if the user was a recipient, but for simulation/MVP 
-      // we check if there's a campaign within the expiry window.
-      // Better: Check if `bulk_recipients` contains this phone number and campaign is active
-      
-      let matchedCampaignId: string | null = null;
-      
-      // Check if this number is a pending/sent recipient in an active campaign
-      const { data: recipientMatch } = await supabase
-        .from("bulk_recipients")
-        .select("campaign_id, bulk_campaigns!inner(expires_at)")
-        .eq("phone_number", cleanFromNumber)
-        .eq("bulk_campaigns.tenant_id", profile.tenant_id)
-        .gt("bulk_campaigns.expires_at", new Date().toISOString()) // Check expiry
-        .maybeSingle();
-
-      if (recipientMatch) {
-        matchedCampaignId = recipientMatch.campaign_id;
-        console.log("Simulate: Matched response to campaign", matchedCampaignId);
-      }
-
-      // Find or Create Thread
-      const { data: existingThread } = await supabase
-        .from("message_threads")
-        .select("id")
-        .eq("tenant_id", profile.tenant_id)
-        .eq("contact_phone", cleanFromNumber)
-        .maybeSingle();
-
-      let threadId: string;
-
-      if (!existingThread) {
-        const { data: newThread, error: threadError } = await supabase
-          .from("message_threads")
-          .insert({
-            tenant_id: profile.tenant_id,
-            gateway_id: gatewayId,
-            contact_phone: cleanFromNumber,
-            resolved_group_id: selectedGroup || null,
-            last_message_at: new Date().toISOString(),
-          })
-          .select("id")
-          .single();
-
-        if (threadError) throw threadError;
-        threadId = newThread.id;
-      } else {
-        threadId = existingThread.id;
-        if (selectedGroup) {
-            await supabase
-            .from("message_threads")
-            .update({ 
-                resolved_group_id: selectedGroup,
-                last_message_at: new Date().toISOString() 
-            })
-            .eq("id", threadId);
-        }
-      }
-
-      // Insert Message
-      const { error: messageError } = await supabase.from("messages").insert({
-        tenant_id: profile.tenant_id,
-        gateway_id: gatewayId,
-        group_id: selectedGroup || null,
-        thread_id: threadId,
-        campaign_id: matchedCampaignId, // Link to campaign
-        thread_key: cleanFromNumber,
-        direction: "inbound",
-        from_number: cleanFromNumber,
-        to_number: gatewayPhone,
-        content: messageContent,
-        status: "delivered",
+      // Call inbound-message Edge Function to simulate incoming message
+      // This ensures routing rules are evaluated properly
+      const { data, error } = await supabase.functions.invoke("inbound-message", {
+        body: {
+          gateway_id: gatewayId,
+          from_number: cleanFromNumber,
+          to_number: gatewayPhone,
+          content: messageContent,
+          received_at: new Date().toISOString(),
+        },
       });
 
-      if (messageError) throw messageError;
+      if (error) throw error;
+
+      console.log("Inbound message processed:", data);
 
       toast({
         title: "Melding simulert",
-        description: matchedCampaignId 
-          ? "Melding koblet til aktiv kampanje!" 
-          : "Meldingen er lagt i innboksen",
+        description: data.is_fallback 
+          ? "Melding rutet til fallback-gruppe" 
+          : "Melding rutet basert på regler",
       });
+      
       setMessageContent("");
       loadData();
     } catch (error: any) {
