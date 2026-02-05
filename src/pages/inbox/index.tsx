@@ -232,7 +232,7 @@ export default function InboxPage() {
           .eq("direction", "inbound")
           .order("created_at", { ascending: true });
           
-        setBulkResponses(responses || []);
+        setBulkResponses((responses as any) || []);
       } catch (error) {
         console.error("Failed to load bulk details:", error);
       }
