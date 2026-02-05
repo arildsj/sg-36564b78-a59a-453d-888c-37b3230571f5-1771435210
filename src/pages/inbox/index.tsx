@@ -564,6 +564,147 @@ export default function InboxPage() {
                     selectedThread.is_bulk ? (
                       // === BULK CAMPAIGN DETAIL VIEW ===
                       <>
+                        <CardHeader className="border-b py-3 px-6 flex-none bg-blue-50/50 dark:bg-blue-900/10">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">Bulk-kampanje</Badge>
+                                <span className="text-xs text-muted-foreground font-mono">ID: {selectedThread.id.slice(0, 8)}</span>
+                              </div>
+                              <CardTitle className="text-xl mt-2 mb-1">
+                                {selectedThread.subject_line || "Uten emne"}
+                              </CardTitle>
+                              <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
+                                {selectedThread.last_message_content}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                               <div className="text-2xl font-bold">
+                                 {selectedThread.recipient_stats?.responded || 0} / {selectedThread.recipient_stats?.total || 0}
+                               </div>
+                               <div className="text-xs text-muted-foreground">har svart</div>
+                               <Button 
+                                 size="sm" 
+                                 variant="outline" 
+                                 className="mt-2 gap-2"
+                                 onClick={() => setSimulateDialogOpen(true)}
+                               >
+                                 <Users className="h-4 w-4" />
+                                 Simuler svar
+                               </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        
+                        <Tabs value={bulkTab} onValueChange={(v: any) => setBulkTab(v)} className="flex-1 flex flex-col min-h-0">
+                          <div className="border-b px-6">
+                            <TabsList className="bg-transparent p-0 h-auto gap-6">
+                              <TabsTrigger 
+                                value="responses" 
+                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3"
+                              >
+                                Innk. Svar ({bulkResponses.length})
+                              </TabsTrigger>
+                              <TabsTrigger 
+                                value="status" 
+                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3"
+                              >
+                                Mottakerstatus & Påminnelse
+                              </TabsTrigger>
+                            </TabsList>
+                          </div>
+
+                          <TabsContent value="responses" className="flex-1 p-0 m-0 overflow-hidden flex flex-col">
+                             <ScrollArea className="flex-1">
+                               <div className="p-6 space-y-4">
+                                 {bulkResponses.length === 0 ? (
+                                   <div className="text-center py-12">
+                                     <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                                     <h3 className="text-lg font-medium text-muted-foreground">Ingen svar mottatt ennå</h3>
+                                     <p className="text-sm text-muted-foreground mt-1">Svar fra mottakere vil dukke opp her.</p>
+                                   </div>
+                                 ) : (
+                                   bulkResponses.map(msg => (
+                                     <div key={msg.id} className="bg-card border rounded-lg p-4 shadow-sm">
+                                       <div className="flex justify-between items-start mb-2">
+                                         <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-sm">
+                                              {bulkRecipients.find(r => r.phone_number === msg.from_number)?.metadata?.name || msg.from_number}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                              {msg.from_number}
+                                            </span>
+                                         </div>
+                                         <span className="text-xs text-muted-foreground">
+                                           {formatMessageTime(msg.created_at)}
+                                         </span>
+                                       </div>
+                                       <p className="text-sm bg-muted/30 p-3 rounded-md">{msg.content}</p>
+                                     </div>
+                                   ))
+                                 )}
+                               </div>
+                             </ScrollArea>
+                          </TabsContent>
+                          
+                          <TabsContent value="status" className="flex-1 p-0 m-0 overflow-hidden flex flex-col">
+                            <ScrollArea className="flex-1">
+                              <div className="p-0">
+                                <table className="w-full text-sm text-left">
+                                  <thead className="bg-muted/50 border-b text-xs uppercase text-muted-foreground">
+                                    <tr>
+                                      <th className="px-6 py-3 font-medium">Navn</th>
+                                      <th className="px-6 py-3 font-medium">Telefon</th>
+                                      <th className="px-6 py-3 font-medium">Status</th>
+                                      <th className="px-6 py-3 font-medium text-right">Handling</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y">
+                                    {bulkRecipients.map(recipient => {
+                                      const hasResponded = bulkResponses.some(r => r.from_number === recipient.phone_number);
+                                      return (
+                                        <tr key={recipient.id} className={hasResponded ? "bg-green-50/50 dark:bg-green-900/10" : ""}>
+                                          <td className="px-6 py-3 font-medium">{recipient.metadata?.name || '-'}</td>
+                                          <td className="px-6 py-3 text-muted-foreground font-mono">{recipient.phone_number}</td>
+                                          <td className="px-6 py-3">
+                                            {hasResponded ? (
+                                              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300">
+                                                <CheckCheck className="h-3 w-3 mr-1" /> Svart
+                                              </Badge>
+                                            ) : (
+                                              <Badge variant="outline" className="text-muted-foreground">
+                                                Ikke svart
+                                              </Badge>
+                                            )}
+                                          </td>
+                                          <td className="px-6 py-3 text-right">
+                                            {!hasResponded && (
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="h-8"
+                                                onClick={() => {
+                                                  setSelectedRecipientForSim(recipient.id);
+                                                  setSimulateDialogOpen(true);
+                                                }}
+                                              >
+                                                Simuler svar
+                                              </Button>
+                                            )}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </ScrollArea>
+                          </TabsContent>
+                        </Tabs>
+                      </>
+                    ) : (
+                      // === STANDARD THREAD VIEW ===
+                      <>
                         <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
                           <div className="flex items-start justify-between">
                             <div>
