@@ -89,22 +89,28 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  const lines = normalized.split("\n").filter(line => line.trim());
+  const normalizedContent = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const allLines = normalizedContent.split("\n");
+  const lines = allLines.filter(line => line.trim().length > 0);
   
   if (lines.length < 2) return [];
 
-  const separator = lines[0].includes(";") ? ";" : ",";
-  const headers = lines[0].split(separator).map(h => h.trim().toLowerCase());
+  const firstLine = lines[0];
+  const separator = firstLine.includes(";") ? ";" : ",";
+  const headers = firstLine.split(separator).map(h => h.trim().toLowerCase());
   
-  return lines.slice(1).map(line => {
-    const values = line.split(separator);
+  const rows: any[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const currentLine = lines[i];
+    const values = currentLine.split(separator);
     const row: any = {};
     headers.forEach((h, idx) => {
-      row[h] = values[idx]?.trim() || null;
+      row[h] = values[idx] ? values[idx].trim() : null;
     });
-    return row;
-  }).filter(row => Object.values(row).some(v => v));
+    rows.push(row);
+  }
+  
+  return rows.filter(row => Object.values(row).some(v => v !== null && v !== ""));
 }
 
 async function validateImport(supabase: any, type: string, rows: any[], tenant_id: string) {
@@ -245,6 +251,5 @@ async function processContactsImport(supabase: any, rows: any[], tenant_id: stri
 }
 
 function isValidE164(phone: string): boolean {
-  const pattern = /^\+[1-9]\d{1,14}$/;
-  return pattern.test(phone);
+  return /^\+[1-9]\d{1,14}$/.test(phone);
 }
