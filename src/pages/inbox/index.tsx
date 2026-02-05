@@ -110,16 +110,8 @@ export default function InboxPage() {
   const [simulatedMessage, setSimulatedMessage] = useState("");
   const [sendingSimulation, setSendingSimulation] = useState(false);
 
-  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
-  const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>("all");
-
-  // Reclassification dialog state
-  const [reclassifyDialogOpen, setReclassifyDialogOpen] = useState(false);
-  const [reclassifyTargetGroup, setReclassifyTargetGroup] = useState<string>("");
+  const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
