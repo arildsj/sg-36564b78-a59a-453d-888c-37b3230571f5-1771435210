@@ -242,14 +242,14 @@ export default function SimulatePage() {
 
                 <div className="space-y-2">
                   <Label>Fra-nummer (avsender)</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Popover open={fromSearchOpen} onOpenChange={setFromSearchOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           role="combobox"
                           aria-expanded={fromSearchOpen}
-                          className="w-full justify-between"
+                          className="w-full justify-between h-12"
                         >
                            {fromPhone ? (
                              <span className="truncate">{fromPhone}</span>
@@ -261,7 +261,7 @@ export default function SimulatePage() {
                            )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[300px] p-0" align="start">
+                      <PopoverContent className="w-[calc(100vw-2rem)] sm:w-[300px] p-0" align="start">
                         <Command shouldFilter={false}>
                           <CommandInput 
                             placeholder="Søk navn eller nummer..." 
