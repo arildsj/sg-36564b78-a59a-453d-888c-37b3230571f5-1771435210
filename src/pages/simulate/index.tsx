@@ -119,8 +119,6 @@ export default function SimulatePage() {
 
     setLoading(true);
     try {
-      const cleanFromNumber = formatPhoneNumber(fromPhone);
-
       // Get gateway info
       let gatewayId: string | null = null;
       let gatewayPhone: string = "";
@@ -145,7 +143,7 @@ export default function SimulatePage() {
       const { data, error } = await supabase.functions.invoke("inbound-message", {
         body: {
           gateway_id: gatewayId,
-          from_number: cleanFromNumber,
+          from_number: fromPhone,
           to_number: gatewayPhone,
           content: messageContent,
           received_at: new Date().toISOString(),
