@@ -27,6 +27,7 @@ import {
   Send,
   Clock,
   CheckCheck,
+  Check,
   Inbox as InboxIcon,
   AlertTriangle,
   FolderInput,
@@ -34,7 +35,8 @@ import {
   ArrowRight,
   ArrowLeft,
   Users,
-  PlayCircle
+  PlayCircle,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -995,8 +997,36 @@ export default function InboxPage() {
                                                 className="rounded"
                                               />
                                             </TableCell>
-                                            <TableCell className="font-medium">
-                                              {recipient.metadata?.name || "Ukjent"}
+                                            <TableCell>
+                                              <div className="space-y-1">
+                                                <div className="font-medium">{recipient.metadata?.name || recipient.phone_number}</div>
+                                                {(() => {
+                                                  const reminder = hasReceivedReminder(recipient.phone_number);
+                                                  if (reminder) {
+                                                    return (
+                                                      <div className="text-xs text-muted-foreground space-y-0.5">
+                                                        <div className="flex items-start gap-1.5">
+                                                          <Mail className="h-3 w-3 mt-0.5 text-blue-500 flex-shrink-0" />
+                                                          <span className="text-blue-600 font-medium">
+                                                            "{reminder.body}"
+                                                          </span>
+                                                        </div>
+                                                        <div className="text-[10px] text-gray-500 pl-4.5">
+                                                          Sendt: {new Date(reminder.created_at).toLocaleDateString("nb-NO", {
+                                                            day: "2-digit",
+                                                            month: "2-digit",
+                                                            year: "numeric"
+                                                          })} kl. {new Date(reminder.created_at).toLocaleTimeString("nb-NO", {
+                                                            hour: "2-digit",
+                                                            minute: "2-digit"
+                                                          })}
+                                                        </div>
+                                                      </div>
+                                                    );
+                                                  }
+                                                  return null;
+                                                })()}
+                                              </div>
                                             </TableCell>
                                             <TableCell>{recipient.phone_number}</TableCell>
                                             <TableCell>
