@@ -50,13 +50,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const session = await authService.getSession();
+      const session = await authService.getCurrentSession();
       if (!session) {
         router.push("/login");
         return;
       }
 
-      const profile = await userService.getCurrentUserProfile();
+      const profile = await userService.getCurrentUser();
       setUserRole(profile?.role || null);
     } catch (error) {
       console.error("Auth check failed:", error);
