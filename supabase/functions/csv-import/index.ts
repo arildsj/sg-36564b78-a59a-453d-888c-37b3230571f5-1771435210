@@ -123,9 +123,13 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  let normalized = content.replace(/\r\n/g, "\n");
-  normalized = normalized.replace(/\r/g, "\n");
-  const lines = normalized.split("\n").filter(line => line.trim());
+  const crlfPattern = String.fromCharCode(13) + String.fromCharCode(10);
+  const crPattern = String.fromCharCode(13);
+  const lfPattern = String.fromCharCode(10);
+  
+  let normalized = content.split(crlfPattern).join(lfPattern);
+  normalized = normalized.split(crPattern).join(lfPattern);
+  const lines = normalized.split(lfPattern).filter(line => line.trim());
   
   if (lines.length < 2) return [];
 
