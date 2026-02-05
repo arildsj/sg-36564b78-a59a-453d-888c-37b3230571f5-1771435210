@@ -112,6 +112,16 @@ export default function InboxPage() {
 
   const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
   const [reminderMessage, setReminderMessage] = useState("");
+  
+  // Restored missing state variables
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>("all");
+  const [newMessage, setNewMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [reclassifyDialogOpen, setReclassifyDialogOpen] = useState(false);
+  const [reclassifyTargetGroup, setReclassifyTargetGroup] = useState<string>("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -529,6 +539,76 @@ export default function InboxPage() {
     }
   };
 
+  const handleSendReminder = async () => {
+    if (selectedForReminder.length === 0 || !reminderMessage.trim() || !selectedThreadId) return;
+    
+    setSending(true);
+    
+    try {
+      const recipientsToSend = bulkRecipients.filter(r => selectedForReminder.includes(r.id));
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) throw new Error("Not authenticated");
+
+      // Get campaign info to find correct from_number/gateway
+      const { data: campaign } = await supabase
+        .from("bulk_campaigns")
+        .select("gateway_id")
+        .eq("id", selectedThreadId)
+        .single();
+        
+      let fromNumber = "System";
+      if (campaign?.gateway_id) {
+        const { data: gateway } = await supabase
+          .from("gateways")
+          .select("phone_number")
+          .eq("id", campaign.gateway_id)
+          .single();
+        if (gateway) fromNumber = gateway.phone_number;
+      }
+
+      const updates = recipientsToSend.map(async (recipient) => {
+        // Create outbound message record linked to campaign
+        const { error: msgError } = await supabase.from("messages").insert({
+          content: reminderMessage,
+          direction: "outbound",
+          status: "queued", // System will pick this up if configured, or it's just a log
+          to_number: recipient.phone_number,
+          from_number: fromNumber,
+          campaign_id: selectedThreadId,
+          tenant_id: user.user_metadata?.tenant_id || user.id,
+          thread_key: recipient.phone_number // Ensure it groups correctly if individual thread exists
+        });
+
+        if (msgError) throw msgError;
+
+        // Optionally update bulk_recipient status to indicate reminder sent?
+        // Current schema might not have last_reminder_at, but we can assume it's tracked via messages
+      });
+      
+      await Promise.all(updates);
+      
+      toast({
+        title: "Påminnelser sendt",
+        description: `Sendte påminnelse til ${recipientsToSend.length} mottakere.`
+      });
+      
+      setReminderDialogOpen(false);
+      setReminderMessage("");
+      setSelectedForReminder([]);
+      
+    } catch (error) {
+      console.error("Error sending reminders:", error);
+      toast({
+        title: "Feil",
+        description: "Kunne ikke sende påminnelser.",
+        variant: "destructive"
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
   const hasUnacknowledged = messages.some((m) => m.direction === "inbound" && !m.is_acknowledged);
 
   return (
@@ -777,12 +857,7 @@ export default function InboxPage() {
                                       : "Velg mottakere for å sende påminnelse"}
                                   </p>
                                   <Button
-                                    onClick={() => {
-                                      toast({
-                                        title: "Påminnelse sendes",
-                                        description: `Sender påminnelse til ${selectedForReminder.length} mottaker(e)...`,
-                                      });
-                                    }}
+                                    onClick={() => setReminderDialogOpen(true)}
                                     disabled={selectedForReminder.length === 0}
                                     size="sm"
                                   >
@@ -1153,6 +1228,45 @@ export default function InboxPage() {
             </Button>
             <Button onClick={handleReclassify} disabled={!reclassifyTargetGroup}>
               Flytt samtalen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reminder Compose Dialog */}
+      <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send påminnelse</DialogTitle>
+            <DialogDescription>
+              Skriv en påminnelse til de {selectedForReminder.length} valgte mottakerne.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Meldingstekst</label>
+              <Textarea
+                placeholder="Hei, vi venter fortsatt på svar fra deg..."
+                value={reminderMessage}
+                onChange={(e) => setReminderMessage(e.target.value)}
+                className="min-h-[120px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                Denne meldingen sendes som SMS til alle valgte mottakere.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReminderDialogOpen(false)}>
+              Avbryt
+            </Button>
+            <Button 
+              onClick={handleSendReminder} 
+              disabled={!reminderMessage.trim() || sending}
+            >
+              {sending ? "Sender..." : "Send påminnelse"}
             </Button>
           </DialogFooter>
         </DialogContent>
