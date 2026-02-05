@@ -521,30 +521,36 @@ export default function InboxPage() {
       }
 
       // Create the simulated inbound message
-      const { error: messageError } = await supabase.from("messages").insert({
-        thread_key: phoneWithPlus,
-        direction: "inbound",
-        from_number: phoneWithPlus, 
-        to_number: systemPhoneNumber,
-        content: simulatedMessage, 
-        group_id: groupId,
-        thread_id: threadId,
-        campaign_id: campaignId,
-        tenant_id: tenantId
-      });
+      const { data: newMessage, error: messageError } = await supabase
+        .from("messages")
+        .insert({
+          thread_key: phoneWithPlus,
+          direction: "inbound",
+          from_number: phoneWithPlus,
+          to_number: systemPhoneNumber,
+          content: simulatedMessage,
+          group_id: groupId,
+          thread_id: threadId,
+          campaign_id: campaignId,
+          tenant_id: tenantId
+        })
+        .select()
+        .single();
 
       if (messageError) {
         throw messageError;
       }
 
       // Update bulk_recipient with response info
-      await supabase
+      const { error: updateError } = await supabase
         .from("bulk_recipients")
         .update({
           responded_at: new Date().toISOString(),
-          response_message_id: threadId,
+          response_message_id: newMessage.id,
         })
         .eq("id", recipient.id);
+
+      if (updateError) throw updateError;
 
       toast({
         title: "Svar simulert",
@@ -756,23 +762,23 @@ export default function InboxPage() {
             </div>
 
             <TabsContent value={activeTab} className="flex-1 m-0 min-h-0 overflow-hidden flex flex-col">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-                {/* Thread List */}
-                <Card className="lg:col-span-1 flex flex-col h-full overflow-hidden">
-                  <CardHeader className="border-b py-3 px-4 flex-none">
-                    <CardTitle className="flex items-center gap-2 text-base">
+              <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6 h-full">
+                {/* Thread List - Full width on mobile */}
+                <Card className="lg:col-span-1 flex flex-col h-[400px] lg:h-full overflow-hidden">
+                  <CardHeader className="border-b py-3 px-3 lg:px-4 flex-none">
+                    <CardTitle className="flex items-center gap-2 text-sm lg:text-base">
                       <MessageSquare className="h-4 w-4 text-primary" />
                       Samtaler ({filteredThreads.length})
                     </CardTitle>
                   </CardHeader>
                   <ScrollArea className="flex-1">
-                    <div className="p-3 space-y-2">
+                    <div className="p-2 lg:p-3 space-y-2">
                       {loading ? (
                         <p className="text-muted-foreground text-center py-8 text-sm">Laster...</p>
-                      ) : filteredThreads.length === 0 ? (
-                        <div className="text-center py-12 px-4">
+                      ) : filteredThreads.length === 0 && searchQuery === "" ? (
+                        <div className="text-center py-8 lg:py-12 px-4">
                           <InboxIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3 opacity-50" />
-                          <p>Ingen samtaler</p>
+                          <p className="text-sm">Ingen samtaler</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {activeTab === "fallback"
                               ? "Ingen ukjente avsendere for øyeblikket"
@@ -781,13 +787,17 @@ export default function InboxPage() {
                               : "Meldinger vil vises her når de ankommer"}
                           </p>
                         </div>
+                      ) : filteredThreads.length === 0 ? (
+                        <div className="text-center py-8 lg:py-12">
+                          <p className="text-muted-foreground text-sm">Ingen samtaler funnet</p>
+                        </div>
                       ) : (
                         filteredThreads.map((thread) => (
                           <button
                             key={thread.id}
                             onClick={() => setSelectedThreadId(thread.id)}
                             className={cn(
-                              "w-full text-left p-3 rounded-lg border transition-all hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
+                              "w-full text-left p-2.5 lg:p-3 rounded-lg border transition-all hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
                               selectedThreadId === thread.id
                                 ? "bg-primary/5 border-primary/50 shadow-sm"
                                 : "bg-card hover:bg-accent/50"
@@ -848,8 +858,8 @@ export default function InboxPage() {
                   </ScrollArea>
                 </Card>
 
-                {/* Message Thread View */}
-                <Card className="lg:col-span-2 flex flex-col h-full overflow-hidden">
+                {/* Message Thread View - Full width on mobile when selected */}
+                <Card className="lg:col-span-2 flex flex-col h-[600px] lg:h-full overflow-hidden">
                   {selectedThread ? (
                     selectedThread.is_bulk ? (
                       // === BULK CAMPAIGN DETAIL VIEW ===
@@ -1104,33 +1114,33 @@ export default function InboxPage() {
                     ) : (
                       // === STANDARD THREAD VIEW ===
                       <>
-                        <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <CardTitle className="flex items-center gap-2 text-base">
-                                {selectedThread.contact_phone}
+                        <CardHeader className="border-b py-3 px-3 lg:px-6 flex-none bg-muted/10">
+                          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <CardTitle className="flex items-center gap-2 text-sm lg:text-base flex-wrap">
+                                <span className="truncate">{selectedThread.contact_phone}</span>
                                 {selectedThread.is_fallback && (
-                                  <Badge variant="outline" className="border-yellow-500 text-yellow-600">
-                                    Ukjent avsender
+                                  <Badge variant="outline" className="border-yellow-500 text-yellow-600 text-xs">
+                                    Ukjent
                                   </Badge>
                                 )}
                               </CardTitle>
-                              <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center gap-2 mt-1.5">
                                 <p className="text-xs text-muted-foreground">Gruppe:</p>
-                                <Badge variant="secondary" className="font-medium text-foreground">
+                                <Badge variant="secondary" className="font-medium text-foreground text-xs">
                                   {selectedThread.group_name}
                                 </Badge>
                               </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <Button
                                 onClick={() => setReclassifyDialogOpen(true)}
                                 variant="outline"
                                 size="sm"
-                                className="gap-2"
+                                className="gap-1.5 flex-1 lg:flex-none h-9"
                               >
                                 <FolderInput className="h-4 w-4" />
-                                <span className="hidden sm:inline">Flytt samtalen</span>
+                                <span className="text-xs">Flytt</span>
                               </Button>
                               
                               {hasUnacknowledged && (
@@ -1138,20 +1148,20 @@ export default function InboxPage() {
                                   onClick={handleAcknowledge} 
                                   variant="default" 
                                   size="sm" 
-                                  className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                                  className="gap-1.5 bg-green-600 hover:bg-green-700 text-white flex-1 lg:flex-none h-9"
                                 >
                                   <CheckCheck className="h-4 w-4" />
-                                  <span className="hidden sm:inline">Bekreft mottatt</span>
+                                  <span className="text-xs">Bekreft</span>
                                 </Button>
                               )}
                               <Button 
                                 onClick={handleResolve} 
                                 variant="ghost" 
                                 size="sm" 
-                                className="gap-2 text-muted-foreground hover:text-foreground"
+                                className="gap-1.5 text-muted-foreground hover:text-foreground h-9"
                               >
                                 <Archive className="h-4 w-4" />
-                                <span className="hidden sm:inline">Løs</span>
+                                <span className="text-xs lg:inline">Løs</span>
                               </Button>
                             </div>
                           </div>

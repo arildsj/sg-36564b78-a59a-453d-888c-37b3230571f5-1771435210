@@ -75,13 +75,14 @@ export function AppLayout({ children }: AppLayoutProps) {
       )}
 
       {/* Mobile Header */}
-      <header className={cn("md:hidden flex items-center justify-between p-4 border-b bg-card", demoUser && "mt-8")}>
+      <header className={cn("md:hidden flex items-center justify-between px-4 py-3 border-b bg-card shadow-sm", demoUser && "mt-8")}>
         <div className="font-bold text-xl text-primary">SeMSe</div>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-label={isMobileMenuOpen ? "Lukk meny" : "Åpne meny"}
+          className="h-12 w-12"
         >
           {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
@@ -90,9 +91,9 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Sidebar Navigation */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-64 transform bg-card border-r transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:h-screen flex flex-col",
+          "fixed inset-y-0 left-0 z-40 w-72 transform bg-card border-r transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:h-screen flex flex-col md:w-64",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
-          demoUser && "mt-8 md:mt-0 pt-0" /* Adjust for banner on mobile, simpler on desktop */
+          demoUser && "mt-8 md:mt-0 pt-0"
         )}
       >
         <div className={cn("p-6 border-b", demoUser && "md:pt-10")}>
@@ -100,18 +101,19 @@ export function AppLayout({ children }: AppLayoutProps) {
           <p className="text-sm text-muted-foreground mt-1">FairGateway</p>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2">
+        <nav className="flex-1 px-3 py-4 space-y-1.5">
           {navItems.map((item) => {
             const isActive = router.pathname === item.href || router.pathname.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary",
+                  "flex items-center gap-3 px-4 py-3.5 rounded-lg text-base md:text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary min-h-[48px]",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                    : "text-foreground hover:bg-accent hover:text-accent-foreground active:bg-accent/80"
                 )}
               >
                 {item.icon}
@@ -121,10 +123,10 @@ export function AppLayout({ children }: AppLayoutProps) {
           })}
         </nav>
 
-        <div className="p-4 border-t">
+        <div className="p-3 border-t">
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50 min-h-[48px] text-base md:text-sm"
             onClick={() => console.log("Logout clicked")}
           >
             <LogOut className="h-5 w-5" />
