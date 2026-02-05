@@ -34,5 +34,46 @@ export const auditService = {
       ...log,
       user_email: log.user?.email || "System/Unknown"
     }));
+  },
+
+  async logAction(entry: {
+    action: string;
+    entity_type: string;
+    entity_id: string | null;
+    details: any;
+  }) {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      
+      let tenant_id = null;
+      if (user.user) {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('tenant_id')
+            .eq('auth_user_id', user.user.id)
+            .single();
+          tenant_id = profile?.tenant_id;
+      }
+
+      if (!tenant_id) {
+        console.warn("Could not determine tenant_id for audit log");
+        return; 
+      }
+
+      const { error } = await supabase.from("audit_log").insert({
+        tenant_id,
+        user_id: user.user?.id,
+        action: entry.action,
+        entity_type: entry.entity_type,
+        entity_id: entry.entity_id,
+        changes: entry.details,
+      });
+
+      if (error) {
+        console.error("Failed to log audit action:", error);
+      }
+    } catch (err) {
+      console.error("Error in logAction:", err);
+    }
   }
 };

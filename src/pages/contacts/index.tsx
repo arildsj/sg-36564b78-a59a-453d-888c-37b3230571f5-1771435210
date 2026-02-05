@@ -66,10 +66,12 @@ export default function ContactsPage() {
   const [submitting, setSubmitting] = useState(false);
   
   // GDPR state
-  const [gdprContact, setGdprContact] = useState<{
-    id: string;
-    phone: string;
-    name: string;
+  const [gdprData, setGdprData] = useState<{
+    contact: {
+      id: string;
+      phone: string;
+      name: string;
+    };
     groups: any[];
   } | null>(null);
   const [gdprDeletionReason, setGdprDeletionReason] = useState("");
@@ -350,7 +352,7 @@ export default function ContactsPage() {
     try {
       setSubmitting(true);
       const data = await contactService.getContactGroupMemberships(contact.id);
-      setGdprContact(data);
+      setGdprData(data);
       setShowGDPRDialog(true);
     } catch (error: any) {
       console.error("Failed to load GDPR info:", error);
@@ -365,7 +367,7 @@ export default function ContactsPage() {
   };
 
   const handleGDPRDeletion = async () => {
-    if (!gdprContact || !gdprDeletionReason.trim()) {
+    if (!gdprData || !gdprDeletionReason.trim()) {
       toast({
         title: "Mangler informasjon",
         description: "Vennligst oppgi grunn for sletting",
@@ -377,7 +379,7 @@ export default function ContactsPage() {
     try {
       setSubmitting(true);
       const result = await contactService.deleteContactGDPR(
-        gdprContact.id,
+        gdprData.contact.id,
         gdprDeletionReason
       );
 
@@ -387,7 +389,7 @@ export default function ContactsPage() {
       });
 
       setShowGDPRDialog(false);
-      setGdprContact(null);
+      setGdprData(null);
       setGdprDeletionReason("");
       await loadData();
     } catch (error: any) {
@@ -790,24 +792,24 @@ export default function ContactsPage() {
             </DialogDescription>
           </DialogHeader>
           
-          {gdprContact && (
+          {gdprData && (
             <div className="space-y-4">
               <div className="bg-muted/30 p-4 rounded-lg">
                 <h3 className="font-semibold mb-2">Kontaktdetaljer</h3>
                 <div className="space-y-1 text-sm">
-                  <p><strong>Navn:</strong> {gdprContact.name}</p>
-                  <p><strong>Telefon:</strong> {gdprContact.phone}</p>
-                  <p><strong>ID:</strong> {gdprContact.id}</p>
+                  <p><strong>Navn:</strong> {gdprData.contact.name}</p>
+                  <p><strong>Telefon:</strong> {gdprData.contact.phone}</p>
+                  <p><strong>ID:</strong> {gdprData.contact.id}</p>
                 </div>
               </div>
 
               <div className="bg-muted/30 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Gruppetilhørighet ({gdprContact.groups.length})</h3>
-                {gdprContact.groups.length === 0 ? (
+                <h3 className="font-semibold mb-2">Gruppetilhørighet ({gdprData.groups.length})</h3>
+                {gdprData.groups.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Ikke medlem av noen grupper</p>
                 ) : (
                   <ul className="space-y-2">
-                    {gdprContact.groups.map((group: any) => (
+                    {gdprData.groups.map((group: any) => (
                       <li key={group.id} className="flex items-center gap-2 text-sm">
                         <Badge variant="secondary">{group.name}</Badge>
                         <span className="text-muted-foreground">({group.kind})</span>
