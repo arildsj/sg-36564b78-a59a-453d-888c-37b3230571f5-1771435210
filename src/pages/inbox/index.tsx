@@ -553,18 +553,38 @@ export default function InboxPage() {
       // Get campaign info to find correct from_number/gateway
       const { data: campaign } = await supabase
         .from("bulk_campaigns")
-        .select("gateway_id")
+        .select("source_group_id")
         .eq("id", selectedThreadId)
         .single();
         
       let fromNumber = "System";
-      if (campaign?.gateway_id) {
-        const { data: gateway } = await supabase
-          .from("gateways")
-          .select("phone_number")
-          .eq("id", campaign.gateway_id)
+      
+      if (campaign?.source_group_id) {
+        // First try to get gateway from source group
+        const { data: group } = await supabase
+          .from("groups")
+          .select("gateway_id")
+          .eq("id", campaign.source_group_id)
           .single();
-        if (gateway) fromNumber = gateway.phone_number;
+          
+        if (group?.gateway_id) {
+          const { data: gateway } = await supabase
+            .from("gateways")
+            .select("phone_number")
+            .eq("id", group.gateway_id)
+            .single();
+          if (gateway) fromNumber = gateway.phone_number;
+        } else {
+          // Fallback to default gateway if group has none
+           const { data: defaultGateway } = await supabase
+            .from("gateways")
+            .select("phone_number")
+            .eq("tenant_id", user.user_metadata?.tenant_id || user.id)
+            .eq("is_default", true)
+            .maybeSingle();
+            
+           if (defaultGateway) fromNumber = defaultGateway.phone_number;
+        }
       }
 
       const updates = recipientsToSend.map(async (recipient) => {
