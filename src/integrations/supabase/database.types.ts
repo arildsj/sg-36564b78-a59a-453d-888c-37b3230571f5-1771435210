@@ -167,9 +167,11 @@ export type Database = {
       }
       bulk_campaigns: {
         Row: {
+          bulk_code: string | null
           completed_at: string | null
           created_at: string | null
           created_by_user_id: string
+          expires_at: string | null
           failed_count: number | null
           id: string
           message_template: string
@@ -178,14 +180,17 @@ export type Database = {
           sent_count: number | null
           source_group_id: string | null
           status: string
+          subject_line: string | null
           tenant_id: string
           total_recipients: number | null
           updated_at: string | null
         }
         Insert: {
+          bulk_code?: string | null
           completed_at?: string | null
           created_at?: string | null
           created_by_user_id: string
+          expires_at?: string | null
           failed_count?: number | null
           id?: string
           message_template: string
@@ -194,14 +199,17 @@ export type Database = {
           sent_count?: number | null
           source_group_id?: string | null
           status?: string
+          subject_line?: string | null
           tenant_id: string
           total_recipients?: number | null
           updated_at?: string | null
         }
         Update: {
+          bulk_code?: string | null
           completed_at?: string | null
           created_at?: string | null
           created_by_user_id?: string
+          expires_at?: string | null
           failed_count?: number | null
           id?: string
           message_template?: string
@@ -210,6 +218,7 @@ export type Database = {
           sent_count?: number | null
           source_group_id?: string | null
           status?: string
+          subject_line?: string | null
           tenant_id?: string
           total_recipients?: number | null
           updated_at?: string | null
