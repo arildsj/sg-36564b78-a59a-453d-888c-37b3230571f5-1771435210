@@ -1,12 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { supabase } from "@/integrations/supabase/client";
 import { createClient } from "@supabase/supabase-js";
-
-// Use service role client for admin operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export default async function handler(
   req: NextApiRequest,
@@ -27,24 +20,38 @@ export default async function handler(
 
   try {
     console.log("🚀 Bulk campaign API called");
-    console.log("📦 Request body:", req.body);
+    console.log("📦 Request body:", JSON.stringify(req.body));
 
-    // Validate environment variables
+    // Validate environment variables first
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
       console.error("❌ Missing NEXT_PUBLIC_SUPABASE_URL");
-      return res.status(500).json({ error: "Missing Supabase URL" });
+      return res.status(500).json({ error: "Missing Supabase URL configuration" });
     }
 
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error("❌ Missing SUPABASE_SERVICE_ROLE_KEY");
-      return res.status(500).json({ error: "Missing Service Role Key" });
+      return res.status(500).json({ error: "Missing Service Role Key configuration" });
     }
+
+    // Create admin client inside handler to avoid initialization issues
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
+    console.log("✅ Supabase admin client created");
 
     const { campaign_id } = req.body;
 
     if (!campaign_id) {
       console.error("❌ Missing campaign_id in request");
-      return res.status(400).json({ error: "Missing campaign_id" });
+      return res.status(400).json({ error: "Missing campaign_id parameter" });
     }
 
     console.log("🔍 Fetching campaign:", campaign_id);
@@ -291,10 +298,12 @@ export default async function handler(
     });
   } catch (error: any) {
     console.error("💥 Bulk campaign error:", error);
-    console.error("Stack trace:", error.stack);
+    console.error("💥 Error message:", error.message);
+    console.error("💥 Error stack:", error.stack);
+    
     return res.status(500).json({ 
-      error: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+      error: error.message || "Internal server error",
+      details: process.env.NODE_ENV === "development" ? error.stack : undefined
     });
   }
 }
