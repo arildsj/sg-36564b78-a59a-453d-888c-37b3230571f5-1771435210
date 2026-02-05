@@ -123,12 +123,12 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  const normalizedContent = content.replace(/\r
-/g, "
-").replace(/\r/g, "
-");
-  const lines = normalizedContent.split("
-").filter(line => line.trim());
+  const normalizedContent = content.split('\r
+').join('
+').split('\r').join('
+');
+  const lines = normalizedContent.split('
+').filter(line => line.trim());
   
   if (lines.length < 2) return [];
 
