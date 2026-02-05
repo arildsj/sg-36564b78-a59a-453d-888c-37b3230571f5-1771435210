@@ -33,7 +33,8 @@ import {
   Archive,
   ArrowRight,
   ArrowLeft,
-  Users
+  Users,
+  PlayCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -42,10 +43,10 @@ import {
   type ExtendedMessageThread 
 } from "@/services/messageService";
 import { groupService, type Group } from "@/services/groupService";
-import { bulkService, type BulkRecipient } from "@/services/bulkService"; // Import bulkService
+import { bulkService, type BulkRecipient } from "@/services/bulkService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Hjelpefunksjon for datoformatering
 const formatMessageTime = (dateString: string) => {
@@ -97,6 +98,12 @@ export default function InboxPage() {
   const [reminderMessage, setReminderMessage] = useState("");
   const [sendingReminder, setSendingReminder] = useState(false);
   const [bulkTab, setBulkTab] = useState<"responses" | "status">("responses");
+
+  // Simulation dialog state
+  const [simulateDialogOpen, setSimulateDialogOpen] = useState(false);
+  const [selectedRecipientForSim, setSelectedRecipientForSim] = useState<string>("");
+  const [simulatedMessage, setSimulatedMessage] = useState("");
+  const [sendingSimulation, setSendingSimulation] = useState(false);
 
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
@@ -381,6 +388,64 @@ export default function InboxPage() {
     }
   };
 
+  const handleSimulateResponse = async () => {
+    if (!selectedRecipientForSim || !simulatedMessage.trim() || !selectedThreadId) return;
+
+    setSendingSimulation(true);
+    try {
+      const recipient = bulkRecipients.find(r => r.id === selectedRecipientForSim);
+      if (!recipient) throw new Error("Recipient not found");
+
+      // Create simulated inbound message
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("tenant_id")
+        .eq("auth_user_id", user.user.id)
+        .single();
+
+      if (!profile) throw new Error("Profile not found");
+
+      // Insert simulated message directly
+      const { error } = await supabase
+        .from("messages")
+        .insert({
+          campaign_id: selectedThreadId,
+          tenant_id: profile.tenant_id,
+          thread_key: recipient.phone_number,
+          direction: "inbound",
+          content: simulatedMessage,
+          from_number: recipient.phone_number,
+          to_number: "+47 900 00 000",
+          status: "received",
+          thread_id: null // Bulk responses don't have individual threads
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Simulert svar sendt",
+        description: `Simulert svar fra ${recipient.metadata?.name || recipient.phone_number}`,
+      });
+
+      // Reset and reload
+      setSimulateDialogOpen(false);
+      setSelectedRecipientForSim("");
+      setSimulatedMessage("");
+      loadMessages(selectedThreadId);
+    } catch (error: any) {
+      toast({
+        title: "Feil ved simulering",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSendingSimulation(false);
+    }
+  };
+
   const hasUnacknowledged = messages.some((m) => m.direction === "inbound" && !m.is_acknowledged);
 
   return (
@@ -391,7 +456,7 @@ export default function InboxPage() {
       </Head>
 
       <AppLayout>
-        <div className="space-y-6 h-[calc(100vh-12rem)] flex flex-col">
+        <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
           <div className="flex-none">
             <h2 className="text-3xl font-bold tracking-tight text-foreground">Samtaler</h2>
             <p className="text-muted-foreground mt-2">
@@ -538,15 +603,24 @@ export default function InboxPage() {
                       <>
                         <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
                            <div className="flex items-start justify-between">
-                             <div>
+                             <div className="flex-1">
                                <div className="flex items-center gap-2">
                                  <Badge variant="default">Bulk-kampanje</Badge>
                                  <span className="text-xs text-muted-foreground">ID: {selectedThread.bulk_code || 'N/A'}</span>
+                                 <Button
+                                   variant="outline"
+                                   size="sm"
+                                   className="ml-auto gap-2"
+                                   onClick={() => setSimulateDialogOpen(true)}
+                                 >
+                                   <PlayCircle className="h-4 w-4" />
+                                   Simuler svar
+                                 </Button>
                                </div>
                                <CardTitle className="mt-1 text-lg">{selectedThread.subject_line}</CardTitle>
                                <p className="text-sm text-muted-foreground line-clamp-1">{selectedThread.last_message_content}</p>
                              </div>
-                             <div className="text-right text-sm">
+                             <div className="text-right text-sm ml-4">
                                <div className="font-medium">{selectedThread.recipient_stats?.responded} / {selectedThread.recipient_stats?.total}</div>
                                <div className="text-xs text-muted-foreground">har svart</div>
                              </div>
@@ -555,7 +629,7 @@ export default function InboxPage() {
                            <Tabs value={bulkTab} onValueChange={(v: any) => setBulkTab(v)} className="mt-4">
                              <TabsList className="w-full justify-start h-9">
                                <TabsTrigger value="responses" className="text-xs">Innk. Svar ({bulkResponses.length})</TabsTrigger>
-                               <TabsTrigger value="status" className="text-xs">Mottakerstatus & Påminnelse</TabsTrigger>
+                               <TabsTrigger value="status" className="text-xs">Mottakerstatus ({bulkRecipients.length})</TabsTrigger>
                              </TabsList>
                            </Tabs>
                         </CardHeader>
@@ -574,7 +648,6 @@ export default function InboxPage() {
                                       <div className="flex justify-between items-start mb-2">
                                         <div className="font-medium text-sm flex items-center gap-2">
                                           {msg.from_number}
-                                          {/* TODO: Lookup name from recipients list */}
                                           <span className="text-muted-foreground font-normal">
                                             ({bulkRecipients.find(r => r.phone_number === msg.from_number)?.metadata?.name || 'Ukjent'})
                                           </span>
@@ -588,73 +661,43 @@ export default function InboxPage() {
                              </div>
                            </ScrollArea>
                         ) : (
-                          // STATUS & REMINDER TAB
-                          <div className="flex-1 flex flex-col overflow-hidden">
-                             <div className="flex-1 overflow-auto p-0">
-                                <div className="grid grid-cols-1 md:grid-cols-2 h-full">
-                                  {/* Non-responders List */}
-                                  <div className="border-r p-4 overflow-y-auto">
-                                     <div className="flex items-center justify-between mb-3">
-                                        <h4 className="font-medium text-sm">Ikke svart ({bulkRecipients.filter(r => !bulkResponses.find(res => res.from_number === r.phone_number)).length})</h4>
-                                        <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => {
-                                           // Select all logic
-                                           const nonResponders = bulkRecipients
-                                              .filter(r => !bulkResponses.find(res => res.from_number === r.phone_number));
-                                           if (selectedNonResponders.length === nonResponders.length) {
-                                              setSelectedNonResponders([]);
-                                           } else {
-                                              setSelectedNonResponders(nonResponders.map(r => r.id));
-                                           }
-                                        }}>
-                                          Velg alle
-                                        </Button>
-                                     </div>
-                                     <div className="space-y-1">
-                                       {bulkRecipients
-                                          .filter(r => !bulkResponses.find(res => res.from_number === r.phone_number))
-                                          .map(r => (
-                                            <div key={r.id} className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded text-sm">
-                                              <Checkbox 
-                                                id={r.id} 
-                                                checked={selectedNonResponders.includes(r.id)}
-                                                onCheckedChange={(checked) => {
-                                                  if (checked) setSelectedNonResponders([...selectedNonResponders, r.id]);
-                                                  else setSelectedNonResponders(selectedNonResponders.filter(id => id !== r.id));
-                                                }}
-                                              />
-                                              <label htmlFor={r.id} className="flex-1 cursor-pointer">
-                                                <div className="font-medium">{r.metadata?.name || 'Ukjent'}</div>
-                                                <div className="text-xs text-muted-foreground">{r.phone_number}</div>
-                                              </label>
-                                              <Badge variant="outline" className="text-[10px]">{r.status}</Badge>
-                                            </div>
-                                          ))
-                                       }
-                                     </div>
+                          // STATUS TAB - Show all recipients
+                          <ScrollArea className="flex-1 p-6">
+                            <div className="space-y-2 max-w-4xl mx-auto">
+                              <div className="mb-4">
+                                <h4 className="font-medium text-sm mb-1">Alle mottakere</h4>
+                                <p className="text-xs text-muted-foreground">Oversikt over alle som mottok bulk-meldingen</p>
+                              </div>
+                              {bulkRecipients.map(recipient => {
+                                const hasResponded = bulkResponses.some(r => r.from_number === recipient.phone_number);
+                                return (
+                                  <div 
+                                    key={recipient.id} 
+                                    className={cn(
+                                      "flex items-center justify-between p-3 rounded-lg border",
+                                      hasResponded ? "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                    )}
+                                  >
+                                    <div className="flex-1">
+                                      <div className="font-medium text-sm">{recipient.metadata?.name || 'Ukjent'}</div>
+                                      <div className="text-xs text-muted-foreground">{recipient.phone_number}</div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge 
+                                        variant={hasResponded ? "default" : "secondary"}
+                                        className="text-[10px]"
+                                      >
+                                        {hasResponded ? "✓ Svart" : "Ikke svart"}
+                                      </Badge>
+                                      <Badge variant="outline" className="text-[10px]">
+                                        {recipient.status}
+                                      </Badge>
+                                    </div>
                                   </div>
-
-                                  {/* Reminder Action */}
-                                  <div className="p-4 bg-muted/10 flex flex-col">
-                                    <h4 className="font-medium text-sm mb-3">Send påminnelse</h4>
-                                    <p className="text-xs text-muted-foreground mb-4">
-                                      Sender ny SMS til {selectedNonResponders.length} valgte mottakere.
-                                    </p>
-                                    <Textarea 
-                                      placeholder="Hei, har du glemt å svare?..."
-                                      value={reminderMessage}
-                                      onChange={(e) => setReminderMessage(e.target.value)}
-                                      className="flex-1 mb-4 resize-none"
-                                    />
-                                    <Button 
-                                      onClick={handleSendReminder}
-                                      disabled={selectedNonResponders.length === 0 || !reminderMessage || sendingReminder}
-                                    >
-                                      {sendingReminder ? "Sender..." : "Send Påminnelse"}
-                                    </Button>
-                                  </div>
-                                </div>
-                             </div>
-                          </div>
+                                );
+                              })}
+                            </div>
+                          </ScrollArea>
                         )}
                       </>
                     ) : (
@@ -822,6 +865,78 @@ export default function InboxPage() {
           </Tabs>
         </div>
       </AppLayout>
+
+      {/* Simulate Response Dialog */}
+      <Dialog open={simulateDialogOpen} onOpenChange={setSimulateDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Simuler svar på bulk-utsendelse</DialogTitle>
+            <DialogDescription>
+              Velg en mottaker og skriv et simulert svar som om det kom fra dem.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Velg mottaker</label>
+              <Select value={selectedRecipientForSim} onValueChange={setSelectedRecipientForSim}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Velg hvem som skal svare..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {bulkRecipients.map((recipient) => (
+                    <SelectItem key={recipient.id} value={recipient.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{recipient.metadata?.name || 'Ukjent'}</span>
+                        <span className="text-muted-foreground text-xs">({recipient.phone_number})</span>
+                        {bulkResponses.some(r => r.from_number === recipient.phone_number) && (
+                          <Badge variant="outline" className="text-[10px] ml-2">Har allerede svart</Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedRecipientForSim && (
+              <div className="bg-muted/30 p-3 rounded-md border">
+                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Valgt mottaker</p>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="font-medium">
+                    {bulkRecipients.find(r => r.id === selectedRecipientForSim)?.metadata?.name || 'Ukjent'}
+                  </span>
+                  <span className="font-mono text-muted-foreground">
+                    {bulkRecipients.find(r => r.id === selectedRecipientForSim)?.phone_number}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Simulert svarmelding</label>
+              <Textarea
+                placeholder="Skriv svarmeldingen som skal simuleres..."
+                value={simulatedMessage}
+                onChange={(e) => setSimulatedMessage(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSimulateDialogOpen(false)}>
+              Avbryt
+            </Button>
+            <Button 
+              onClick={handleSimulateResponse} 
+              disabled={!selectedRecipientForSim || !simulatedMessage.trim() || sendingSimulation}
+            >
+              {sendingSimulation ? "Sender..." : "Send simulert svar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Reclassification Dialog */}
       <Dialog open={reclassifyDialogOpen} onOpenChange={setReclassifyDialogOpen}>
