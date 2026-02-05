@@ -91,11 +91,31 @@ export default function SendingPage() {
 
   const loadData = async () => {
     try {
-      const { data: groupsData } = await supabase
+      // Check auth status first
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      console.log("Auth check:", { user: user?.id, authError });
+
+      const { data: groupsData, error: groupsError } = await supabase
         .from("groups")
         .select("*")
         .eq("kind", "operational")
         .order("name");
+      
+      console.log("Groups query result:", { 
+        groupsData, 
+        groupsError,
+        count: groupsData?.length 
+      });
+
+      if (groupsError) {
+        console.error("Groups error:", groupsError);
+        toast({
+          title: "Feil ved lasting av grupper",
+          description: groupsError.message,
+          variant: "destructive",
+        });
+      }
       
       // Use contactService to ensure consistency with Contacts page
       const serviceContacts = await contactService.getAllContacts();
@@ -115,6 +135,11 @@ export default function SendingPage() {
       }
     } catch (error) {
       console.error("Failed to load data:", error);
+      toast({
+        title: "Feil ved lasting",
+        description: error instanceof Error ? error.message : "Kunne ikke laste data",
+        variant: "destructive",
+      });
     }
   };
 
