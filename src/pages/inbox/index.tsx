@@ -1008,7 +1008,7 @@ export default function InboxPage() {
                                                         <div className="flex items-start gap-1.5">
                                                           <Mail className="h-3 w-3 mt-0.5 text-blue-500 flex-shrink-0" />
                                                           <span className="text-blue-600 font-medium">
-                                                            "{reminder.body}"
+                                                            "{reminder.content}"
                                                           </span>
                                                         </div>
                                                         <div className="text-[10px] text-gray-500 pl-4.5">
