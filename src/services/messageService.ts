@@ -207,8 +207,7 @@ export const messageService = {
       .select(`
         *,
         groups:source_group_id(name),
-        bulk_recipients(count),
-        messages(count)
+        bulk_recipients(count)
       `)
       .eq("tenant_id", profile.tenant_id)
       .neq("status", "archived") // Assuming we might have archived status later
@@ -216,7 +215,24 @@ export const messageService = {
 
     if (campaignsError) throw campaignsError;
 
-    // 3. Map threads
+    // 3. For each campaign, get actual inbound response count
+    const campaignIds = (campaigns || []).map((c: any) => c.id);
+    const { data: allCampaignMessages } = campaignIds.length > 0
+      ? await db
+          .from("messages")
+          .select("campaign_id, direction")
+          .in("campaign_id", campaignIds)
+      : { data: [] };
+
+    // Count inbound messages per campaign
+    const responseCounts = new Map<string, number>();
+    (allCampaignMessages || []).forEach((msg: any) => {
+      if (msg.direction === "inbound") {
+        responseCounts.set(msg.campaign_id, (responseCounts.get(msg.campaign_id) || 0) + 1);
+      }
+    });
+
+    // 4. Map threads
     // Get messages for threads to calculate unread/last content
     const threadIds = (threads || []).map((t: any) => t.id);
     const { data: threadMessages } = await db
@@ -227,13 +243,13 @@ export const messageService = {
 
     const mappedThreads = this._mapThreadsResponse(threads, threadMessages);
 
-    // 4. Map campaigns to thread structure
+    // 5. Map campaigns to thread structure
     const mappedCampaigns: ExtendedMessageThread[] = (campaigns || []).map((c: any) => {
       // Calculate stats
       const totalRecipients = c.bulk_recipients?.[0]?.count || 0;
       // Note: This message count is total messages linked to campaign (inbound responses)
       // We might want to refine this to distinct responders, but simple count is okay for now
-      const responseCount = c.messages?.[0]?.count || 0;
+      const responseCount = responseCounts.get(c.id) || 0;
 
       return {
         id: c.id,
@@ -264,7 +280,7 @@ export const messageService = {
       };
     });
 
-    // 5. Merge and sort
+    // 6. Merge and sort
     const combined = [...mappedThreads, ...mappedCampaigns];
     combined.sort((a, b) => 
       new Date(b.last_message_at || 0).getTime() - new Date(a.last_message_at || 0).getTime()
