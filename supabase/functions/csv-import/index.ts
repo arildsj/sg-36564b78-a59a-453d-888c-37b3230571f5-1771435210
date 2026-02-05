@@ -19,13 +19,16 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
     );
 
-    // Get authenticated user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
+    }
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { "Content-Type": "application/json" } });
     }
 
-    // Get user's tenant_id
     const { data: profile, error: profileError } = await supabase
       .from("users")
       .select("tenant_id")
@@ -47,7 +50,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "No valid rows found in CSV" }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
 
-    // Create import job
     const { data: importJob, error: jobError } = await supabase
       .from("csv_import_jobs")
       .insert({
@@ -64,14 +66,12 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Failed to create import job" }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
 
-    // Validate
     const validationResult = await validateImport(supabase, payload.import_type, rows, tenant_id);
     if (!validationResult.valid) {
       await supabase.from("csv_import_jobs").update({ status: "failed", completed_at: new Date().toISOString() }).eq("id", importJob.id);
       return new Response(JSON.stringify({ error: "Validation failed", details: validationResult.errors }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
 
-    // Process import
     let result;
     if (payload.import_type === "contacts") {
       result = await processContactsImport(supabase, rows, tenant_id, payload.group_id);
@@ -89,41 +89,29 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  const lines: string[] = [];
-  let currentLine = "";
-  
-  for (let i = 0; i < content.length; i++) {
-    const char = content[i];
-    const nextChar = i + 1 < content.length ? content[i + 1] : "";
-    
-    if (char === "\r" && nextChar === "\n") {
-      if (currentLine.trim()) lines.push(currentLine);
-      currentLine = "";
-      i++; // Skip next \n
-    } else if (char === "\r" || char === "\n") {
-      if (currentLine.trim()) lines.push(currentLine);
-      currentLine = "";
-    } else {
-      currentLine += char;
-    }
-  }
-  
-  if (currentLine.trim()) lines.push(currentLine);
+  const newlineChar = "\n";
+  const normalizedContent = content.replace(/\r\n/g, newlineChar).replace(/\r/g, newlineChar);
+  const allLines = normalizedContent.split(newlineChar);
+  const lines = allLines.filter(line => line.trim().length > 0);
   
   if (lines.length < 2) return [];
 
-  const separator = lines[0].includes(";") ? ";" : ",";
-  const headers = lines[0].split(separator).map(h => h.trim().toLowerCase());
+  const firstLine = lines[0];
+  const separator = firstLine.includes(";") ? ";" : ",";
+  const headers = firstLine.split(separator).map(h => h.trim().toLowerCase());
   const rows: any[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(separator);
+    const currentLine = lines[i];
+    const values = currentLine.split(separator);
     if (values.length !== headers.length) continue;
     
     const row: any = {};
-    headers.forEach((h, idx) => {
-      row[h] = values[idx]?.trim() || null;
-    });
+    for (let j = 0; j < headers.length; j++) {
+      const header = headers[j];
+      const value = values[j];
+      row[header] = value ? value.trim() : null;
+    }
     rows.push(row);
   }
 
@@ -133,13 +121,13 @@ function parseCSV(content: string): any[] {
 async function validateImport(supabase: any, type: string, rows: any[], tenant_id: string) {
   const errors: string[] = [];
   
-  for (const [idx, row] of rows.entries()) {
+  for (let idx = 0; idx < rows.length; idx++) {
+    const row = rows[idx];
     if (type === "contacts" || type === "whitelisted_numbers") {
-      if (!row.tlf && !row.phone_number && !row.telefon) {
-        errors.push(`Row ${idx + 2}: Missing phone number`);
-      }
       const phone = row.tlf || row.phone_number || row.telefon;
-      if (phone && !isValidE164(phone)) {
+      if (!phone) {
+        errors.push(`Row ${idx + 2}: Missing phone number`);
+      } else if (!isValidE164(phone)) {
         errors.push(`Row ${idx + 2}: Invalid phone format (must be E.164, e.g., +4712345678)`);
       }
     }
@@ -187,7 +175,6 @@ async function processContactsImport(supabase: any, rows: any[], tenant_id: stri
         continue;
       }
 
-      // Check if contact exists
       const { data: existing } = await supabase
         .from("whitelisted_numbers")
         .select("id")
@@ -214,7 +201,6 @@ async function processContactsImport(supabase: any, rows: any[], tenant_id: stri
         contactId = newContact.id;
       }
 
-      // Handle group assignment
       let groupId = default_group_id;
 
       if (groupName && !groupId) {
