@@ -55,6 +55,8 @@ import { bulkService, type BulkRecipient } from "@/services/bulkService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // Hjelpefunksjon for datoformatering
 const formatMessageTime = (dateString: string) => {
@@ -102,8 +104,14 @@ export default function InboxPage() {
   // Bulk view state
   const [bulkRecipients, setBulkRecipients] = useState<BulkRecipient[]>([]);
   const [bulkResponses, setBulkResponses] = useState<any[]>([]);
+  const [bulkReminders, setBulkReminders] = useState<any[]>([]);
   const [bulkTab, setBulkTab] = useState<"responses" | "status">("responses");
   const [selectedForReminder, setSelectedForReminder] = useState<string[]>([]);
+
+  // Helper: Check if recipient has received a reminder
+  const hasReceivedReminder = (recipientPhone: string) => {
+    return bulkReminders.find((r: any) => r.to_number === recipientPhone);
+  };
 
   // Simulation dialog state
   const [simulateDialogOpen, setSimulateDialogOpen] = useState(false);
@@ -234,6 +242,7 @@ export default function InboxPage() {
         const details = await bulkService.getCampaignDetails(threadId);
         setBulkRecipients(details.recipients);
 
+        // Fetch inbound responses
         const { data: responses } = await supabase
           .from("messages")
           .select("*")
@@ -242,6 +251,16 @@ export default function InboxPage() {
           .order("created_at", { ascending: true });
           
         setBulkResponses((responses as any) || []);
+
+        // Fetch outbound reminders separately
+        const { data: reminders } = await supabase
+          .from("messages")
+          .select("*")
+          .eq("campaign_id", threadId)
+          .eq("direction", "outbound")
+          .order("created_at", { ascending: true });
+          
+        setBulkReminders((reminders as any) || []);
       } catch (error) {
         console.error("Failed to load bulk details:", error);
       }
@@ -855,24 +874,21 @@ export default function InboxPage() {
                           </div>
                         </CardHeader>
                         
-                        <Tabs value={bulkTab} onValueChange={(v: any) => setBulkTab(v)} className="flex-1 flex flex-col min-h-0">
-                          <div className="border-b px-6">
-                            <TabsList className="bg-transparent p-0 h-auto gap-6">
-                              <TabsTrigger 
-                                value="responses" 
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3"
-                              >
-                                Innk. Svar ({bulkResponses.length})
-                              </TabsTrigger>
-                              <TabsTrigger 
-                                value="status" 
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3"
-                              >
-                                Mottakerstatus & Påminnelse
-                              </TabsTrigger>
-                            </TabsList>
-                          </div>
-
+                        <Tabs value={bulkTab} onValueChange={(v) => setBulkTab(v as any)}>
+                          <TabsList className="mb-2">
+                            <TabsTrigger value="responses">
+                              Innk. Svar ({bulkResponses.length})
+                            </TabsTrigger>
+                            <TabsTrigger value="status">
+                              Mottakerstatus & Påminnelse
+                              {bulkReminders.length > 0 && (
+                                <Badge variant="secondary" className="ml-2 text-[10px]">
+                                  {bulkReminders.length} påminnelse{bulkReminders.length !== 1 ? "r" : ""}
+                                </Badge>
+                              )}
+                            </TabsTrigger>
+                          </TabsList>
+                          
                           <TabsContent value="responses" className="flex-1 p-0 m-0 overflow-hidden flex flex-col">
                              <ScrollArea className="flex-1">
                                <div className="p-6 space-y-4">
@@ -956,7 +972,13 @@ export default function InboxPage() {
                                         return (
                                           <TableRow
                                             key={recipient.id}
-                                            className={hasResponded ? "bg-green-50/50 dark:bg-green-950/10" : ""}
+                                            className={cn(
+                                              hasResponded ? "bg-green-50/50 dark:bg-green-950/10" : "",
+                                              hasReceivedReminder(recipient.phone_number) && 
+                                              !hasResponded
+                                                ? "bg-blue-50/30"
+                                                : ""
+                                            )}
                                           >
                                             <TableCell>
                                               <input
@@ -978,12 +1000,43 @@ export default function InboxPage() {
                                             </TableCell>
                                             <TableCell>{recipient.phone_number}</TableCell>
                                             <TableCell>
-                                              <Badge
-                                                variant={hasResponded ? "default" : "outline"}
-                                                className={hasResponded ? "bg-green-600 hover:bg-green-700" : "text-muted-foreground"}
-                                              >
-                                                {hasResponded ? "✓ Svart" : "Venter"}
-                                              </Badge>
+                                              {hasResponded ? (
+                                                <Badge className="bg-green-500 text-white">
+                                                  ✓ Svart
+                                                </Badge>
+                                              ) : (
+                                                <div className="flex items-center gap-2">
+                                                  <Badge variant="secondary">Venter</Badge>
+                                                  {(() => {
+                                                    const reminder = hasReceivedReminder(recipient.phone_number);
+                                                    return reminder ? (
+                                                      <TooltipProvider>
+                                                        <Tooltip>
+                                                          <TooltipTrigger asChild>
+                                                            <Badge 
+                                                              variant="outline" 
+                                                              className="cursor-help bg-blue-50 text-blue-700 border-blue-200 gap-1"
+                                                            >
+                                                              📩 Påminnelse
+                                                            </Badge>
+                                                          </TooltipTrigger>
+                                                          <TooltipContent>
+                                                            <p className="text-xs">
+                                                              Sendt {new Date(reminder.created_at).toLocaleString("nb-NO", {
+                                                                day: "2-digit",
+                                                                month: "2-digit",
+                                                                year: "numeric",
+                                                                hour: "2-digit",
+                                                                minute: "2-digit"
+                                                              })}
+                                                            </p>
+                                                          </TooltipContent>
+                                                        </Tooltip>
+                                                      </TooltipProvider>
+                                                    ) : null;
+                                                  })()}
+                                                </div>
+                                              )}
                                             </TableCell>
                                             <TableCell>
                                               <Button
