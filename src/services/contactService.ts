@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { auditService } from "./auditService";
 
 export type Contact = {
   id: string;
@@ -365,5 +366,145 @@ export const contactService = {
       .eq("id", relationshipId);
 
     if (error) throw error;
+  },
+
+  /**
+   * GDPR: Get all groups a contact is member of
+   * Logs the access for audit trail
+   */
+  async getContactGroupMemberships(contactId: string) {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("tenant_id, role")
+      .eq("auth_user_id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("User profile not found");
+    
+    // Only tenant-admin can access this
+    if (profile.role !== "tenant-admin") {
+      throw new Error("Unauthorized: Only tenant administrators can access contact group memberships");
+    }
+
+    // Get contact details
+    const { data: contact } = await supabase
+      .from("whitelisted_numbers")
+      .select("*")
+      .eq("id", contactId)
+      .single();
+
+    if (!contact) throw new Error("Contact not found");
+
+    // Get all group memberships
+    const { data: memberships, error } = await supabase
+      .from("whitelist_group_links")
+      .select(`
+        group:groups (
+          id,
+          name,
+          kind
+        )
+      `)
+      .eq("whitelisted_number_id", contactId);
+
+    if (error) throw error;
+
+    // Log GDPR access
+    await auditService.logAction({
+      action: "gdpr_contact_access",
+      entity_type: "whitelisted_number",
+      entity_id: contactId,
+      details: {
+        contact_phone: contact.phone_number,
+        contact_name: contact.description,
+        accessed_by: user.user.id,
+        reason: "GDPR data access request"
+      }
+    });
+
+    return {
+      contact: {
+        id: contact.id,
+        phone: contact.phone_number,
+        name: contact.description,
+      },
+      groups: memberships?.map(m => m.group).filter(Boolean) || []
+    };
+  },
+
+  /**
+   * GDPR: Delete contact from all groups and log the action
+   * Only accessible by tenant-admin
+   */
+  async deleteContactGDPR(contactId: string, reason: string) {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("tenant_id, role")
+      .eq("auth_user_id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("User profile not found");
+    
+    // Only tenant-admin can delete
+    if (profile.role !== "tenant-admin") {
+      throw new Error("Unauthorized: Only tenant administrators can perform GDPR deletions");
+    }
+
+    // Get contact details before deletion for audit log
+    const { data: contact } = await supabase
+      .from("whitelisted_numbers")
+      .select("*")
+      .eq("id", contactId)
+      .single();
+
+    if (!contact) throw new Error("Contact not found");
+
+    // Get all group memberships before deletion
+    const { data: memberships } = await supabase
+      .from("whitelist_group_links")
+      .select(`
+        group:groups (id, name)
+      `)
+      .eq("whitelisted_number_id", contactId);
+
+    const groupNames = memberships?.map(m => m.group?.name).filter(Boolean) || [];
+
+    // Delete the contact (cascades will remove group links)
+    const { error: deleteError } = await supabase
+      .from("whitelisted_numbers")
+      .delete()
+      .eq("id", contactId);
+
+    if (deleteError) throw deleteError;
+
+    // Log GDPR deletion
+    await auditService.logAction({
+      action: "gdpr_contact_deletion",
+      entity_type: "whitelisted_number",
+      entity_id: contactId,
+      details: {
+        contact_phone: contact.phone_number,
+        contact_name: contact.description,
+        deleted_by: user.user.id,
+        reason: reason,
+        groups_removed_from: groupNames,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+    return {
+      success: true,
+      contact: {
+        phone: contact.phone_number,
+        name: contact.description
+      },
+      groups_removed: groupNames.length
+    };
   }
 };

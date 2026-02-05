@@ -43,6 +43,7 @@ import { Phone, Mail, Building2, Users, Plus, Edit, Trash2, Search, Upload, User
 import { contactService, type Contact } from "@/services/contactService";
 import { useToast } from "@/hooks/use-toast";
 import { groupService } from "@/services/groupService";
+import { supabase } from "@/integrations/supabase/client";
 
 type Group = {
   id: string;
@@ -61,7 +62,18 @@ export default function ContactsPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showGDPRDialog, setShowGDPRDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  
+  // GDPR state
+  const [gdprContact, setGdprContact] = useState<{
+    id: string;
+    phone: string;
+    name: string;
+    groups: any[];
+  } | null>(null);
+  const [gdprDeletionReason, setGdprDeletionReason] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   
   // Import state
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -89,7 +101,25 @@ export default function ContactsPage() {
 
   useEffect(() => {
     loadData();
+    checkAdminStatus();
   }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("role")
+        .eq("auth_user_id", user.user.id)
+        .single();
+
+      setIsAdmin(profile?.role === "tenant-admin");
+    } catch (error) {
+      console.error("Failed to check admin status:", error);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -307,6 +337,71 @@ export default function ContactsPage() {
     }
   };
 
+  const handleOpenGDPRView = async (contact: Contact) => {
+    if (!isAdmin) {
+      toast({
+        title: "Ingen tilgang",
+        description: "Kun administratorer kan se GDPR-informasjon",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const data = await contactService.getContactGroupMemberships(contact.id);
+      setGdprContact(data);
+      setShowGDPRDialog(true);
+    } catch (error: any) {
+      console.error("Failed to load GDPR info:", error);
+      toast({
+        title: "Feil",
+        description: error.message || "Kunne ikke hente GDPR-informasjon",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGDPRDeletion = async () => {
+    if (!gdprContact || !gdprDeletionReason.trim()) {
+      toast({
+        title: "Mangler informasjon",
+        description: "Vennligst oppgi grunn for sletting",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const result = await contactService.deleteContactGDPR(
+        gdprContact.id,
+        gdprDeletionReason
+      );
+
+      toast({
+        title: "Kontakt slettet (GDPR)",
+        description: `${result.contact.name} er fjernet fra ${result.groups_removed} grupper`,
+      });
+
+      setShowGDPRDialog(false);
+      setGdprContact(null);
+      setGdprDeletionReason("");
+      await loadData();
+    } catch (error: any) {
+      console.error("GDPR deletion failed:", error);
+      toast({
+        title: "Feil ved sletting",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const filteredContacts = contacts.filter(
     (contact) =>
       contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -441,6 +536,17 @@ export default function ContactsPage() {
                             <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(contact)}>
                               <Pencil className="h-4 w-4" />
                             </Button>
+                            {isAdmin && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                onClick={() => handleOpenGDPRView(contact)}
+                                title="GDPR: Vis gruppetilhørighet"
+                              >
+                                <Building2 className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -668,6 +774,87 @@ export default function ContactsPage() {
             </Button>
             <Button onClick={handleImport} disabled={!importFile || submitting}>
               {submitting ? "Importerer..." : "Start import"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* GDPR Dialog */}
+      <Dialog open={showGDPRDialog} onOpenChange={setShowGDPRDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>GDPR: Kontaktinformasjon</DialogTitle>
+            <DialogDescription>
+              Fullstendig oversikt over gruppetilhørighet og slettemulighet.
+              All tilgang logges automatisk.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {gdprContact && (
+            <div className="space-y-4">
+              <div className="bg-muted/30 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Kontaktdetaljer</h3>
+                <div className="space-y-1 text-sm">
+                  <p><strong>Navn:</strong> {gdprContact.name}</p>
+                  <p><strong>Telefon:</strong> {gdprContact.phone}</p>
+                  <p><strong>ID:</strong> {gdprContact.id}</p>
+                </div>
+              </div>
+
+              <div className="bg-muted/30 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Gruppetilhørighet ({gdprContact.groups.length})</h3>
+                {gdprContact.groups.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Ikke medlem av noen grupper</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {gdprContact.groups.map((group: any) => (
+                      <li key={group.id} className="flex items-center gap-2 text-sm">
+                        <Badge variant="secondary">{group.name}</Badge>
+                        <span className="text-muted-foreground">({group.kind})</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="border-t pt-4 space-y-3">
+                <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
+                  <h3 className="font-semibold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2">
+                    <Trash2 className="h-4 w-4" />
+                    GDPR-sletting
+                  </h3>
+                  <p className="text-sm text-red-600 dark:text-red-300 mb-3">
+                    Kontakten vil bli fjernet fra alle grupper og slettet permanent.
+                    Denne handlingen kan ikke angres og logges i systemet.
+                  </p>
+                  
+                  <Label htmlFor="gdpr-reason" className="text-sm font-medium">
+                    Grunn for sletting (påkrevd)
+                  </Label>
+                  <Input
+                    id="gdpr-reason"
+                    placeholder="F.eks. 'Forespørsel fra kontakt per e-post 2024-01-15'"
+                    value={gdprDeletionReason}
+                    onChange={(e) => setGdprDeletionReason(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={handleGDPRDeletion}
+                  disabled={!gdprDeletionReason.trim() || submitting}
+                >
+                  {submitting ? "Sletter..." : "Bekreft GDPR-sletting"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowGDPRDialog(false)}>
+              Lukk
             </Button>
           </DialogFooter>
         </DialogContent>
