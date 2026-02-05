@@ -89,46 +89,22 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  let normalized = "";
-  for (let i = 0; i < content.length; i++) {
-    const char = content[i];
-    const nextChar = content[i + 1];
-    
-    if (char === "\r" && nextChar === "\n") {
-      normalized += "\n";
-      i++;
-    } else if (char === "\r") {
-      normalized += "\n";
-    } else {
-      normalized += char;
-    }
-  }
-  
-  const allLines = normalized.split("\n");
-  const lines = allLines.filter(line => line.trim().length > 0);
+  const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const lines = normalized.split("\n").filter(line => line.trim());
   
   if (lines.length < 2) return [];
 
-  const firstLine = lines[0];
-  const separator = firstLine.includes(";") ? ";" : ",";
-  const headers = firstLine.split(separator).map(h => h.trim().toLowerCase());
-  const rows: any[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const currentLine = lines[i];
-    const values = currentLine.split(separator);
-    if (values.length !== headers.length) continue;
-    
+  const separator = lines[0].includes(";") ? ";" : ",";
+  const headers = lines[0].split(separator).map(h => h.trim().toLowerCase());
+  
+  return lines.slice(1).map(line => {
+    const values = line.split(separator);
     const row: any = {};
-    for (let j = 0; j < headers.length; j++) {
-      const header = headers[j];
-      const value = values[j];
-      row[header] = value ? value.trim() : null;
-    }
-    rows.push(row);
-  }
-
-  return rows;
+    headers.forEach((h, idx) => {
+      row[h] = values[idx]?.trim() || null;
+    });
+    return row;
+  }).filter(row => Object.values(row).some(v => v));
 }
 
 async function validateImport(supabase: any, type: string, rows: any[], tenant_id: string) {
