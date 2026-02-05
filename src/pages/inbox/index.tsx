@@ -92,8 +92,9 @@ export default function InboxPage() {
   
   // Bulk view state
   const [bulkRecipients, setBulkRecipients] = useState<BulkRecipient[]>([]);
-  const [bulkResponses, setBulkResponses] = useState<Message[]>([]);
+  const [bulkResponses, setBulkResponses] = useState<any[]>([]);
   const [bulkTab, setBulkTab] = useState<"responses" | "status">("responses");
+  const [selectedForReminder, setSelectedForReminder] = useState<string[]>([]);
 
   // Simulation dialog state
   const [simulateDialogOpen, setSimulateDialogOpen] = useState(false);
@@ -725,42 +726,93 @@ export default function InboxPage() {
                              </ScrollArea>
                           </TabsContent>
                           
+                          {/* Mottakerstatus & Påminnelse Tab */}
                           <TabsContent value="status" className="flex-1 p-0 m-0 overflow-hidden flex flex-col">
-                            <ScrollArea className="flex-1">
-                              <div className="p-0">
-                                <table className="w-full text-sm text-left">
-                                  <thead className="bg-muted/50 border-b text-xs uppercase text-muted-foreground">
-                                    <tr>
-                                      <th className="px-6 py-3 font-medium">Navn</th>
-                                      <th className="px-6 py-3 font-medium">Telefon</th>
-                                      <th className="px-6 py-3 font-medium">Status</th>
-                                      <th className="px-6 py-3 font-medium text-right">Handling</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y">
-                                    {bulkRecipients.map(recipient => {
-                                      const hasResponded = bulkResponses.some(r => r.from_number === recipient.phone_number);
-                                      return (
-                                        <tr key={recipient.id} className={hasResponded ? "bg-green-50/50 dark:bg-green-900/10" : ""}>
-                                          <td className="px-6 py-3 font-medium">{recipient.metadata?.name || '-'}</td>
-                                          <td className="px-6 py-3 text-muted-foreground font-mono">{recipient.phone_number}</td>
-                                          <td className="px-6 py-3">
-                                            {hasResponded ? (
-                                              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300">
-                                                <CheckCheck className="h-3 w-3 mr-1" /> Svart
+                            <div className="p-6">
+                              {bulkRecipients.length > 0 ? (
+                                <>
+                                  <div className="flex justify-between items-center mb-4">
+                                    <p className="text-sm text-muted-foreground">
+                                      {selectedForReminder.length > 0 
+                                        ? `${selectedForReminder.length} mottaker(e) valgt for påminnelse`
+                                        : "Velg mottakere for å sende påminnelse"}
+                                    </p>
+                                    <Button
+                                      onClick={() => {
+                                        toast({
+                                          title: "Påminnelse sendes",
+                                          description: `Sender påminnelse til ${selectedForReminder.length} mottaker(e)...`,
+                                        });
+                                      }}
+                                      disabled={selectedForReminder.length === 0}
+                                      size="sm"
+                                    >
+                                      Send påminnelse ({selectedForReminder.length})
+                                    </Button>
+                                  </div>
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="w-12">
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedForReminder.length === bulkRecipients.filter(r => bulkResponses.some(resp => resp.from_number === r.phone_number)).length && bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone_number)).length > 0}
+                                            onChange={(e) => {
+                                              const nonResponders = bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone_number));
+                                              if (e.target.checked) {
+                                                setSelectedForReminder(nonResponders.map(r => r.id));
+                                              } else {
+                                                setSelectedForReminder([]);
+                                              }
+                                            }}
+                                            className="rounded"
+                                          />
+                                        </TableHead>
+                                        <TableHead>NAVN</TableHead>
+                                        <TableHead>TELEFON</TableHead>
+                                        <TableHead>STATUS</TableHead>
+                                        <TableHead>HANDLING</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {bulkRecipients.map((recipient) => {
+                                        const hasResponded = bulkResponses.some(resp => resp.from_number === recipient.phone_number);
+                                        return (
+                                          <TableRow
+                                            key={recipient.id}
+                                            className={hasResponded ? "bg-green-50 dark:bg-green-950/20" : "bg-gray-50 dark:bg-gray-900/20"}
+                                          >
+                                            <TableCell>
+                                              <input
+                                                type="checkbox"
+                                                checked={selectedForReminder.includes(recipient.id)}
+                                                onChange={(e) => {
+                                                  if (e.target.checked) {
+                                                    setSelectedForReminder([...selectedForReminder, recipient.id]);
+                                                  } else {
+                                                    setSelectedForReminder(selectedForReminder.filter(id => id !== recipient.id));
+                                                  }
+                                                }}
+                                                disabled={hasResponded}
+                                                className="rounded"
+                                              />
+                                            </TableCell>
+                                            <TableCell className="font-medium">
+                                              {recipient.metadata?.name || "Ukjent"}
+                                            </TableCell>
+                                            <TableCell>{recipient.phone_number}</TableCell>
+                                            <TableCell>
+                                              <Badge
+                                                variant={hasResponded ? "default" : "secondary"}
+                                                className={hasResponded ? "bg-green-600" : ""}
+                                              >
+                                                {hasResponded ? "✓ Svart" : "Ikke svart"}
                                               </Badge>
-                                            ) : (
-                                              <Badge variant="outline" className="text-muted-foreground">
-                                                Ikke svart
-                                              </Badge>
-                                            )}
-                                          </td>
-                                          <td className="px-6 py-3 text-right">
-                                            {!hasResponded && (
-                                              <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                className="h-8"
+                                            </TableCell>
+                                            <TableCell>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
                                                 onClick={() => {
                                                   setSelectedRecipientForSim(recipient.id);
                                                   setSimulateDialogOpen(true);
@@ -768,15 +820,19 @@ export default function InboxPage() {
                                               >
                                                 Simuler svar
                                               </Button>
-                                            )}
-                                          </td>
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </ScrollArea>
+                                            </TableCell>
+                                          </TableRow>
+                                        );
+                                      })}
+                                    </TableBody>
+                                  </Table>
+                                </>
+                              ) : (
+                                <p className="text-center text-muted-foreground py-8">
+                                  Ingen mottakere funnet for denne kampanjen.
+                                </p>
+                              )}
+                            </div>
                           </TabsContent>
                         </Tabs>
                       </>
