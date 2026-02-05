@@ -120,25 +120,21 @@ export default function SendingPage() {
 
   const loadGroupMembers = async (groupId: string) => {
     try {
-      const { data: members, error } = await supabase
+      const { data: memberships, error: membershipsError } = await supabase
         .from("group_memberships")
         .select(`
           user_id,
-          users!inner(
-            id,
-            full_name,
-            phone_number
-          )
+          users!inner(id, name, phone_number)
         `)
         .eq("group_id", groupId);
 
-      if (error) throw error;
+      if (membershipsError) throw membershipsError;
 
-      if (members) {
-        const mappedMembers = members
+      if (memberships) {
+        const mappedMembers = memberships
           .map((m: any) => ({
             id: m.users.id,
-            full_name: m.users.full_name || "Ukjent navn",
+            full_name: m.users.name || "Ukjent navn",
             phone_number: m.users.phone_number
           }))
           .filter(m => m.phone_number); // Only show members with phone numbers
@@ -713,9 +709,6 @@ export default function SendingPage() {
                          // Logic for target group sending...
                          // For now reusing selectedGroup state might be confusing if we want Source != Target
                          // But in "Send to Group" usually Target is the variable.
-                         // Let's rely on the user understanding Source Group (top) vs Target Group (here)
-                         // Wait, in handleSendToGroup we use selectedGroup as TARGET and SOURCE?
-                         // That's a logic flaw in previous code. 
                          // Correct logic: Source is "Me/My Group". Target is "Recipients".
                          // For simplicity now: We send TO the members of 'selectedGroup'. 
                          // The thread will belong to 'selectedGroup' as well? 
