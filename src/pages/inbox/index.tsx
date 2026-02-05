@@ -410,6 +410,16 @@ export default function InboxPage() {
         throw new Error("Du må være logget inn");
       }
 
+      // Fetch tenant_id from users table
+      const { data: userData } = await supabase
+        .from("users")
+        .select("tenant_id")
+        .eq("id", user.id)
+        .single();
+      
+      const tenantId = userData?.tenant_id;
+      if (!tenantId) throw new Error("Tenant ID not found");
+
       // Get campaign to find source_group_id
       // selectedThread represents the campaign in this view
       const campaignId = selectedThread?.id;
@@ -440,7 +450,7 @@ export default function InboxPage() {
       const { data: gateway } = await supabase
         .from("gateways")
         .select("id, phone_number")
-        .eq("tenant_id", user.user_metadata?.tenant_id || user.id) // Try to get tenant gateway
+        .eq("tenant_id", tenantId)
         .eq("status", "active")
         .limit(1)
         .maybeSingle();
@@ -483,7 +493,7 @@ export default function InboxPage() {
       const { data: existingThread } = await supabase
         .from("message_threads")
         .select("id")
-        .eq("tenant_id", user.user_metadata?.tenant_id || user.id) 
+        .eq("tenant_id", tenantId)
         .eq("contact_phone", phoneWithPlus)
         .eq("resolved_group_id", groupId)
         .maybeSingle();
@@ -501,7 +511,7 @@ export default function InboxPage() {
             is_resolved: false,
             resolved_group_id: groupId,
             gateway_id: gatewayId,
-            tenant_id: user.user_metadata?.tenant_id || user.id
+            tenant_id: tenantId
           })
           .select()
           .single();
@@ -520,7 +530,7 @@ export default function InboxPage() {
         group_id: groupId,
         thread_id: threadId,
         campaign_id: campaignId,
-        tenant_id: user.user_metadata?.tenant_id || user.id
+        tenant_id: tenantId
       });
 
       if (messageError) {
