@@ -70,6 +70,9 @@ export default function SendingPage() {
   const [groupMembers, setGroupMembers] = useState<Member[]>([]);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   
+  // Contacts bulk specific
+  const [contactsBulkSubject, setContactsBulkSubject] = useState("");
+  
   // Single tab specific
   const [recipientPhone, setRecipientPhone] = useState<string>("");
   const [singleSearchOpen, setSingleSearchOpen] = useState(false);
@@ -86,6 +89,7 @@ export default function SendingPage() {
   useEffect(() => {
     if (selectedGroup) {
       loadGroupMembers(selectedGroup);
+      loadGroupContacts(selectedGroup); // Load contacts for selected group
     }
   }, [selectedGroup]);
 
@@ -116,19 +120,8 @@ export default function SendingPage() {
           variant: "destructive",
         });
       }
-      
-      // Use contactService to ensure consistency with Contacts page
-      const serviceContacts = await contactService.getAllContacts();
 
       if (groupsData) setGroups(groupsData);
-      
-      if (serviceContacts) {
-        setContacts(serviceContacts.map(c => ({
-          id: c.id,
-          name: c.name,
-          phone_number: c.phone // Map 'phone' from service to 'phone_number' expected by page
-        })));
-      }
 
       if (groupsData && groupsData.length > 0) {
         setSelectedGroup(groupsData[0].id);
@@ -170,6 +163,45 @@ export default function SendingPage() {
       }
     } catch (error) {
       console.error("Failed to load members:", error);
+    }
+  };
+
+  const loadGroupContacts = async (groupId: string) => {
+    try {
+      const { data: links, error: linksError } = await supabase
+        .from("whitelist_group_links")
+        .select(`
+          whitelisted_number_id,
+          whitelisted_numbers!inner(
+            id,
+            phone_number,
+            description
+          )
+        `)
+        .eq("group_id", groupId);
+
+      if (linksError) throw linksError;
+
+      if (links) {
+        const mappedContacts = links
+          .map((link: any) => ({
+            id: link.whitelisted_numbers.id,
+            name: link.whitelisted_numbers.description || "Ukjent kontakt",
+            phone_number: link.whitelisted_numbers.phone_number
+          }))
+          .filter(c => c.phone_number); // Only show contacts with phone numbers
+
+        setContacts(mappedContacts);
+        // Default select all contacts
+        setSelectedContacts(mappedContacts.map(c => c.id));
+      }
+    } catch (error) {
+      console.error("Failed to load contacts:", error);
+      toast({
+        title: "Feil ved lasting av kontakter",
+        description: error instanceof Error ? error.message : "Kunne ikke laste kontakter",
+        variant: "destructive",
+      });
     }
   };
 
@@ -339,50 +371,38 @@ export default function SendingPage() {
   };
 
   const handleSendToContacts = async () => {
-    if (selectedContacts.length === 0 || !messageContent) {
+    if (selectedContacts.length === 0 || !messageContent || !contactsBulkSubject) {
       toast({
         title: "Mangler informasjon",
-        description: "Velg kontakter og skriv melding",
+        description: "Velg kontakter, skriv emne og melding",
         variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
-    setSendingStats({ total: selectedContacts.length, sent: 0, failed: 0 });
-
     try {
-      const selectedContactData = contacts.filter((c) =>
-        selectedContacts.includes(c.id)
+      const group = groups.find(g => g.id === selectedGroup);
+      
+      // Get selected contacts data
+      const selectedContactsData = contacts.filter(c => selectedContacts.includes(c.id));
+      
+      // Use bulkService to send to external contacts with subject line
+      await bulkService.sendBulkToExternalContactsWithSelection(
+        messageContent,
+        selectedGroup,
+        group?.name || "Ukjent gruppe",
+        contactsBulkSubject,
+        selectedContactsData.map(c => c.phone_number)
       );
 
-      let sent = 0;
-      let failed = 0;
-
-      for (const contact of selectedContactData) {
-        try {
-          await messageService.sendMessage(
-            messageContent,
-            contact.phone_number,
-            "",
-            undefined,
-            selectedGroup // Use current selected group as sender context
-          );
-          sent++;
-          setSendingStats({ total: selectedContacts.length, sent, failed });
-        } catch (err) {
-          console.error(`Failed to send to ${contact.phone_number}:`, err);
-          failed++;
-          setSendingStats({ total: selectedContacts.length, sent, failed });
-        }
-      }
-
       toast({
-        title: "Utsending fullført",
-        description: `${sent} av ${selectedContacts.length} meldinger sendt`,
+        title: "Bulk-utsendelse startet",
+        description: `Sender til ${selectedContacts.length} kontakter...`,
       });
 
       setMessageContent("");
+      setContactsBulkSubject("");
       setSelectedContacts([]);
     } catch (error: any) {
       console.error("Failed to send to contacts:", error);
@@ -792,55 +812,73 @@ export default function SendingPage() {
 
             <TabsContent value="contacts" className="mt-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
+                <Card className="h-full flex flex-col">
                   <CardHeader>
-                    <CardTitle>Velg kontakter</CardTitle>
+                    <CardTitle>Velg kontakter i {groups.find(g => g.id === selectedGroup)?.name}</CardTitle>
                     <CardDescription>
                       {selectedContacts.length} kontakt(er) valgt
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {contacts.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-8">
-                          Ingen kontakter funnet
-                        </p>
-                      ) : (
-                        contacts.map((contact) => (
-                          <div
-                            key={contact.id}
-                            className={`p-3 border rounded cursor-pointer hover:border-primary transition-colors ${
-                              selectedContacts.includes(contact.id)
-                                ? "border-primary bg-primary/5"
-                                : ""
-                            }`}
-                            onClick={() => toggleContactSelection(contact.id)}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium">
-                                  {contact.name}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {contact.phone_number}
-                                </p>
-                              </div>
-                              {selectedContacts.includes(contact.id) && (
-                                <CheckCircle2 className="h-5 w-5 text-primary" />
-                              )}
-                            </div>
+                  <CardContent className="flex-1 overflow-hidden flex flex-col">
+                    <ScrollArea className="flex-1 h-[400px]">
+                      <div className="space-y-2">
+                        {contacts.length === 0 ? (
+                          <div className="text-center text-muted-foreground py-8">
+                            Ingen kontakter funnet i denne gruppen.
                           </div>
-                        ))
-                      )}
-                    </div>
+                        ) : (
+                          contacts.map((contact) => (
+                            <div
+                              key={contact.id}
+                              className={`p-3 border rounded cursor-pointer hover:border-primary transition-colors ${
+                                selectedContacts.includes(contact.id)
+                                  ? "border-primary bg-primary/5"
+                                  : ""
+                              }`}
+                              onClick={() => toggleContactSelection(contact.id)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium">
+                                    {contact.name}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {contact.phone_number}
+                                  </p>
+                                </div>
+                                {selectedContacts.includes(contact.id) && (
+                                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </ScrollArea>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Skriv melding</CardTitle>
+                    <CardTitle>Utform melding</CardTitle>
+                    <CardDescription>
+                       Meldingen sendes til {selectedContacts.length} valgte kontakter.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="contacts-subject">Emnefelt (vises i innboks)</Label>
+                      <Input
+                        id="contacts-subject"
+                        placeholder="Eks: Påmelding til arrangement"
+                        value={contactsBulkSubject}
+                        onChange={(e) => setContactsBulkSubject(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Hjelper med å gruppere svar og identifisere samtalen.
+                      </p>
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="contacts-message">Melding</Label>
                       <Textarea
@@ -850,14 +888,34 @@ export default function SendingPage() {
                         value={messageContent}
                         onChange={(e) => setMessageContent(e.target.value)}
                       />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                         <span>{messageContent.length} tegn</span>
+                         <span>Vil sendes som {Math.ceil(messageContent.length / 160)} SMS</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-muted/30 p-3 rounded-md text-xs space-y-1">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5" />
+                        <span>Alle svar innen 6 timer kobles automatisk til denne kampanjen.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5" />
+                        <span>Svar havner i innboksen til <strong>{groups.find(g => g.id === selectedGroup)?.name}</strong>.</span>
+                      </div>
                     </div>
 
                     <Button
                       onClick={handleSendToContacts}
-                      disabled={loading || selectedContacts.length === 0 || !messageContent}
+                      disabled={loading || selectedContacts.length === 0 || !messageContent || !contactsBulkSubject}
                       className="w-full"
                     >
-                      {loading ? "Sender..." : `Send til ${selectedContacts.length} kontakt(er)`}
+                      {loading ? "Sender..." : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          Send til {selectedContacts.length} kontakter
+                        </>
+                      )}
                     </Button>
                   </CardContent>
                 </Card>
