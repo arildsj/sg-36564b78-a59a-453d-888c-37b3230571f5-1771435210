@@ -54,6 +54,7 @@ import { groupService, type Group } from "@/services/groupService";
 import { bulkService, type BulkRecipient } from "@/services/bulkService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
 
 // Hjelpefunksjon for datoformatering
 const formatMessageTime = (dateString: string) => {
@@ -112,6 +113,7 @@ export default function InboxPage() {
 
   const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
   const [reminderMessage, setReminderMessage] = useState("");
+  const [sendingProgress, setSendingProgress] = useState({ sent: 0, total: 0 });
   
   // Restored missing state variables
   const [groups, setGroups] = useState<Group[]>([]);
@@ -540,9 +542,10 @@ export default function InboxPage() {
   };
 
   const handleSendReminder = async () => {
-    if (selectedForReminder.length === 0 || !reminderMessage.trim() || !selectedThreadId) return;
-    
+    if (selectedForReminder.length === 0 || !reminderMessage.trim()) return;
+
     setSending(true);
+    setSendingProgress({ sent: 0, total: selectedForReminder.length });
     
     try {
       const recipientsToSend = bulkRecipients.filter(r => selectedForReminder.includes(r.id));
@@ -563,7 +566,7 @@ export default function InboxPage() {
       // Get campaign info
       const { data: campaign } = await supabase
         .from("bulk_campaigns")
-        .select("source_group_id, thread_id")
+        .select("source_group_id")
         .eq("id", selectedThreadId)
         .single();
         
@@ -624,23 +627,24 @@ export default function InboxPage() {
       }
 
       const updates = recipientsToSend.map(async (recipient) => {
-        // Create outbound message record linked to campaign
+        // Create outbound reminder message
         const { error: msgError } = await supabase.from("messages").insert({
           tenant_id: tenantId,
-          thread_id: campaign.thread_id,
           thread_key: recipient.phone_number,
           direction: "outbound",
           from_number: fromNumber,
           to_number: recipient.phone_number,
           content: reminderMessage,
-          gateway_id: gatewayId,
-          group_id: campaign.source_group_id,
           campaign_id: selectedThreadId,
+          thread_id: null,
           status: "pending",
           is_fallback: false
         });
 
         if (msgError) throw msgError;
+        
+        // Increment progress
+        setSendingProgress(prev => ({ ...prev, sent: prev.sent + 1 }));
       });
       
       await Promise.all(updates);
@@ -1292,38 +1296,87 @@ export default function InboxPage() {
 
       {/* Reminder Compose Dialog */}
       <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Send påminnelse</DialogTitle>
             <DialogDescription>
-              Skriv en påminnelse til de {selectedForReminder.length} valgte mottakerne.
+              Skriv en tilpasset påminnelsesmelding til {selectedForReminder.length} mottaker(e)
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Meldingstekst</label>
-              <Textarea
-                placeholder="Hei, vi venter fortsatt på svar fra deg..."
-                value={reminderMessage}
-                onChange={(e) => setReminderMessage(e.target.value)}
-                className="min-h-[120px]"
-              />
-              <p className="text-xs text-muted-foreground">
-                Denne meldingen sendes som SMS til alle valgte mottakere.
-              </p>
-            </div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Textarea
+              value={reminderMessage}
+              onChange={(e) => setReminderMessage(e.target.value)}
+              placeholder="F.eks: Husk å svare på undersøkelsen innen fredag..."
+              className="min-h-[120px] resize-none"
+              disabled={sending}
+            />
+          </motion.div>
+
+          {sending && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-2"
+            >
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Sender påminnelser...</span>
+                <span>{sendingProgress.sent} / {sendingProgress.total}</span>
+              </div>
+              <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                <motion.div
+                  className="h-full bg-primary"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(sendingProgress.sent / sendingProgress.total) * 100}%` }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                />
+              </div>
+            </motion.div>
+          )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReminderDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setReminderDialogOpen(false);
+                setReminderMessage("");
+              }}
+              disabled={sending}
+            >
               Avbryt
             </Button>
-            <Button 
-              onClick={handleSendReminder} 
-              disabled={!reminderMessage.trim() || sending}
+            <Button
+              onClick={handleSendReminder}
+              disabled={sending || !reminderMessage.trim()}
+              className="relative overflow-hidden"
             >
-              {sending ? "Sender..." : "Send påminnelse"}
+              {sending ? (
+                <motion.div
+                  className="flex items-center gap-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                  />
+                  Sender...
+                </motion.div>
+              ) : (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  Send påminnelse
+                </motion.span>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
