@@ -123,9 +123,7 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  const newlineRegex = /\r?
-/;
-  const lines = content.split(newlineRegex).filter(line => line.trim());
+  const lines = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(line => line.trim());
   if (lines.length < 2) return [];
 
   const headerLine = lines[0];
