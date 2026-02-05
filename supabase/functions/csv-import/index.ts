@@ -89,9 +89,22 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  const newlineChar = "\n";
-  const normalizedContent = content.replace(/\r\n/g, newlineChar).replace(/\r/g, newlineChar);
-  const allLines = normalizedContent.split(newlineChar);
+  let normalized = "";
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    const nextChar = content[i + 1];
+    
+    if (char === "\r" && nextChar === "\n") {
+      normalized += "\n";
+      i++;
+    } else if (char === "\r") {
+      normalized += "\n";
+    } else {
+      normalized += char;
+    }
+  }
+  
+  const allLines = normalized.split("\n");
   const lines = allLines.filter(line => line.trim().length > 0);
   
   if (lines.length < 2) return [];
@@ -256,5 +269,6 @@ async function processContactsImport(supabase: any, rows: any[], tenant_id: stri
 }
 
 function isValidE164(phone: string): boolean {
-  return /^\+[1-9]\d{1,14}$/.test(phone);
+  const pattern = /^\+[1-9]\d{1,14}$/;
+  return pattern.test(phone);
 }
