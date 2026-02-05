@@ -156,12 +156,17 @@ export const bulkService = {
 
     if (recipientsError) throw recipientsError;
 
-    // 8. Trigger Sending via Edge Function
-    const { error: triggerError } = await supabase.functions.invoke("bulk-campaign", {
-      body: { campaign_id: campaign.id }
+    // Trigger campaign processing via API route instead of Edge Function
+    const triggerResponse = await fetch("/api/bulk-campaign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ campaign_id: campaign.id }),
     });
 
-    if (triggerError) throw triggerError;
+    if (!triggerResponse.ok) {
+      const errorData = await triggerResponse.json();
+      throw new Error(errorData.error || "Failed to trigger campaign");
+    }
 
     return campaign;
   },
@@ -248,12 +253,17 @@ export const bulkService = {
 
     if (recipientsError) throw recipientsError;
 
-    // 7. Trigger Sending via Edge Function
-    const { error: triggerError } = await supabase.functions.invoke("bulk-campaign", {
-      body: { campaign_id: campaign.id }
+    // Trigger campaign processing via API route instead of Edge Function
+    const triggerResponse = await fetch("/api/bulk-campaign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ campaign_id: campaign.id }),
     });
 
-    if (triggerError) throw triggerError;
+    if (!triggerResponse.ok) {
+      const errorData = await triggerResponse.json();
+      throw new Error(errorData.error || "Failed to trigger campaign");
+    }
 
     return campaign;
   },
@@ -342,12 +352,17 @@ export const bulkService = {
 
     if (recipientsError) throw recipientsError;
 
-    // 7. Trigger Sending via Edge Function
-    const { error: triggerError } = await supabase.functions.invoke("bulk-campaign", {
-      body: { campaign_id: campaign.id }
+    // Trigger campaign processing via API route instead of Edge Function
+    const triggerResponse = await fetch("/api/bulk-campaign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ campaign_id: campaign.id }),
     });
 
-    if (triggerError) throw triggerError;
+    if (!triggerResponse.ok) {
+      const errorData = await triggerResponse.json();
+      throw new Error(errorData.error || "Failed to trigger campaign");
+    }
 
     return campaign;
   },
