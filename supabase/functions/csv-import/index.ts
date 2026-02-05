@@ -89,23 +89,26 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  // Normalize line endings without regex
-  let normalized = "";
+  const lines: string[] = [];
+  let currentLine = "";
+  
   for (let i = 0; i < content.length; i++) {
     const char = content[i];
-    const nextChar = content[i + 1];
+    const nextChar = i + 1 < content.length ? content[i + 1] : "";
     
     if (char === "\r" && nextChar === "\n") {
-      normalized += "\n";
-      i++; // Skip the \n
-    } else if (char === "\r") {
-      normalized += "\n";
+      if (currentLine.trim()) lines.push(currentLine);
+      currentLine = "";
+      i++; // Skip next \n
+    } else if (char === "\r" || char === "\n") {
+      if (currentLine.trim()) lines.push(currentLine);
+      currentLine = "";
     } else {
-      normalized += char;
+      currentLine += char;
     }
   }
   
-  const lines = normalized.split("\n").filter(line => line.trim());
+  if (currentLine.trim()) lines.push(currentLine);
   
   if (lines.length < 2) return [];
 
