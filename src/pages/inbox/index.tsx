@@ -37,6 +37,7 @@ import {
   Users,
   PlayCircle,
   Mail,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -472,7 +473,7 @@ export default function InboxPage() {
       if (groupId) {
         const selectedGroup = groups.find(g => g.id === groupId);
         if (selectedGroup?.gateway_id) { // This property might not be in the loaded group object if not selected, but let's assume standard group fetch might include it or we query it. 
-           // Simpler: just use the tenant gateway found above for now to ensure it works.
+           // Simpler: just use the tenant gateway found above to ensure it works.
         }
       }
 
@@ -1120,147 +1121,100 @@ export default function InboxPage() {
                       // === STANDARD THREAD VIEW ===
                       <>
                         <CardHeader className="border-b py-3 px-3 lg:px-6 flex-none bg-muted/10">
-                          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <CardTitle className="flex items-center gap-2 text-sm lg:text-base flex-wrap">
-                                <span className="truncate">{selectedThread.contact_phone}</span>
-                                {selectedThread.is_fallback && (
-                                  <Badge variant="outline" className="border-yellow-500 text-yellow-600 text-xs">
-                                    Ukjent
-                                  </Badge>
-                                )}
-                              </CardTitle>
-                              <div className="flex items-center gap-2 mt-1.5">
-                                <p className="text-xs text-muted-foreground">Gruppe:</p>
-                                <Badge variant="secondary" className="font-medium text-foreground text-xs">
-                                  {selectedThread.group_name}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                onClick={() => setReclassifyDialogOpen(true)}
-                                variant="outline"
-                                size="sm"
-                                className="gap-1.5 flex-1 lg:flex-none h-9"
-                              >
-                                <FolderInput className="h-4 w-4" />
-                                <span className="text-xs">Flytt</span>
-                              </Button>
-                              
-                              {hasUnacknowledged && (
-                                <Button 
-                                  onClick={handleAcknowledge} 
-                                  variant="default" 
-                                  size="sm" 
-                                  className="gap-1.5 bg-green-600 hover:bg-green-700 text-white flex-1 lg:flex-none h-9"
-                                >
-                                  <CheckCheck className="h-4 w-4" />
-                                  <span className="text-xs">Bekreft</span>
-                                </Button>
-                              )}
-                              <Button 
-                                onClick={handleResolve} 
-                                variant="ghost" 
-                                size="sm" 
-                                className="gap-1.5 text-muted-foreground hover:text-foreground h-9"
-                              >
-                                <Archive className="h-4 w-4" />
-                                <span className="text-xs lg:inline">Løs</span>
-                              </Button>
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <CardTitle className="text-base lg:text-lg flex items-center gap-2">
+                              {selectedThread.contact_phone}
+                              <Badge variant="outline" className="text-xs font-normal">
+                                {selectedThread.group_name}
+                              </Badge>
+                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleResolve()}
+                                    className="h-9"
+                                  >
+                                    <Check className="h-4 w-4 mr-2" />
+                                    Løs
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setReclassifyDialogOpen(true)}
+                                    className="h-9"
+                                  >
+                                    <ArrowRight className="h-4 w-4 mr-2" />
+                                    Flytt
+                                  </Button>
                             </div>
                           </div>
                         </CardHeader>
 
-                        <ScrollArea className="flex-1 p-6 bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950/20 dark:to-slate-900/30">
-                          <div className="space-y-4 max-w-4xl mx-auto">
-                            {messages.length === 0 ? (
-                              <p className="text-muted-foreground text-center py-8 text-sm">Ingen meldinger</p>
-                            ) : (
-                              messages.map((msg) => (
+                        <CardContent className="flex-1 p-4 overflow-y-auto">
+                          {loading ? (
+                            <div className="flex items-center justify-center h-full">
+                              <div className="text-center">
+                                <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
+                                <p className="text-sm text-muted-foreground">Laster meldinger...</p>
+                              </div>
+                            </div>
+                          ) : messages.length === 0 ? (
+                            <div className="flex items-center justify-center h-full">
+                              <p className="text-muted-foreground text-sm">Ingen meldinger i denne tråden</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {messages.map((message) => (
                                 <div
-                                  key={msg.id}
+                                  key={message.id}
                                   className={cn(
-                                    "flex",
-                                    msg.direction === "outbound" ? "justify-end" : "justify-start"
+                                    "flex flex-col max-w-[85%] rounded-lg p-3",
+                                    message.direction === "outbound"
+                                      ? "ml-auto bg-primary text-primary-foreground"
+                                      : "mr-auto bg-muted"
                                   )}
                                 >
-                                  <div
-                                    className={cn(
-                                      "flex flex-col max-w-[75%] rounded-2xl px-4 py-3 shadow-md",
-                                      msg.direction === "outbound"
-                                        ? "bg-blue-600 text-white rounded-br-md"
-                                        : "bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-700 rounded-bl-md"
-                                    )}
-                                  >
-                                    {msg.group_id && msg.group_id !== selectedThread.resolved_group_id && (
-                                      <div className="mb-1 text-[9px] text-muted-foreground opacity-70">
-                                        Fra gruppe: {groups.find(g => g.id === msg.group_id)?.name || 'Ukjent'}
-                                      </div>
-                                    )}
-
-                                    {msg.is_fallback && msg.direction === "inbound" && (
-                                      <div className="mb-2 pb-2 border-b border-yellow-400/30 flex items-center gap-1.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">
-                                        <AlertTriangle className="h-3 w-3" />
-                                        <span>Ukjent avsender</span>
-                                      </div>
-                                    )}
-                                    
-                                    <p className="whitespace-pre-wrap leading-relaxed text-sm">{msg.content}</p>
-                                    
-                                    <div className={cn(
-                                      "mt-2 flex items-center gap-2 text-[10px] font-medium",
-                                      msg.direction === "outbound" 
-                                        ? "justify-end text-blue-100" 
-                                        : "justify-start text-gray-500 dark:text-gray-400"
-                                    )}>
-                                      <span>{formatMessageTime(msg.created_at)}</span>
-                                      {msg.direction === "outbound" ? (
-                                        <ArrowRight className="h-3 w-3" />
-                                      ) : (
-                                        <ArrowLeft className="h-3 w-3" />
-                                      )}
-                                    </div>
+                                  <div className="flex justify-between items-baseline gap-2 mb-1">
+                                    <span className="text-xs font-medium opacity-80">
+                                      {message.direction === "outbound" ? "Du" : message.from_number}
+                                    </span>
+                                    <span className="text-[10px] opacity-70">
+                                      {formatMessageTime(message.created_at)}
+                                    </span>
                                   </div>
+                                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                                 </div>
-                              ))
-                            )}
-                            <div ref={messagesEndRef} />
-                          </div>
-                        </ScrollArea>
-
-                        <CardContent className="border-t p-4 bg-background">
-                          <form
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              handleSendReply();
-                            }}
-                            className="flex gap-3"
-                          >
+                              ))}
+                              <div ref={messagesEndRef} />
+                            </div>
+                          )}
+                        </CardContent>
+                        
+                        {/* Reply Input Area */}
+                        <div className="p-4 border-t bg-background mt-auto">
+                          <div className="flex gap-2">
                             <Textarea
-                              placeholder={`Svar til ${selectedThread.contact_phone}...`}
                               value={newMessage}
                               onChange={(e) => setNewMessage(e.target.value)}
+                              placeholder="Skriv et svar..."
+                              className="min-h-[80px] resize-none"
                               onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey) {
+                                if (e.key === 'Enter' && !e.shiftKey) {
                                   e.preventDefault();
                                   handleSendReply();
                                 }
                               }}
-                              className="flex-1 min-h-[50px] max-h-[150px] resize-none focus-visible:ring-1"
-                              rows={1}
-                              disabled={sending}
                             />
-                            <Button
-                              type="submit"
-                              disabled={!newMessage.trim() || sending}
-                              className="h-[50px] w-[50px] rounded-full p-0 flex-none shrink-0"
-                              size="icon"
+                            <Button 
+                              onClick={handleSendReply} 
+                              disabled={sending || !newMessage.trim()}
+                              className="h-[80px] px-6"
                             >
                               <Send className="h-5 w-5" />
                             </Button>
-                          </form>
-                        </CardContent>
+                          </div>
+                        </div>
                       </>
                     )
                   ) : (

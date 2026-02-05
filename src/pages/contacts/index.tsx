@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Mail, Building2, Users, Plus, Edit, Trash2, Search, Upload, UserPlus, Pencil, MessageSquare, Edit2 } from "lucide-react";
+import { Phone, Mail, Building2, Users, Plus, Edit, Trash2, Search, Upload, UserPlus, Pencil, MessageSquare, Edit2, Eye } from "lucide-react";
 import { contactService, type Contact } from "@/services/contactService";
 import { useToast } from "@/hooks/use-toast";
 import { groupService } from "@/services/groupService";
@@ -470,129 +470,83 @@ export default function ContactsPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {filteredContacts.length} kontakt{filteredContacts.length !== 1 ? "er" : ""}
+                {filteredContacts.length} kontakter
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="border rounded-lg overflow-hidden">
                 {filteredContacts.length === 0 ? (
-                  <div className="text-center py-12">
-                    <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
-                    <p className="text-muted-foreground">
-                      {searchQuery ? "Ingen kontakter funnet" : "Ingen kontakter ennå"}
-                    </p>
+                  <div className="text-center py-8 text-muted-foreground">
+                    Ingen kontakter funnet
                   </div>
                 ) : (
                   <>
-                    {/* Desktop Table View */}
-                    <div className="hidden md:block rounded-md border">
+                    {/* Desktop table view - scrollable on mobile */}
+                    <div className="rounded-md border overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
                             <TableHead>Navn</TableHead>
                             <TableHead>Telefon</TableHead>
+                            <TableHead>E-post</TableHead>
                             <TableHead>Grupper</TableHead>
+                            <TableHead>Opprettet</TableHead>
                             <TableHead className="text-right">Handlinger</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {filteredContacts.map((contact) => (
                             <TableRow key={contact.id}>
-                              <TableCell className="font-medium">{contact.name}</TableCell>
+                              <TableCell className="font-medium">
+                                {contact.name || "-"}
+                              </TableCell>
                               <TableCell>{contact.phone}</TableCell>
+                              <TableCell>{contact.email || "-"}</TableCell>
                               <TableCell>
-                                {contact.groups && contact.groups.length > 0 ? (
-                                  <div className="flex flex-wrap gap-1">
-                                    {contact.groups.map((group) => (
-                                      <Badge key={group.id} variant="outline" className="text-xs">
-                                        {group.name}
+                                <div className="flex flex-wrap gap-1">
+                                  {contact.groups && contact.groups.length > 0 ? (
+                                    contact.groups.map((g: any) => (
+                                      <Badge key={g.id} variant="secondary">
+                                        {g.name}
                                       </Badge>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">—</span>
-                                )}
+                                    ))
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {contact.created_at ? new Date(contact.created_at).toLocaleDateString("nb-NO") : "-"}
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleViewHistory(contact)}
-                                >
-                                  <MessageSquare className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleOpenEdit(contact)}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteContact(contact.id)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleOpenEdit(contact)}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleViewHistory(contact)}
+                                  >
+                                    <MessageSquare className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => confirmDelete(contact)}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
-                    </div>
-
-                    {/* Mobile Card View */}
-                    <div className="md:hidden space-y-3">
-                      {filteredContacts.map((contact) => (
-                        <Card key={contact.id} className="p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-base truncate">{contact.name}</h3>
-                              <p className="text-sm text-muted-foreground">{contact.phone}</p>
-                            </div>
-                            <div className="flex gap-1 ml-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleViewHistory(contact)}
-                                className="h-9 w-9 p-0"
-                              >
-                                <MessageSquare className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenEdit(contact)}
-                                className="h-9 w-9 p-0"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteContact(contact.id)}
-                                className="h-9 w-9 p-0"
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2 text-sm">
-                            {contact.groups && contact.groups.length > 0 && (
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-muted-foreground">Grupper:</span>
-                                {contact.groups.map((group) => (
-                                  <Badge key={group.id} variant="outline" className="text-xs">
-                                    {group.name}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </Card>
-                      ))}
                     </div>
                   </>
                 )}

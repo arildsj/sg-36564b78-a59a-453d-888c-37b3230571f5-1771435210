@@ -8,6 +8,7 @@ export type Contact = {
   email: string | null; // Not supported in current schema, returning null
   is_whitelisted: boolean; // Always true for this table
   groups: Array<{ id: string; name: string }>;
+  created_at: string;
 };
 
 export const contactService = {
@@ -49,7 +50,8 @@ export const contactService = {
         name: contact.description || "Ukjent navn",
         email: null,
         is_whitelisted: true,
-        groups
+        groups,
+        created_at: contact.created_at
       };
     });
   },
@@ -126,7 +128,8 @@ export const contactService = {
       name: c.description || "Ukjent navn",
       email: null,
       is_whitelisted: true,
-      groups: c.whitelist_group_links?.map((l: any) => l.group).filter(Boolean) || []
+      groups: c.whitelist_group_links?.map((l: any) => l.group).filter(Boolean) || [],
+      created_at: c.created_at
     }));
   },
 
@@ -160,7 +163,8 @@ export const contactService = {
         whitelisted_number:whitelisted_numbers (
           id,
           phone_number,
-          description
+          description,
+          created_at
         )
       `)
       .in("group_id", userGroupIds);
@@ -178,7 +182,8 @@ export const contactService = {
           name: contact.description || "Ukjent navn",
           email: null,
           is_whitelisted: true,
-          groups: []
+          groups: [],
+          created_at: contact.created_at
         });
       }
     });
@@ -257,7 +262,8 @@ export const contactService = {
         name: contact.description || "Ukjent navn",
         email: null,
         is_whitelisted: true,
-        groups: [] // We don't need the full group list here for this view
+        groups: [], // We don't need the full group list here for this view
+        created_at: contact.created_at
       }));
   },
 

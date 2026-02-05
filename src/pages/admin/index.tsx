@@ -110,6 +110,7 @@ export default function AdminPage() {
   const [groups, setGroups] = useState<GroupNode[]>([]);
   const [allGroups, setAllGroups] = useState<GroupNode[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [routingRules, setRoutingRules] = useState<RoutingRule[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -657,14 +658,9 @@ export default function AdminPage() {
             </TabsList>
 
             <TabsContent value="groups" className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-semibold">Operative grupper</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Administrer innbokser og organisasjonsenheter
-                  </p>
-                </div>
-                <Button onClick={() => setShowCreateDialog(true)}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Grupper</h2>
+                <Button onClick={() => setShowCreateDialog(true)} size="sm">
                   <Plus className="h-4 w-4 mr-2" />
                   Ny gruppe
                 </Button>
@@ -672,52 +668,46 @@ export default function AdminPage() {
 
               <Card>
                 <CardContent className="p-0">
-                  {groups.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
-                      <p className="text-muted-foreground">Ingen grupper opprettet ennå</p>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Desktop Table */}
-                      <div className="hidden md:block">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Navn</TableHead>
-                              <TableHead>Type</TableHead>
-                              <TableHead>On-duty</TableHead>
-                              <TableHead>Hierarchi</TableHead>
-                              <TableHead className="text-right">Handlinger</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {groups.map((group) => (
-                              <TableRow key={group.id}>
-                                <TableCell className="font-medium">{group.name}</TableCell>
-                                <TableCell>
-                                  <Badge variant={group.kind === "operational" ? "default" : "secondary"}>
-                                    {group.kind === "operational" ? "Operasjonell" : "Strukturell"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={(group.on_duty_count || 0) > 0 ? "default" : "outline"}>
-                                    {group.on_duty_count || 0} aktive
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  {group.parent_id ? (
-                                    <Badge variant="secondary">
-                                      Under: {allGroups.find(g => g.id === group.parent_id)?.name}
-                                    </Badge>
-                                  ) : (
-                                    <span className="text-muted-foreground text-sm">Toppnivå</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-right">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[200px]">Navn</TableHead>
+                          <TableHead className="min-w-[100px]">På vakt</TableHead>
+                          <TableHead className="min-w-[100px]">Totalt</TableHead>
+                          <TableHead className="min-w-[150px]">Overordnet</TableHead>
+                          <TableHead className="min-w-[120px] text-right">Handlinger</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-8">
+                              Laster grupper...
+                            </TableCell>
+                          </TableRow>
+                        ) : groups.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                              Ingen grupper opprettet ennå
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          groups.map((group) => (
+                            <TableRow key={group.id}>
+                              <TableCell className="font-medium">{group.name}</TableCell>
+                              <TableCell>{group.on_duty_count || 0}</TableCell>
+                              <TableCell>{group.member_count || 0}</TableCell>
+                              <TableCell>
+                                {group.parent_id
+                                  ? groups.find((g) => g.id === group.parent_id)?.name || "-"
+                                  : "-"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
                                   <Button
-                                    variant="ghost"
                                     size="sm"
+                                    variant="outline"
                                     onClick={() => {
                                       setSelectedGroup(group);
                                       setShowGroupDetails(true);
@@ -726,8 +716,8 @@ export default function AdminPage() {
                                     <Users className="h-4 w-4" />
                                   </Button>
                                   <Button
-                                    variant="ghost"
                                     size="sm"
+                                    variant="outline"
                                     onClick={() => {
                                       setEditGroup(group);
                                       setShowEditGroupDialog(true);
@@ -735,164 +725,108 @@ export default function AdminPage() {
                                   >
                                     <Edit2 className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteGroup(group.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-
-                      {/* Mobile Card View */}
-                      <div className="md:hidden p-4 space-y-3">
-                        {groups.map((group) => (
-                          <Card key={group.id} className="p-4">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-base truncate">{group.name}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {group.kind === "operational" ? "Operasjonell" : "Strukturell"}
-                                </p>
-                              </div>
-                              <Badge variant={(group.on_duty_count || 0) > 0 ? "default" : "outline"}>
-                                {group.on_duty_count || 0} aktive
-                              </Badge>
-                            </div>
-                            
-                            {group.parent_id && (
-                              <Badge variant="secondary" className="mb-3">
-                                Under: {allGroups.find(g => g.id === group.parent_id)?.name}
-                              </Badge>
-                            )}
-                            
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedGroup(group);
-                                  setShowGroupDetails(true);
-                                }}
-                                className="flex-1"
-                              >
-                                <Users className="h-4 w-4 mr-2" />
-                                Brukere
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setEditGroup(group);
-                                  setShowEditGroupDialog(true);
-                                }}
-                                className="h-9 w-9 p-0"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteGroup(group.id)}
-                                className="h-9 w-9 p-0"
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="users" className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Brukere</h2>
+                <Button onClick={() => setShowCreateUserDialog(true)} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ny bruker
+                </Button>
+              </div>
+
               <Card>
-                <CardHeader>
-                  <CardTitle>Brukeradministrasjon</CardTitle>
-                  <CardDescription>
-                    Administrer brukere, roller og gruppetilhørighet.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="text-center py-8 text-muted-foreground">Laster brukere...</div>
-                  ) : users.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground mb-4">Ingen brukere opprettet ennå</p>
-                      <Button variant="outline" onClick={() => setShowCreateUserDialog(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Opprett første bruker
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex justify-end mb-4">
-                        <Button onClick={() => setShowCreateUserDialog(true)} size="sm">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Ny bruker
-                        </Button>
-                      </div>
-                      <Table>
-                        <TableHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[200px]">Navn</TableHead>
+                          <TableHead className="min-w-[200px]">E-post</TableHead>
+                          <TableHead className="min-w-[150px]">Telefon</TableHead>
+                          <TableHead className="min-w-[150px]">Grupper</TableHead>
+                          <TableHead className="min-w-[100px]">På vakt</TableHead>
+                          <TableHead className="min-w-[100px]">Admin</TableHead>
+                          <TableHead className="min-w-[120px] text-right">Handlinger</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loadingUsers ? (
                           <TableRow>
-                            <TableHead>Navn</TableHead>
-                            <TableHead>E-post</TableHead>
-                            <TableHead>Telefon</TableHead>
-                            <TableHead>Grupper</TableHead>
-                            <TableHead>Rolle</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Handlinger</TableHead>
+                            <TableCell colSpan={7} className="text-center py-8">
+                              Laster brukere...
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {users.map((user) => (
-                            <TableRow key={user.id} className="hover:bg-accent">
+                        ) : users.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                              Ingen brukere funnet
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          users.map((user) => (
+                            <TableRow key={user.id}>
                               <TableCell className="font-medium">{user.name}</TableCell>
-                              <TableCell>{user.email || "—"}</TableCell>
-                              <TableCell>{(user as any).phone_number || "—"}</TableCell>
+                              <TableCell>{user.email}</TableCell>
+                              <TableCell>{(user as any).phone_number || "-"}</TableCell>
                               <TableCell>
                                 <div className="flex flex-wrap gap-1">
-                                  {user.groups && user.groups.length > 0 ? (
-                                    user.groups.map((groupName, i) => (
-                                      <Badge key={i} variant="secondary" className="text-xs">
-                                        {groupName}
-                                      </Badge>
-                                    ))
+                                  {user.group_ids && user.group_ids.length > 0 ? (
+                                    // We need to map group_ids to names, simplistic approach here as we have allGroups
+                                    user.group_ids.map((gid: string) => {
+                                        const g = allGroups.find(ag => ag.id === gid);
+                                        return (
+                                          <Badge key={gid} variant="secondary">
+                                            {g?.name || "Unknown"}
+                                          </Badge>
+                                        );
+                                    })
                                   ) : (
-                                    <span className="text-muted-foreground text-xs">—</span>
+                                    <span className="text-muted-foreground">-</span>
                                   )}
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge variant={getRoleBadgeVariant(user.role)}>
-                                  {getRoleLabel(user.role)}
+                                <Badge variant={(user as any).on_duty ? "default" : "secondary"}>
+                                  {(user as any).on_duty ? "Ja" : "Nei"}
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <Badge variant={user.status === "active" ? "default" : "destructive"}>
-                                  {user.status === "active" ? "Aktiv" : "Inaktiv"}
+                                <Badge variant={user.role === "tenant_admin" ? "default" : "secondary"}>
+                                  {user.role === "tenant_admin" ? "Ja" : "Nei"}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button variant="ghost" size="sm" onClick={() => handleOpenEditUser(user)}>
-                                  Rediger
-                                </Button>
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditUser(user);
+                                      setShowEditUserDialog(true);
+                                    }}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </>
-                  )}
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
