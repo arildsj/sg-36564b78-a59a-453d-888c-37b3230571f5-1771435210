@@ -601,9 +601,6 @@ export default function InboxPage() {
         });
 
         if (msgError) throw msgError;
-
-        // Optionally update bulk_recipient status to indicate reminder sent?
-        // Current schema might not have last_reminder_at, but we can assume it's tracked via messages
       });
       
       await Promise.all(updates);
