@@ -34,7 +34,7 @@ export default function CampaignsPage() {
         .select(`
           *,
           groups(name),
-          users(full_name)
+          users(name)
         `)
         .order("created_at", { ascending: false });
 
@@ -43,7 +43,7 @@ export default function CampaignsPage() {
       const mapped = (campaignsData || []).map((c: any) => ({
         ...c,
         group_name: c.groups?.name,
-        created_by_name: c.users?.full_name
+        created_by_name: c.users?.name
       }));
 
       setCampaigns(mapped);
