@@ -123,8 +123,9 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  const normalized = content.split('\r\n').join('\n').split('\r').join('\n');
-  const lines = normalized.split('\n').filter(line => line.trim());
+  let normalized = content.replace(/\r\n/g, "\n");
+  normalized = normalized.replace(/\r/g, "\n");
+  const lines = normalized.split("\n").filter(line => line.trim());
   
   if (lines.length < 2) return [];
 
