@@ -122,6 +122,8 @@ export default function SendingPage() {
       }
 
       if (groupsData) setGroups(groupsData);
+      
+      // Removed global contact loading to ensure only group-specific contacts are shown
 
       if (groupsData && groupsData.length > 0) {
         setSelectedGroup(groupsData[0].id);
