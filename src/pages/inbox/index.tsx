@@ -346,54 +346,65 @@ export default function InboxPage() {
   };
 
   const handleSimulateResponse = async () => {
-    if (!selectedRecipientForSim || !simulatedMessage.trim() || !selectedThreadId) return;
+    if (!selectedRecipientForSim || !simulatedMessage.trim() || !selectedThread) return;
 
     setSendingSimulation(true);
     try {
-      const recipient = bulkRecipients.find(r => r.id === selectedRecipientForSim);
-      if (!recipient) throw new Error("Recipient not found");
+      const recipientData = bulkRecipients.find(r => r.id === selectedRecipientForSim);
+      if (!recipientData) {
+        throw new Error("Recipient not found");
+      }
 
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error("Not authenticated");
-
-      const { data: profile } = await supabase
-        .from("users")
-        .select("tenant_id")
-        .eq("auth_user_id", user.user.id)
-        .single();
-
-      if (!profile) throw new Error("Profile not found");
-
-      const { error } = await supabase
+      // Create simulated inbound message
+      const { data: newMessage, error: messageError } = await supabase
         .from("messages")
         .insert({
-          campaign_id: selectedThreadId,
-          tenant_id: profile.tenant_id,
-          thread_key: recipient.phone_number,
+          tenant_id: selectedThread.tenant_id,
+          gateway_id: selectedThread.gateway_id,
+          group_id: selectedThread.resolved_group_id,
+          thread_id: selectedThread.id,
+          thread_key: selectedThread.contact_phone,
           direction: "inbound",
+          from_number: recipientData.phone_number,
+          to_number: selectedThread.gateway_id ? "" : "+4712345678",
           content: simulatedMessage,
-          from_number: recipient.phone_number,
-          to_number: "+47 900 00 000",
-          status: "received",
-          thread_id: null
-        });
+          campaign_id: selectedThread.id, // Use thread ID as campaign ID for bulk threads
+          status: "delivered",
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (messageError) throw messageError;
 
-      toast({
-        title: "Simulert svar sendt",
-        description: `Simulert svar fra ${recipient.metadata?.name || recipient.phone_number}`,
-      });
+      // Update recipient status
+      const { error: recipientError } = await supabase
+        .from("bulk_recipients")
+        .update({
+          responded_at: new Date().toISOString(),
+          response_message_id: newMessage.id,
+        })
+        .eq("id", selectedRecipientForSim);
 
+      if (recipientError) throw recipientError;
+
+      // Refresh data
+      await loadMessages(selectedThread.id);
+
+      // Close dialog and reset
       setSimulateDialogOpen(false);
       setSelectedRecipientForSim("");
       setSimulatedMessage("");
-      loadMessages(selectedThreadId);
-    } catch (error: any) {
+
+      toast({
+        title: "Simulert svar sendt",
+        description: "Svaret er lagt til i samtalen",
+      });
+    } catch (error) {
+      console.error("Error simulating response:", error);
       toast({
         title: "Feil ved simulering",
-        description: error.message,
-        variant: "destructive"
+        description: "Kunne ikke sende simulert svar",
+        variant: "destructive",
       });
     } finally {
       setSendingSimulation(false);
@@ -471,7 +482,7 @@ export default function InboxPage() {
                       ) : filteredThreads.length === 0 ? (
                         <div className="text-center py-12 px-4">
                           <InboxIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3 opacity-50" />
-                          <p className="text-muted-foreground font-medium">Ingen samtaler</p>
+                          <p>Ingen samtaler</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {activeTab === "fallback"
                               ? "Ingen ukjente avsendere for øyeblikket"
@@ -555,107 +566,6 @@ export default function InboxPage() {
                       <>
                         <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
                           <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="default">Bulk-kampanje</Badge>
-                                <span className="text-xs text-muted-foreground">ID: {selectedThread.bulk_code || 'N/A'}</span>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="ml-auto gap-2"
-                                  onClick={() => setSimulateDialogOpen(true)}
-                                >
-                                  <PlayCircle className="h-4 w-4" />
-                                  Simuler svar
-                                </Button>
-                              </div>
-                              <CardTitle className="mt-1 text-lg">{selectedThread.subject_line}</CardTitle>
-                              <p className="text-sm text-muted-foreground line-clamp-1">{selectedThread.last_message_content}</p>
-                            </div>
-                            <div className="text-right text-sm ml-4">
-                              <div className="font-medium">{selectedThread.recipient_stats?.responded} / {selectedThread.recipient_stats?.total}</div>
-                              <div className="text-xs text-muted-foreground">har svart</div>
-                            </div>
-                          </div>
-                          
-                          <Tabs value={bulkTab} onValueChange={(v: any) => setBulkTab(v)} className="mt-4">
-                            <TabsList className="w-full justify-start h-9">
-                              <TabsTrigger value="responses" className="text-xs">Innk. Svar ({bulkResponses.length})</TabsTrigger>
-                              <TabsTrigger value="status" className="text-xs">Mottakerstatus ({bulkRecipients.length})</TabsTrigger>
-                            </TabsList>
-                          </Tabs>
-                        </CardHeader>
-
-                        {bulkTab === "responses" ? (
-                          <ScrollArea className="flex-1 p-6 bg-slate-50 dark:bg-slate-900/20">
-                            <div className="space-y-4 max-w-4xl mx-auto">
-                              {bulkResponses.length === 0 ? (
-                                <div className="text-center py-12 text-muted-foreground">
-                                  <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                                  <p>Ingen svar mottatt ennå</p>
-                                </div>
-                              ) : (
-                                bulkResponses.map(msg => (
-                                  <div key={msg.id} className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
-                                    <div className="flex justify-between items-start mb-2">
-                                      <div className="font-medium text-sm flex items-center gap-2">
-                                        {msg.from_number}
-                                        <span className="text-muted-foreground font-normal">
-                                          ({bulkRecipients.find(r => r.phone_number === msg.from_number)?.metadata?.name || 'Ukjent'})
-                                        </span>
-                                      </div>
-                                      <span className="text-xs text-muted-foreground">{formatMessageTime(msg.created_at)}</span>
-                                    </div>
-                                    <p className="text-sm">{msg.content}</p>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          </ScrollArea>
-                        ) : (
-                          <ScrollArea className="flex-1 p-6">
-                            <div className="space-y-2 max-w-4xl mx-auto">
-                              <div className="mb-4">
-                                <h4 className="font-medium text-sm mb-1">Alle mottakere</h4>
-                                <p className="text-xs text-muted-foreground">Oversikt over alle som mottok bulk-meldingen</p>
-                              </div>
-                              {bulkRecipients.map(recipient => {
-                                const hasResponded = bulkResponses.some(r => r.from_number === recipient.phone_number);
-                                return (
-                                  <div 
-                                    key={recipient.id} 
-                                    className={cn(
-                                      "flex items-center justify-between p-3 rounded-lg border",
-                                      hasResponded ? "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-                                    )}
-                                  >
-                                    <div className="flex-1">
-                                      <div className="font-medium text-sm">{recipient.metadata?.name || 'Ukjent'}</div>
-                                      <div className="text-xs text-muted-foreground">{recipient.phone_number}</div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Badge 
-                                        variant={hasResponded ? "default" : "secondary"}
-                                        className="text-[10px]"
-                                      >
-                                        {hasResponded ? "✓ Svart" : "Ikke svart"}
-                                      </Badge>
-                                      <Badge variant="outline" className="text-[10px]">
-                                        {recipient.status}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </ScrollArea>
-                        )}
-                      </>
-                    ) : (
-                      // === STANDARD THREAD VIEW ===
-                      <>
-                        <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
-                          <div className="flex items-center justify-between">
                             <div>
                               <CardTitle className="flex items-center gap-2 text-base">
                                 {selectedThread.contact_phone}
@@ -853,12 +763,8 @@ export default function InboxPage() {
               <div className="bg-muted/30 p-3 rounded-md border">
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Valgt mottaker</p>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="font-medium">
-                    {bulkRecipients.find(r => r.id === selectedRecipientForSim)?.metadata?.name || 'Ukjent'}
-                  </span>
-                  <span className="font-mono text-muted-foreground">
-                    {bulkRecipients.find(r => r.id === selectedRecipientForSim)?.phone_number}
-                  </span>
+                  <span>Avsender:</span>
+                  <span className="font-mono">{bulkRecipients.find(r => r.id === selectedRecipientForSim)?.metadata?.name || 'Ukjent'}</span>
                 </div>
               </div>
             )}
