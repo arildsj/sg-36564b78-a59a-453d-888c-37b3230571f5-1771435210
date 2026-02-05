@@ -346,48 +346,126 @@ export default function InboxPage() {
   };
 
   const handleSimulateResponse = async () => {
-    if (!selectedRecipientForSim || !simulatedMessage.trim() || !selectedThread) return;
+    if (!selectedRecipientForSim || !simulatedMessage.trim()) {
+      return;
+    }
+
+    // Find the actual recipient object
+    const recipient = bulkRecipients.find(r => r.id === selectedRecipientForSim);
+    if (!recipient) {
+      toast({
+        title: "Feil",
+        description: "Kunne ikke finne valgt mottaker",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setSendingSimulation(true);
     try {
-      const recipientData = bulkRecipients.find(r => r.id === selectedRecipientForSim);
-      if (!recipientData) {
-        throw new Error("Recipient not found");
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        throw new Error("Not authenticated");
       }
 
-      // Create simulated inbound message
+      // Get current user to find tenant_id
+      const { data: userData } = await supabase
+        .from("users")
+        .select("tenant_id")
+        .eq("auth_user_id", session.data.session.user.id)
+        .single();
+
+      if (!userData) {
+        throw new Error("User data not found");
+      }
+
+      // Find or create a message_thread for this contact
+      let threadId: string;
+      
+      // First, try to find existing thread
+      const { data: existingThread } = await supabase
+        .from("message_threads")
+        .select("id")
+        .eq("tenant_id", userData.tenant_id)
+        .eq("contact_phone", recipient.phone_number)
+        .maybeSingle();
+
+      if (existingThread) {
+        threadId = existingThread.id;
+      } else {
+        // Create a new thread for this contact
+        // We need gateway_id and resolved_group_id
+        const { data: gateway } = await supabase
+          .from("gateways")
+          .select("id")
+          .eq("tenant_id", userData.tenant_id)
+          .eq("is_default", true)
+          .maybeSingle();
+
+        const { data: fallbackGroup } = await supabase
+          .from("groups")
+          .select("id")
+          .eq("tenant_id", userData.tenant_id)
+          .eq("is_fallback", true)
+          .maybeSingle();
+
+        if (!gateway || !fallbackGroup) {
+          throw new Error("Missing gateway or fallback group");
+        }
+
+        const { data: newThread, error: threadError } = await supabase
+          .from("message_threads")
+          .insert({
+            tenant_id: userData.tenant_id,
+            gateway_id: gateway.id,
+            contact_phone: recipient.phone_number,
+            resolved_group_id: fallbackGroup.id,
+            last_message_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+
+        if (threadError || !newThread) {
+          throw threadError || new Error("Failed to create thread");
+        }
+
+        threadId = newThread.id;
+      }
+
+      // Now create the simulated message
       const { data: newMessage, error: messageError } = await supabase
         .from("messages")
         .insert({
-          tenant_id: selectedThread.tenant_id,
+          tenant_id: userData.tenant_id,
           gateway_id: selectedThread.gateway_id,
-          group_id: selectedThread.resolved_group_id,
-          thread_id: selectedThread.id,
-          thread_key: selectedThread.contact_phone,
+          thread_id: threadId,
+          thread_key: recipient.phone_number,
           direction: "inbound",
-          from_number: recipientData.phone_number,
-          to_number: selectedThread.gateway_id ? "" : "+4712345678",
+          from_number: recipient.phone_number,
+          to_number: selectedThread.contact_phone || "",
           content: simulatedMessage,
-          campaign_id: selectedThread.id, // Use thread ID as campaign ID for bulk threads
-          status: "delivered",
+          status: "delivered", // Correct status for inbound
+          campaign_id: selectedThread.id, // Link to bulk campaign
+          created_at: new Date().toISOString(),
         })
-        .select()
+        .select("*")
         .single();
 
-      if (messageError) throw messageError;
+      if (messageError) {
+        throw messageError;
+      }
 
-      // Update recipient status
-      const { error: recipientError } = await supabase
+      // Update the bulk_recipient with response info
+      await supabase
         .from("bulk_recipients")
         .update({
           responded_at: new Date().toISOString(),
           response_message_id: newMessage.id,
         })
-        .eq("id", selectedRecipientForSim);
+        .eq("campaign_id", selectedThread.id)
+        .eq("phone_number", recipient.phone_number);
 
-      if (recipientError) throw recipientError;
-
-      // Refresh data
+      // Reload messages to show the new response
       await loadMessages(selectedThread.id);
 
       // Close dialog and reset
@@ -397,13 +475,13 @@ export default function InboxPage() {
 
       toast({
         title: "Simulert svar sendt",
-        description: "Svaret er lagt til i samtalen",
+        description: `Svar fra ${recipient.metadata?.name || recipient.phone_number} er lagt til.`,
       });
     } catch (error) {
       console.error("Error simulating response:", error);
       toast({
         title: "Feil ved simulering",
-        description: "Kunne ikke sende simulert svar",
+        description: "Kunne ikke simulere svar. Vennligst prøv igjen.",
         variant: "destructive",
       });
     } finally {
