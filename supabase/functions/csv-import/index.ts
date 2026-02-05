@@ -7,10 +7,8 @@ const corsHeaders = {
 };
 
 interface ImportRequest {
-  tenant_id: string;
   import_type: "users" | "whitelisted_numbers" | "whitelist_group_links" | "contacts";
   csv_data: string;
-  created_by_user_id: string;
   group_id?: string;
 }
 
@@ -27,20 +25,56 @@ serve(async (req) => {
 
     const payload: ImportRequest = await req.json();
 
-    if (!payload.tenant_id || !payload.import_type || !payload.csv_data) {
+    if (!payload.import_type || !payload.csv_data) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Get authenticated user from JWT token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get user's tenant_id from user_profiles
+    const { data: userProfile, error: profileError } = await supabase
+      .from("user_profiles")
+      .select("tenant_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !userProfile) {
+      return new Response(
+        JSON.stringify({ error: "User profile not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const tenant_id = userProfile.tenant_id;
+    const created_by_user_id = user.id;
+
     const { data: importJob, error: jobError } = await supabase
       .from("csv_import_jobs")
       .insert({
-        tenant_id: payload.tenant_id,
+        tenant_id: tenant_id,
         import_type: payload.import_type,
         status: "processing",
-        created_by_user_id: payload.created_by_user_id,
+        created_by_user_id: created_by_user_id,
       })
       .select()
       .single();
@@ -67,7 +101,7 @@ serve(async (req) => {
       );
     }
 
-    const validationResult = await validateImport(supabase, payload.import_type, rows, payload.tenant_id);
+    const validationResult = await validateImport(supabase, payload.import_type, rows, tenant_id);
 
     if (!validationResult.valid) {
       await supabase
@@ -88,9 +122,9 @@ serve(async (req) => {
 
     let result;
     if (payload.import_type === "contacts") {
-      result = await batchImportContacts(supabase, rows, payload.tenant_id, payload.group_id);
+      result = await batchImportContacts(supabase, rows, tenant_id, payload.group_id);
     } else {
-      result = await processImport(supabase, payload.import_type, rows, payload.tenant_id);
+      result = await processImport(supabase, payload.import_type, rows, tenant_id);
     }
 
     await supabase
