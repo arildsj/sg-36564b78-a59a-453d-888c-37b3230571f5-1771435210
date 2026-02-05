@@ -150,6 +150,31 @@ export default function SimulatePage() {
 
       if (!gatewayId) throw new Error("No active gateway found");
 
+      // NEW: Check for active Bulk Campaigns matching this sender (6 hour rule)
+      const sixHoursAgo = new Date();
+      sixHoursAgo.setHours(sixHoursAgo.getHours() - 6);
+
+      // Find ANY active campaign for the tenant (simplified matching)
+      // In a real scenario, we'd check if the user was a recipient, but for simulation/MVP 
+      // we check if there's a campaign within the expiry window.
+      // Better: Check if `bulk_recipients` contains this phone number and campaign is active
+      
+      let matchedCampaignId: string | null = null;
+      
+      // Check if this number is a pending/sent recipient in an active campaign
+      const { data: recipientMatch } = await supabase
+        .from("bulk_recipients")
+        .select("campaign_id, bulk_campaigns!inner(expires_at)")
+        .eq("phone_number", cleanFromNumber)
+        .eq("bulk_campaigns.tenant_id", profile.tenant_id)
+        .gt("bulk_campaigns.expires_at", new Date().toISOString()) // Check expiry
+        .maybeSingle();
+
+      if (recipientMatch) {
+        matchedCampaignId = recipientMatch.campaign_id;
+        console.log("Simulate: Matched response to campaign", matchedCampaignId);
+      }
+
       // Find or Create Thread
       const { data: existingThread } = await supabase
         .from("message_threads")
@@ -194,6 +219,7 @@ export default function SimulatePage() {
         gateway_id: gatewayId,
         group_id: selectedGroup || null,
         thread_id: threadId,
+        campaign_id: matchedCampaignId, // Link to campaign
         thread_key: cleanFromNumber,
         direction: "inbound",
         from_number: cleanFromNumber,
@@ -206,7 +232,9 @@ export default function SimulatePage() {
 
       toast({
         title: "Melding simulert",
-        description: "Meldingen er lagt i innboksen",
+        description: matchedCampaignId 
+          ? "Melding koblet til aktiv kampanje!" 
+          : "Meldingen er lagt i innboksen",
       });
       setMessageContent("");
       loadData();

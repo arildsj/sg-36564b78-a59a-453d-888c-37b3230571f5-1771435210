@@ -9,6 +9,7 @@ export type Message = {
   updated_at: string;
   tenant_id: string;
   thread_id: string | null;
+  campaign_id?: string | null; // Added campaign_id
   thread_key: string | null;
   direction: "inbound" | "outbound";
   content: string;
@@ -42,6 +43,15 @@ export type ExtendedMessageThread = MessageThread & {
   unread_count?: number;
   last_message_content?: string;
   is_fallback?: boolean;
+  // Bulk specific fields
+  is_bulk?: boolean;
+  subject_line?: string;
+  bulk_code?: string;
+  recipient_stats?: {
+    total: number;
+    responded: number;
+    pending: number;
+  };
 };
 
 // CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
@@ -161,6 +171,106 @@ export const messageService = {
     }
 
     return this._mapThreadsResponse(threads, messages);
+  },
+
+  /**
+   * Get all threads including Bulk Campaigns merged into the list
+   * This replaces getAllThreads for the Inbox view
+   */
+  async getInboxThreads(): Promise<ExtendedMessageThread[]> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    const { data: profile } = await db
+      .from("users")
+      .select("tenant_id")
+      .eq("auth_user_id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("Profile not found");
+
+    // 1. Fetch standard threads
+    const { data: threads, error: threadsError } = await db
+      .from("message_threads")
+      .select("*, groups(name)")
+      .eq("tenant_id", profile.tenant_id)
+      .eq("is_resolved", false)
+      .order("last_message_at", { ascending: false });
+
+    if (threadsError) throw threadsError;
+
+    // 2. Fetch active Bulk Campaigns
+    // We consider a campaign "active" or visible in inbox if it was created recently (e.g. 30 days)
+    // or if it has recent activity. For now, let's fetch all non-archived ones.
+    const { data: campaigns, error: campaignsError } = await db
+      .from("bulk_campaigns")
+      .select(`
+        *,
+        groups:source_group_id(name),
+        bulk_recipients(count),
+        messages(count)
+      `)
+      .eq("tenant_id", profile.tenant_id)
+      .neq("status", "archived") // Assuming we might have archived status later
+      .order("created_at", { ascending: false });
+
+    if (campaignsError) throw campaignsError;
+
+    // 3. Map threads
+    // Get messages for threads to calculate unread/last content
+    const threadIds = (threads || []).map((t: any) => t.id);
+    const { data: threadMessages } = await db
+      .from("messages")
+      .select("*")
+      .in("thread_id", threadIds)
+      .order("created_at", { ascending: true });
+
+    const mappedThreads = this._mapThreadsResponse(threads, threadMessages);
+
+    // 4. Map campaigns to thread structure
+    const mappedCampaigns: ExtendedMessageThread[] = (campaigns || []).map((c: any) => {
+      // Calculate stats
+      const totalRecipients = c.bulk_recipients?.[0]?.count || 0;
+      // Note: This message count is total messages linked to campaign (inbound responses)
+      // We might want to refine this to distinct responders, but simple count is okay for now
+      const responseCount = c.messages?.[0]?.count || 0;
+
+      return {
+        id: c.id,
+        is_bulk: true,
+        subject_line: c.subject_line,
+        bulk_code: c.bulk_code,
+        
+        // Map to required MessageThread fields
+        tenant_id: c.tenant_id,
+        created_at: c.created_at,
+        updated_at: c.created_at,
+        contact_phone: c.name, // Display name in list
+        last_message_at: c.created_at, // Could update this if we check latest response time
+        last_message_content: c.message_template,
+        group_name: c.groups?.name || "Ukjent gruppe",
+        resolved_group_id: c.source_group_id,
+        is_resolved: c.status === 'completed', // Or use explicit resolved flag
+        resolved_at: null,
+        gateway_id: null,
+        
+        // Stats
+        unread_count: 0, // TODO: track unread responses
+        recipient_stats: {
+          total: totalRecipients,
+          responded: responseCount,
+          pending: totalRecipients - responseCount
+        }
+      };
+    });
+
+    // 5. Merge and sort
+    const combined = [...mappedThreads, ...mappedCampaigns];
+    combined.sort((a, b) => 
+      new Date(b.last_message_at || 0).getTime() - new Date(a.last_message_at || 0).getTime()
+    );
+
+    return combined;
   },
 
   /**
@@ -553,13 +663,13 @@ export const messageService = {
    * Get unacknowledged messages count and details
    */
   async getUnacknowledgedMessages(): Promise<Message[]> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) throw new Error("Not authenticated");
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) throw new Error("Not authenticated");
 
     const { data: profile } = await db
       .from("users")
       .select("tenant_id")
-      .eq("auth_user_id", user.user.id)
+      .eq("auth_user_id", authData.user.id)
       .single();
 
     if (!profile) throw new Error("Profile not found");

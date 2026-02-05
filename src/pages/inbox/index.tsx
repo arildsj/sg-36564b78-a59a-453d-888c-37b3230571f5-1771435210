@@ -42,8 +42,10 @@ import {
   type ExtendedMessageThread 
 } from "@/services/messageService";
 import { groupService, type Group } from "@/services/groupService";
+import { bulkService, type BulkRecipient } from "@/services/bulkService"; // Import bulkService
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
 
 // Hjelpefunksjon for datoformatering
 const formatMessageTime = (dateString: string) => {
@@ -87,6 +89,15 @@ export default function InboxPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [threads, setThreads] = useState<ExtendedMessageThread[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  
+  // Bulk view state
+  const [bulkRecipients, setBulkRecipients] = useState<BulkRecipient[]>([]);
+  const [bulkResponses, setBulkResponses] = useState<Message[]>([]);
+  const [selectedNonResponders, setSelectedNonResponders] = useState<string[]>([]);
+  const [reminderMessage, setReminderMessage] = useState("");
+  const [sendingReminder, setSendingReminder] = useState(false);
+  const [bulkTab, setBulkTab] = useState<"responses" | "status">("responses");
+
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -168,7 +179,8 @@ export default function InboxPage() {
       let loadedThreads: ExtendedMessageThread[] = [];
 
       if (activeTab === "all") {
-        loadedThreads = await messageService.getAllThreads();
+        // Use getInboxThreads to include Bulk Campaigns
+        loadedThreads = await messageService.getInboxThreads();
       } else if (activeTab === "fallback") {
         loadedThreads = await messageService.getFallbackThreads();
       } else if (activeTab === "escalated") {
@@ -199,6 +211,35 @@ export default function InboxPage() {
   };
 
   const loadMessages = async (threadId: string) => {
+    // Check if selected thread is a bulk campaign
+    const thread = threads.find(t => t.id === threadId);
+    
+    if (thread?.is_bulk) {
+      // LOAD BULK DATA
+      try {
+        // 1. Get Details (Recipients, Non-responders)
+        const details = await bulkService.getCampaignDetails(threadId);
+        setBulkRecipients(details.recipients);
+        
+        // Default select all non-responders for reminder
+        setSelectedNonResponders(details.nonResponders.map(r => r.id));
+
+        // 2. Get Responses (Messages linked to campaign)
+        const { data: responses } = await supabase
+          .from("messages")
+          .select("*")
+          .eq("campaign_id", threadId)
+          .eq("direction", "inbound")
+          .order("created_at", { ascending: true });
+          
+        setBulkResponses(responses || []);
+      } catch (error) {
+        console.error("Failed to load bulk details:", error);
+      }
+      return;
+    }
+
+    // STANDARD THREAD LOADING
     try {
       const threadMessages = await messageService.getMessagesByThread(threadId);
       
@@ -310,6 +351,36 @@ export default function InboxPage() {
     }
   };
 
+  const handleSendReminder = async () => {
+    if (!selectedThreadId || !reminderMessage || selectedNonResponders.length === 0) return;
+    
+    setSendingReminder(true);
+    try {
+      await bulkService.sendReminder(
+        selectedThreadId,
+        reminderMessage,
+        selectedNonResponders
+      );
+      
+      toast({
+        title: "Påminnelse sendt",
+        description: `Sendt til ${selectedNonResponders.length} mottakere`,
+      });
+      setReminderMessage("");
+      // Reload to update stats
+      loadThreads();
+      loadMessages(selectedThreadId);
+    } catch (error: any) {
+      toast({
+        title: "Feil ved sending",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSendingReminder(false);
+    }
+  };
+
   const hasUnacknowledged = messages.some((m) => m.direction === "inbound" && !m.is_acknowledged);
 
   return (
@@ -405,13 +476,34 @@ export default function InboxPage() {
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                                  <span className="font-semibold text-sm truncate">{thread.contact_phone}</span>
-                                  {(thread.unread_count || 0) > 0 && (
-                                    <Badge variant="destructive" className="text-[10px] h-4 px-1">
-                                      {thread.unread_count}
-                                    </Badge>
+                                  {thread.is_bulk ? (
+                                    // BULK DISPLAY
+                                    <>
+                                      <span className="font-semibold text-sm truncate text-primary">
+                                        {thread.subject_line || "Bulk Uten Emne"}
+                                      </span>
+                                      <Badge variant="secondary" className="text-[10px] h-4 px-1">
+                                        Bulk
+                                      </Badge>
+                                      {thread.recipient_stats && (
+                                        <span className="text-[10px] text-muted-foreground ml-auto">
+                                          {thread.recipient_stats.responded}/{thread.recipient_stats.total} svar
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    // STANDARD DISPLAY
+                                    <>
+                                      <span className="font-semibold text-sm truncate">{thread.contact_phone}</span>
+                                      {(thread.unread_count || 0) > 0 && (
+                                        <Badge variant="destructive" className="text-[10px] h-4 px-1">
+                                          {thread.unread_count}
+                                        </Badge>
+                                      )}
+                                    </>
                                   )}
-                                  {thread.is_fallback && (
+                                  
+                                  {thread.is_fallback && !thread.is_bulk && (
                                     <Badge variant="outline" className="text-[10px] h-4 px-1 border-yellow-500 text-yellow-600">
                                       Ukjent
                                     </Badge>
@@ -441,151 +533,278 @@ export default function InboxPage() {
                 {/* Message Thread View */}
                 <Card className="lg:col-span-2 flex flex-col h-full overflow-hidden">
                   {selectedThread ? (
-                    <>
-                      <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="flex items-center gap-2 text-base">
-                              {selectedThread.contact_phone}
-                              {selectedThread.is_fallback && (
-                                <Badge variant="outline" className="border-yellow-500 text-yellow-600">
-                                  Ukjent avsender
-                                </Badge>
-                              )}
-                            </CardTitle>
-                            <div className="flex items-center gap-2 mt-1">
-                              <p className="text-xs text-muted-foreground">Gruppe:</p>
-                              <Badge variant="secondary" className="font-medium text-foreground">
-                                {selectedThread.group_name}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => setReclassifyDialogOpen(true)}
-                              variant="outline"
-                              size="sm"
-                              className="gap-2"
-                            >
-                              <FolderInput className="h-4 w-4" />
-                              <span className="hidden sm:inline">Flytt samtalen</span>
-                            </Button>
-                            
-                            {hasUnacknowledged && (
-                              <Button 
-                                onClick={handleAcknowledge} 
-                                variant="default" 
-                                size="sm" 
-                                className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-                              >
-                                <CheckCheck className="h-4 w-4" />
-                                <span className="hidden sm:inline">Bekreft mottatt</span>
-                              </Button>
-                            )}
-                            <Button 
-                              onClick={handleResolve} 
-                              variant="ghost" 
-                              size="sm" 
-                              className="gap-2 text-muted-foreground hover:text-foreground"
-                            >
-                              <Archive className="h-4 w-4" />
-                              <span className="hidden sm:inline">Løs</span>
-                            </Button>
-                          </div>
-                        </div>
-                      </CardHeader>
+                    selectedThread.is_bulk ? (
+                      // === BULK CAMPAIGN DETAIL VIEW ===
+                      <>
+                        <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
+                           <div className="flex items-start justify-between">
+                             <div>
+                               <div className="flex items-center gap-2">
+                                 <Badge variant="default">Bulk-kampanje</Badge>
+                                 <span className="text-xs text-muted-foreground">ID: {selectedThread.bulk_code || 'N/A'}</span>
+                               </div>
+                               <CardTitle className="mt-1 text-lg">{selectedThread.subject_line}</CardTitle>
+                               <p className="text-sm text-muted-foreground line-clamp-1">{selectedThread.last_message_content}</p>
+                             </div>
+                             <div className="text-right text-sm">
+                               <div className="font-medium">{selectedThread.recipient_stats?.responded} / {selectedThread.recipient_stats?.total}</div>
+                               <div className="text-xs text-muted-foreground">har svart</div>
+                             </div>
+                           </div>
+                           
+                           <Tabs value={bulkTab} onValueChange={(v: any) => setBulkTab(v)} className="mt-4">
+                             <TabsList className="w-full justify-start h-9">
+                               <TabsTrigger value="responses" className="text-xs">Innk. Svar ({bulkResponses.length})</TabsTrigger>
+                               <TabsTrigger value="status" className="text-xs">Mottakerstatus & Påminnelse</TabsTrigger>
+                             </TabsList>
+                           </Tabs>
+                        </CardHeader>
 
-                      <ScrollArea className="flex-1 p-6 bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950/20 dark:to-slate-900/30">
-                        <div className="space-y-4 max-w-4xl mx-auto">
-                          {messages.length === 0 ? (
-                            <p className="text-muted-foreground text-center py-8 text-sm">Ingen meldinger</p>
-                          ) : (
-                            messages.map((msg) => (
-                              <div
-                                key={msg.id}
-                                className={cn(
-                                  "flex",
-                                  msg.direction === "outbound" ? "justify-end" : "justify-start"
-                                )}
-                              >
-                                <div
-                                  className={cn(
-                                    "flex flex-col max-w-[75%] rounded-2xl px-4 py-3 shadow-md",
-                                    msg.direction === "outbound"
-                                      ? "bg-blue-600 text-white rounded-br-md"
-                                      : "bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-700 rounded-bl-md"
-                                  )}
-                                >
-                                  {/* Debug info - can be removed later */}
-                                  {msg.group_id && msg.group_id !== selectedThread.resolved_group_id && (
-                                    <div className="mb-1 text-[9px] text-muted-foreground opacity-70">
-                                      Fra gruppe: {groups.find(g => g.id === msg.group_id)?.name || 'Ukjent'}
-                                    </div>
-                                  )}
+                        {bulkTab === "responses" ? (
+                           <ScrollArea className="flex-1 p-6 bg-slate-50 dark:bg-slate-900/20">
+                             <div className="space-y-4 max-w-4xl mx-auto">
+                               {bulkResponses.length === 0 ? (
+                                 <div className="text-center py-12 text-muted-foreground">
+                                   <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                                   <p>Ingen svar mottatt ennå</p>
+                                 </div>
+                               ) : (
+                                 bulkResponses.map(msg => (
+                                   <div key={msg.id} className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
+                                      <div className="flex justify-between items-start mb-2">
+                                        <div className="font-medium text-sm flex items-center gap-2">
+                                          {msg.from_number}
+                                          {/* TODO: Lookup name from recipients list */}
+                                          <span className="text-muted-foreground font-normal">
+                                            ({bulkRecipients.find(r => r.phone_number === msg.from_number)?.metadata?.name || 'Ukjent'})
+                                          </span>
+                                        </div>
+                                        <span className="text-xs text-muted-foreground">{formatMessageTime(msg.created_at)}</span>
+                                      </div>
+                                      <p className="text-sm">{msg.content}</p>
+                                   </div>
+                                 ))
+                               )}
+                             </div>
+                           </ScrollArea>
+                        ) : (
+                          // STATUS & REMINDER TAB
+                          <div className="flex-1 flex flex-col overflow-hidden">
+                             <div className="flex-1 overflow-auto p-0">
+                                <div className="grid grid-cols-1 md:grid-cols-2 h-full">
+                                  {/* Non-responders List */}
+                                  <div className="border-r p-4 overflow-y-auto">
+                                     <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-medium text-sm">Ikke svart ({bulkRecipients.filter(r => !bulkResponses.find(res => res.from_number === r.phone_number)).length})</h4>
+                                        <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => {
+                                           // Select all logic
+                                           const nonResponders = bulkRecipients
+                                              .filter(r => !bulkResponses.find(res => res.from_number === r.phone_number));
+                                           if (selectedNonResponders.length === nonResponders.length) {
+                                              setSelectedNonResponders([]);
+                                           } else {
+                                              setSelectedNonResponders(nonResponders.map(r => r.id));
+                                           }
+                                        }}>
+                                          Velg alle
+                                        </Button>
+                                     </div>
+                                     <div className="space-y-1">
+                                       {bulkRecipients
+                                          .filter(r => !bulkResponses.find(res => res.from_number === r.phone_number))
+                                          .map(r => (
+                                            <div key={r.id} className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded text-sm">
+                                              <Checkbox 
+                                                id={r.id} 
+                                                checked={selectedNonResponders.includes(r.id)}
+                                                onCheckedChange={(checked) => {
+                                                  if (checked) setSelectedNonResponders([...selectedNonResponders, r.id]);
+                                                  else setSelectedNonResponders(selectedNonResponders.filter(id => id !== r.id));
+                                                }}
+                                              />
+                                              <label htmlFor={r.id} className="flex-1 cursor-pointer">
+                                                <div className="font-medium">{r.metadata?.name || 'Ukjent'}</div>
+                                                <div className="text-xs text-muted-foreground">{r.phone_number}</div>
+                                              </label>
+                                              <Badge variant="outline" className="text-[10px]">{r.status}</Badge>
+                                            </div>
+                                          ))
+                                       }
+                                     </div>
+                                  </div>
 
-                                  {msg.is_fallback && msg.direction === "inbound" && (
-                                    <div className="mb-2 pb-2 border-b border-yellow-400/30 flex items-center gap-1.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">
-                                      <AlertTriangle className="h-3 w-3" />
-                                      <span>Ukjent avsender</span>
-                                    </div>
-                                  )}
-                                  
-                                  <p className="whitespace-pre-wrap leading-relaxed text-sm">{msg.content}</p>
-                                  
-                                  <div className={cn(
-                                    "mt-2 flex items-center gap-2 text-[10px] font-medium",
-                                    msg.direction === "outbound" 
-                                      ? "justify-end text-blue-100" 
-                                      : "justify-start text-gray-500 dark:text-gray-400"
-                                  )}>
-                                    <span>{formatMessageTime(msg.created_at)}</span>
-                                    {msg.direction === "outbound" ? (
-                                      <ArrowRight className="h-3 w-3" />
-                                    ) : (
-                                      <ArrowLeft className="h-3 w-3" />
-                                    )}
+                                  {/* Reminder Action */}
+                                  <div className="p-4 bg-muted/10 flex flex-col">
+                                    <h4 className="font-medium text-sm mb-3">Send påminnelse</h4>
+                                    <p className="text-xs text-muted-foreground mb-4">
+                                      Sender ny SMS til {selectedNonResponders.length} valgte mottakere.
+                                    </p>
+                                    <Textarea 
+                                      placeholder="Hei, har du glemt å svare?..."
+                                      value={reminderMessage}
+                                      onChange={(e) => setReminderMessage(e.target.value)}
+                                      className="flex-1 mb-4 resize-none"
+                                    />
+                                    <Button 
+                                      onClick={handleSendReminder}
+                                      disabled={selectedNonResponders.length === 0 || !reminderMessage || sendingReminder}
+                                    >
+                                      {sendingReminder ? "Sender..." : "Send Påminnelse"}
+                                    </Button>
                                   </div>
                                 </div>
+                             </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      // === STANDARD THREAD VIEW (Existing Code) ===
+                      <>
+                        <CardHeader className="border-b py-3 px-6 flex-none bg-muted/10">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <CardTitle className="flex items-center gap-2 text-base">
+                                {selectedThread.contact_phone}
+                                {selectedThread.is_fallback && (
+                                  <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+                                    Ukjent avsender
+                                  </Badge>
+                                )}
+                              </CardTitle>
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className="text-xs text-muted-foreground">Gruppe:</p>
+                                <Badge variant="secondary" className="font-medium text-foreground">
+                                  {selectedThread.group_name}
+                                </Badge>
                               </div>
-                            ))
-                          )}
-                          <div ref={messagesEndRef} />
-                        </div>
-                      </ScrollArea>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => setReclassifyDialogOpen(true)}
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                              >
+                                <FolderInput className="h-4 w-4" />
+                                <span className="hidden sm:inline">Flytt samtalen</span>
+                              </Button>
+                              
+                              {hasUnacknowledged && (
+                                <Button 
+                                  onClick={handleAcknowledge} 
+                                  variant="default" 
+                                  size="sm" 
+                                  className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  <CheckCheck className="h-4 w-4" />
+                                  <span className="hidden sm:inline">Bekreft mottatt</span>
+                                </Button>
+                              )}
+                              <Button 
+                                onClick={handleResolve} 
+                                variant="ghost" 
+                                size="sm" 
+                                className="gap-2 text-muted-foreground hover:text-foreground"
+                              >
+                                <Archive className="h-4 w-4" />
+                                <span className="hidden sm:inline">Løs</span>
+                              </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
 
-                      <CardContent className="border-t p-4 bg-background">
-                        <form
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            handleSendReply();
-                          }}
-                          className="flex gap-3"
-                        >
-                          <Textarea
-                            placeholder={`Svar til ${selectedThread.contact_phone}...`}
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSendReply();
-                              }
+                        <ScrollArea className="flex-1 p-6 bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950/20 dark:to-slate-900/30">
+                          <div className="space-y-4 max-w-4xl mx-auto">
+                            {messages.length === 0 ? (
+                              <p className="text-muted-foreground text-center py-8 text-sm">Ingen meldinger</p>
+                            ) : (
+                              messages.map((msg) => (
+                                <div
+                                  key={msg.id}
+                                  className={cn(
+                                    "flex",
+                                    msg.direction === "outbound" ? "justify-end" : "justify-start"
+                                  )}
+                                >
+                                  <div
+                                    className={cn(
+                                      "flex flex-col max-w-[75%] rounded-2xl px-4 py-3 shadow-md",
+                                      msg.direction === "outbound"
+                                        ? "bg-blue-600 text-white rounded-br-md"
+                                        : "bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-slate-700 rounded-bl-md"
+                                    )}
+                                  >
+                                    {/* Debug info - can be removed later */}
+                                    {msg.group_id && msg.group_id !== selectedThread.resolved_group_id && (
+                                      <div className="mb-1 text-[9px] text-muted-foreground opacity-70">
+                                        Fra gruppe: {groups.find(g => g.id === msg.group_id)?.name || 'Ukjent'}
+                                      </div>
+                                    )}
+
+                                    {msg.is_fallback && msg.direction === "inbound" && (
+                                      <div className="mb-2 pb-2 border-b border-yellow-400/30 flex items-center gap-1.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        <span>Ukjent avsender</span>
+                                      </div>
+                                    )}
+                                    
+                                    <p className="whitespace-pre-wrap leading-relaxed text-sm">{msg.content}</p>
+                                    
+                                    <div className={cn(
+                                      "mt-2 flex items-center gap-2 text-[10px] font-medium",
+                                      msg.direction === "outbound" 
+                                        ? "justify-end text-blue-100" 
+                                        : "justify-start text-gray-500 dark:text-gray-400"
+                                    )}>
+                                      <span>{formatMessageTime(msg.created_at)}</span>
+                                      {msg.direction === "outbound" ? (
+                                        <ArrowRight className="h-3 w-3" />
+                                      ) : (
+                                        <ArrowLeft className="h-3 w-3" />
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                            <div ref={messagesEndRef} />
+                          </div>
+                        </ScrollArea>
+
+                        <CardContent className="border-t p-4 bg-background">
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              handleSendReply();
                             }}
-                            className="flex-1 min-h-[50px] max-h-[150px] resize-none focus-visible:ring-1"
-                            rows={1}
-                            disabled={sending}
-                          />
-                          <Button
-                            type="submit"
-                            disabled={!newMessage.trim() || sending}
-                            className="h-[50px] w-[50px] rounded-full p-0 flex-none shrink-0"
-                            size="icon"
+                            className="flex gap-3"
                           >
-                            <Send className="h-5 w-5" />
-                          </Button>
-                        </form>
-                      </CardContent>
-                    </>
+                            <Textarea
+                              placeholder={`Svar til ${selectedThread.contact_phone}...`}
+                              value={newMessage}
+                              onChange={(e) => setNewMessage(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleSendReply();
+                                }
+                              }}
+                              className="flex-1 min-h-[50px] max-h-[150px] resize-none focus-visible:ring-1"
+                              rows={1}
+                              disabled={sending}
+                            />
+                            <Button
+                              type="submit"
+                              disabled={!newMessage.trim() || sending}
+                              className="h-[50px] w-[50px] rounded-full p-0 flex-none shrink-0"
+                              size="icon"
+                            >
+                              <Send className="h-5 w-5" />
+                            </Button>
+                          </form>
+                        </CardContent>
+                      </>
+                    )
                   ) : (
                     <CardContent className="flex-1 flex flex-col items-center justify-center bg-muted/5 h-full">
                       <div className="bg-muted/20 p-6 rounded-full mb-4">
