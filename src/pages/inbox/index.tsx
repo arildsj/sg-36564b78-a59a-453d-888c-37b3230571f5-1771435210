@@ -364,7 +364,7 @@ export default function InboxPage() {
       
       toast({
         title: "Påminnelse sendt",
-        description: `Sendt til ${selectedNonResponders.length} mottakere`,
+        description: `Sendt til ${selectedNonResponders.length} valgte mottakere`,
       });
       setReminderMessage("");
       // Reload to update stats
@@ -391,7 +391,7 @@ export default function InboxPage() {
       </Head>
 
       <AppLayout>
-        <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
+        <div className="space-y-6 h-[calc(100vh-12rem)] flex flex-col">
           <div className="flex-none">
             <h2 className="text-3xl font-bold tracking-tight text-foreground">Samtaler</h2>
             <p className="text-muted-foreground mt-2">
@@ -402,7 +402,7 @@ export default function InboxPage() {
           <Tabs 
             value={activeTab} 
             onValueChange={(v: any) => setActiveTab(v)} 
-            className="flex-1 flex flex-col space-y-4"
+            className="flex-1 flex flex-col space-y-4 min-h-0"
           >
             <div className="flex-none flex items-center justify-between flex-wrap gap-4">
               <TabsList>
@@ -435,7 +435,7 @@ export default function InboxPage() {
               </Select>
             </div>
 
-            <TabsContent value={activeTab} className="flex-1 m-0 min-h-0">
+            <TabsContent value={activeTab} className="flex-1 m-0 min-h-0 overflow-hidden">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
                 {/* Thread List */}
                 <Card className="lg:col-span-1 flex flex-col h-full overflow-hidden">
