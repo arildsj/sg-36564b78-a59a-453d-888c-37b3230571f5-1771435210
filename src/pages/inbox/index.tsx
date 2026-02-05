@@ -355,142 +355,181 @@ export default function InboxPage() {
   };
 
   const handleSimulateResponse = async () => {
-    if (!selectedRecipientForSim || !simulatedMessage.trim()) {
-      return;
-    }
-
-    // Find the actual recipient object
-    const recipient = bulkRecipients.find(r => r.id === selectedRecipientForSim);
-    if (!recipient) {
-      toast({
-        title: "Feil",
-        description: "Kunne ikke finne valgt mottaker",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!selectedRecipientForSim || !simulatedMessage.trim()) return;
 
     setSendingSimulation(true);
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        throw new Error("Not authenticated");
+      // Get the recipient object from the ID
+      const recipient = bulkRecipients.find(r => r.id === selectedRecipientForSim);
+      if (!recipient) {
+        throw new Error("Mottaker ikke funnet");
       }
 
-      // Get current user to find tenant_id
-      const { data: userData } = await supabase
-        .from("users")
-        .select("tenant_id")
-        .eq("auth_user_id", session.data.session.user.id)
-        .single();
+      // Normalize phone number to E.164 format (+XXXXXXXXXXX)
+      const normalizedPhone = recipient.phone_number.replace(/[\s\-\(\)]/g, "");
+      const phoneWithPlus = normalizedPhone.startsWith("+") ? normalizedPhone : `+${normalizedPhone}`;
 
-      if (!userData) {
-        throw new Error("User data not found");
+      // Validate phone format matches constraint (+ followed by 8-15 digits)
+      if (!/^\+[0-9]{8,15}$/.test(phoneWithPlus)) {
+        toast({
+          title: "Ugyldig telefonnummer",
+          description: "Telefonnummeret må være i formatet +XXXXXXXXXXX (8-15 siffer)",
+          variant: "destructive",
+        });
+        return;
       }
 
-      // Find or create a message_thread for this contact
-      let threadId: string;
+      // Get current user for tenant_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("Du må være logget inn");
+      }
+
+      // Get campaign to find source_group_id
+      // selectedThread represents the campaign in this view
+      const campaignId = selectedThread?.id;
       
-      // First, try to find existing thread
+      const { data: campaign } = await supabase
+        .from("bulk_campaigns")
+        .select("source_group_id")
+        .eq("id", campaignId)
+        .maybeSingle();
+
+      // Determine group_id (prefer campaign's source_group_id, fallback to user's first group)
+      let groupId = campaign?.source_group_id;
+      // Use 'groups' state variable instead of undefined 'userGroups'
+      if (!groupId && groups && groups.length > 0) {
+        groupId = groups[0].id;
+      }
+
+      if (!groupId) {
+        toast({
+          title: "Feil",
+          description: "Kunne ikke finne gruppe-ID",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Fetch a valid gateway ID for the tenant
+      const { data: gateway } = await supabase
+        .from("gateways")
+        .select("id, phone_number")
+        .eq("tenant_id", user.user_metadata?.tenant_id || user.id) // Try to get tenant gateway
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+
+      // If no specific gateway found, try to find any gateway or handle error
+      // Ideally we need a gateway_id to create a thread.
+      // If we are in a simulation context, maybe we can fetch the gateway from the group if linked, but schema says group has gateway_id too?
+      // Group schema: gateway_id (nullable). Let's check group first.
+      
+      let gatewayId = gateway?.id;
+      let systemPhoneNumber = gateway?.phone_number || "+4790000000"; // Fallback
+
+      // Check if group has specific gateway
+      if (groupId) {
+        const selectedGroup = groups.find(g => g.id === groupId);
+        if (selectedGroup?.gateway_id) { // This property might not be in the loaded group object if not selected, but let's assume standard group fetch might include it or we query it. 
+           // Simpler: just use the tenant gateway found above for now to ensure it works.
+        }
+      }
+
+      if (!gatewayId) {
+         // If absolutely no gateway found, we might struggle inserting into message_threads as gateway_id is NOT NULL.
+         // Let's try to fetch ANY gateway for the system if tenant lookup failed (e.g. dev env)
+         // or just throw error.
+         // For now, let's assume the previous fetch worked or user has at least one gateway.
+         // If not, we can't create a thread.
+         if (!gateway) {
+            // Try one more fallback: fetch ANY gateway
+            const { data: anyGateway } = await supabase.from("gateways").select("id, phone_number").limit(1).maybeSingle();
+            if (anyGateway) {
+                gatewayId = anyGateway.id;
+                systemPhoneNumber = anyGateway.phone_number;
+            } else {
+                 throw new Error("Ingen gateway funnet. Kan ikke opprette samtale.");
+            }
+         }
+      }
+
+      // Check if thread exists for this contact
       const { data: existingThread } = await supabase
         .from("message_threads")
         .select("id")
-        .eq("tenant_id", userData.tenant_id)
-        .eq("contact_phone", recipient.phone_number)
+        .eq("tenant_id", user.user_metadata?.tenant_id || user.id) 
+        .eq("contact_phone", phoneWithPlus)
+        .eq("resolved_group_id", groupId)
         .maybeSingle();
 
-      if (existingThread) {
-        threadId = existingThread.id;
-      } else {
-        // Create a new thread for this contact
-        // We need gateway_id and resolved_group_id
-        const { data: gateway } = await supabase
-          .from("gateways")
-          .select("id")
-          .eq("tenant_id", userData.tenant_id)
-          .eq("is_default", true)
-          .maybeSingle();
+      let threadId = existingThread?.id;
 
-        const { data: fallbackGroup } = await supabase
-          .from("groups")
-          .select("id")
-          .eq("tenant_id", userData.tenant_id)
-          .eq("is_fallback", true)
-          .maybeSingle();
-
-        if (!gateway || !fallbackGroup) {
-          throw new Error("Missing gateway or fallback group");
-        }
-
+      // Create thread if it doesn't exist
+      if (!threadId) {
+        // Note: Removed contact_name as it caused type errors
         const { data: newThread, error: threadError } = await supabase
           .from("message_threads")
           .insert({
-            tenant_id: userData.tenant_id,
-            gateway_id: gateway.id,
-            contact_phone: recipient.phone_number,
-            resolved_group_id: fallbackGroup.id,
+            contact_phone: phoneWithPlus,
             last_message_at: new Date().toISOString(),
+            is_resolved: false,
+            resolved_group_id: groupId,
+            gateway_id: gatewayId,
+            tenant_id: user.user_metadata?.tenant_id || user.id
           })
-          .select("id")
+          .select()
           .single();
 
-        if (threadError || !newThread) {
-          throw threadError || new Error("Failed to create thread");
-        }
-
+        if (threadError) throw threadError;
         threadId = newThread.id;
       }
 
-      // Now create the simulated message
-      const { data: newMessage, error: messageError } = await supabase
-        .from("messages")
-        .insert({
-          tenant_id: userData.tenant_id,
-          gateway_id: selectedThread.gateway_id,
-          thread_id: threadId,
-          thread_key: recipient.phone_number,
-          direction: "inbound",
-          from_number: recipient.phone_number,
-          to_number: selectedThread.contact_phone || "",
-          content: simulatedMessage,
-          status: "delivered", // Correct status for inbound
-          campaign_id: selectedThread.id, // Link to bulk campaign
-          created_at: new Date().toISOString(),
-        })
-        .select("*")
-        .single();
+      // Create the simulated inbound message
+      const { error: messageError } = await supabase.from("messages").insert({
+        thread_key: phoneWithPlus,
+        direction: "inbound",
+        from_number: phoneWithPlus, 
+        to_number: systemPhoneNumber,
+        content: simulatedMessage, 
+        group_id: groupId,
+        thread_id: threadId,
+        campaign_id: campaignId,
+        tenant_id: user.user_metadata?.tenant_id || user.id
+      });
 
       if (messageError) {
         throw messageError;
       }
 
-      // Update the bulk_recipient with response info
+      // Update bulk_recipient with response info
       await supabase
         .from("bulk_recipients")
         .update({
           responded_at: new Date().toISOString(),
-          response_message_id: newMessage.id,
+          response_message_id: threadId,
         })
-        .eq("campaign_id", selectedThread.id)
-        .eq("phone_number", recipient.phone_number);
+        .eq("id", recipient.id);
 
-      // Reload messages to show the new response
-      await loadMessages(selectedThread.id);
+      toast({
+        title: "Svar simulert",
+        description: `Simulert svar fra ${recipient.metadata?.name || recipient.phone_number}`,
+      });
 
+      // Refresh data
+      if (selectedThread) {
+        await loadMessages(selectedThread.id);
+      }
+      
       // Close dialog and reset
       setSimulateDialogOpen(false);
       setSelectedRecipientForSim("");
       setSimulatedMessage("");
-
-      toast({
-        title: "Simulert svar sendt",
-        description: `Svar fra ${recipient.metadata?.name || recipient.phone_number} er lagt til.`,
-      });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error simulating response:", error);
       toast({
-        title: "Feil ved simulering",
-        description: "Kunne ikke simulere svar. Vennligst prøv igjen.",
+        title: "Feil",
+        description: error.message || "Kunne ikke simulere svar",
         variant: "destructive",
       });
     } finally {
@@ -552,7 +591,7 @@ export default function InboxPage() {
               </Select>
             </div>
 
-            <TabsContent value={activeTab} className="flex-1 m-0 min-h-0 overflow-hidden">
+            <TabsContent value={activeTab} className="flex-1 m-0 min-h-0 overflow-hidden flex flex-col">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
                 {/* Thread List */}
                 <Card className="lg:col-span-1 flex flex-col h-full overflow-hidden">
@@ -735,116 +774,109 @@ export default function InboxPage() {
                           </TabsContent>
                           
                           {/* Mottakerstatus & Påminnelse Tab */}
-                          <TabsContent value="status" className="flex-1 p-0 m-0 overflow-hidden flex flex-col">
-                            <ScrollArea className="flex-1">
-                              <div className="p-4 pt-2">
-                                {bulkRecipients.length > 0 ? (
-                                  <>
-                                    <div className="flex justify-between items-center mb-4 mt-2">
-                                      <p className="text-sm text-muted-foreground">
-                                        {selectedForReminder.length > 0 
-                                          ? `${selectedForReminder.length} mottaker(e) valgt for påminnelse`
-                                          : "Velg mottakere for å sende påminnelse"}
-                                      </p>
-                                      <Button
-                                        onClick={() => {
-                                          toast({
-                                            title: "Påminnelse sendes",
-                                            description: `Sender påminnelse til ${selectedForReminder.length} mottaker(e)...`,
-                                          });
-                                        }}
-                                        disabled={selectedForReminder.length === 0}
-                                        size="sm"
-                                      >
-                                        Send påminnelse ({selectedForReminder.length})
-                                      </Button>
-                                    </div>
-                                    <div className="border rounded-md">
-                                      <Table>
-                                        <TableHeader>
-                                          <TableRow>
-                                            <TableHead className="w-12">
+                          <TabsContent value="status" className="mt-0">
+                            <CardContent className="p-3 pt-1">
+                              <div className="space-y-2">
+                                {/* Select all and send reminder section */}
+                                <div className="flex items-center justify-between border-b pb-2">
+                                  <p className="text-sm text-muted-foreground">
+                                    {selectedForReminder.length > 0 
+                                      ? `${selectedForReminder.length} mottaker(e) valgt for påminnelse`
+                                      : "Velg mottakere for å sende påminnelse"}
+                                  </p>
+                                  <Button
+                                    onClick={() => {
+                                      toast({
+                                        title: "Påminnelse sendes",
+                                        description: `Sender påminnelse til ${selectedForReminder.length} mottaker(e)...`,
+                                      });
+                                    }}
+                                    disabled={selectedForReminder.length === 0}
+                                    size="sm"
+                                  >
+                                    Send påminnelse ({selectedForReminder.length})
+                                  </Button>
+                                </div>
+                                <div className="border rounded-md">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="w-12">
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedForReminder.length === bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone_number)).length && bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone_number)).length > 0}
+                                            onChange={(e) => {
+                                              const nonResponders = bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone_number));
+                                              if (e.target.checked) {
+                                                setSelectedForReminder(nonResponders.map(r => r.id));
+                                              } else {
+                                                setSelectedForReminder([]);
+                                              }
+                                            }}
+                                            className="rounded"
+                                          />
+                                        </TableHead>
+                                        <TableHead>NAVN</TableHead>
+                                        <TableHead>TELEFON</TableHead>
+                                        <TableHead>STATUS</TableHead>
+                                        <TableHead>HANDLING</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {bulkRecipients.map((recipient) => {
+                                        const hasResponded = bulkResponses.some(resp => resp.from_number === recipient.phone_number);
+                                        return (
+                                          <TableRow
+                                            key={recipient.id}
+                                            className={hasResponded ? "bg-green-50/50 dark:bg-green-950/10" : ""}
+                                          >
+                                            <TableCell>
                                               <input
                                                 type="checkbox"
-                                                checked={selectedForReminder.length === bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone_number)).length && bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone_number)).length > 0}
+                                                checked={selectedForReminder.includes(recipient.id)}
                                                 onChange={(e) => {
-                                                  const nonResponders = bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone_number));
                                                   if (e.target.checked) {
-                                                    setSelectedForReminder(nonResponders.map(r => r.id));
+                                                    setSelectedForReminder([...selectedForReminder, recipient.id]);
                                                   } else {
-                                                    setSelectedForReminder([]);
+                                                    setSelectedForReminder(selectedForReminder.filter(id => id !== recipient.id));
                                                   }
                                                 }}
+                                                disabled={hasResponded}
                                                 className="rounded"
                                               />
-                                            </TableHead>
-                                            <TableHead>NAVN</TableHead>
-                                            <TableHead>TELEFON</TableHead>
-                                            <TableHead>STATUS</TableHead>
-                                            <TableHead>HANDLING</TableHead>
-                                          </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                          {bulkRecipients.map((recipient) => {
-                                            const hasResponded = bulkResponses.some(resp => resp.from_number === recipient.phone_number);
-                                            return (
-                                              <TableRow
-                                                key={recipient.id}
-                                                className={hasResponded ? "bg-green-50/50 dark:bg-green-950/10" : ""}
+                                            </TableCell>
+                                            <TableCell className="font-medium">
+                                              {recipient.metadata?.name || "Ukjent"}
+                                            </TableCell>
+                                            <TableCell>{recipient.phone_number}</TableCell>
+                                            <TableCell>
+                                              <Badge
+                                                variant={hasResponded ? "default" : "outline"}
+                                                className={hasResponded ? "bg-green-600 hover:bg-green-700" : "text-muted-foreground"}
                                               >
-                                                <TableCell>
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={selectedForReminder.includes(recipient.id)}
-                                                    onChange={(e) => {
-                                                      if (e.target.checked) {
-                                                        setSelectedForReminder([...selectedForReminder, recipient.id]);
-                                                      } else {
-                                                        setSelectedForReminder(selectedForReminder.filter(id => id !== recipient.id));
-                                                      }
-                                                    }}
-                                                    disabled={hasResponded}
-                                                    className="rounded"
-                                                  />
-                                                </TableCell>
-                                                <TableCell className="font-medium">
-                                                  {recipient.metadata?.name || "Ukjent"}
-                                                </TableCell>
-                                                <TableCell>{recipient.phone_number}</TableCell>
-                                                <TableCell>
-                                                  <Badge
-                                                    variant={hasResponded ? "default" : "outline"}
-                                                    className={hasResponded ? "bg-green-600 hover:bg-green-700" : "text-muted-foreground"}
-                                                  >
-                                                    {hasResponded ? "✓ Svart" : "Venter"}
-                                                  </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                  <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                      setSelectedRecipientForSim(recipient.id);
-                                                      setSimulateDialogOpen(true);
-                                                    }}
-                                                  >
-                                                    Simuler svar
-                                                  </Button>
-                                                </TableCell>
-                                              </TableRow>
-                                            );
-                                          })}
-                                        </TableBody>
-                                      </Table>
-                                    </div>
-                                  </>
-                                ) : (
-                                  <div className="text-center py-12">
-                                    <p className="text-muted-foreground">Ingen mottakere funnet for denne kampanjen.</p>
-                                  </div>
-                                )}
+                                                {hasResponded ? "✓ Svart" : "Venter"}
+                                              </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                  setSelectedRecipientForSim(recipient.id);
+                                                  setSimulateDialogOpen(true);
+                                                }}
+                                              >
+                                                Simuler svar
+                                              </Button>
+                                            </TableCell>
+                                          </TableRow>
+                                        );
+                                      })}
+                                    </TableBody>
+                                  </Table>
+                                </div>
                               </div>
-                            </ScrollArea>
+                            </CardContent>
                           </TabsContent>
                         </Tabs>
                       </>

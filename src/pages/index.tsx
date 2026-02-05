@@ -9,6 +9,7 @@ import { Inbox, Users, Clock, AlertCircle } from "lucide-react";
 import { groupService } from "@/services/groupService";
 import { messageService } from "@/services/messageService";
 import { userService } from "@/services/userService";
+import { supabase } from "@/integrations/supabase/client";
 
 type DashboardStats = {
   unacknowledged: number;
@@ -46,6 +47,82 @@ export default function HomePage() {
     loadDashboardData();
   }, []);
 
+  /**
+   * Calculate average response time for acknowledged messages in the last 24 hours
+   * Response time = time between inbound message and first outbound reply in same thread
+   */
+  const calculateAverageResponseTime = async (): Promise<string> => {
+    try {
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+      // Get all inbound messages from last 24 hours that have been acknowledged
+      const { data: inboundMessages, error: inboundError } = await supabase
+        .from("messages")
+        .select("id, thread_key, created_at, acknowledged_at")
+        .eq("direction", "inbound")
+        .not("acknowledged_at", "is", null)
+        .gte("created_at", twentyFourHoursAgo.toISOString())
+        .order("created_at", { ascending: false });
+
+      if (inboundError) {
+        console.error("Error fetching inbound messages:", inboundError);
+        return "—";
+      }
+
+      if (!inboundMessages || inboundMessages.length === 0) {
+        return "—";
+      }
+
+      let totalResponseTime = 0;
+      let responseCount = 0;
+
+      // For each inbound message, find the first outbound reply
+      for (const inbound of inboundMessages) {
+        const { data: outboundReply, error: outboundError } = await supabase
+          .from("messages")
+          .select("created_at")
+          .eq("thread_key", inbound.thread_key)
+          .eq("direction", "outbound")
+          .gte("created_at", inbound.created_at)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (outboundError) {
+          console.error("Error fetching outbound reply:", outboundError);
+          continue;
+        }
+
+        if (outboundReply) {
+          const inboundTime = new Date(inbound.created_at).getTime();
+          const outboundTime = new Date(outboundReply.created_at).getTime();
+          const responseTimeMinutes = (outboundTime - inboundTime) / (1000 * 60);
+          
+          totalResponseTime += responseTimeMinutes;
+          responseCount++;
+        }
+      }
+
+      if (responseCount === 0) {
+        return "—";
+      }
+
+      const avgMinutes = Math.round(totalResponseTime / responseCount);
+      
+      if (avgMinutes < 60) {
+        return `${avgMinutes} min`;
+      } else {
+        const hours = Math.floor(avgMinutes / 60);
+        const minutes = avgMinutes % 60;
+        return minutes > 0 ? `${hours}t ${minutes}m` : `${hours}t`;
+      }
+    } catch (error) {
+      console.error("Error calculating average response time:", error);
+      return "—";
+    }
+  };
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
@@ -79,11 +156,14 @@ export default function HomePage() {
         is_acknowledged: msg.is_acknowledged,
       }));
 
+      // Calculate average response time
+      const avgResponseTime = await calculateAverageResponseTime();
+
       setStats({
         unacknowledged: unackMessages.length,
         operationalGroups: groups.length,
         onDutyUsers: totalOnDuty,
-        avgResponseTime: "—", // TODO: Calculate from actual data
+        avgResponseTime,
       });
 
       setRecentMessages(messages);
