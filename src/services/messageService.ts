@@ -554,7 +554,7 @@ export const messageService = {
    */
   async getUnacknowledgedMessages(): Promise<Message[]> {
     const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error("Not authenticated");
+    if (!user?.user) throw new Error("Not authenticated");
 
     const { data: profile } = await db
       .from("users")

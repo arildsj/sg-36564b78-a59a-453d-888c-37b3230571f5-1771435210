@@ -13,6 +13,9 @@ import { Send, Users, MessageSquare, AlertCircle, CheckCircle2, User } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { messageService } from "@/services/messageService";
 import { contactService } from "@/services/contactService";
+import { bulkService } from "@/services/bulkService";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -49,12 +52,23 @@ type Contact = {
   phone_number: string;
 };
 
+type Member = {
+  id: string;
+  full_name: string;
+  phone_number: string;
+};
+
 export default function SendingPage() {
   const { toast } = useToast();
   const [groups, setGroups] = useState<Group[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string>("");
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  
+  // Bulk specific
+  const [bulkSubject, setBulkSubject] = useState("");
+  const [groupMembers, setGroupMembers] = useState<Member[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   
   // Single tab specific
   const [recipientPhone, setRecipientPhone] = useState<string>("");
@@ -68,6 +82,12 @@ export default function SendingPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (selectedGroup) {
+      loadGroupMembers(selectedGroup);
+    }
+  }, [selectedGroup]);
 
   const loadData = async () => {
     try {
@@ -95,6 +115,40 @@ export default function SendingPage() {
       }
     } catch (error) {
       console.error("Failed to load data:", error);
+    }
+  };
+
+  const loadGroupMembers = async (groupId: string) => {
+    try {
+      const { data: members, error } = await supabase
+        .from("group_memberships")
+        .select(`
+          user_id,
+          users!inner(
+            id,
+            full_name,
+            phone_number
+          )
+        `)
+        .eq("group_id", groupId);
+
+      if (error) throw error;
+
+      if (members) {
+        const mappedMembers = members
+          .map((m: any) => ({
+            id: m.users.id,
+            full_name: m.users.full_name || "Ukjent navn",
+            phone_number: m.users.phone_number
+          }))
+          .filter(m => m.phone_number); // Only show members with phone numbers
+
+        setGroupMembers(mappedMembers);
+        // Default select all
+        setSelectedMembers(mappedMembers.map(m => m.id));
+      }
+    } catch (error) {
+      console.error("Failed to load members:", error);
     }
   };
 
@@ -130,6 +184,57 @@ export default function SendingPage() {
       toast({
         title: "Feil ved sending",
         description: error.message || "Kunne ikke sende melding",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendBulk = async () => {
+    if (!selectedGroup || !messageContent || !bulkSubject) {
+      toast({
+        title: "Mangler informasjon",
+        description: "Velg gruppe, skriv emne og melding",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedMembers.length === 0) {
+      toast({
+        title: "Ingen mottakere",
+        description: "Du må velge minst én mottaker",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const group = groups.find(g => g.id === selectedGroup);
+      
+      await bulkService.sendBulkToInternalGroup(
+        messageContent,
+        selectedGroup,
+        group?.name || "Ukjent gruppe",
+        bulkSubject,
+        selectedMembers
+      );
+
+      toast({
+        title: "Bulk-utsendelse startet",
+        description: `Sender til ${selectedMembers.length} medlemmer...`,
+      });
+
+      setMessageContent("");
+      setBulkSubject("");
+      // Refresh logic could go here
+    } catch (error: any) {
+      console.error("Failed to send bulk:", error);
+      toast({
+        title: "Feil ved utsending",
+        description: error.message || "Kunne ikke starte utsendelse",
         variant: "destructive",
       });
     } finally {
@@ -278,6 +383,22 @@ export default function SendingPage() {
     );
   };
 
+  const toggleMemberSelection = (memberId: string) => {
+    setSelectedMembers((prev) =>
+      prev.includes(memberId)
+        ? prev.filter((id) => id !== memberId)
+        : [...prev, memberId]
+    );
+  };
+
+  const toggleSelectAllMembers = () => {
+    if (selectedMembers.length === groupMembers.length) {
+      setSelectedMembers([]);
+    } else {
+      setSelectedMembers(groupMembers.map(m => m.id));
+    }
+  };
+
   return (
     <>
       <Head>
@@ -297,7 +418,7 @@ export default function SendingPage() {
           <Card className="border-l-4 border-l-primary">
             <CardContent className="pt-6 flex items-center gap-4">
               <div className="flex-1">
-                <Label htmlFor="global-group">Send på vegne av gruppe:</Label>
+                <Label htmlFor="global-group">Send fra gruppe:</Label>
                 <div className="flex items-center gap-2 mt-1.5">
                    <Users className="h-4 w-4 text-muted-foreground" />
                    <select
@@ -315,27 +436,154 @@ export default function SendingPage() {
                     </select>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Svar vil havne i innboksen til denne gruppen
+                  Meldinger sendes fra denne gruppens nummer og lagres i gruppens innboks
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          <Tabs defaultValue="single" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+          <Tabs defaultValue="bulk" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="bulk">
+                <Users className="h-4 w-4 mr-2" />
+                Bulk til gruppe
+              </TabsTrigger>
               <TabsTrigger value="single">
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Enkeltmelding
               </TabsTrigger>
               <TabsTrigger value="group">
                 <Users className="h-4 w-4 mr-2" />
-                Send til gruppe
+                (Gammel) Gruppe
               </TabsTrigger>
               <TabsTrigger value="contacts">
                 <User className="h-4 w-4 mr-2" />
-                Send til kontakter
+                Kontakter
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="bulk" className="mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="h-full flex flex-col">
+                  <CardHeader>
+                    <CardTitle>Mottakere i {groups.find(g => g.id === selectedGroup)?.name}</CardTitle>
+                    <CardDescription>
+                      Velg hvilke medlemmer som skal motta meldingen.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1 overflow-hidden flex flex-col">
+                    <div className="flex items-center space-x-2 mb-4 pb-4 border-b">
+                      <Checkbox 
+                        id="select-all" 
+                        checked={selectedMembers.length === groupMembers.length && groupMembers.length > 0}
+                        onCheckedChange={toggleSelectAllMembers}
+                      />
+                      <label
+                        htmlFor="select-all"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Velg alle ({groupMembers.length})
+                      </label>
+                    </div>
+                    
+                    <ScrollArea className="flex-1 h-[400px]">
+                      <div className="space-y-2">
+                        {groupMembers.length === 0 ? (
+                          <div className="text-center text-muted-foreground py-8">
+                            Ingen medlemmer med telefonnummer funnet i denne gruppen.
+                          </div>
+                        ) : (
+                          groupMembers.map((member) => (
+                            <div key={member.id} className="flex items-center space-x-2 p-2 rounded hover:bg-muted/50">
+                              <Checkbox 
+                                id={`member-${member.id}`} 
+                                checked={selectedMembers.includes(member.id)}
+                                onCheckedChange={() => toggleMemberSelection(member.id)}
+                              />
+                              <div className="grid gap-1.5 leading-none">
+                                <label
+                                  htmlFor={`member-${member.id}`}
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                >
+                                  {member.full_name}
+                                </label>
+                                <p className="text-xs text-muted-foreground">
+                                  {member.phone_number}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Utform melding</CardTitle>
+                    <CardDescription>
+                       Meldingen sendes til {selectedMembers.length} valgte mottakere.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="bulk-subject">Emnefelt (vises i innboks)</Label>
+                      <Input
+                        id="bulk-subject"
+                        placeholder="Eks: Vaktliste uke 42"
+                        value={bulkSubject}
+                        onChange={(e) => setBulkSubject(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Hjelper med å gruppere svar og identifisere samtalen.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bulk-message">Melding</Label>
+                      <Textarea
+                        id="bulk-message"
+                        placeholder="Skriv din melding her..."
+                        rows={10}
+                        value={messageContent}
+                        onChange={(e) => setMessageContent(e.target.value)}
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                         <span>{messageContent.length} tegn</span>
+                         <span>Vil sendes som {Math.ceil(messageContent.length / 160)} SMS</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-muted/30 p-3 rounded-md text-xs space-y-1">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5" />
+                        <span>Alle svar innen 6 timer kobles automatisk til denne kampanjen.</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5" />
+                        <span>Svar havner i innboksen til <strong>{groups.find(g => g.id === selectedGroup)?.name}</strong>.</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleSendBulk}
+                      disabled={loading || selectedMembers.length === 0 || !messageContent || !bulkSubject}
+                      className="w-full"
+                    >
+                      {loading ? (
+                        <>Sending...</> 
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          Send til {selectedMembers.length} mottakere
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
 
             <TabsContent value="single" className="space-y-4 mt-6">
               <Card>
