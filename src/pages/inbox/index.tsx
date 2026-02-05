@@ -550,16 +550,29 @@ export default function InboxPage() {
       
       if (!user) throw new Error("Not authenticated");
 
-      // Get campaign info to find correct from_number/gateway
+      // Fetch tenant_id
+      const { data: userData } = await supabase
+        .from("users")
+        .select("tenant_id")
+        .eq("id", user.id)
+        .single();
+      
+      const tenantId = userData?.tenant_id;
+      if (!tenantId) throw new Error("Tenant ID not found");
+
+      // Get campaign info
       const { data: campaign } = await supabase
         .from("bulk_campaigns")
-        .select("source_group_id")
+        .select("source_group_id, thread_id")
         .eq("id", selectedThreadId)
         .single();
         
+      if (!campaign) throw new Error("Campaign not found");
+
       let fromNumber = "System";
+      let gatewayId: string | null = null;
       
-      if (campaign?.source_group_id) {
+      if (campaign.source_group_id) {
         // First try to get gateway from source group
         const { data: group } = await supabase
           .from("groups")
@@ -568,36 +581,63 @@ export default function InboxPage() {
           .single();
           
         if (group?.gateway_id) {
-          const { data: gateway } = await supabase
-            .from("gateways")
-            .select("phone_number")
-            .eq("id", group.gateway_id)
-            .single();
-          if (gateway) fromNumber = gateway.phone_number;
-        } else {
+            gatewayId = group.gateway_id;
+            const { data: gateway } = await supabase
+                .from("gateways")
+                .select("phone_number")
+                .eq("id", group.gateway_id)
+                .single();
+            if (gateway) fromNumber = gateway.phone_number;
+        }
+      }
+
+      if (!gatewayId) {
           // Fallback to default gateway if group has none
            const { data: defaultGateway } = await supabase
             .from("gateways")
-            .select("phone_number")
-            .eq("tenant_id", user.user_metadata?.tenant_id || user.id)
+            .select("id, phone_number")
+            .eq("tenant_id", tenantId)
             .eq("is_default", true)
             .maybeSingle();
             
-           if (defaultGateway) fromNumber = defaultGateway.phone_number;
-        }
+           if (defaultGateway) {
+               gatewayId = defaultGateway.id;
+               fromNumber = defaultGateway.phone_number;
+           }
+      }
+      
+      // Fallback to ANY gateway if still missing
+      if (!gatewayId) {
+           const { data: anyGateway } = await supabase
+            .from("gateways")
+            .select("id, phone_number")
+            .eq("tenant_id", tenantId)
+            .limit(1)
+            .maybeSingle();
+
+           if (anyGateway) {
+               gatewayId = anyGateway.id;
+               fromNumber = anyGateway.phone_number;
+           } else {
+               throw new Error("Ingen gateway funnet. Kan ikke sende melding.");
+           }
       }
 
       const updates = recipientsToSend.map(async (recipient) => {
         // Create outbound message record linked to campaign
         const { error: msgError } = await supabase.from("messages").insert({
-          content: reminderMessage,
+          tenant_id: tenantId,
+          thread_id: campaign.thread_id,
+          thread_key: recipient.phone_number,
           direction: "outbound",
-          status: "queued", // System will pick this up if configured, or it's just a log
-          to_number: recipient.phone_number,
           from_number: fromNumber,
+          to_number: recipient.phone_number,
+          content: reminderMessage,
+          gateway_id: gatewayId,
+          group_id: campaign.source_group_id,
           campaign_id: selectedThreadId,
-          tenant_id: user.user_metadata?.tenant_id || user.id,
-          thread_key: recipient.phone_number // Ensure it groups correctly if individual thread exists
+          status: "pending",
+          is_fallback: false
         });
 
         if (msgError) throw msgError;
