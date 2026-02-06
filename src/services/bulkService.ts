@@ -546,11 +546,16 @@ export const bulkService = {
     if (recipientsError) throw recipientsError;
 
     // Trigger sending
-    const { error: triggerError } = await supabase.functions.invoke("bulk-campaign", {
-      body: { campaign_id: reminderCampaign.id }
+    const triggerResponse = await fetch("/api/bulk-campaign", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ campaign_id: reminderCampaign.id }),
     });
 
-    if (triggerError) throw triggerError;
+    if (!triggerResponse.ok) {
+      const errorData = await triggerResponse.json();
+      throw new Error(errorData.error || "Failed to trigger campaign");
+    }
 
     return reminderCampaign;
   }
