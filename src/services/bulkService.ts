@@ -30,7 +30,6 @@ export const bulkService = {
    * Generate a unique 2-digit bulk code for a tenant
    */
   async generateBulkCode(tenantId: string): Promise<string> {
-    // Get all active campaigns (within 14 days) for this tenant
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
@@ -43,7 +42,6 @@ export const bulkService = {
 
     const usedCodes = new Set((existingCodes || []).map((c: any) => c.bulk_code));
 
-    // Generate unique 2-digit code (10-99)
     for (let i = 10; i <= 99; i++) {
       const code = i.toString();
       if (!usedCodes.has(code)) {
@@ -51,7 +49,6 @@ export const bulkService = {
       }
     }
 
-    // Fallback: if all codes are used (unlikely), use random
     return Math.floor(Math.random() * 90 + 10).toString();
   },
 
@@ -65,7 +62,6 @@ export const bulkService = {
     subjectLine: string,
     selectedMemberIds?: string[]
   ) {
-    // 1. Get current user
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -77,7 +73,6 @@ export const bulkService = {
 
     if (!profile) throw new Error("User profile not found");
 
-    // 2. Get group members
     const { data: members, error: membersError } = await supabase
       .from("group_memberships")
       .select(`
@@ -97,7 +92,6 @@ export const bulkService = {
       throw new Error("Ingen medlemmer funnet i denne gruppen");
     }
 
-    // Filter by selected members if provided
     let targetMembers = members;
     if (selectedMemberIds && selectedMemberIds.length > 0) {
       targetMembers = members.filter((m: any) => 
@@ -105,14 +99,11 @@ export const bulkService = {
       );
     }
 
-    // 3. Generate bulk code
     const bulkCode = await this.generateBulkCode(profile.tenant_id);
 
-    // 4. Calculate expiry (6 hours from now)
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 6);
 
-    // 5. Create Campaign Draft
     const { data: campaign, error: campaignError } = await supabase
       .from("bulk_campaigns")
       .insert({
@@ -132,7 +123,6 @@ export const bulkService = {
 
     if (campaignError) throw campaignError;
 
-    // 6. Create recipients from group members
     const recipients = targetMembers
       .map((m: any) => ({
         campaign_id: campaign.id,
@@ -144,23 +134,27 @@ export const bulkService = {
         },
         status: "pending"
       }))
-      .filter((r: any) => r.phone_number); // Only include members with phone numbers
+      .filter((r: any) => r.phone_number);
 
     if (recipients.length === 0) {
       throw new Error("Ingen medlemmer har telefonnummer registrert");
     }
 
-    // 7. Add recipients to campaign
     const { error: recipientsError } = await supabase
       .from("bulk_recipients")
       .insert(recipients);
 
     if (recipientsError) throw recipientsError;
 
-    // Trigger campaign processing via API route instead of Edge Function
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+
     const triggerResponse = await fetch("/api/bulk-campaign", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`
+      },
       body: JSON.stringify({ campaign_id: campaign.id }),
     });
 
@@ -174,7 +168,6 @@ export const bulkService = {
 
   /**
    * Create and execute a bulk SMS campaign to external contacts
-   * RULE: Can only send to registered contacts in the group
    */
   async sendBulkToExternalContacts(
     message: string,
@@ -182,7 +175,6 @@ export const bulkService = {
     groupName: string,
     subjectLine: string
   ) {
-    // 1. Get current user
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -194,14 +186,11 @@ export const bulkService = {
 
     if (!profile) throw new Error("User profile not found");
 
-    // 2. Generate bulk code
     const bulkCode = await this.generateBulkCode(profile.tenant_id);
 
-    // 3. Calculate expiry (6 hours from now)
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 6);
 
-    // 4. Create Campaign Draft
     const { data: campaign, error: campaignError } = await supabase
       .from("bulk_campaigns")
       .insert({
@@ -221,7 +210,6 @@ export const bulkService = {
 
     if (campaignError) throw campaignError;
 
-    // 5. Fetch contacts from group (ONLY registered contacts)
     const { data: contacts, error: contactsError } = await supabase
       .from("whitelist_group_links")
       .select(`
@@ -248,17 +236,21 @@ export const bulkService = {
       throw new Error("Ingen kontakter funnet i denne gruppen");
     }
 
-    // 6. Add recipients to campaign
     const { error: recipientsError } = await supabase
       .from("bulk_recipients")
       .insert(recipients);
 
     if (recipientsError) throw recipientsError;
 
-    // Trigger campaign processing via API route instead of Edge Function
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+
     const triggerResponse = await fetch("/api/bulk-campaign", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`
+      },
       body: JSON.stringify({ campaign_id: campaign.id }),
     });
 
@@ -280,7 +272,6 @@ export const bulkService = {
     subjectLine: string,
     targetPhoneNumbers: string[]
   ) {
-    // 1. Get current user
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -292,14 +283,11 @@ export const bulkService = {
 
     if (!profile) throw new Error("User profile not found");
 
-    // 2. Generate bulk code
     const bulkCode = await this.generateBulkCode(profile.tenant_id);
 
-    // 3. Calculate expiry (6 hours from now)
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 6);
 
-    // 4. Create Campaign Draft
     const { data: campaign, error: campaignError } = await supabase
       .from("bulk_campaigns")
       .insert({
@@ -319,7 +307,6 @@ export const bulkService = {
 
     if (campaignError) throw campaignError;
 
-    // 5. Fetch contacts from group to verify they belong and get metadata
     const { data: contacts, error: contactsError } = await supabase
       .from("whitelist_group_links")
       .select(`
@@ -332,7 +319,6 @@ export const bulkService = {
 
     if (contactsError) throw contactsError;
 
-    // Filter to only include selected numbers that are actually in the group
     const recipients = (contacts || [])
       .map((link: any) => link.whitelisted_number)
       .filter(Boolean)
@@ -348,17 +334,21 @@ export const bulkService = {
       throw new Error("Ingen gyldige mottakere funnet i denne gruppen");
     }
 
-    // 6. Add recipients to campaign
     const { error: recipientsError } = await supabase
       .from("bulk_recipients")
       .insert(recipients);
 
     if (recipientsError) throw recipientsError;
 
-    // Trigger campaign processing via API route instead of Edge Function
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+
     const triggerResponse = await fetch("/api/bulk-campaign", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`
+      },
       body: JSON.stringify({ campaign_id: campaign.id }),
     });
 
@@ -376,8 +366,8 @@ export const bulkService = {
   async getCampaignDetails(campaignId: string): Promise<{
     campaign: BulkCampaign;
     recipients: BulkRecipient[];
-    responders: string[]; // Phone numbers that have responded
-    nonResponders: BulkRecipient[]; // Recipients who haven't responded
+    responders: string[];
+    nonResponders: BulkRecipient[];
   }> {
     const { data: campaign, error: campaignError } = await supabase
       .from("bulk_campaigns")
@@ -394,7 +384,6 @@ export const bulkService = {
 
     if (recipientsError) throw recipientsError;
 
-    // Get all inbound messages linked to this campaign
     const { data: responses } = await supabase
       .from("messages")
       .select("from_number")
@@ -434,7 +423,6 @@ export const bulkService = {
    * Get recipients who haven't responded to a campaign
    */
   async getNonResponders(campaignId: string): Promise<BulkRecipient[]> {
-    // Get all recipients for the campaign
     const { data: recipients, error: recipientsError } = await supabase
       .from("bulk_recipients")
       .select("*")
@@ -445,7 +433,6 @@ export const bulkService = {
 
     if (!recipients || recipients.length === 0) return [];
 
-    // Get all inbound messages linked to this campaign
     const { data: responses } = await supabase
       .from("messages")
       .select("from_number")
@@ -456,7 +443,6 @@ export const bulkService = {
       (responses || []).map((r: any) => r.from_number)
     );
 
-    // Filter recipients who haven't responded
     return recipients.filter(
       (r: any) => !responderNumbers.has(r.phone_number)
     ) as BulkRecipient[];
@@ -481,7 +467,6 @@ export const bulkService = {
 
     if (!profile) throw new Error("User profile not found");
 
-    // Get original campaign details
     const { data: originalCampaign } = await supabase
       .from("bulk_campaigns")
       .select("*")
@@ -490,7 +475,6 @@ export const bulkService = {
 
     if (!originalCampaign) throw new Error("Original campaign not found");
 
-    // Get non-responders
     const nonResponders = await this.getNonResponders(originalCampaignId);
 
     let targetRecipients = nonResponders;
@@ -504,14 +488,11 @@ export const bulkService = {
       throw new Error("Ingen mottakere valgt for påminnelse");
     }
 
-    // Generate new bulk code
     const bulkCode = await this.generateBulkCode(profile.tenant_id);
 
-    // Calculate expiry (6 hours from now)
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 6);
 
-    // Create reminder campaign
     const { data: reminderCampaign, error: campaignError } = await supabase
       .from("bulk_campaigns")
       .insert({
@@ -531,7 +512,6 @@ export const bulkService = {
 
     if (campaignError) throw campaignError;
 
-    // Add recipients
     const recipients = targetRecipients.map(r => ({
       campaign_id: reminderCampaign.id,
       phone_number: r.phone_number,
@@ -545,10 +525,15 @@ export const bulkService = {
 
     if (recipientsError) throw recipientsError;
 
-    // Trigger sending
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+
     const triggerResponse = await fetch("/api/bulk-campaign", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`
+      },
       body: JSON.stringify({ campaign_id: reminderCampaign.id }),
     });
 
