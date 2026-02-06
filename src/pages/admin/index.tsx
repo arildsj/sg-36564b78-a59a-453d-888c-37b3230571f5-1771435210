@@ -50,7 +50,15 @@ import { auditService, type AuditLogEntry } from "@/services/auditService";
 import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog, Clock, Phone, FileText, Activity, Edit2 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
-import { useLanguage } from "@/hooks/useLanguage";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useLanguage } from "@/contexts/LanguageProvider";
 
 type GroupNode = {
   id: string;
@@ -176,6 +184,7 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setLoadingUsers(true);
       const [groupsData, usersData, currentUserData, realUserData, gatewaysData, routingRulesData] = await Promise.all([
         groupService.getGroupsHierarchy(),
         userService.getAllUsers(),
@@ -218,8 +227,14 @@ export default function AdminPage() {
       setRoutingRules(routingRulesData as RoutingRule[]);
     } catch (error) {
       console.error("Failed to load admin data:", error);
+      toast({ 
+        title: t("error.load_failed"), 
+        description: t("error.unexpected"), 
+        variant: "destructive" 
+      });
     } finally {
       setLoading(false);
+      setLoadingUsers(false);
     }
   };
 
