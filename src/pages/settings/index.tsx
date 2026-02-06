@@ -17,23 +17,25 @@ import {
 } from "@/components/ui/select";
 import { Clock, MessageSquare, Bell, Save, Network } from "lucide-react";
 import { RoutingRulesTab } from "@/components/settings/RoutingRulesTab";
+import { useLanguage } from "@/contexts/LanguageProvider";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = React.useState("hours");
+  const { t } = useLanguage();
 
   return (
     <>
       <Head>
-        <title>Innstillinger | SeMSe</title>
-        <meta name="description" content="Konfigurer åpningstider, auto-svar og varsler" />
+        <title>{t("settings.title")} | SeMSe</title>
+        <meta name="description" content={t("settings.description")} />
       </Head>
 
       <AppLayout>
         <div className="space-y-6">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">Innstillinger</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">{t("settings.title")}</h2>
             <p className="text-muted-foreground mt-2">
-              Konfigurer åpningstider, automatiske svar og varslinger for dine grupper.
+              {t("settings.description")}
             </p>
           </div>
 
@@ -41,19 +43,19 @@ export default function SettingsPage() {
             <TabsList className="grid w-full grid-cols-3 lg:w-auto">
               <TabsTrigger value="hours" className="gap-2">
                 <Clock className="h-4 w-4" />
-                Åpningstider
+                {t("settings.tabs.hours")}
               </TabsTrigger>
               <TabsTrigger value="replies" className="gap-2">
                 <MessageSquare className="h-4 w-4" />
-                Auto-svar
+                {t("settings.tabs.replies")}
               </TabsTrigger>
               <TabsTrigger value="notifications" className="gap-2">
                 <Bell className="h-4 w-4" />
-                Varsler
+                {t("settings.tabs.notifications")}
               </TabsTrigger>
               <TabsTrigger value="routing" className="gap-2">
                 <Network className="h-4 w-4" />
-                Routing
+                {t("settings.tabs.routing")}
               </TabsTrigger>
             </TabsList>
 
@@ -61,14 +63,14 @@ export default function SettingsPage() {
             <TabsContent value="hours" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Åpningstider</CardTitle>
+                  <CardTitle>{t("settings.tabs.hours")}</CardTitle>
                   <CardDescription>
-                    Definer når innboksen er åpen. Brukes for automatiske svar og routing.
+                    {t("settings.description")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="group-select">Velg gruppe</Label>
+                    <Label htmlFor="group-select">{t("settings.select_group")}</Label>
                     <Select defaultValue="kundeservice">
                       <SelectTrigger id="group-select" className="focus:ring-2 focus:ring-primary">
                         <SelectValue placeholder="Velg en gruppe" />
@@ -82,19 +84,19 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-4 border rounded-lg p-4">
-                    <h3 className="font-semibold">Ukentlig timeplan</h3>
-                    {["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"].map((day) => (
+                    <h3 className="font-semibold">{t("settings.weekly_schedule")}</h3>
+                    {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => (
                       <div key={day} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                        <Label className="font-medium">{day}</Label>
+                        <Label className="font-medium">{t(`days.${day}`)}</Label>
                         <div className="flex items-center gap-2">
-                          <Switch id={`${day}-enabled`} defaultChecked={day !== "Søndag"} />
+                          <Switch id={`${day}-enabled`} defaultChecked={day !== "sunday"} />
                           <Label htmlFor={`${day}-enabled`} className="text-sm text-muted-foreground">
-                            Åpen
+                            {t("settings.open")}
                           </Label>
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`${day}-from`} className="text-xs">
-                            Fra
+                            {t("settings.from")}
                           </Label>
                           <Input
                             type="time"
@@ -105,7 +107,7 @@ export default function SettingsPage() {
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`${day}-to`} className="text-xs">
-                            Til
+                            {t("settings.to")}
                           </Label>
                           <Input
                             type="time"
@@ -119,17 +121,17 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-4 border rounded-lg p-4">
-                    <h3 className="font-semibold">Spesielle dager (unntak)</h3>
+                    <h3 className="font-semibold">{t("settings.special_days")}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Legg til helligdager eller andre spesielle datoer hvor åpningstidene avviker.
+                      {t("settings.special_days_help")}
                     </p>
-                    <Button variant="outline">Legg til unntak</Button>
+                    <Button variant="outline">{t("settings.add_exception")}</Button>
                   </div>
 
                   <div className="flex justify-end">
                     <Button className="gap-2">
                       <Save className="h-4 w-4" />
-                      Lagre åpningstider
+                      {t("settings.save_hours")}
                     </Button>
                   </div>
                 </CardContent>
@@ -140,17 +142,17 @@ export default function SettingsPage() {
             <TabsContent value="replies" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Automatiske svar</CardTitle>
+                  <CardTitle>{t("settings.tabs.replies")}</CardTitle>
                   <CardDescription>
-                    Konfigurer meldinger som sendes automatisk basert på betingelser.
+                    {t("settings.description")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="reply-group-select">Velg gruppe</Label>
+                    <Label htmlFor="reply-group-select">{t("settings.select_group")}</Label>
                     <Select defaultValue="kundeservice">
                       <SelectTrigger id="reply-group-select" className="focus:ring-2 focus:ring-primary">
-                        <SelectValue placeholder="Velg en gruppe" />
+                        <SelectValue placeholder={t("settings.select_group")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="kundeservice">Kundeservice</SelectItem>
@@ -163,18 +165,17 @@ export default function SettingsPage() {
                   <div className="space-y-4 border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold">Utenfor åpningstid</h3>
+                        <h3 className="font-semibold">{t("settings.outside_hours")}</h3>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Send automatisk melding når vi er stengt.
+                          {t("settings.outside_hours_help")}
                         </p>
                       </div>
                       <Switch defaultChecked />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="outside-hours-message">Melding</Label>
+                      <Label htmlFor="outside-hours-message">{t("settings.message")}</Label>
                       <Textarea
                         id="outside-hours-message"
-                        placeholder="Takk for din henvendelse. Vi er stengt nå, men svarer så snart vi åpner igjen."
                         rows={4}
                         className="focus:ring-2 focus:ring-primary"
                         defaultValue="Takk for din henvendelse. Vi har stengt for i dag, men svarer så snart vi åpner igjen."
@@ -185,18 +186,17 @@ export default function SettingsPage() {
                   <div className="space-y-4 border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold">Første melding</h3>
+                        <h3 className="font-semibold">{t("settings.first_message")}</h3>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Send velkomstmelding til nye kontakter.
+                          {t("settings.first_message_help")}
                         </p>
                       </div>
                       <Switch defaultChecked />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="first-message">Melding</Label>
+                      <Label htmlFor="first-message">{t("settings.message")}</Label>
                       <Textarea
                         id="first-message"
-                        placeholder="Velkommen! Vi har mottatt din melding og svarer så snart som mulig."
                         rows={4}
                         className="focus:ring-2 focus:ring-primary"
                         defaultValue="Velkommen! Vi har mottatt din melding og svarer så snart som mulig."
@@ -207,15 +207,15 @@ export default function SettingsPage() {
                   <div className="space-y-4 border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold">Nøkkelord-basert</h3>
+                        <h3 className="font-semibold">{t("settings.keyword_based")}</h3>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Send spesifikk melding når visse nøkkelord oppdages.
+                          {t("settings.keyword_based_help")}
                         </p>
                       </div>
                       <Switch />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="keywords">Nøkkelord (kommaseparert)</Label>
+                      <Label htmlFor="keywords">{t("settings.keywords")}</Label>
                       <Input
                         id="keywords"
                         placeholder="hjelp, support, akutt"
@@ -223,10 +223,9 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="keyword-message">Melding</Label>
+                      <Label htmlFor="keyword-message">{t("settings.message")}</Label>
                       <Textarea
                         id="keyword-message"
-                        placeholder="Vi ser at du trenger hjelp. En av våre medarbeidere vil kontakte deg snart."
                         rows={4}
                         className="focus:ring-2 focus:ring-primary"
                       />
@@ -236,7 +235,7 @@ export default function SettingsPage() {
                   <div className="flex justify-end">
                     <Button className="gap-2">
                       <Save className="h-4 w-4" />
-                      Lagre auto-svar
+                      {t("settings.save_replies")}
                     </Button>
                   </div>
                 </CardContent>
@@ -247,18 +246,18 @@ export default function SettingsPage() {
             <TabsContent value="notifications" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Varselsinnstillinger</CardTitle>
+                  <CardTitle>{t("settings.tabs.notifications")}</CardTitle>
                   <CardDescription>
-                    Velg hvordan du vil motta varsler om nye meldinger.
+                    {t("settings.description")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b pb-4">
                       <div>
-                        <h3 className="font-semibold">E-postvarsler</h3>
+                        <h3 className="font-semibold">{t("settings.email_notifications")}</h3>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Motta varsler på e-post om nye meldinger.
+                          {t("settings.email_notifications_help")}
                         </p>
                       </div>
                       <Switch defaultChecked />
@@ -266,9 +265,9 @@ export default function SettingsPage() {
 
                     <div className="flex items-center justify-between border-b pb-4">
                       <div>
-                        <h3 className="font-semibold">Push-varsler</h3>
+                        <h3 className="font-semibold">{t("settings.push_notifications")}</h3>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Motta push-varsler i nettleseren.
+                          {t("settings.push_notifications_help")}
                         </p>
                       </div>
                       <Switch defaultChecked />
@@ -276,9 +275,9 @@ export default function SettingsPage() {
 
                     <div className="flex items-center justify-between border-b pb-4">
                       <div>
-                        <h3 className="font-semibold">SMS-varsler</h3>
+                        <h3 className="font-semibold">{t("settings.sms_notifications")}</h3>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Motta SMS-varsler for kritiske meldinger.
+                          {t("settings.sms_notifications_help")}
                         </p>
                       </div>
                       <Switch />
@@ -286,9 +285,9 @@ export default function SettingsPage() {
 
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold">Kun når på vakt</h3>
+                        <h3 className="font-semibold">{t("settings.only_on_duty")}</h3>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Motta bare varsler når du er markert som på vakt.
+                          {t("settings.only_on_duty_help")}
                         </p>
                       </div>
                       <Switch defaultChecked />
@@ -298,7 +297,7 @@ export default function SettingsPage() {
                   <div className="flex justify-end pt-4">
                     <Button className="gap-2">
                       <Save className="h-4 w-4" />
-                      Lagre innstillinger
+                      {t("settings.save_settings")}
                     </Button>
                   </div>
                 </CardContent>

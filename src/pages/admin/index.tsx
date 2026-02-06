@@ -50,6 +50,7 @@ import { auditService, type AuditLogEntry } from "@/services/auditService";
 import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog, Clock, Phone, FileText, Activity, Edit2 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
 
 type GroupNode = {
   id: string;
@@ -106,6 +107,7 @@ type Contact = {
 
 export default function AdminPage() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("groups");
   const [groups, setGroups] = useState<GroupNode[]>([]);
   const [allGroups, setAllGroups] = useState<GroupNode[]>([]);
@@ -577,8 +579,8 @@ export default function AdminPage() {
   return (
     <>
       <Head>
-        <title>Admin | SeMSe</title>
-        <meta name="description" content="Administrer brukere, grupper og tilganger" />
+        <title>{t("admin.title")} | SeMSe</title>
+        <meta name="description" content={t("admin.description")} />
       </Head>
 
       <AppLayout>
@@ -586,17 +588,16 @@ export default function AdminPage() {
           {isDemoMode && (
             <Alert variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/30">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <AlertTitle className="text-amber-900 dark:text-amber-100">Demo-modus aktivert</AlertTitle>
+              <AlertTitle className="text-amber-900 dark:text-amber-100">{t("admin.demo_mode")}</AlertTitle>
               <AlertDescription className="text-amber-800 dark:text-amber-200">
-                Du viser systemet som <strong>{currentUser?.name}</strong> ({getRoleLabel(currentUser?.role || "")}).
-                Dette er kun for presentasjons- og demo-formål.
+                {t("admin.demo_description")} <strong>{currentUser?.name}</strong> ({getRoleLabel(currentUser?.role || "")}).
                 <Button 
                   variant="outline" 
                   size="sm" 
                   className="ml-4 border-amber-600 text-amber-900 hover:bg-amber-100 dark:text-amber-100 dark:hover:bg-amber-900/30"
                   onClick={handleExitDemoMode}
                 >
-                  Gå tilbake til {realUser?.name}
+                  {t("admin.exit_demo")} {realUser?.name}
                 </Button>
               </AlertDescription>
             </Alert>
@@ -604,9 +605,9 @@ export default function AdminPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight text-foreground">Administrasjon</h2>
+              <h2 className="text-3xl font-bold tracking-tight text-foreground">{t("admin.title")}</h2>
               <p className="text-muted-foreground mt-2">
-                Administrer brukere, grupper, gateways og systeminnstillinger.
+                {t("admin.description")}
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -614,7 +615,7 @@ export default function AdminPage() {
                 <div className="flex items-center gap-3">
                   <UserCog className="h-5 w-5 text-muted-foreground" />
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Aktiv bruker (Demo)</Label>
+                    <Label className="text-xs text-muted-foreground">{t("admin.active_user")}</Label>
                     <Select value={currentUser?.id} onValueChange={handleSwitchUser}>
                       <SelectTrigger className="w-[280px] h-9">
                         <SelectValue>
@@ -645,24 +646,24 @@ export default function AdminPage() {
 
               <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
                 <Plus className="h-4 w-4" />
-                Opprett ny gruppe
+                {t("admin.create_group")}
               </Button>
             </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="groups">Grupper</TabsTrigger>
-              <TabsTrigger value="users">Brukere</TabsTrigger>
-              <TabsTrigger value="gateways">Gateways</TabsTrigger>
+              <TabsTrigger value="groups">{t("admin.tabs.groups")}</TabsTrigger>
+              <TabsTrigger value="users">{t("admin.tabs.users")}</TabsTrigger>
+              <TabsTrigger value="gateways">{t("admin.tabs.gateways")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="groups" className="space-y-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Grupper</h2>
+                <h2 className="text-xl font-semibold">{t("admin.tabs.groups")}</h2>
                 <Button onClick={() => setShowCreateDialog(true)} size="sm">
                   <Plus className="h-4 w-4 mr-2" />
-                  Ny gruppe
+                  {t("admin.new_group")}
                 </Button>
               </div>
 
@@ -672,24 +673,24 @@ export default function AdminPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[200px]">Navn</TableHead>
-                          <TableHead className="min-w-[100px]">På vakt</TableHead>
-                          <TableHead className="min-w-[100px]">Totalt</TableHead>
-                          <TableHead className="min-w-[150px]">Overordnet</TableHead>
-                          <TableHead className="min-w-[120px] text-right">Handlinger</TableHead>
+                          <TableHead className="min-w-[200px]">{t("contacts.name")}</TableHead>
+                          <TableHead className="min-w-[100px]">{t("admin.on_duty")}</TableHead>
+                          <TableHead className="min-w-[100px]">{t("admin.total")}</TableHead>
+                          <TableHead className="min-w-[150px]">{t("admin.parent")}</TableHead>
+                          <TableHead className="min-w-[120px] text-right">{t("admin.actions")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {loading ? (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center py-8">
-                              Laster grupper...
+                              {t("admin.loading_groups")}
                             </TableCell>
                           </TableRow>
                         ) : groups.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                              Ingen grupper opprettet ennå
+                              {t("admin.no_groups")}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -739,10 +740,10 @@ export default function AdminPage() {
 
             <TabsContent value="users" className="space-y-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Brukere</h2>
+                <h2 className="text-xl font-semibold">{t("admin.tabs.users")}</h2>
                 <Button onClick={() => setShowCreateUserDialog(true)} size="sm">
                   <Plus className="h-4 w-4 mr-2" />
-                  Ny bruker
+                  {t("admin.new_user")}
                 </Button>
               </div>
 
@@ -752,26 +753,26 @@ export default function AdminPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[200px]">Navn</TableHead>
-                          <TableHead className="min-w-[200px]">E-post</TableHead>
-                          <TableHead className="min-w-[150px]">Telefon</TableHead>
-                          <TableHead className="min-w-[150px]">Grupper</TableHead>
-                          <TableHead className="min-w-[100px]">På vakt</TableHead>
-                          <TableHead className="min-w-[100px]">Admin</TableHead>
-                          <TableHead className="min-w-[120px] text-right">Handlinger</TableHead>
+                          <TableHead className="min-w-[200px]">{t("contacts.name")}</TableHead>
+                          <TableHead className="min-w-[200px]">{t("contacts.email")}</TableHead>
+                          <TableHead className="min-w-[150px]">{t("contacts.phone")}</TableHead>
+                          <TableHead className="min-w-[150px]">{t("contacts.groups")}</TableHead>
+                          <TableHead className="min-w-[100px]">{t("admin.on_duty")}</TableHead>
+                          <TableHead className="min-w-[100px]">{t("admin.role")}</TableHead>
+                          <TableHead className="min-w-[120px] text-right">{t("admin.actions")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {loadingUsers ? (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8">
-                              Laster brukere...
+                              {t("admin.loading_users")}
                             </TableCell>
                           </TableRow>
                         ) : users.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                              Ingen brukere funnet
+                              {t("admin.no_users")}
                             </TableCell>
                           </TableRow>
                         ) : (
