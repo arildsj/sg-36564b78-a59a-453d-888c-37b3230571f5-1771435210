@@ -11,6 +11,8 @@ import { bulkService, BulkCampaign } from "@/services/bulkService";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
 import { useLanguage } from "@/contexts/LanguageProvider";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type CampaignWithDetails = BulkCampaign & {
   group_name?: string;
@@ -18,6 +20,7 @@ type CampaignWithDetails = BulkCampaign & {
 };
 
 export default function CampaignsPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
   const [campaigns, setCampaigns] = useState<CampaignWithDetails[]>([]);
@@ -113,13 +116,13 @@ export default function CampaignsPage() {
               <p className="text-muted-foreground mt-1">{t("campaigns.description")}</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => window.location.href = '/campaigns/dashboard'}>
+              <Button variant="outline" onClick={() => router.push('/campaigns/dashboard')}>
                 <LayoutDashboard className="h-4 w-4 mr-2" />
                 Dashboard
               </Button>
-              <Button onClick={() => window.location.href = "/sending"}>
+              <Button onClick={() => router.push("/sending")}>
                 <Plus className="h-4 w-4 mr-2" />
-                Create Campaign
+                {t("campaigns.createNew")}
               </Button>
             </div>
           </div>
@@ -132,7 +135,7 @@ export default function CampaignsPage() {
                 <p className="text-muted-foreground mb-4">
                   {t("campaigns.first_campaign")}
                 </p>
-                <Button onClick={() => window.location.href = "/sending"}>
+                <Button onClick={() => router.push("/sending")}>
                   <Send className="h-4 w-4 mr-2" />
                   {t("campaigns.send_bulk")}
                 </Button>
