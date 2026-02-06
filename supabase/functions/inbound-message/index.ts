@@ -58,7 +58,7 @@ serve(async (req) => {
     // Get gateway info
     const { data: gateway, error: gatewayError } = await supabaseClient
       .from("gateways")
-      .select("id, name, phone_number, tenant_id")
+      .select("id, name, phone_number, tenant_id, fallback_group_id")
       .eq("id", gateway_id)
       .single();
 
@@ -71,6 +71,7 @@ serve(async (req) => {
       .from("contacts")
       .select("id, name, phone_number, group_id, tenant_id")
       .eq("phone_number", normalizedFrom)
+      .eq("tenant_id", gateway.tenant_id)
       .maybeSingle();
 
     if (contactLookupError) {
@@ -96,31 +97,89 @@ serve(async (req) => {
       contact = newContact;
     }
 
+    // Determine target group based on routing rules
+    let resolvedGroupId = contact.group_id || gateway.fallback_group_id;
+
+    // Evaluate routing rules based on gateway
+    const { data: rules, error: rulesError } = await supabaseClient
+      .from("routing_rules")
+      .select("id, priority, rule_type, pattern, target_group_id, gateway_id")
+      .eq("tenant_id", gateway.tenant_id)
+      .or(`gateway_id.eq.${gateway.id},gateway_id.is.null`)
+      .eq("is_active", true)
+      .order("priority", { ascending: true });
+
+    if (rulesError) throw new Error(`Routing rules fetch failed: ${rulesError.message}`);
+
+    // Apply routing rules
+    if (rules && rules.length > 0) {
+      for (const rule of rules) {
+        let matches = false;
+        const pattern = (rule.pattern || "").toLowerCase();
+        const contentLower = content.toLowerCase();
+
+        switch (rule.rule_type) {
+          case "keyword":
+            matches = contentLower.includes(pattern);
+            break;
+          case "prefix":
+            matches = contentLower.startsWith(pattern);
+            break;
+          case "fallback":
+            matches = true;
+            break;
+        }
+
+        if (matches) {
+          resolvedGroupId = rule.target_group_id;
+          console.log(`Matched rule ${rule.id}, routing to group ${resolvedGroupId}`);
+          break;
+        }
+      }
+    }
+
+    if (!resolvedGroupId) {
+      throw new Error("No target group found - no routing rules matched and no fallback group configured");
+    }
+
     // Find or create thread
     let thread;
     const { data: existingThread, error: threadLookupError } = await supabaseClient
       .from("message_threads")
-      .select("id, contact_id, gateway_id, contact_phone, gateway_phone")
+      .select("id, contact_phone, gateway_id, resolved_group_id")
+      .eq("tenant_id", gateway.tenant_id)
       .eq("contact_phone", normalizedFrom)
-      .eq("gateway_phone", normalizedTo)
+      .eq("gateway_id", gateway.id)
       .maybeSingle();
 
     if (threadLookupError) {
       throw new Error(`Thread lookup failed: ${threadLookupError.message}`);
     }
 
+    const messageTimestamp = received_at || new Date().toISOString();
+
     if (existingThread) {
       thread = existingThread;
+      
+      // Update thread's last_message_at and resolved_group_id if changed
+      await supabaseClient
+        .from("message_threads")
+        .update({ 
+          last_message_at: messageTimestamp,
+          resolved_group_id: resolvedGroupId,
+        })
+        .eq("id", thread.id);
     } else {
       // Create new thread
       const { data: newThread, error: threadError } = await supabaseClient
         .from("message_threads")
         .insert({
-          contact_id: contact.id,
+          tenant_id: gateway.tenant_id,
           gateway_id: gateway.id,
           contact_phone: normalizedFrom,
-          gateway_phone: normalizedTo,
-          last_message_at: received_at || new Date().toISOString(),
+          resolved_group_id: resolvedGroupId,
+          last_message_at: messageTimestamp,
+          is_resolved: false,
         })
         .select()
         .single();
@@ -131,81 +190,26 @@ serve(async (req) => {
       thread = newThread;
     }
 
-    // Evaluate routing rules - use contact's group_id if available, otherwise gateway's tenant_id
-    const groupIdForRouting = contact.group_id || gateway.tenant_id;
-    
-    const { data: rules, error: rulesError } = await supabaseClient
-      .from("routing_rules")
-      .select("id, priority, match_type, match_pattern, assigned_user_id")
-      .eq("group_id", groupIdForRouting)
-      .eq("is_active", true)
-      .order("priority", { ascending: true });
-
-    if (rulesError) throw new Error(`Routing rules fetch failed: ${rulesError.message}`);
-
-    let assignedUserId = null;
-    if (rules && rules.length > 0) {
-      for (const rule of rules) {
-        let matches = false;
-        const pattern = rule.match_pattern.toLowerCase();
-        const contentLower = content.toLowerCase();
-
-        switch (rule.match_type) {
-          case "contains":
-            matches = contentLower.includes(pattern);
-            break;
-          case "starts_with":
-            matches = contentLower.startsWith(pattern);
-            break;
-          case "ends_with":
-            matches = contentLower.endsWith(pattern);
-            break;
-          case "regex":
-            try {
-              const regex = new RegExp(pattern, "i");
-              matches = regex.test(content);
-            } catch {
-              console.error(`Invalid regex pattern: ${pattern}`);
-            }
-            break;
-          case "exact":
-            matches = contentLower === pattern;
-            break;
-        }
-
-        if (matches) {
-          assignedUserId = rule.assigned_user_id;
-          console.log(`Matched rule ${rule.id}, assigning to user ${assignedUserId}`);
-          break;
-        }
-      }
-    }
-
     // Create message
     const { data: message, error: messageError } = await supabaseClient
       .from("messages")
       .insert({
+        tenant_id: gateway.tenant_id,
         thread_id: thread.id,
-        contact_id: contact.id,
         gateway_id: gateway.id,
+        group_id: resolvedGroupId,
         direction: "inbound",
         content: content,
-        status: "received",
+        status: "delivered",
         from_number: normalizedFrom,
         to_number: normalizedTo,
-        received_at: received_at || new Date().toISOString(),
-        assigned_user_id: assignedUserId,
+        thread_key: `${normalizedFrom}-${gateway.id}`,
+        created_at: messageTimestamp,
       })
       .select()
       .single();
 
     if (messageError) throw new Error(`Message creation failed: ${messageError.message}`);
-
-    // Update thread's last_message_at
-    await supabaseClient
-      .from("message_threads")
-      .update({ last_message_at: message.received_at })
-      .eq("id", thread.id);
 
     // Check for bulk campaign response
     const { data: bulkRecipient, error: bulkError } = await supabaseClient
@@ -220,13 +224,13 @@ serve(async (req) => {
       await supabaseClient
         .from("bulk_recipients")
         .update({
-          status: "responded",
+          status: "delivered",
           response_message_id: message.id,
-          responded_at: message.received_at,
+          responded_at: messageTimestamp,
         })
         .eq("id", bulkRecipient.id);
 
-      console.log(`Updated bulk recipient ${bulkRecipient.id} status to responded`);
+      console.log(`Updated bulk recipient ${bulkRecipient.id} status to delivered`);
     }
 
     return new Response(
@@ -234,8 +238,8 @@ serve(async (req) => {
         success: true,
         message_id: message.id,
         thread_id: thread.id,
-        contact_id: contact.id,
-        assigned_user_id: assignedUserId,
+        contact_phone: normalizedFrom,
+        resolved_group_id: resolvedGroupId,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
