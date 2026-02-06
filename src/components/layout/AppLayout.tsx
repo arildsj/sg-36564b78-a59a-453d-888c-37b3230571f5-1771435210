@@ -4,6 +4,8 @@ import { useRouter } from "next/router";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { useLanguage } from "@/contexts/LanguageProvider";
 import {
   Home,
   Inbox,
@@ -21,25 +23,26 @@ import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
 
 type NavItem = {
-  label: string;
+  labelKey: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   adminOnly?: boolean;
 };
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: Home },
-  { label: "Innboks", href: "/inbox", icon: Inbox },
-  { label: "Kontakter", href: "/contacts", icon: Users },
-  { label: "Send melding", href: "/sending", icon: Send },
-  { label: "Kampanjer", href: "/campaigns", icon: Megaphone },
-  { label: "Simulering", href: "/simulate", icon: PlayCircle },
-  { label: "Administrasjon", href: "/admin", icon: Shield, adminOnly: true },
-  { label: "Innstillinger", href: "/settings", icon: Settings },
+  { labelKey: "nav.dashboard", href: "/", icon: Home },
+  { labelKey: "nav.inbox", href: "/inbox", icon: Inbox },
+  { labelKey: "nav.contacts", href: "/contacts", icon: Users },
+  { labelKey: "nav.send", href: "/sending", icon: Send },
+  { labelKey: "nav.campaigns", href: "/campaigns", icon: Megaphone },
+  { labelKey: "nav.simulate", href: "/simulate", icon: PlayCircle },
+  { labelKey: "nav.admin", href: "/admin", icon: Shield, adminOnly: true },
+  { labelKey: "nav.settings", href: "/settings", icon: Settings },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,7 +88,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Laster...</div>
+        <div className="text-muted-foreground">{t("common.loading")}</div>
       </div>
     );
   }
@@ -102,7 +105,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           size="icon"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="h-12 w-12"
-          aria-label={sidebarOpen ? "Lukk meny" : "Åpne meny"}
+          aria-label={sidebarOpen ? t("common.close") : "Open menu"}
         >
           {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
@@ -138,21 +141,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <item.icon className="h-5 w-5 flex-shrink-0" />
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             );
           })}
         </nav>
 
         <div className="p-4 border-t space-y-2 flex-none">
-          <ThemeSwitch />
+          <div className="flex gap-2">
+            <LanguageSwitch />
+            <ThemeSwitch />
+          </div>
           <Button 
             variant="outline" 
             className="w-full justify-start min-h-[48px]" 
             onClick={handleLogout}
           >
             <LogOut className="h-5 w-5 mr-3" />
-            Logg ut
+            {t("nav.logout")}
           </Button>
         </div>
       </aside>

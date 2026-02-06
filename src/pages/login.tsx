@@ -7,11 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { LanguageProvider, useLanguage } from "@/contexts/LanguageProvider";
 import { authService } from "@/services/authService";
 import { Loader2, AlertCircle } from "lucide-react";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,23 +31,22 @@ export default function LoginPage() {
 
       if (signInError) {
         if (signInError.message?.includes("Email not confirmed")) {
-          setError("E-posten din er ikke bekreftet. Sjekk innboksen din for bekreftelseslenke.");
+          setError(t("error.email_not_confirmed"));
         } else if (signInError.message?.includes("Invalid login credentials")) {
-          setError("Feil e-post eller passord. Prøv igjen.");
+          setError(t("error.invalid_credentials"));
         } else {
-          setError(signInError.message || "Pålogging feilet. Prøv igjen.");
+          setError(signInError.message || t("error.login_failed"));
         }
         setLoading(false);
         return;
       }
 
       if (user) {
-        // Successfully logged in, redirect to dashboard
         router.push("/");
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError("En uventet feil oppstod. Prøv igjen.");
+      setError(t("error.unexpected"));
       setLoading(false);
     }
   };
@@ -51,16 +54,22 @@ export default function LoginPage() {
   return (
     <>
       <Head>
-        <title>Logg inn - SeMSe 2.0</title>
-        <meta name="description" content="Logg inn på SeMSe 2.0" />
+        <title>{t("login.title")}</title>
+        <meta name="description" content={t("login.description")} />
       </Head>
 
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+        {/* Language and Theme switches in top-right corner */}
+        <div className="fixed top-4 right-4 flex gap-2 z-50">
+          <LanguageSwitch />
+          <ThemeSwitch />
+        </div>
+
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <CardTitle className="text-3xl font-bold text-center">SeMSe 2.0</CardTitle>
             <CardDescription className="text-center">
-              Logg inn for å administrere meldinger og operasjoner
+              {t("login.description")}
             </CardDescription>
           </CardHeader>
 
@@ -74,7 +83,7 @@ export default function LoginPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">E-post</Label>
+                <Label htmlFor="email">{t("login.email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -88,7 +97,7 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Passord</Label>
+                <Label htmlFor="password">{t("login.password")}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -111,21 +120,21 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Logger inn...
+                    {t("login.logging_in")}
                   </>
                 ) : (
-                  "Logg inn"
+                  t("login.button")
                 )}
               </Button>
 
               <div className="text-sm text-center space-y-2">
                 <div>
                   <Link href="/onboarding" className="text-primary hover:underline">
-                    Har du ikke en konto? Kom i gang her
+                    {t("login.no_account")}
                   </Link>
                 </div>
                 <div className="text-muted-foreground">
-                  Glemt passord? Kontakt administrator
+                  {t("login.forgot_password")}
                 </div>
               </div>
             </CardFooter>
@@ -135,10 +144,18 @@ export default function LoginPage() {
         {/* Demo credentials hint */}
         <div className="absolute bottom-4 left-4 right-4 text-center">
           <div className="inline-block bg-muted/50 backdrop-blur-sm rounded-lg p-3 text-xs text-muted-foreground">
-            <strong>Demo:</strong> arild@fair.as (kontakt admin for passord)
+            <strong>{t("login.demo")}:</strong> arild@fair.as
           </div>
         </div>
       </div>
     </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <LanguageProvider>
+      <LoginPageContent />
+    </LanguageProvider>
   );
 }
