@@ -104,19 +104,31 @@ serve(async (req) => {
 
         console.log(`Sending to ${recipient.phone_number}: ${personalizedContent}`);
 
-        // Create message thread for this recipient
-        const { data: thread } = await supabaseClient
+        // Create or find thread for this recipient
+        let thread;
+        const { data: existingThread } = await supabaseClient
           .from("message_threads")
-          .insert({
-            contact_phone: recipient.phone_number,
-            group_id: campaign.source_group_id,
-            status: "active",
-            last_message_at: new Date().toISOString(),
-            bulk_campaign_id: campaign_id,
-            metadata: { bulk_recipient_id: recipient.id }
-          })
           .select()
-          .single();
+          .eq("contact_phone", recipient.phone_number)
+          .eq("resolved_group_id", campaign.source_group_id)
+          .maybeSingle();
+
+        if (existingThread) {
+          thread = existingThread;
+        } else {
+          const { data: newThread } = await supabaseClient
+            .from("message_threads")
+            .insert({
+              contact_phone: recipient.phone_number,
+              resolved_group_id: campaign.source_group_id,
+              gateway_id: gateway.id,
+              last_message_at: new Date().toISOString(),
+              is_resolved: false,
+            })
+            .select()
+            .single();
+          thread = newThread;
+        }
 
         // Create outbound message record
         const { data: sentMessage, error: messageError } = await supabaseClient
@@ -129,13 +141,9 @@ serve(async (req) => {
             to_number: recipient.phone_number,
             status: "pending",
             gateway_id: gateway.id,
-            resolved_group_id: campaign.source_group_id,
-            sent_by_user_id: user.id,
-            metadata: {
-              bulk_campaign_id: campaign_id,
-              bulk_recipient_id: recipient.id,
-              personalized: true
-            }
+            group_id: campaign.source_group_id,
+            campaign_id: campaign_id,
+            thread_key: `${recipient.phone_number}-${gateway.id}`,
           })
           .select()
           .single();
@@ -199,13 +207,14 @@ serve(async (req) => {
           })
           .eq("id", sentMessage.id);
 
-        // Update bulk recipient status
+        // Update bulk recipient status WITH sent_thread_id
         await supabaseClient
           .from("bulk_recipients")
           .update({
-            status: "sent",
             sent_message_id: sentMessage.id,
-            sent_at: new Date().toISOString()
+            sent_thread_id: thread?.id,
+            sent_at: new Date().toISOString(),
+            status: "sent",
           })
           .eq("id", recipient.id);
 

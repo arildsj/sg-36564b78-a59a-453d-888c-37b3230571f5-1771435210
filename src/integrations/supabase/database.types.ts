@@ -269,6 +269,7 @@ export type Database = {
           response_message_id: string | null
           sent_at: string | null
           sent_message_id: string | null
+          sent_thread_id: string | null
           status: string
         }
         Insert: {
@@ -282,6 +283,7 @@ export type Database = {
           response_message_id?: string | null
           sent_at?: string | null
           sent_message_id?: string | null
+          sent_thread_id?: string | null
           status?: string
         }
         Update: {
@@ -295,6 +297,7 @@ export type Database = {
           response_message_id?: string | null
           sent_at?: string | null
           sent_message_id?: string | null
+          sent_thread_id?: string | null
           status?: string
         }
         Relationships: [
@@ -317,6 +320,13 @@ export type Database = {
             columns: ["sent_message_id"]
             isOneToOne: false
             referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_recipients_sent_thread_id_fkey"
+            columns: ["sent_thread_id"]
+            isOneToOne: false
+            referencedRelation: "message_threads"
             referencedColumns: ["id"]
           },
         ]
@@ -788,6 +798,7 @@ export type Database = {
           id: string
           is_fallback: boolean
           media_urls: string[] | null
+          parent_message_id: string | null
           status: string | null
           tenant_id: string
           thread_id: string | null
@@ -809,6 +820,7 @@ export type Database = {
           id?: string
           is_fallback?: boolean
           media_urls?: string[] | null
+          parent_message_id?: string | null
           status?: string | null
           tenant_id: string
           thread_id?: string | null
@@ -830,6 +842,7 @@ export type Database = {
           id?: string
           is_fallback?: boolean
           media_urls?: string[] | null
+          parent_message_id?: string | null
           status?: string | null
           tenant_id?: string
           thread_id?: string | null
@@ -864,6 +877,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
           {
