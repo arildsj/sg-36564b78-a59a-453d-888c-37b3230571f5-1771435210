@@ -383,7 +383,7 @@ const translations: Translations = {
     pl: "Zarządzaj grupami"
   },
   "dashboard.on_duty": { 
-    no: "on-duty", 
+    no: "På vakt", 
     en: "on-duty", 
     de: "im Dienst", 
     fr: "de garde", 
@@ -1555,7 +1555,7 @@ const translations: Translations = {
     fr: "Envoyer un message automatique lorsque nous sommes fermés.", 
     es: "Enviar mensaje automático cuando estamos cerrados.", 
     it: "Invia messaggio automatico quando siamo chiusi.",
-    pl: "Wyślij automatyczną wiadomość, gdy jesteśmy zamknięci."
+    pl: "Wyślij automatyczną wiadomość, gdy jesteś zamknięty."
   },
   "settings.first_message": { 
     no: "Første melding", 
@@ -1671,7 +1671,7 @@ const translations: Translations = {
     de: "Nur im Dienst", 
     fr: "Seulement en service", 
     es: "Solo cuando esté de guardia", 
-    it: "Solo quando esté de guardia",
+    it: "Solo cuando esté de guardia",
     pl: "Tylko podczas dyżuru"
   },
   "settings.only_on_duty_help": { 
@@ -1748,12 +1748,233 @@ const translations: Translations = {
     it: "Domenica",
     pl: "Niedziela"
   },
-  status: {
-    draft: "Utkast",
-    active: "Aktiv",
-    completed: "Fullført",
-    failed: "Feilet",
+  
+  // Campaign Dashboard
+  "campaigns.dashboard.title": { 
+    no: "Kampanje Dashboard", 
+    en: "Campaign Dashboard", 
+    de: "Kampagnen-Dashboard", 
+    fr: "Tableau de bord", 
+    es: "Panel de campaña", 
+    it: "Dashboard campagne",
+    pl: "Panel kampanii"
   },
+  "campaigns.dashboard.subtitle": { 
+    no: "Overvåk dine bulk SMS-kampanjer og spor ytelse", 
+    en: "Monitor your bulk SMS campaigns and track performance", 
+    de: "Überwachen Sie Ihre Massen-SMS-Kampagnen", 
+    fr: "Surveillez vos campagnes SMS", 
+    es: "Monitorea tus campañas de SMS", 
+    it: "Monitora le tue campagne SMS",
+    pl: "Monitoruj swoje masowe kampanie SMS"
+  },
+  "campaigns.dashboard.totalCampaigns": { 
+    no: "Totalt antall kampanjer", 
+    en: "Total Campaigns", 
+    de: "Gesamtkampagnen", 
+    fr: "Total des campagnes", 
+    es: "Campañas totales", 
+    it: "Campagne totali",
+    pl: "Wszystkie kampanie"
+  },
+  "campaigns.dashboard.active": { 
+    no: "aktive", 
+    en: "active", 
+    de: "aktiv", 
+    fr: "actives", 
+    es: "activas", 
+    it: "attive",
+    pl: "aktywne"
+  },
+  "campaigns.dashboard.messagesSent": { 
+    no: "Meldinger sendt", 
+    en: "Messages Sent", 
+    de: "Nachrichten gesendet", 
+    fr: "Messages envoyés", 
+    es: "Mensajes enviados", 
+    it: "Messaggi inviati",
+    pl: "Wysłane wiadomości"
+  },
+  "campaigns.dashboard.delivered": { 
+    no: "levert", 
+    en: "delivered", 
+    de: "zugestellt", 
+    fr: "livrés", 
+    es: "entregados", 
+    it: "consegnati",
+    pl: "dostarczone"
+  },
+  "campaigns.dashboard.responses": { 
+    no: "Svar", 
+    en: "Responses", 
+    de: "Antworten", 
+    fr: "Réponses", 
+    es: "Respuestas", 
+    it: "Risposte",
+    pl: "Odpowiedzi"
+  },
+  "campaigns.dashboard.responseRate": { 
+    no: "svar-rate", 
+    en: "response rate", 
+    de: "Antwortrate", 
+    fr: "taux de réponse", 
+    es: "tasa de respuesta", 
+    it: "tasso di risposta",
+    pl: "wskaźnik odpowiedzi"
+  },
+  "campaigns.dashboard.avgResponseRate": { 
+    no: "Gjennomsnittlig svar-rate", 
+    en: "Avg Response Rate", 
+    de: "Durchschn. Antwortrate", 
+    fr: "Taux de réponse moyen", 
+    es: "Tasa media", 
+    it: "Tasso medio",
+    pl: "Śr. wskaźnik odp."
+  },
+  "campaigns.dashboard.campaignPerformance": { 
+    no: "Kampanjeytelse", 
+    en: "Campaign Performance", 
+    de: "Kampagnenleistung", 
+    fr: "Performance de la campagne", 
+    es: "Rendimiento", 
+    it: "Performance",
+    pl: "Wyniki kampanii"
+  },
+  "campaigns.dashboard.detailedStats": { 
+    no: "Detaljert statistikk for hver bulk SMS-kampanje", 
+    en: "Detailed statistics for each bulk SMS campaign", 
+    de: "Detaillierte Statistiken", 
+    fr: "Statistiques détaillées", 
+    es: "Estadísticas detalladas", 
+    it: "Statistiche dettagliate",
+    pl: "Szczegółowe statystyki"
+  },
+  "campaigns.dashboard.noCampaigns": { 
+    no: "Ingen kampanjer ennå", 
+    en: "No campaigns yet", 
+    de: "Noch keine Kampagnen", 
+    fr: "Aucune campagne", 
+    es: "No hay campañas", 
+    it: "Nessuna campagna",
+    pl: "Brak kampanii"
+  },
+  "campaigns.dashboard.createFirstCampaign": { 
+    no: "Opprett din første bulk SMS-kampanje for å se statistikk her", 
+    en: "Create your first bulk SMS campaign to see statistics here", 
+    de: "Erstellen Sie Ihre erste Kampagne", 
+    fr: "Créez votre première campagne", 
+    es: "Crea tu primera campaña", 
+    it: "Crea la tua prima campagna",
+    pl: "Utwórz pierwszą kampanię"
+  },
+  "campaigns.dashboard.recipients": { 
+    no: "Mottakere", 
+    en: "Recipients", 
+    de: "Empfänger", 
+    fr: "Destinataires", 
+    es: "Destinatarios", 
+    it: "Destinatari",
+    pl: "Odbiorcy"
+  },
+  "campaigns.dashboard.sent": { 
+    no: "Sendt", 
+    en: "Sent", 
+    de: "Gesendet", 
+    fr: "Envoyés", 
+    es: "Enviados", 
+    it: "Inviati",
+    pl: "Wysłane"
+  },
+  "campaigns.dashboard.replied": { 
+    no: "Svar", 
+    en: "Replied", 
+    de: "Geantwortet", 
+    fr: "Répondu", 
+    es: "Respondido", 
+    it: "Risposto",
+    pl: "Odpowiedzi"
+  },
+  "campaigns.dashboard.failed": { 
+    no: "Feilet", 
+    en: "Failed", 
+    de: "Fehlgeschlagen", 
+    fr: "Échoué", 
+    es: "Fallido", 
+    it: "Fallito",
+    pl: "Błędy"
+  },
+  "campaigns.dashboard.deliveryRate": { 
+    no: "Leveringsrate", 
+    en: "Delivery Rate", 
+    de: "Zustellrate", 
+    fr: "Taux de livraison", 
+    es: "Tasa de entrega", 
+    it: "Tasso di consegna",
+    pl: "Wskaźnik dostarczenia"
+  },
+  "campaigns.dashboard.viewDetails": { 
+    no: "Se detaljer", 
+    en: "View Details", 
+    de: "Details anzeigen", 
+    fr: "Voir détails", 
+    es: "Ver detalles", 
+    it: "Vedi dettagli",
+    pl: "Szczegóły"
+  },
+  "campaigns.dashboard.viewResponses": { 
+    no: "Se svar", 
+    en: "View Responses", 
+    de: "Antworten anzeigen", 
+    fr: "Voir réponses", 
+    es: "Ver respuestas", 
+    it: "Vedi risposte",
+    pl: "Zobacz odpowiedzi"
+  },
+  "campaigns.status.draft": { 
+    no: "Utkast", 
+    en: "Draft", 
+    de: "Entwurf", 
+    fr: "Brouillon", 
+    es: "Borrador", 
+    it: "Bozza",
+    pl: "Szkic" 
+  },
+  "campaigns.status.active": { 
+    no: "Aktiv", 
+    en: "Active", 
+    de: "Aktiv", 
+    fr: "Actif", 
+    es: "Activo", 
+    it: "Attivo",
+    pl: "Aktywna" 
+  },
+  "campaigns.status.completed": { 
+    no: "Fullført", 
+    en: "Completed", 
+    de: "Abgeschlossen", 
+    fr: "Terminé", 
+    es: "Completado", 
+    it: "Completato",
+    pl: "Ukończona" 
+  },
+  "campaigns.status.failed": { 
+    no: "Feilet", 
+    en: "Failed", 
+    de: "Fehlgeschlagen", 
+    fr: "Échoué", 
+    es: "Fallido", 
+    it: "Fallito",
+    pl: "Błąd" 
+  },
+  "campaigns.status.sending": { 
+    no: "Sender", 
+    en: "Sending", 
+    de: "Sendet", 
+    fr: "Envoi", 
+    es: "Enviando", 
+    it: "Invio",
+    pl: "Wysyłanie" 
+  }
 };
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
