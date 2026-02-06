@@ -40,7 +40,7 @@ export default function SettingsPage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 lg:w-auto">
+            <TabsList className="grid w-full grid-cols-4 lg:w-auto">
               <TabsTrigger value="hours" className="gap-2">
                 <Clock className="h-4 w-4" />
                 {t("settings.tabs.hours")}
