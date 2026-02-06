@@ -711,14 +711,14 @@ export default function AdminPage() {
                               {t("admin.loading_groups")}
                             </TableCell>
                           </TableRow>
-                        ) : !groups || groups.length === 0 ? (
+                        ) : !allGroups || allGroups.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                               {t("admin.no_groups")}
                             </TableCell>
                           </TableRow>
                         ) : (
-                          groups.map((group) => (
+                          allGroups.map((group) => (
                             <TableRow key={group.id}>
                               <TableCell className="font-medium">{group.name}</TableCell>
                               <TableCell>{group.on_duty_count || 0}</TableCell>
@@ -790,7 +790,7 @@ export default function AdminPage() {
                               {t("admin.loading_users")}
                             </TableCell>
                           </TableRow>
-                        ) : (!users || users.length === 0) ? (
+                        ) : users.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                               {t("admin.no_users")}
