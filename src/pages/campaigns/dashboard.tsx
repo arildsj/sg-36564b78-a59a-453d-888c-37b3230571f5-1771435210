@@ -17,7 +17,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageProvider";
-import AppLayout from "@/components/layout/AppLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Tables } from "@/integrations/supabase/types";
 
 type BulkCampaign = Tables<"bulk_campaigns">;

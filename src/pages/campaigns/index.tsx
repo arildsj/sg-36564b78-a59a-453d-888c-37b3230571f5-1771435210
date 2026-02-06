@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Megaphone, ChevronDown, ChevronRight, Users, CheckCircle2, XCircle, Clock, Send, Plus } from "lucide-react";
+import { Megaphone, ChevronDown, ChevronRight, Users, CheckCircle2, XCircle, Clock, Send, Plus, LayoutDashboard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { bulkService, BulkCampaign } from "@/services/bulkService";
 import { format } from "date-fns";
@@ -23,6 +23,7 @@ export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<CampaignWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCampaign, setExpandedCampaign] = useState<string | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   useEffect(() => {
     loadCampaigns();
@@ -111,10 +112,16 @@ export default function CampaignsPage() {
               <h1 className="text-3xl font-bold">{t("campaigns.title")}</h1>
               <p className="text-muted-foreground mt-1">{t("campaigns.description")}</p>
             </div>
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("campaigns.createNew")}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => window.location.href = '/campaigns/dashboard'}>
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+              <Button onClick={() => setShowCreateDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                {t("campaigns.createNew")}
+              </Button>
+            </div>
           </div>
 
           {campaigns.length === 0 ? (
