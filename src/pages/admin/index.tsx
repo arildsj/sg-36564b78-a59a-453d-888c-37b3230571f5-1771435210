@@ -194,6 +194,14 @@ export default function AdminPage() {
         routingRuleService.getRoutingRules(),
       ]);
 
+      console.log("Admin data loaded:", { 
+        groupsCount: groupsData?.length, 
+        usersCount: usersData?.length,
+        currentUser: currentUserData?.name,
+        gatewaysCount: gatewaysData?.length,
+        routingRulesCount: routingRulesData?.length
+      });
+
       // Fetch audit logs separately to not block main data if it fails (e.g. RLS)
       try {
         if (currentUserData?.role === 'tenant_admin') {
@@ -219,6 +227,7 @@ export default function AdminPage() {
       };
       setAllGroups(flattenGroups(groupsData as GroupNode[]));
       
+      console.log("Setting users:", usersData);
       setUsers(usersData as User[]);
       setCurrentUser(currentUserData as unknown as User);
       setRealUser(realUserData as unknown as User);
@@ -702,7 +711,7 @@ export default function AdminPage() {
                               {t("admin.loading_groups")}
                             </TableCell>
                           </TableRow>
-                        ) : groups.length === 0 ? (
+                        ) : !groups || groups.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                               {t("admin.no_groups")}
@@ -716,7 +725,7 @@ export default function AdminPage() {
                               <TableCell>{group.member_count || 0}</TableCell>
                               <TableCell>
                                 {group.parent_id
-                                  ? groups.find((g) => g.id === group.parent_id)?.name || "-"
+                                  ? allGroups.find((g) => g.id === group.parent_id)?.name || "-"
                                   : "-"}
                               </TableCell>
                               <TableCell className="text-right">
@@ -724,10 +733,7 @@ export default function AdminPage() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => {
-                                      setSelectedGroup(group);
-                                      setShowGroupDetails(true);
-                                    }}
+                                    onClick={() => handleSelectGroup(group)}
                                   >
                                     <Users className="h-4 w-4" />
                                   </Button>
@@ -784,7 +790,7 @@ export default function AdminPage() {
                               {t("admin.loading_users")}
                             </TableCell>
                           </TableRow>
-                        ) : users.length === 0 ? (
+                        ) : !users || users.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                               {t("admin.no_users")}
@@ -799,7 +805,6 @@ export default function AdminPage() {
                               <TableCell>
                                 <div className="flex flex-wrap gap-1">
                                   {user.group_ids && user.group_ids.length > 0 ? (
-                                    // We need to map group_ids to names, simplistic approach here as we have allGroups
                                     user.group_ids.map((gid: string) => {
                                         const g = allGroups.find(ag => ag.id === gid);
                                         return (
@@ -828,10 +833,7 @@ export default function AdminPage() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => {
-                                      setEditUser(user);
-                                      setShowEditUserDialog(true);
-                                    }}
+                                    onClick={() => handleOpenEditUser(user)}
                                   >
                                     <Edit2 className="h-4 w-4" />
                                   </Button>
