@@ -91,6 +91,30 @@ export function RoutingRulesTab() {
     }
   };
 
+  const handleEdit = (rule: RoutingRule) => {
+    setEditingRule(rule);
+    setFormData({
+      gateway_id: rule.gateway_id,
+      target_group_id: rule.target_group_id,
+      rule_type: rule.rule_type,
+      pattern: rule.pattern,
+      priority: rule.priority,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEditingRule(null);
+    setFormData({
+      gateway_id: "",
+      target_group_id: "",
+      rule_type: "keyword",
+      pattern: "",
+      priority: 10,
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.gateway_id || !formData.target_group_id || !formData.pattern) {
@@ -104,25 +128,28 @@ export function RoutingRulesTab() {
 
     setIsSubmitting(true);
     try {
-      await routingRuleService.createRoutingRule(formData);
-      toast({
-        title: "Regel opprettet",
-        description: "Routing-regelen er lagret.",
-      });
-      setIsDialogOpen(false);
-      setFormData({
-        gateway_id: "",
-        target_group_id: "",
-        rule_type: "keyword",
-        pattern: "",
-        priority: 10,
-      });
+      if (editingRule) {
+        // Update existing rule
+        await routingRuleService.updateRoutingRule(editingRule.id, formData);
+        toast({
+          title: "Regel oppdatert",
+          description: "Routing-regelen er oppdatert.",
+        });
+      } else {
+        // Create new rule
+        await routingRuleService.createRoutingRule(formData);
+        toast({
+          title: "Regel opprettet",
+          description: "Routing-regelen er lagret.",
+        });
+      }
+      handleCloseDialog();
       loadData();
     } catch (error) {
-      console.error("Failed to create rule:", error);
+      console.error("Failed to save rule:", error);
       toast({
         title: "Feil",
-        description: "Kunne ikke opprette regelen.",
+        description: editingRule ? "Kunne ikke oppdatere regelen." : "Kunne ikke opprette regelen.",
         variant: "destructive",
       });
     } finally {
@@ -183,7 +210,9 @@ export function RoutingRulesTab() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Opprett ny routing-regel</DialogTitle>
+              <DialogTitle>
+                {editingRule ? "Rediger routing-regel" : "Opprett ny routing-regel"}
+              </DialogTitle>
               <DialogDescription>
                 Meldinger som matcher regelen vil bli sendt til valgt gruppe.
               </DialogDescription>
@@ -274,11 +303,11 @@ export function RoutingRulesTab() {
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={handleCloseDialog}>
                   Avbryt
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Lagrer..." : "Lagre regel"}
+                  {isSubmitting ? "Lagrer..." : editingRule ? "Oppdater regel" : "Lagre regel"}
                 </Button>
               </DialogFooter>
             </form>
@@ -331,14 +360,24 @@ export function RoutingRulesTab() {
                     />
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleDelete(rule.id)}
-                      className="text-destructive hover:text-destructive/90"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleEdit(rule)}
+                        className="hover:bg-primary/10"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDelete(rule.id)}
+                        className="text-destructive hover:text-destructive/90"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
