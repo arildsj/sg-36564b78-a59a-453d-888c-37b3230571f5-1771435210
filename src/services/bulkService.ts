@@ -124,6 +124,7 @@ export const bulkService = {
         message_template: message,
         status: "draft",
         source_group_id: groupId,
+        target_group_id: groupId,
         expires_at: expiresAt.toISOString()
       })
       .select()
@@ -212,6 +213,7 @@ export const bulkService = {
         message_template: message,
         status: "draft",
         source_group_id: groupId,
+        target_group_id: groupId,
         expires_at: expiresAt.toISOString()
       })
       .select()
@@ -309,6 +311,7 @@ export const bulkService = {
         message_template: message,
         status: "draft",
         source_group_id: groupId,
+        target_group_id: groupId,
         expires_at: expiresAt.toISOString()
       })
       .select()
@@ -520,6 +523,7 @@ export const bulkService = {
         message_template: reminderMessage,
         status: "draft",
         source_group_id: originalCampaign.source_group_id,
+        target_group_id: originalCampaign.target_group_id,
         expires_at: expiresAt.toISOString()
       })
       .select()

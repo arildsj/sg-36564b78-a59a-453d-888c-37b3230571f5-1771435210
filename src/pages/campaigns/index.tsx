@@ -36,8 +36,8 @@ export default function CampaignsPage() {
         .from("bulk_campaigns")
         .select(`
           *,
-          groups(name),
-          users(name)
+          groups!bulk_campaigns_target_group_id_fkey(name),
+          users!bulk_campaigns_created_by_user_id_fkey(name)
         `)
         .order("created_at", { ascending: false });
 

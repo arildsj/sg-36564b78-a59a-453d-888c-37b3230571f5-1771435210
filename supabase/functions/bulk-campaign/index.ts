@@ -1,17 +1,12 @@
 // SeMSe + FairGateway: Bulk Campaign Execution
-// Process bulk SMS campaigns with per-recipient tracking and proper thread management
-
+// Process bulk SMS campaigns with personalization and gateway routing
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-interface BulkCampaignRequest {
-  campaign_id: string;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -19,248 +14,261 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
+    const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: req.headers.get("Authorization")! },
+        },
+      }
     );
 
     const { campaign_id } = await req.json();
 
     if (!campaign_id) {
       return new Response(
-        JSON.stringify({ error: "Missing campaign_id" }),
+        JSON.stringify({ error: "campaign_id is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Fetch campaign with recipients
-    const { data: campaign, error: campaignError } = await supabase
+    console.log("Processing bulk campaign:", campaign_id);
+
+    // Get campaign details with recipients and group
+    const { data: campaign, error: campaignError } = await supabaseClient
       .from("bulk_campaigns")
       .select(`
         *,
-        bulk_recipients (*)
+        bulk_recipients(*),
+        groups!bulk_campaigns_source_group_id_fkey(
+          id,
+          name,
+          gateway_id,
+          gateways(id, phone_number, provider, api_key)
+        )
       `)
       .eq("id", campaign_id)
       .single();
 
     if (campaignError || !campaign) {
+      console.error("Campaign fetch error:", campaignError);
       return new Response(
         JSON.stringify({ error: "Campaign not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (campaign.status !== "draft") {
+    // Validate gateway configuration
+    const gateway = campaign.groups?.gateways;
+    if (!gateway) {
       return new Response(
-        JSON.stringify({ error: "Campaign already processed", status: campaign.status }),
+        JSON.stringify({ error: "No gateway configured for group" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Gateway: ${gateway.phone_number} (${gateway.provider})`);
+
+    // Get user info for message attribution
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Update campaign status to processing
-    await supabase
+    await supabaseClient
       .from("bulk_campaigns")
-      .update({ 
+      .update({
         status: "sending",
         sent_at: new Date().toISOString(),
+        target_group_id: campaign.source_group_id,
         total_recipients: campaign.bulk_recipients?.length || 0
       })
       .eq("id", campaign_id);
 
-    // Get active gateways for load distribution
-    const { data: gateways } = await supabase
-      .from("gateways")
-      .select("id, phone_number")
-      .eq("tenant_id", campaign.tenant_id)
-      .eq("status", "active");
-
-    if (!gateways || gateways.length === 0) {
-      await supabase
-        .from("bulk_campaigns")
-        .update({ status: "failed" })
-        .eq("id", campaign_id);
-
-      return new Response(
-        JSON.stringify({ error: "No active gateways available" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // CRITICAL FIX: Use campaign's target_group_id, NOT user's operational group
-    const resolvedGroupId = campaign.target_group_id;
-
-    if (!resolvedGroupId) {
-      await supabase
-        .from("bulk_campaigns")
-        .update({ status: "failed" })
-        .eq("id", campaign_id);
-
-      return new Response(
-        JSON.stringify({ error: "No target group specified for campaign" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const recipients = campaign.bulk_recipients || [];
     let successCount = 0;
-    let failedCount = 0;
+    let failCount = 0;
 
-    // Process recipients in batches
-    for (let i = 0; i < recipients.length; i++) {
-      const recipient = recipients[i];
-      const gateway = gateways[i % gateways.length]; // Round-robin distribution
-
+    // Process each recipient
+    for (const recipient of campaign.bulk_recipients || []) {
       try {
         // Personalize message content
-        const personalizedContent = personalizeContent(
+        const personalizedContent = personalizeMessage(
           campaign.message_template,
-          recipient.metadata
+          recipient.metadata || {}
         );
 
-        // CRITICAL FIX: Create thread for this bulk recipient
-        const threadKey = `${gateway.phone_number}:${recipient.phone_number}`;
-        
-        const { data: existingThread } = await supabase
+        console.log(`Sending to ${recipient.phone_number}: ${personalizedContent}`);
+
+        // Create message thread for this recipient
+        const { data: thread } = await supabaseClient
           .from("message_threads")
-          .select("id")
-          .eq("tenant_id", campaign.tenant_id)
-          .eq("contact_phone", recipient.phone_number)
-          .eq("gateway_id", gateway.id)
-          .maybeSingle();
+          .insert({
+            contact_phone: recipient.phone_number,
+            group_id: campaign.source_group_id,
+            status: "active",
+            last_message_at: new Date().toISOString(),
+            bulk_campaign_id: campaign_id,
+            metadata: { bulk_recipient_id: recipient.id }
+          })
+          .select()
+          .single();
 
-        let threadId;
-        if (existingThread) {
-          threadId = existingThread.id;
-          // Update thread
-          await supabase
-            .from("message_threads")
-            .update({ 
-              resolved_group_id: resolvedGroupId,
-              last_message_at: new Date().toISOString(),
-            })
-            .eq("id", threadId);
-        } else {
-          // Create new thread
-          const { data: newThread, error: threadError } = await supabase
-            .from("message_threads")
-            .insert({
-              tenant_id: campaign.tenant_id,
-              gateway_id: gateway.id,
-              contact_phone: recipient.phone_number,
-              resolved_group_id: resolvedGroupId,
-              last_message_at: new Date().toISOString(),
-              is_resolved: false,
-            })
-            .select()
-            .single();
-
-          if (threadError) throw new Error(threadError.message);
-          threadId = newThread.id;
-        }
-
-        // Create outbound message with proper routing
-        const { data: message, error: messageError } = await supabase
+        // Create outbound message record
+        const { data: sentMessage, error: messageError } = await supabaseClient
           .from("messages")
           .insert({
-            tenant_id: campaign.tenant_id,
-            thread_id: threadId,
-            gateway_id: gateway.id,
-            group_id: resolvedGroupId,
+            thread_id: thread?.id,
             direction: "outbound",
+            content: personalizedContent,
             from_number: gateway.phone_number,
             to_number: recipient.phone_number,
-            content: personalizedContent,
             status: "pending",
-            thread_key: threadKey,
+            gateway_id: gateway.id,
+            resolved_group_id: campaign.source_group_id,
+            sent_by_user_id: user.id,
+            metadata: {
+              bulk_campaign_id: campaign_id,
+              bulk_recipient_id: recipient.id,
+              personalized: true
+            }
           })
           .select()
           .single();
 
         if (messageError) {
-          throw new Error(messageError.message);
+          console.error(`Message creation error for ${recipient.phone_number}:`, messageError);
+          failCount++;
+          
+          await supabaseClient
+            .from("bulk_recipients")
+            .update({ status: "failed" })
+            .eq("id", recipient.id);
+          
+          continue;
         }
 
-        // Update recipient status
-        await supabase
-          .from("bulk_recipients")
-          .update({
-            status: "sent",
-            sent_message_id: message.id,
-            sent_thread_id: threadId,
-            sent_at: new Date().toISOString(),
-          })
-          .eq("id", recipient.id);
-
-        // Trigger outbound message processing
-        await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/outbound-message`, {
+        // Call FairGateway API to send SMS
+        const fairGatewayResponse = await fetch("https://fairgateway.no/api/send", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+            "Authorization": `Bearer ${gateway.api_key}`,
           },
-          body: JSON.stringify({ message_id: message.id }),
+          body: JSON.stringify({
+            to: recipient.phone_number,
+            from: gateway.phone_number,
+            message: personalizedContent,
+            callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/delivery-webhook`,
+            reference: sentMessage.id,
+          }),
         });
 
-        successCount++;
-      } catch (error) {
-        console.error(`Failed to send to ${recipient.phone_number}:`, error);
+        if (!fairGatewayResponse.ok) {
+          const errorText = await fairGatewayResponse.text();
+          console.error(`FairGateway error for ${recipient.phone_number}:`, errorText);
+          failCount++;
+          
+          await supabaseClient
+            .from("messages")
+            .update({ status: "failed" })
+            .eq("id", sentMessage.id);
 
-        await supabase
+          await supabaseClient
+            .from("bulk_recipients")
+            .update({ status: "failed" })
+            .eq("id", recipient.id);
+          
+          continue;
+        }
+
+        const gatewayResult = await fairGatewayResponse.json();
+        console.log(`Gateway response for ${recipient.phone_number}:`, gatewayResult);
+
+        // Update message with gateway message ID
+        await supabaseClient
+          .from("messages")
+          .update({
+            status: "sent",
+            gateway_message_id: gatewayResult.message_id,
+            sent_at: new Date().toISOString()
+          })
+          .eq("id", sentMessage.id);
+
+        // Update bulk recipient status
+        await supabaseClient
           .from("bulk_recipients")
           .update({
-            status: "failed",
-            error_message: error.message,
+            status: "sent",
+            sent_message_id: sentMessage.id,
+            sent_at: new Date().toISOString()
           })
           .eq("id", recipient.id);
 
-        failedCount++;
-      }
+        successCount++;
 
-      // Rate limiting (optional)
-      if (i < recipients.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
+      } catch (error) {
+        console.error(`Error processing recipient ${recipient.phone_number}:`, error);
+        failCount++;
+        
+        await supabaseClient
+          .from("bulk_recipients")
+          .update({ status: "failed" })
+          .eq("id", recipient.id);
       }
     }
 
     // Update campaign final status
-    const finalStatus = failedCount === 0 ? "completed" : failedCount === recipients.length ? "failed" : "completed";
-    await supabase
+    const finalStatus = failCount === 0 ? "completed" : successCount === 0 ? "failed" : "completed";
+    
+    await supabaseClient
       .from("bulk_campaigns")
       .update({
         status: finalStatus,
         completed_at: new Date().toISOString(),
         sent_count: successCount,
-        failed_count: failedCount,
+        failed_count: failCount
       })
       .eq("id", campaign_id);
 
+    console.log(`Campaign ${campaign_id} completed: ${successCount} sent, ${failCount} failed`);
+
     return new Response(
       JSON.stringify({
-        status: "success",
-        campaign_id: campaign_id,
-        total: recipients.length,
-        success: successCount,
-        failed: failedCount,
+        success: true,
+        campaign_id,
+        sent: successCount,
+        failed: failCount,
+        total: campaign.bulk_recipients?.length || 0
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
     );
+
   } catch (error) {
     console.error("Bulk campaign error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      }
     );
   }
 });
 
-function personalizeContent(template: string, metadata: any): string {
-  if (!metadata) return template;
-
+function personalizeMessage(template: string, metadata: Record<string, any>): string {
   let personalized = template;
-
-  // Replace {{variable}} placeholders
+  
+  // Replace {{key}} placeholders with metadata values
   Object.keys(metadata).forEach((key) => {
-    const placeholder = new RegExp(`{{${key}}}`, "g");
+    const placeholder = `{{${key}}}`;
     personalized = personalized.replace(placeholder, metadata[key] || "");
   });
 

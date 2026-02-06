@@ -1001,7 +1001,7 @@ const translations: Translations = {
     de: "Übersicht über Massenversendungen und Antworten", 
     fr: "Aperçu des envois groupés et réponses", 
     es: "Resumen de envíos masivos y respuestas", 
-    it: "Panoramica di invii di massa e risposte",
+    it: "Panoramica di invii di massa e risposte", 
     pl: "Przegląd masowych wysyłek i odpowiedzi"
   },
   "campaigns.new": { 
@@ -1010,7 +1010,7 @@ const translations: Translations = {
     de: "Neue Kampagne", 
     fr: "Nouvelle campagne", 
     es: "Nueva campaña", 
-    it: "Nuova campagna",
+    it: "Nuova campagna", 
     pl: "Nowa kampania"
   },
   "campaigns.no_campaigns": { 
@@ -1019,7 +1019,7 @@ const translations: Translations = {
     de: "Noch keine Kampagnen", 
     fr: "Aucune campagne pour le moment", 
     es: "No hay campañas aún", 
-    it: "Nessuna campagna ancora",
+    it: "Nessuna campagna ancora", 
     pl: "Brak kampanii"
   },
   "campaigns.first_campaign": { 
@@ -1028,7 +1028,7 @@ const translations: Translations = {
     de: "Senden Sie Ihre erste Massennachricht, um zu beginnen", 
     fr: "Envoyez votre premier message groupé pour commencer", 
     es: "Envía tu primer mensaje masivo para comenzar", 
-    it: "Invia il tuo primo messaggio di massa per iniziare",
+    it: "Invia il tuo primo messaggio di massa per iniziare", 
     pl: "Wyślij swoją pierwszą wiadomość masową, aby rozpocząć"
   },
   "campaigns.send_bulk": { 
@@ -1037,7 +1037,7 @@ const translations: Translations = {
     de: "Massennachricht senden", 
     fr: "Envoyer un message groupé", 
     es: "Enviar mensaje masivo", 
-    it: "Invia messaggio di massa",
+    it: "Invia messaggio di massa", 
     pl: "Wyślij wiadomość masową"
   },
   "campaigns.recipients": { 
@@ -1046,7 +1046,7 @@ const translations: Translations = {
     de: "Empfänger", 
     fr: "Destinataires", 
     es: "Destinatarios", 
-    it: "Destinatari",
+    it: "Destinatari", 
     pl: "Odbiorcy"
   },
   "campaigns.sent": { 
@@ -1055,7 +1055,7 @@ const translations: Translations = {
     de: "Gesendet", 
     fr: "Envoyé", 
     es: "Enviado", 
-    it: "Inviato",
+    it: "Inviato", 
     pl: "Wysłano"
   },
   "campaigns.failed": { 
@@ -1064,7 +1064,7 @@ const translations: Translations = {
     de: "Fehlgeschlagen", 
     fr: "Échoué", 
     es: "Fallido", 
-    it: "Fallito",
+    it: "Fallito", 
     pl: "Niepowodzenie"
   },
   "campaigns.success": { 
@@ -1073,7 +1073,7 @@ const translations: Translations = {
     de: "Erfolg", 
     fr: "Succès", 
     es: "Éxito", 
-    it: "Successo",
+    it: "Successo", 
     pl: "Sukces"
   },
   "campaigns.status.draft": { 
@@ -1082,7 +1082,7 @@ const translations: Translations = {
     de: "Entwurf", 
     fr: "Brouillon", 
     es: "Borrador", 
-    it: "Bozza",
+    it: "Bozza", 
     pl: "Szkic"
   },
   "campaigns.status.scheduled": { 
@@ -1091,7 +1091,7 @@ const translations: Translations = {
     de: "Geplant", 
     fr: "Planifié", 
     es: "Programado", 
-    it: "Programmato",
+    it: "Programmato", 
     pl: "Zaplanowano"
   },
   "campaigns.status.sending": { 
@@ -1100,7 +1100,7 @@ const translations: Translations = {
     de: "Sendet", 
     fr: "Envoi en cours", 
     es: "Enviando", 
-    it: "Invio in corso",
+    it: "Invio en cours", 
     pl: "Wysyłanie"
   },
   "campaigns.status.completed": { 
@@ -1109,7 +1109,7 @@ const translations: Translations = {
     de: "Abgeschlossen", 
     fr: "Terminé", 
     es: "Completado", 
-    it: "Completato",
+    it: "Completato", 
     pl: "Ukończono"
   },
   "campaigns.status.failed": { 
@@ -1118,8 +1118,8 @@ const translations: Translations = {
     de: "Fehlgeschlagen", 
     fr: "Échoué", 
     es: "Fallido", 
-    it: "Fallito",
-    pl: "Niepowodzenie"
+    it: "Fallito", 
+    pl: "Błąd"
   },
   "campaigns.message_sent": { 
     no: "Melding sendt", 
@@ -1127,7 +1127,7 @@ const translations: Translations = {
     de: "Nachricht gesendet", 
     fr: "Message envoyé", 
     es: "Mensaje enviado", 
-    it: "Messaggio inviato",
+    it: "Messaggio inviato", 
     pl: "Wiadomość wysłana"
   },
   "campaigns.responses_coming": { 
@@ -1136,7 +1136,7 @@ const translations: Translations = {
     de: "Antwortansicht kommt im nächsten Schritt...", 
     fr: "Vue des réponses à venir dans la prochaine étape...", 
     es: "Vista de respuestas próximamente...", 
-    it: "Vista risposte in arrivo nel prossimo passaggio...",
+    it: "Vista risposte in arrivo nel prossimo passaggio...", 
     pl: "Widok odpowiedzi wkrótce..."
   },
 
@@ -1147,7 +1147,7 @@ const translations: Translations = {
     de: "Verwaltung", 
     fr: "Administration", 
     es: "Administración", 
-    it: "Amministrazione",
+    it: "Amministrazione", 
     pl: "Administracja"
   },
   "admin.description": { 
@@ -1156,7 +1156,7 @@ const translations: Translations = {
     de: "Benutzer, Gruppen, Gateways und Systemeinstellungen verwalten.", 
     fr: "Gérer les utilisateurs, groupes, passerelles et paramètres système.", 
     es: "Administrar usuarios, grupos, pasarelas y configuración del sistema.", 
-    it: "Gestisci utenti, gruppi, gateway e impostazioni di sistema.",
+    it: "Gestisci utenti, gruppi, gateway e impostazioni di sistema.", 
     pl: "Zarządzaj użytkownikami, grupami, bramkami i ustawieniami systemu."
   },
   "admin.create_group": { 
@@ -1165,7 +1165,7 @@ const translations: Translations = {
     de: "Neue Gruppe erstellen", 
     fr: "Créer un nouveau groupe", 
     es: "Crear nuevo grupo", 
-    it: "Crea primo gruppo",
+    it: "Crea primo gruppo", 
     pl: "Utwórz nową grupę"
   },
   "admin.new_group": { 
@@ -1174,7 +1174,7 @@ const translations: Translations = {
     de: "Neue Gruppe", 
     fr: "Nouveau groupe", 
     es: "Nuevo grupo", 
-    it: "Nuovo gruppo",
+    it: "Nuovo gruppo", 
     pl: "Nowa grupa"
   },
   "admin.new_user": { 
@@ -1183,7 +1183,7 @@ const translations: Translations = {
     de: "Neuer Benutzer", 
     fr: "Nouvel utilisateur", 
     es: "Nuevo usuario", 
-    it: "Nuovo utente",
+    it: "Nuovo utente", 
     pl: "Nowy użytkownik"
   },
   "admin.tabs.groups": { 
@@ -1192,7 +1192,7 @@ const translations: Translations = {
     de: "Gruppen", 
     fr: "Groupes", 
     es: "Grupos", 
-    it: "Gruppi",
+    it: "Gruppi", 
     pl: "Grupy"
   },
   "admin.tabs.users": { 
@@ -1201,7 +1201,7 @@ const translations: Translations = {
     de: "Benutzer", 
     fr: "Utilisateurs", 
     es: "Usuarios", 
-    it: "Utenti",
+    it: "Utenti", 
     pl: "Użytkownicy"
   },
   "admin.tabs.gateways": { 
@@ -1210,7 +1210,7 @@ const translations: Translations = {
     de: "Gateways", 
     fr: "Passerelles", 
     es: "Pasarelas", 
-    it: "Gateway",
+    it: "Gateway", 
     pl: "Bramki"
   },
   "admin.on_duty": { 
@@ -1219,7 +1219,7 @@ const translations: Translations = {
     de: "Im Dienst", 
     fr: "De garde", 
     es: "De guardia", 
-    it: "Di turno",
+    it: "Di turno", 
     pl: "Na dyżurze"
   },
   "admin.total": { 
@@ -1228,7 +1228,7 @@ const translations: Translations = {
     de: "Gesamt", 
     fr: "Total", 
     es: "Total", 
-    it: "Totale",
+    it: "Totale", 
     pl: "Łącznie"
   },
   "admin.parent": { 
@@ -1237,7 +1237,7 @@ const translations: Translations = {
     de: "Übergeordnet", 
     fr: "Parent", 
     es: "Principal", 
-    it: "Genitore",
+    it: "Genitore", 
     pl: "Nadrzędny"
   },
   "admin.actions": { 
@@ -1246,7 +1246,7 @@ const translations: Translations = {
     de: "Aktionen", 
     fr: "Actions", 
     es: "Acciones", 
-    it: "Azioni",
+    it: "Azioni", 
     pl: "Akcje"
   },
   "admin.no_groups": { 
@@ -1255,7 +1255,7 @@ const translations: Translations = {
     de: "Noch keine Gruppen erstellt", 
     fr: "Aucun groupe créé pour le moment", 
     es: "No se han creado grupos aún", 
-    it: "Nessun gruppo creato ancora",
+    it: "Nessun gruppo creato ancora", 
     pl: "Nie utworzono jeszcze grup"
   },
   "admin.loading_groups": { 
@@ -1264,7 +1264,7 @@ const translations: Translations = {
     de: "Gruppen werden geladen...", 
     fr: "Chargement des groupes...", 
     es: "Cargando grupos...", 
-    it: "Caricamento gruppi...",
+    it: "Caricamento gruppi...", 
     pl: "Ładowanie grup..."
   },
   "admin.role": { 
@@ -1273,7 +1273,7 @@ const translations: Translations = {
     de: "Rolle", 
     fr: "Rôle", 
     es: "Rol", 
-    it: "Ruolo",
+    it: "Ruolo", 
     pl: "Rola"
   },
   "admin.status": { 
@@ -1282,7 +1282,7 @@ const translations: Translations = {
     de: "Status", 
     fr: "Statut", 
     es: "Estado", 
-    it: "Stato",
+    it: "Stato", 
     pl: "Status"
   },
   "admin.no_users": { 
@@ -1291,7 +1291,7 @@ const translations: Translations = {
     de: "Keine Benutzer gefunden", 
     fr: "Aucun utilisateur trouvé", 
     es: "No se encontraron usuarios", 
-    it: "Nessun utente trovato",
+    it: "Nessun utente trovato", 
     pl: "Nie znaleziono użytkowników"
   },
   "admin.loading_users": { 
@@ -1300,7 +1300,7 @@ const translations: Translations = {
     de: "Benutzer werden geladen...", 
     fr: "Chargement des utilisateurs...", 
     es: "Cargando usuarios...", 
-    it: "Caricamento utenti...",
+    it: "Caricamento utenti...", 
     pl: "Ładowanie użytkowników..."
   },
   "admin.manage_groups": { 
@@ -1309,7 +1309,7 @@ const translations: Translations = {
     de: "Gruppen verwalten", 
     fr: "Gérer les groupes", 
     es: "Administrar grupos", 
-    it: "Gestisci gruppi",
+    it: "Gestisci gruppi", 
     pl: "Zarządzaj grupami"
   },
   "admin.active_user": { 
@@ -1318,7 +1318,7 @@ const translations: Translations = {
     de: "Aktiver Benutzer (Demo)", 
     fr: "Utilisateur actif (Démo)", 
     es: "Usuario activo (Demo)", 
-    it: "Utente attivo (Demo)",
+    it: "Utente attivo (Demo)", 
     pl: "Aktywny użytkownik (Demo)"
   },
   "admin.demo_mode": { 
@@ -1327,7 +1327,7 @@ const translations: Translations = {
     de: "Demo-Modus aktiviert", 
     fr: "Mode démo activé", 
     es: "Modo demo activado", 
-    it: "Modalità demo attivata",
+    it: "Modalità demo attivata", 
     pl: "Tryb demo aktywowany"
   },
   "admin.demo_description": { 
@@ -1336,7 +1336,7 @@ const translations: Translations = {
     de: "Sie sehen das System als", 
     fr: "Vous visualisez le système en tant que", 
     es: "Estás viendo el sistema como", 
-    it: "Stai visualizzando il sistema come",
+    it: "Stai visualizzando il sistema come", 
     pl: "Przeglądasz system jako"
   },
   "admin.exit_demo": { 
@@ -1345,7 +1345,7 @@ const translations: Translations = {
     de: "Zurück zu", 
     fr: "Retour à", 
     es: "Volver a", 
-    it: "Torna a",
+    it: "Torna a", 
     pl: "Powrót do"
   },
   "admin.role.tenant_admin": { 
@@ -1354,7 +1354,7 @@ const translations: Translations = {
     de: "Tenant-Administrator", 
     fr: "Administrateur locataire", 
     es: "Administrador de inquilino", 
-    it: "Amministratore tenant",
+    it: "Amministratore tenant", 
     pl: "Administrator najemcy"
   },
   "admin.role.group_admin": { 
@@ -1363,7 +1363,7 @@ const translations: Translations = {
     de: "Gruppenadministrator", 
     fr: "Administrateur de groupe", 
     es: "Administrador de grupo", 
-    it: "Amministratore gruppo",
+    it: "Amministratore gruppo", 
     pl: "Administrator grupy"
   },
   "admin.role.member": { 
@@ -1372,7 +1372,7 @@ const translations: Translations = {
     de: "Mitglied", 
     fr: "Membre", 
     es: "Miembro", 
-    it: "Membro",
+    it: "Membro", 
     pl: "Członek"
   },
 
@@ -1383,7 +1383,7 @@ const translations: Translations = {
     de: "Einstellungen", 
     fr: "Paramètres", 
     es: "Configuración", 
-    it: "Impostazioni",
+    it: "Impostazioni", 
     pl: "Ustawienia"
   },
   "settings.description": { 
@@ -1392,7 +1392,7 @@ const translations: Translations = {
     de: "Konfigurieren Sie Öffnungszeiten, automatische Antworten und Benachrichtigungen für Ihre Gruppen.", 
     fr: "Configurez les heures d'ouverture, réponses automatiques et notifications pour vos groupes.", 
     es: "Configurar horarios de apertura, respuestas automáticas y notificaciones para sus grupos.", 
-    it: "Configura orari di apertura, risposte automatiche e notifiche per i tuoi gruppi.",
+    it: "Configura orari di apertura, risposte automatiche e notifiche per i tuoi gruppi.", 
     pl: "Skonfiguruj godziny otwarcia, automatyczne odpowiedzi i powiadomienia dla swoich grup."
   },
   "settings.tabs.hours": { 
@@ -1401,7 +1401,7 @@ const translations: Translations = {
     de: "Öffnungszeiten", 
     fr: "Heures d'ouverture", 
     es: "Horarios de apertura", 
-    it: "Orari di apertura",
+    it: "Orari di apertura", 
     pl: "Godziny otwarcia"
   },
   "settings.tabs.replies": { 
@@ -1410,7 +1410,7 @@ const translations: Translations = {
     de: "Automatische Antworten", 
     fr: "Réponses automatiques", 
     es: "Respuestas automáticas", 
-    it: "Risposte automatiche",
+    it: "Risposte automatiche", 
     pl: "Automatyczne odpowiedzi"
   },
   "settings.tabs.notifications": { 
@@ -1419,7 +1419,7 @@ const translations: Translations = {
     de: "Benachrichtigungen", 
     fr: "Notifications", 
     es: "Notificaciones", 
-    it: "Notifiche",
+    it: "Notifiche", 
     pl: "Powiadomienia"
   },
   "settings.tabs.routing": { 
@@ -1428,7 +1428,7 @@ const translations: Translations = {
     de: "Routing", 
     fr: "Routage", 
     es: "Enrutamiento", 
-    it: "Instradamento",
+    it: "Instradamento", 
     pl: "Routing"
   },
   "settings.select_group": { 
@@ -1437,7 +1437,7 @@ const translations: Translations = {
     de: "Gruppe wählen", 
     fr: "Sélectionner un groupe", 
     es: "Seleccionar grupo", 
-    it: "Seleziona gruppo",
+    it: "Seleziona gruppo", 
     pl: "Wybierz grupę"
   },
   "settings.weekly_schedule": { 
@@ -1446,7 +1446,7 @@ const translations: Translations = {
     de: "Wochenplan", 
     fr: "Horaire hebdomadaire", 
     es: "Horario semanal", 
-    it: "Programma settimanale",
+    it: "Programma settimanale", 
     pl: "Harmonogram tygodniowy"
   },
   "settings.from": { 
@@ -1455,7 +1455,7 @@ const translations: Translations = {
     de: "Von", 
     fr: "De", 
     es: "Desde", 
-    it: "Da",
+    it: "Da", 
     pl: "Od"
   },
   "settings.to": { 
@@ -1464,7 +1464,7 @@ const translations: Translations = {
     de: "Bis", 
     fr: "À", 
     es: "Hasta", 
-    it: "A",
+    it: "A", 
     pl: "Do"
   },
   "settings.open": { 
@@ -1473,7 +1473,7 @@ const translations: Translations = {
     de: "Offen", 
     fr: "Ouvert", 
     es: "Abierto", 
-    it: "Aperto",
+    it: "Aperto", 
     pl: "Otwarte"
   },
   "settings.save": { 
@@ -1482,7 +1482,7 @@ const translations: Translations = {
     de: "Speichern", 
     fr: "Enregistrer", 
     es: "Guardar", 
-    it: "Salva",
+    it: "Salva", 
     pl: "Zapisz"
   },
   "settings.save_hours": { 
@@ -1491,7 +1491,7 @@ const translations: Translations = {
     de: "Öffnungszeiten speichern", 
     fr: "Enregistrer les heures d'ouverture", 
     es: "Guardar horarios", 
-    it: "Salva orari",
+    it: "Salva orari", 
     pl: "Zapisz godziny otwarcia"
   },
   "settings.save_replies": { 
@@ -1500,7 +1500,7 @@ const translations: Translations = {
     de: "Automatische Antworten speichern", 
     fr: "Enregistrer les réponses automatiques", 
     es: "Guardar respuestas automáticas", 
-    it: "Salva risposte automatiche",
+    it: "Salva risposte automatiche", 
     pl: "Zapisz automatyczne odpowiedzi"
   },
   "settings.save_settings": { 
@@ -1509,7 +1509,7 @@ const translations: Translations = {
     de: "Einstellungen speichern", 
     fr: "Enregistrer les paramètres", 
     es: "Guardar configuración", 
-    it: "Salva impostazioni",
+    it: "Salva impostazioni", 
     pl: "Zapisz ustawienia"
   },
   "settings.special_days": { 
@@ -1518,7 +1518,7 @@ const translations: Translations = {
     de: "Besondere Tage (Ausnahmen)", 
     fr: "Jours spéciaux (exceptions)", 
     es: "Días especiales (excepciones)", 
-    it: "Giorni speciali (eccezioni)",
+    it: "Giorni speciali (eccezioni)", 
     pl: "Dni specjalne (wyjątki)"
   },
   "settings.special_days_help": { 
@@ -1527,7 +1527,7 @@ const translations: Translations = {
     de: "Fügen Sie Feiertage oder andere besondere Daten hinzu, an denen die Öffnungszeiten abweichen.", 
     fr: "Ajoutez des jours fériés ou autres dates spéciales où les heures d'ouverture diffèrent.", 
     es: "Agregue días festivos u otras fechas especiales donde los horarios difieren.", 
-    it: "Aggiungi festività o altre date speciali dove gli orari differiscono.",
+    it: "Aggiungi festività o altre date speciali dove gli orari differiscono.", 
     pl: "Dodaj święta lub inne specjalne daty, w których godziny otwarcia są inne."
   },
   "settings.add_exception": { 
@@ -1536,7 +1536,7 @@ const translations: Translations = {
     de: "Ausnahme hinzufügen", 
     fr: "Ajouter une exception", 
     es: "Añadir excepción", 
-    it: "Aggiungi eccezione",
+    it: "Aggiungi eccezione", 
     pl: "Dodaj wyjątek"
   },
   "settings.outside_hours": { 
@@ -1545,7 +1545,7 @@ const translations: Translations = {
     de: "Außerhalb der Öffnungszeiten", 
     fr: "Hors heures d'ouverture", 
     es: "Fuera de horario", 
-    it: "Fuori orario",
+    it: "Fuori orario", 
     pl: "Poza godzinami otwarcia"
   },
   "settings.outside_hours_help": { 
@@ -1554,7 +1554,7 @@ const translations: Translations = {
     de: "Automatische Nachricht senden, wenn wir geschlossen sind.", 
     fr: "Envoyer un message automatique lorsque nous sommes fermés.", 
     es: "Enviar mensaje automático cuando estamos cerrados.", 
-    it: "Invia messaggio automatico quando siamo chiusi.",
+    it: "Invia messaggio automatico quando siamo chiusi.", 
     pl: "Wyślij automatyczną wiadomość, gdy jesteś zamknięty."
   },
   "settings.first_message": { 
@@ -1563,7 +1563,7 @@ const translations: Translations = {
     de: "Erste Nachricht", 
     fr: "Premier message", 
     es: "Primer mensaje", 
-    it: "Primo messaggio",
+    it: "Primo messaggio", 
     pl: "Pierwsza wiadomość"
   },
   "settings.first_message_help": { 
@@ -1572,7 +1572,7 @@ const translations: Translations = {
     de: "Willkommensnachricht an neue Kontakte senden.", 
     fr: "Envoyer un message de bienvenue aux nouveaux contacts.", 
     es: "Enviar mensaje de bienvenida a nuevos contactos.", 
-    it: "Invia messaggio di benvenuto ai nuovi contatti.",
+    it: "Invia messaggio di benvenuto ai nuovi contatti.", 
     pl: "Wyślij wiadomość powitalną do nowych kontaktów."
   },
   "settings.keyword_based": { 
@@ -1581,7 +1581,7 @@ const translations: Translations = {
     de: "Schlüsselwortbasiert", 
     fr: "Basé sur les mots-clés", 
     es: "Basado en palabras clave", 
-    it: "Basato su parole chiave",
+    it: "Basato su parole chiave", 
     pl: "Na podstawie słów kluczowych"
   },
   "settings.keyword_based_help": { 
@@ -1590,7 +1590,7 @@ const translations: Translations = {
     de: "Spezifische Nachricht senden, wenn bestimmte Schlüsselwörter erkannt werden.", 
     fr: "Envoyer un message spécifique lorsque certains mots-clés sont détectés.", 
     es: "Enviar mensaje específico cuando se detectan ciertas palabras clave.", 
-    it: "Invia messaggio specifico quando vengono rilevate determinate parole chiave.",
+    it: "Invia messaggio specifico quando vengono rilevate determinate parole chiave.", 
     pl: "Wyślij konkretną wiadomość po wykryciu określonych słów kluczowych."
   },
   "settings.keywords": { 
@@ -1599,7 +1599,7 @@ const translations: Translations = {
     de: "Schlüsselwörter (durch Kommas getrennt)", 
     fr: "Mots-clés (séparés par des virgules)", 
     es: "Palabras clave (separadas por comas)", 
-    it: "Parole chiave (separate da virgole)",
+    it: "Parole chiave (separate da virgole)", 
     pl: "Słowa kluczowe (oddzielone przecinkami)"
   },
   "settings.message": { 
@@ -1608,7 +1608,7 @@ const translations: Translations = {
     de: "Nachricht", 
     fr: "Message", 
     es: "Mensaje", 
-    it: "Messaggio",
+    it: "Messaggio", 
     pl: "Wiadomość"
   },
   "settings.email_notifications": { 
@@ -1617,7 +1617,7 @@ const translations: Translations = {
     de: "E-Mail-Benachrichtigungen", 
     fr: "Notifications par e-mail", 
     es: "Notificaciones por correo", 
-    it: "Notifiche email",
+    it: "Notifiche email", 
     pl: "Powiadomienia e-mail"
   },
   "settings.email_notifications_help": { 
@@ -1626,7 +1626,7 @@ const translations: Translations = {
     de: "E-Mail-Benachrichtigungen über neue Nachrichten erhalten.", 
     fr: "Recevoir des notifications par e-mail sur les nouveaux messages.", 
     es: "Recibir notificaciones por correo sobre nuevos mensajes.", 
-    it: "Ricevi notifiche email sui nuovi messaggi.",
+    it: "Ricevi notifiche email sui nuovi messaggi.", 
     pl: "Otrzymuj powiadomienia e-mail o nowych wiadomościach."
   },
   "settings.push_notifications": { 
@@ -1635,7 +1635,7 @@ const translations: Translations = {
     de: "Push-Benachrichtigungen", 
     fr: "Notifications push", 
     es: "Notificaciones push", 
-    it: "Notifiche push",
+    it: "Notifiche push", 
     pl: "Powiadomienia push"
   },
   "settings.push_notifications_help": { 
@@ -1644,7 +1644,7 @@ const translations: Translations = {
     de: "Push-Benachrichtigungen im Browser erhalten.", 
     fr: "Recevoir des notifications push dans le navigateur.", 
     es: "Recibir notificaciones push en el navegador.", 
-    it: "Ricevi notifiche push nel browser.",
+    it: "Ricevi notifiche push nel browser.", 
     pl: "Otrzymuj powiadomienia push w przeglądarce."
   },
   "settings.sms_notifications": { 
@@ -1653,7 +1653,7 @@ const translations: Translations = {
     de: "SMS-Benachrichtigungen", 
     fr: "Notifications SMS", 
     es: "Notificaciones SMS", 
-    it: "Notifiche SMS",
+    it: "Notifiche SMS", 
     pl: "Powiadomienia SMS"
   },
   "settings.sms_notifications_help": { 
@@ -1662,7 +1662,7 @@ const translations: Translations = {
     de: "SMS-Benachrichtigungen für kritische Nachrichten erhalten.", 
     fr: "Recevoir des notifications SMS pour les messages critiques.", 
     es: "Recibir notificaciones SMS para mensajes críticos.", 
-    it: "Ricevi notifiche SMS per messaggi critici.",
+    it: "Ricevi notifiche SMS per messaggi critici.", 
     pl: "Otrzymuj powiadomienia SMS dla krytycznych wiadomości."
   },
   "settings.only_on_duty": { 
@@ -1671,7 +1671,7 @@ const translations: Translations = {
     de: "Nur im Dienst", 
     fr: "Seulement en service", 
     es: "Solo cuando esté de guardia", 
-    it: "Solo cuando esté de guardia",
+    it: "Solo cuando esté de guardia", 
     pl: "Tylko podczas dyżuru"
   },
   "settings.only_on_duty_help": { 
@@ -1680,7 +1680,7 @@ const translations: Translations = {
     de: "Benachrichtigungen nur erhalten, wenn als im Dienst markiert.", 
     fr: "Recevoir des notifications uniquement lorsque marqué en service.", 
     es: "Recibir notificaciones solo cuando esté marcado de guardia.", 
-    it: "Ricevi notifiche solo quando sei di turno.",
+    it: "Ricevi notifiche solo quando sei di turno.", 
     pl: "Otrzymuj powiadomienia tylko podczas dyżuru."
   },
 
@@ -1691,7 +1691,7 @@ const translations: Translations = {
     de: "Montag", 
     fr: "Lundi", 
     es: "Lunes", 
-    it: "Lunedì",
+    it: "Lunedì", 
     pl: "Poniedziałek"
   },
   "days.tuesday": { 
@@ -1700,7 +1700,7 @@ const translations: Translations = {
     de: "Dienstag", 
     fr: "Mardi", 
     es: "Martes", 
-    it: "Martedì",
+    it: "Martedì", 
     pl: "Wtorek"
   },
   "days.wednesday": { 
@@ -1709,7 +1709,7 @@ const translations: Translations = {
     de: "Mittwoch", 
     fr: "Mercredi", 
     es: "Miércoles", 
-    it: "Mercoledì",
+    it: "Mercoledì", 
     pl: "Środa"
   },
   "days.thursday": { 
@@ -1718,7 +1718,7 @@ const translations: Translations = {
     de: "Donnerstag", 
     fr: "Jeudi", 
     es: "Jueves", 
-    it: "Giovedì",
+    it: "Giovedì", 
     pl: "Czwartek"
   },
   "days.friday": { 
@@ -1727,7 +1727,7 @@ const translations: Translations = {
     de: "Freitag", 
     fr: "Vendredi", 
     es: "Viernes", 
-    it: "Venerdì",
+    it: "Venerdì", 
     pl: "Piątek"
   },
   "days.saturday": { 
@@ -1736,7 +1736,7 @@ const translations: Translations = {
     de: "Samstag", 
     fr: "Samedi", 
     es: "Sábado", 
-    it: "Sabato",
+    it: "Sabato", 
     pl: "Sobota"
   },
   "days.sunday": { 
@@ -1745,7 +1745,7 @@ const translations: Translations = {
     de: "Sonntag", 
     fr: "Dimanche", 
     es: "Domingo", 
-    it: "Domenica",
+    it: "Domenica", 
     pl: "Niedziela"
   },
   
@@ -1756,7 +1756,7 @@ const translations: Translations = {
     de: "Kampagnen-Dashboard", 
     fr: "Tableau de bord", 
     es: "Panel de campaña", 
-    it: "Dashboard campagne",
+    it: "Dashboard campagne", 
     pl: "Panel kampanii"
   },
   "campaigns.dashboard.subtitle": { 
@@ -1765,7 +1765,7 @@ const translations: Translations = {
     de: "Überwachen Sie Ihre Massen-SMS-Kampagnen", 
     fr: "Surveillez vos campagnes SMS", 
     es: "Monitorea tus campañas de SMS", 
-    it: "Monitora le tue campagne SMS",
+    it: "Monitora le tue campagne SMS", 
     pl: "Monitoruj swoje masowe kampanie SMS"
   },
   "campaigns.dashboard.totalCampaigns": { 
@@ -1774,7 +1774,7 @@ const translations: Translations = {
     de: "Gesamtkampagnen", 
     fr: "Total des campagnes", 
     es: "Campañas totales", 
-    it: "Campagne totali",
+    it: "Campagne totali", 
     pl: "Wszystkie kampanie"
   },
   "campaigns.dashboard.active": { 
@@ -1783,7 +1783,7 @@ const translations: Translations = {
     de: "aktiv", 
     fr: "actives", 
     es: "activas", 
-    it: "attive",
+    it: "attive", 
     pl: "aktywne"
   },
   "campaigns.dashboard.messagesSent": { 
@@ -1792,7 +1792,7 @@ const translations: Translations = {
     de: "Nachrichten gesendet", 
     fr: "Messages envoyés", 
     es: "Mensajes enviados", 
-    it: "Messaggi inviati",
+    it: "Messaggi inviati", 
     pl: "Wysłane wiadomości"
   },
   "campaigns.dashboard.delivered": { 
@@ -1801,7 +1801,7 @@ const translations: Translations = {
     de: "zugestellt", 
     fr: "livrés", 
     es: "entregados", 
-    it: "consegnati",
+    it: "consegnati", 
     pl: "dostarczone"
   },
   "campaigns.dashboard.responses": { 
@@ -1810,7 +1810,7 @@ const translations: Translations = {
     de: "Antworten", 
     fr: "Réponses", 
     es: "Respuestas", 
-    it: "Risposte",
+    it: "Risposte", 
     pl: "Odpowiedzi"
   },
   "campaigns.dashboard.responseRate": { 
@@ -1819,8 +1819,8 @@ const translations: Translations = {
     de: "Antwortrate", 
     fr: "taux de réponse", 
     es: "tasa de respuesta", 
-    it: "tasso di risposta",
-    pl: "wskaźnik odpowiedzi"
+    it: "tasso di risposta", 
+    pl: "wskaźnik odp."
   },
   "campaigns.dashboard.avgResponseRate": { 
     no: "Gjennomsnittlig svar-rate", 
@@ -1828,7 +1828,7 @@ const translations: Translations = {
     de: "Durchschn. Antwortrate", 
     fr: "Taux de réponse moyen", 
     es: "Tasa media", 
-    it: "Tasso medio",
+    it: "Tasso medio", 
     pl: "Śr. wskaźnik odp."
   },
   "campaigns.dashboard.campaignPerformance": { 
@@ -1837,7 +1837,7 @@ const translations: Translations = {
     de: "Kampagnenleistung", 
     fr: "Performance de la campagne", 
     es: "Rendimiento", 
-    it: "Performance",
+    it: "Performance", 
     pl: "Wyniki kampanii"
   },
   "campaigns.dashboard.detailedStats": { 
@@ -1846,7 +1846,7 @@ const translations: Translations = {
     de: "Detaillierte Statistiken", 
     fr: "Statistiques détaillées", 
     es: "Estadísticas detalladas", 
-    it: "Statistiche dettagliate",
+    it: "Statistiche dettagliate", 
     pl: "Szczegółowe statystyki"
   },
   "campaigns.dashboard.noCampaigns": { 
@@ -1855,7 +1855,7 @@ const translations: Translations = {
     de: "Noch keine Kampagnen", 
     fr: "Aucune campagne", 
     es: "No hay campañas", 
-    it: "Nessuna campagna",
+    it: "Nessuna campagna", 
     pl: "Brak kampanii"
   },
   "campaigns.dashboard.createFirstCampaign": { 
@@ -1864,7 +1864,7 @@ const translations: Translations = {
     de: "Erstellen Sie Ihre erste Kampagne", 
     fr: "Créez votre première campagne", 
     es: "Crea tu primera campaña", 
-    it: "Crea la tua prima campagna",
+    it: "Crea la tua prima campagna", 
     pl: "Utwórz pierwszą kampanię"
   },
   "campaigns.dashboard.recipients": { 
@@ -1873,7 +1873,7 @@ const translations: Translations = {
     de: "Empfänger", 
     fr: "Destinataires", 
     es: "Destinatarios", 
-    it: "Destinatari",
+    it: "Destinatari", 
     pl: "Odbiorcy"
   },
   "campaigns.dashboard.sent": { 
@@ -1882,7 +1882,7 @@ const translations: Translations = {
     de: "Gesendet", 
     fr: "Envoyés", 
     es: "Enviados", 
-    it: "Inviati",
+    it: "Inviati", 
     pl: "Wysłane"
   },
   "campaigns.dashboard.replied": { 
@@ -1891,7 +1891,7 @@ const translations: Translations = {
     de: "Geantwortet", 
     fr: "Répondu", 
     es: "Respondido", 
-    it: "Risposto",
+    it: "Risposto", 
     pl: "Odpowiedzi"
   },
   "campaigns.dashboard.failed": { 
@@ -1900,7 +1900,7 @@ const translations: Translations = {
     de: "Fehlgeschlagen", 
     fr: "Échoué", 
     es: "Fallido", 
-    it: "Fallito",
+    it: "Fallito", 
     pl: "Błędy"
   },
   "campaigns.dashboard.deliveryRate": { 
@@ -1909,7 +1909,7 @@ const translations: Translations = {
     de: "Zustellrate", 
     fr: "Taux de livraison", 
     es: "Tasa de entrega", 
-    it: "Tasso di consegna",
+    it: "Tasso di consegna", 
     pl: "Wskaźnik dostarczenia"
   },
   "campaigns.dashboard.viewDetails": { 
@@ -1918,7 +1918,7 @@ const translations: Translations = {
     de: "Details anzeigen", 
     fr: "Voir détails", 
     es: "Ver detalles", 
-    it: "Vedi dettagli",
+    it: "Vedi dettagli", 
     pl: "Szczegóły"
   },
   "campaigns.dashboard.viewResponses": { 
@@ -1927,53 +1927,8 @@ const translations: Translations = {
     de: "Antworten anzeigen", 
     fr: "Voir réponses", 
     es: "Ver respuestas", 
-    it: "Vedi risposte",
+    it: "Vedi risposte", 
     pl: "Zobacz odpowiedzi"
-  },
-  "campaigns.status.draft": { 
-    no: "Utkast", 
-    en: "Draft", 
-    de: "Entwurf", 
-    fr: "Brouillon", 
-    es: "Borrador", 
-    it: "Bozza",
-    pl: "Szkic" 
-  },
-  "campaigns.status.active": { 
-    no: "Aktiv", 
-    en: "Active", 
-    de: "Aktiv", 
-    fr: "Actif", 
-    es: "Activo", 
-    it: "Attivo",
-    pl: "Aktywna" 
-  },
-  "campaigns.status.completed": { 
-    no: "Fullført", 
-    en: "Completed", 
-    de: "Abgeschlossen", 
-    fr: "Terminé", 
-    es: "Completado", 
-    it: "Completato",
-    pl: "Ukończona" 
-  },
-  "campaigns.status.failed": { 
-    no: "Feilet", 
-    en: "Failed", 
-    de: "Fehlgeschlagen", 
-    fr: "Échoué", 
-    es: "Fallido", 
-    it: "Fallito",
-    pl: "Błąd" 
-  },
-  "campaigns.status.sending": { 
-    no: "Sender", 
-    en: "Sending", 
-    de: "Sendet", 
-    fr: "Envoi", 
-    es: "Enviando", 
-    it: "Invio",
-    pl: "Wysyłanie" 
   }
 };
 
