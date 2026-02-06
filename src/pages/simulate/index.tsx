@@ -138,8 +138,69 @@ export default function SimulatePage() {
 
       if (!gatewayId) throw new Error("No active gateway found");
 
+      // NEW: Check if this is a bulk campaign response
+      let campaignId: string | null = null;
+      let parentMessageId: string | null = null;
+
+      if (selectedGroup) {
+        console.log("🔍 Checking for bulk campaign in group:", selectedGroup);
+        
+        // Find latest bulk campaign for this group
+        const { data: campaign, error: campaignError } = await supabase
+          .from("bulk_campaigns")
+          .select("id, name")
+          .eq("source_group_id", selectedGroup)
+          .in("status", ["pending", "sending", "sent"])
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (campaignError) {
+          console.error("Campaign lookup error:", campaignError);
+        }
+
+        if (campaign) {
+          console.log("✅ Found campaign:", campaign.id, campaign.name);
+          
+          // Find the outbound message sent to this number
+          const normalizedFrom = fromPhone.trim().replace(/[\s\-\(\)]/g, "");
+          const phoneWithPlus = normalizedFrom.startsWith("+") ? normalizedFrom : `+${normalizedFrom}`;
+          
+          const { data: parentMsg, error: parentError } = await supabase
+            .from("messages")
+            .select("id")
+            .eq("campaign_id", campaign.id)
+            .eq("to_number", phoneWithPlus)
+            .eq("direction", "outbound")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (parentError) {
+            console.error("Parent message lookup error:", parentError);
+          }
+
+          if (parentMsg) {
+            console.log("✅ Found parent message:", parentMsg.id);
+            campaignId = campaign.id;
+            parentMessageId = parentMsg.id;
+          } else {
+            console.warn("⚠️ No outbound message found to", phoneWithPlus, "in campaign", campaign.id);
+          }
+        } else {
+          console.log("ℹ️ No active bulk campaign found for group:", selectedGroup);
+        }
+      }
+
+      console.log("📤 Sending to inbound-message:", {
+        from: fromPhone.trim(),
+        to: gatewayPhone,
+        gateway: gatewayId,
+        campaign_id: campaignId,
+        parent_message_id: parentMessageId
+      });
+
       // Call inbound-message Edge Function to simulate incoming message
-      // This ensures routing rules are evaluated properly
       const { data, error } = await supabase.functions.invoke("inbound-message", {
         body: {
           gateway_id: gatewayId,
@@ -147,16 +208,20 @@ export default function SimulatePage() {
           to_number: gatewayPhone,
           content: messageContent,
           received_at: new Date().toISOString(),
+          campaign_id: campaignId,
+          parent_message_id: parentMessageId,
         },
       });
 
       if (error) throw error;
 
-      console.log("Inbound message processed:", data);
+      console.log("✅ Inbound message processed:", data);
 
       toast({
         title: "Melding simulert",
-        description: data.is_fallback 
+        description: data.is_bulk_response 
+          ? "Bulk-kampanje-svar mottatt"
+          : data.is_fallback 
           ? "Melding rutet til fallback-gruppe" 
           : "Melding rutet basert på regler",
       });

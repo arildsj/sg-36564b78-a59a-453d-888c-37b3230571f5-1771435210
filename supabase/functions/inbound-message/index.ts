@@ -37,7 +37,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { from_number, to_number, content, gateway_id, received_at } = await req.json();
+    const { from_number, to_number, content, gateway_id, received_at, campaign_id, parent_message_id } = await req.json();
 
     if (!from_number || !to_number || !content || !gateway_id) {
       throw new Error("Missing required fields");
@@ -53,6 +53,8 @@ serve(async (req) => {
       original_to: to_number,
       normalized_to: normalizedTo,
       gateway_id,
+      campaign_id: campaign_id || "none",
+      parent_message_id: parent_message_id || "none",
     });
 
     // Get gateway info
@@ -98,18 +100,51 @@ serve(async (req) => {
     }
 
     // CRITICAL FIX: Check for bulk campaign response FIRST
-    const { data: bulkRecipient, error: bulkError } = await supabaseClient
-      .from("bulk_recipients")
-      .select("id, campaign_id, phone_number, sent_message_id, sent_thread_id")
-      .eq("phone_number", normalizedFrom)
-      .eq("status", "sent")
-      .maybeSingle();
+    // Priority 1: Use campaign_id and parent_message_id from request (from simulation)
+    // Priority 2: Check bulk_recipients table for sent status
+    let bulkRecipient = null;
+    
+    if (campaign_id && parent_message_id) {
+      console.log("🎯 Campaign response detected from request params");
+      
+      // Find the bulk_recipient record
+      const { data: recipient, error: recipientError } = await supabaseClient
+        .from("bulk_recipients")
+        .select("id, campaign_id, phone_number, sent_message_id, sent_thread_id")
+        .eq("campaign_id", campaign_id)
+        .eq("phone_number", normalizedFrom)
+        .maybeSingle();
+      
+      if (recipientError) {
+        console.error("Bulk recipient lookup error:", recipientError);
+      }
+      
+      if (recipient) {
+        console.log("✅ Found bulk_recipient:", recipient.id);
+        bulkRecipient = recipient;
+      } else {
+        console.warn("⚠️ No bulk_recipient found for campaign:", campaign_id, "phone:", normalizedFrom);
+      }
+    } else {
+      // Fallback: Check bulk_recipients for automatically detected responses
+      const { data: recipient, error: bulkError } = await supabaseClient
+        .from("bulk_recipients")
+        .select("id, campaign_id, phone_number, sent_message_id, sent_thread_id")
+        .eq("phone_number", normalizedFrom)
+        .eq("status", "sent")
+        .maybeSingle();
+
+      if (!bulkError && recipient) {
+        console.log("✅ Auto-detected bulk response for recipient:", recipient.id);
+        bulkRecipient = recipient;
+      }
+    }
 
     let resolvedGroupId;
     let thread;
     const messageTimestamp = received_at || new Date().toISOString();
 
-    if (!bulkError && bulkRecipient && bulkRecipient.sent_thread_id) {
+    if (bulkRecipient && bulkRecipient.sent_thread_id) {
       // THIS IS A BULK CAMPAIGN RESPONSE - Use existing thread
       console.log(`Bulk campaign response detected for recipient ${bulkRecipient.id}`);
       
@@ -251,6 +286,8 @@ serve(async (req) => {
         to_number: normalizedTo,
         thread_key: `${normalizedFrom}-${gateway.id}`,
         created_at: messageTimestamp,
+        campaign_id: campaign_id || null,
+        parent_message_id: parent_message_id || null,
       })
       .select()
       .single();
