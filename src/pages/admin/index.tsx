@@ -790,57 +790,60 @@ export default function AdminPage() {
                               {t("admin.loading_users")}
                             </TableCell>
                           </TableRow>
-                        ) : !users || users.length === 0 ? (
+                        ) : (!users || users.length === 0) ? (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                               {t("admin.no_users")}
                             </TableCell>
                           </TableRow>
                         ) : (
-                          users.map((user) => (
-                            <TableRow key={user.id}>
-                              <TableCell className="font-medium">{user.name}</TableCell>
-                              <TableCell>{user.email}</TableCell>
-                              <TableCell>{(user as any).phone_number || "-"}</TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap gap-1">
-                                  {user.group_ids && user.group_ids.length > 0 ? (
-                                    user.group_ids.map((gid: string) => {
+                          users.map((user) => {
+                            console.log("Rendering user:", user.name, "groups:", user.group_ids);
+                            return (
+                              <TableRow key={user.id}>
+                                <TableCell className="font-medium">{user.name}</TableCell>
+                                <TableCell>{user.email}</TableCell>
+                                <TableCell>{(user as any).phone_number || "-"}</TableCell>
+                                <TableCell>
+                                  <div className="flex flex-wrap gap-1">
+                                    {user.group_ids && user.group_ids.length > 0 ? (
+                                      user.group_ids.map((gid: string) => {
                                         const g = allGroups.find(ag => ag.id === gid);
                                         return (
                                           <Badge key={gid} variant="secondary">
                                             {g?.name || "Unknown"}
                                           </Badge>
                                         );
-                                    })
-                                  ) : (
-                                    <span className="text-muted-foreground">-</span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={(user as any).on_duty ? "default" : "secondary"}>
-                                  {(user as any).on_duty ? "Ja" : "Nei"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={user.role === "tenant_admin" ? "default" : "secondary"}>
-                                  {user.role === "tenant_admin" ? "Ja" : "Nei"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleOpenEditUser(user)}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
+                                      })
+                                    ) : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={(user as any).on_duty ? "default" : "secondary"}>
+                                    {(user as any).on_duty ? "Ja" : "Nei"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={user.role === "tenant_admin" ? "default" : "secondary"}>
+                                    {user.role === "tenant_admin" ? "Ja" : "Nei"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleOpenEditUser(user)}
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
                         )}
                       </TableBody>
                     </Table>
