@@ -77,7 +77,10 @@ export default function CampaignDashboard() {
         `)
         .order("created_at", { ascending: false });
 
-      if (campaignsError) throw campaignsError;
+      if (campaignsError) {
+        console.error("Error fetching campaigns:", campaignsError);
+        throw campaignsError;
+      }
 
       // Calculate stats for each campaign
       const stats: CampaignStats[] = (campaigns || []).map((campaign: any) => {
@@ -92,7 +95,7 @@ export default function CampaignDashboard() {
         return {
           id: campaign.id,
           name: campaign.name,
-          target_group_name: campaign.groups?.name || "Unknown",
+          target_group_name: campaign.groups?.name || t("common.unknown"),
           status: campaign.status,
           created_at: campaign.created_at,
           total_recipients: total,
@@ -132,10 +135,11 @@ export default function CampaignDashboard() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      draft: { label: "Draft", variant: "secondary" as const, icon: Clock },
-      active: { label: "Active", variant: "default" as const, icon: Send },
-      completed: { label: "Completed", variant: "default" as const, icon: CheckCircle },
-      failed: { label: "Failed", variant: "destructive" as const, icon: XCircle },
+      draft: { label: t("campaigns.status.draft"), variant: "secondary" as const, icon: Clock },
+      active: { label: t("campaigns.status.active"), variant: "default" as const, icon: Send },
+      sending: { label: t("campaigns.status.sending"), variant: "default" as const, icon: Send },
+      completed: { label: t("campaigns.status.completed"), variant: "default" as const, icon: CheckCircle },
+      failed: { label: t("campaigns.status.failed"), variant: "destructive" as const, icon: XCircle },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
@@ -147,12 +151,6 @@ export default function CampaignDashboard() {
         {config.label}
       </Badge>
     );
-  };
-
-  const getProgressColor = (percentage: number) => {
-    if (percentage >= 80) return "bg-green-500";
-    if (percentage >= 50) return "bg-yellow-500";
-    return "bg-red-500";
   };
 
   if (loading) {
@@ -171,19 +169,19 @@ export default function CampaignDashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Campaign Dashboard</h1>
+            <h1 className="text-3xl font-bold">{t("campaigns.dashboard.title")}</h1>
             <p className="text-muted-foreground mt-1">
-              Monitor your bulk SMS campaigns and track performance
+              {t("campaigns.dashboard.subtitle")}
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={loadDashboardData}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              {t("common.refresh")}
             </Button>
             <Button onClick={() => router.push("/campaigns")}>
               <Send className="h-4 w-4 mr-2" />
-              New Campaign
+              {t("campaigns.createNew")}
             </Button>
           </div>
         </div>
@@ -192,46 +190,46 @@ export default function CampaignDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("campaigns.dashboard.totalCampaigns")}</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{overallStats.total_campaigns}</div>
               <p className="text-xs text-muted-foreground">
-                {overallStats.active_campaigns} active
+                {overallStats.active_campaigns} {t("campaigns.dashboard.active")}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Messages Sent</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("campaigns.dashboard.messagesSent")}</CardTitle>
               <Send className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{overallStats.total_sent}</div>
               <p className="text-xs text-muted-foreground">
-                {overallStats.avg_delivery_rate}% delivered
+                {overallStats.avg_delivery_rate}% {t("campaigns.dashboard.delivered")}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Responses</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("campaigns.dashboard.responses")}</CardTitle>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{overallStats.total_replied}</div>
               <p className="text-xs text-muted-foreground">
-                {overallStats.overall_response_rate}% response rate
+                {overallStats.overall_response_rate}% {t("campaigns.dashboard.responseRate")}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Response Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("campaigns.dashboard.avgResponseRate")}</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -247,9 +245,9 @@ export default function CampaignDashboard() {
         {/* Campaign List */}
         <Card>
           <CardHeader>
-            <CardTitle>Campaign Performance</CardTitle>
+            <CardTitle>{t("campaigns.dashboard.campaignPerformance")}</CardTitle>
             <CardDescription>
-              Detailed statistics for each bulk SMS campaign
+              {t("campaigns.dashboard.detailedStats")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -257,12 +255,12 @@ export default function CampaignDashboard() {
               {campaignStats.length === 0 ? (
                 <div className="text-center py-12">
                   <Send className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No campaigns yet</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t("campaigns.dashboard.noCampaigns")}</h3>
                   <p className="text-muted-foreground mb-4">
-                    Create your first bulk SMS campaign to see statistics here
+                    {t("campaigns.dashboard.createFirstCampaign")}
                   </p>
                   <Button onClick={() => router.push("/campaigns")}>
-                    Create Campaign
+                    {t("campaigns.createNew")}
                   </Button>
                 </div>
               ) : (
@@ -292,30 +290,30 @@ export default function CampaignDashboard() {
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                           <div className="text-center">
                             <div className="text-2xl font-bold">{campaign.total_recipients}</div>
-                            <div className="text-xs text-muted-foreground">Recipients</div>
+                            <div className="text-xs text-muted-foreground">{t("campaigns.dashboard.recipients")}</div>
                           </div>
                           <div className="text-center">
                             <div className="text-2xl font-bold text-blue-600">{campaign.sent}</div>
-                            <div className="text-xs text-muted-foreground">Sent</div>
+                            <div className="text-xs text-muted-foreground">{t("campaigns.dashboard.sent")}</div>
                           </div>
                           <div className="text-center">
                             <div className="text-2xl font-bold text-green-600">{campaign.delivered}</div>
-                            <div className="text-xs text-muted-foreground">Delivered</div>
+                            <div className="text-xs text-muted-foreground">{t("campaigns.dashboard.delivered")}</div>
                           </div>
                           <div className="text-center">
                             <div className="text-2xl font-bold text-purple-600">{campaign.replied}</div>
-                            <div className="text-xs text-muted-foreground">Replied</div>
+                            <div className="text-xs text-muted-foreground">{t("campaigns.dashboard.replied")}</div>
                           </div>
                           <div className="text-center">
                             <div className="text-2xl font-bold text-red-600">{campaign.failed}</div>
-                            <div className="text-xs text-muted-foreground">Failed</div>
+                            <div className="text-xs text-muted-foreground">{t("campaigns.dashboard.failed")}</div>
                           </div>
                         </div>
 
                         {/* Progress Bars */}
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Delivery Rate</span>
+                            <span className="text-muted-foreground">{t("campaigns.dashboard.deliveryRate")}</span>
                             <span className="font-medium">
                               {campaign.sent > 0 
                                 ? Math.round((campaign.delivered / campaign.sent) * 100)
@@ -330,7 +328,7 @@ export default function CampaignDashboard() {
 
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Response Rate</span>
+                            <span className="text-muted-foreground">{t("campaigns.dashboard.responseRate")}</span>
                             <span className="font-medium">{campaign.response_rate}%</span>
                           </div>
                           <Progress 
@@ -346,14 +344,14 @@ export default function CampaignDashboard() {
                             size="sm"
                             onClick={() => router.push(`/campaigns?view=${campaign.id}`)}
                           >
-                            View Details
+                            {t("campaigns.dashboard.viewDetails")}
                           </Button>
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => router.push(`/inbox?campaign=${campaign.id}`)}
                           >
-                            View Responses
+                            {t("campaigns.dashboard.viewResponses")}
                           </Button>
                         </div>
                       </div>

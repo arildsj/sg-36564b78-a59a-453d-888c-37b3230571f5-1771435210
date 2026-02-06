@@ -1165,7 +1165,7 @@ const translations: Translations = {
     de: "Neue Gruppe erstellen", 
     fr: "Créer un nouveau groupe", 
     es: "Crear nuevo grupo", 
-    it: "Crea nuovo gruppo",
+    it: "Crea primo gruppo",
     pl: "Utwórz nową grupę"
   },
   "admin.new_group": { 
@@ -1391,7 +1391,7 @@ const translations: Translations = {
     en: "Configure opening hours, automatic replies and notifications for your groups.", 
     de: "Konfigurieren Sie Öffnungszeiten, automatische Antworten und Benachrichtigungen für Ihre Gruppen.", 
     fr: "Configurez les heures d'ouverture, réponses automatiques et notifications pour vos groupes.", 
-    es: "Configure horarios de apertura, respuestas automáticas y notificaciones para sus grupos.", 
+    es: "Configurar horarios de apertura, respuestas automáticas y notificaciones para sus grupos.", 
     it: "Configura orari di apertura, risposte automatiche e notifiche per i tuoi gruppi.",
     pl: "Skonfiguruj godziny otwarcia, automatyczne odpowiedzi i powiadomienia dla swoich grup."
   },
@@ -1747,6 +1747,12 @@ const translations: Translations = {
     es: "Domingo", 
     it: "Domenica",
     pl: "Niedziela"
+  },
+  status: {
+    draft: "Utkast",
+    active: "Aktiv",
+    completed: "Fullført",
+    failed: "Feilet",
   },
 };
 

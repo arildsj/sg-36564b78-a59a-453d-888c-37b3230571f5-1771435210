@@ -181,6 +181,7 @@ export type Database = {
           source_group_id: string | null
           status: string
           subject_line: string | null
+          target_group_id: string | null
           tenant_id: string
           total_recipients: number | null
           updated_at: string | null
@@ -200,6 +201,7 @@ export type Database = {
           source_group_id?: string | null
           status?: string
           subject_line?: string | null
+          target_group_id?: string | null
           tenant_id: string
           total_recipients?: number | null
           updated_at?: string | null
@@ -219,6 +221,7 @@ export type Database = {
           source_group_id?: string | null
           status?: string
           subject_line?: string | null
+          target_group_id?: string | null
           tenant_id?: string
           total_recipients?: number | null
           updated_at?: string | null
@@ -234,6 +237,13 @@ export type Database = {
           {
             foreignKeyName: "bulk_campaigns_source_group_id_fkey"
             columns: ["source_group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_campaigns_target_group_id_fkey"
+            columns: ["target_group_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
