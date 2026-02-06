@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Megaphone, ChevronDown, ChevronRight, Users, CheckCircle2, XCircle, Clock, Send } from "lucide-react";
+import { Megaphone, ChevronDown, ChevronRight, Users, CheckCircle2, XCircle, Clock, Send, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { bulkService, BulkCampaign } from "@/services/bulkService";
 import { format } from "date-fns";
@@ -106,16 +106,14 @@ export default function CampaignsPage() {
 
       <AppLayout>
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">{t("campaigns.title")}</h1>
-              <p className="text-muted-foreground mt-2">
-                {t("campaigns.description")}
-              </p>
+              <h1 className="text-3xl font-bold">{t("campaigns.title")}</h1>
+              <p className="text-muted-foreground mt-1">{t("campaigns.description")}</p>
             </div>
-            <Button onClick={() => window.location.href = "/sending"}>
-              <Send className="h-4 w-4 mr-2" />
-              {t("campaigns.new")}
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t("campaigns.createNew")}
             </Button>
           </div>
 

@@ -1,5 +1,5 @@
 // SeMSe + FairGateway: Bulk Campaign Execution
-// PROMPT 2: Process bulk SMS campaigns with per-recipient tracking
+// Process bulk SMS campaigns with per-recipient tracking and proper thread management
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -86,24 +86,17 @@ serve(async (req) => {
       );
     }
 
-    // Get user's operational group for message routing
-    const { data: userGroups } = await supabase
-      .from("group_memberships")
-      .select(`
-        group:groups!inner(id, kind)
-      `)
-      .eq("user_id", campaign.created_by_user_id);
+    // CRITICAL FIX: Use campaign's target_group_id, NOT user's operational group
+    const resolvedGroupId = campaign.target_group_id;
 
-    const operationalGroup = userGroups?.find((mg: any) => mg.group?.kind === "operational")?.group;
-
-    if (!operationalGroup) {
+    if (!resolvedGroupId) {
       await supabase
         .from("bulk_campaigns")
         .update({ status: "failed" })
         .eq("id", campaign_id);
 
       return new Response(
-        JSON.stringify({ error: "No operational group found for user" }),
+        JSON.stringify({ error: "No target group specified for campaign" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -124,19 +117,61 @@ serve(async (req) => {
           recipient.metadata
         );
 
+        // CRITICAL FIX: Create thread for this bulk recipient
+        const threadKey = `${gateway.phone_number}:${recipient.phone_number}`;
+        
+        const { data: existingThread } = await supabase
+          .from("message_threads")
+          .select("id")
+          .eq("tenant_id", campaign.tenant_id)
+          .eq("contact_phone", recipient.phone_number)
+          .eq("gateway_id", gateway.id)
+          .maybeSingle();
+
+        let threadId;
+        if (existingThread) {
+          threadId = existingThread.id;
+          // Update thread
+          await supabase
+            .from("message_threads")
+            .update({ 
+              resolved_group_id: resolvedGroupId,
+              last_message_at: new Date().toISOString(),
+            })
+            .eq("id", threadId);
+        } else {
+          // Create new thread
+          const { data: newThread, error: threadError } = await supabase
+            .from("message_threads")
+            .insert({
+              tenant_id: campaign.tenant_id,
+              gateway_id: gateway.id,
+              contact_phone: recipient.phone_number,
+              resolved_group_id: resolvedGroupId,
+              last_message_at: new Date().toISOString(),
+              is_resolved: false,
+            })
+            .select()
+            .single();
+
+          if (threadError) throw new Error(threadError.message);
+          threadId = newThread.id;
+        }
+
         // Create outbound message with proper routing
         const { data: message, error: messageError } = await supabase
           .from("messages")
           .insert({
             tenant_id: campaign.tenant_id,
+            thread_id: threadId,
             gateway_id: gateway.id,
+            group_id: resolvedGroupId,
             direction: "outbound",
             from_number: gateway.phone_number,
             to_number: recipient.phone_number,
             content: personalizedContent,
-            resolved_group_id: operationalGroup.id,
             status: "pending",
-            thread_key: `${gateway.phone_number}:${recipient.phone_number}`,
+            thread_key: threadKey,
           })
           .select()
           .single();
@@ -151,6 +186,7 @@ serve(async (req) => {
           .update({
             status: "sent",
             sent_message_id: message.id,
+            sent_thread_id: threadId,
             sent_at: new Date().toISOString(),
           })
           .eq("id", recipient.id);
