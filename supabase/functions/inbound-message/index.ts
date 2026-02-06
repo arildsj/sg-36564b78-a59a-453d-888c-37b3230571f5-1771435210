@@ -69,7 +69,7 @@ serve(async (req) => {
     let contact;
     const { data: existingContact, error: contactLookupError } = await supabaseClient
       .from("contacts")
-      .select("id, full_name, phone_number, group_id, tenant_id")
+      .select("id, name, phone_number, group_id, tenant_id")
       .eq("phone_number", normalizedFrom)
       .maybeSingle();
 
@@ -85,7 +85,7 @@ serve(async (req) => {
         .from("contacts")
         .insert({
           phone_number: normalizedFrom,
-          full_name: normalizedFrom,
+          name: normalizedFrom,
           tenant_id: gateway.tenant_id,
           group_id: null, // Will be assigned by routing rules or manually
         })
