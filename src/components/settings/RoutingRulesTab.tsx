@@ -49,12 +49,13 @@ export function RoutingRulesTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingRule, setEditingRule] = useState<RoutingRule | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<{
     gateway_id: string;
     target_group_id: string;
-    rule_type: "prefix" | "keyword";
+    rule_type: "prefix" | "keyword" | "fallback";
     pattern: string;
     priority: number;
   }>({
