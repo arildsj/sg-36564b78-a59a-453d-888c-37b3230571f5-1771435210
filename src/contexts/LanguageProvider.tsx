@@ -1023,7 +1023,7 @@ const translations: Translations = {
     pl: "Brak kampanii"
   },
   "campaigns.first_campaign": { 
-    no: "Send din første bulk-melding for å komme i gang", 
+    no: "Send din første bulk-melding from å komme i gang", 
     en: "Send your first bulk message to get started", 
     de: "Senden Sie Ihre erste Massennachricht, um zu beginnen", 
     fr: "Envoyez votre premier message groupé pour commencer", 
@@ -1929,6 +1929,42 @@ const translations: Translations = {
     es: "Ver respuestas", 
     it: "Vedi risposte", 
     pl: "Zobacz odpowiedzi"
+  },
+  "campaigns.createNew": { 
+    no: "Create New Campaign", 
+    en: "Create New Campaign", 
+    de: "Neue Kampagne erstellen", 
+    fr: "Créer une nouvelle campagne", 
+    es: "Crear Nueva Campaña", 
+    it: "Crea Nuova Campagna", 
+    pl: "Utwórz Nową Kampanię"
+  },
+  "campaigns.status.active": { 
+    no: "Active", 
+    en: "Active", 
+    de: "Aktiv", 
+    fr: "Actif", 
+    es: "Activo", 
+    it: "Attivo", 
+    pl: "Aktywny"
+  },
+  "common.refresh": { 
+    no: "Refresh", 
+    en: "Refresh", 
+    de: "Aktualisieren", 
+    fr: "Actualiser", 
+    es: "Actualizar", 
+    it: "Aggiorna", 
+    pl: "Odśwież"
+  },
+  "common.unknown": { 
+    no: "Unknown", 
+    en: "Unknown", 
+    de: "Unbekannt", 
+    fr: "Inconnu", 
+    es: "Desconocido", 
+    it: "Sconosciuto", 
+    pl: "Nieznany"
   }
 };
 

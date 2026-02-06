@@ -117,9 +117,9 @@ export default function CampaignsPage() {
                 <LayoutDashboard className="h-4 w-4 mr-2" />
                 Dashboard
               </Button>
-              <Button onClick={() => setShowCreateDialog(true)}>
+              <Button onClick={() => window.location.href = "/sending"}>
                 <Plus className="h-4 w-4 mr-2" />
-                {t("campaigns.createNew")}
+                Create Campaign
               </Button>
             </div>
           </div>
