@@ -44,6 +44,7 @@ import { contactService, type Contact } from "@/services/contactService";
 import { useToast } from "@/hooks/use-toast";
 import { groupService } from "@/services/groupService";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageProvider";
 
 type Group = {
   id: string;
@@ -53,6 +54,7 @@ type Group = {
 
 export default function ContactsPage() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -429,33 +431,33 @@ export default function ContactsPage() {
   return (
     <>
       <Head>
-        <title>Kontakter | SeMSe</title>
-        <meta name="description" content="Administrer kontakter og hvitlistede nummer" />
+        <title>{t("contacts.title")} | SeMSe</title>
+        <meta name="description" content={t("contacts.description")} />
       </Head>
 
       <AppLayout>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Kontakter</h1>
+              <h1 className="text-3xl font-bold text-foreground">{t("contacts.title")}</h1>
               <p className="text-muted-foreground mt-2">
-                Administrer kontakter og søk i historikk
+                {t("contacts.description")}
               </p>
             </div>
             <Button onClick={handleOpenCreate}>
               <UserPlus className="h-4 w-4 mr-2" />
-              Ny kontakt
+              {t("contacts.new_contact")}
             </Button>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Søk og filtrer</CardTitle>
+              <CardTitle>{t("contacts.search_filter")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  placeholder="Søk etter navn eller telefonnummer..."
+                  placeholder={t("contacts.search_placeholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1"
@@ -470,14 +472,14 @@ export default function ContactsPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {filteredContacts.length} kontakter
+                {filteredContacts.length} {t("contacts.count")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="border rounded-lg overflow-hidden">
                 {filteredContacts.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    Ingen kontakter funnet
+                    {t("contacts.no_found")}
                   </div>
                 ) : (
                   <>
@@ -486,12 +488,12 @@ export default function ContactsPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Navn</TableHead>
-                            <TableHead>Telefon</TableHead>
-                            <TableHead>E-post</TableHead>
-                            <TableHead>Grupper</TableHead>
-                            <TableHead>Opprettet</TableHead>
-                            <TableHead className="text-right">Handlinger</TableHead>
+                            <TableHead>{t("contacts.name")}</TableHead>
+                            <TableHead>{t("contacts.phone")}</TableHead>
+                            <TableHead>{t("contacts.email")}</TableHead>
+                            <TableHead>{t("contacts.groups")}</TableHead>
+                            <TableHead>{t("contacts.created")}</TableHead>
+                            <TableHead className="text-right">{t("contacts.actions")}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>

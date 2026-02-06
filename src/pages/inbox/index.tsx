@@ -60,6 +60,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useLanguage } from "@/contexts/LanguageProvider";
 
 // Hjelpefunksjon for datoformatering
 const formatMessageTime = (dateString: string) => {
@@ -99,6 +100,7 @@ const formatMessageTime = (dateString: string) => {
 
 export default function InboxPage() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"all" | "fallback" | "escalated">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [threads, setThreads] = useState<ExtendedMessageThread[]>([]);
@@ -718,16 +720,16 @@ export default function InboxPage() {
   return (
     <>
       <Head>
-        <title>Samtaler | SeMSe</title>
-        <meta name="description" content="Behandle innkommende og utgående meldinger" />
+        <title>{t("inbox.title")} | SeMSe</title>
+        <meta name="description" content={t("inbox.description")} />
       </Head>
 
       <AppLayout>
         <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
           <div className="flex-none">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">Samtaler</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">{t("inbox.title")}</h2>
             <p className="text-muted-foreground mt-2">
-              Håndter meldinger fra dine grupper.
+              {t("inbox.description")}
             </p>
           </div>
 
@@ -740,24 +742,24 @@ export default function InboxPage() {
               <TabsList>
                 <TabsTrigger value="all" className="gap-2">
                   <MessageSquare className="h-4 w-4" />
-                  Alle samtaler
+                  {t("inbox.all_conversations")}
                 </TabsTrigger>
                 <TabsTrigger value="fallback" className="gap-2">
                   <FolderInput className="h-4 w-4" />
-                  Ukjente avsendere
+                  {t("inbox.unknown_senders")}
                 </TabsTrigger>
                 <TabsTrigger value="escalated" className="gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  Eskalerte
+                  {t("inbox.escalated")}
                 </TabsTrigger>
               </TabsList>
 
               <Select value={selectedGroupFilter} onValueChange={setSelectedGroupFilter}>
                 <SelectTrigger className="w-[250px]">
-                  <SelectValue placeholder="Filtrer etter gruppe" />
+                  <SelectValue placeholder={t("inbox.filter_by_group")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Alle grupper</SelectItem>
+                  <SelectItem value="all">{t("inbox.all_groups")}</SelectItem>
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
                       {group.name}

@@ -10,6 +10,7 @@ import { groupService } from "@/services/groupService";
 import { messageService } from "@/services/messageService";
 import { userService } from "@/services/userService";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageProvider";
 
 type DashboardStats = {
   unacknowledged: number;
@@ -33,6 +34,7 @@ type GroupStatus = {
 };
 
 export default function HomePage() {
+  const { t } = useLanguage();
   const [stats, setStats] = useState<DashboardStats>({
     unacknowledged: 0,
     operationalGroups: 0,
@@ -192,16 +194,16 @@ export default function HomePage() {
   return (
     <>
       <Head>
-        <title>Dashboard - SeMSe 2.0</title>
-        <meta name="description" content="SeMSe + FairGateway Dashboard" />
+        <title>{t("dashboard.title")} - SeMSe 2.0</title>
+        <meta name="description" content={t("dashboard.description")} />
       </Head>
 
       <AppLayout>
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t("dashboard.title")}</h1>
             <p className="text-muted-foreground mt-2">
-              Oversikt over meldinger og operasjoner
+              {t("dashboard.description")}
             </p>
           </div>
 
@@ -209,7 +211,7 @@ export default function HomePage() {
             <Link href="/inbox" className="block">
               <Card className="border-2 hover:border-primary transition-colors cursor-pointer h-full">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Ubehandlede meldinger</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("dashboard.unhandled_messages")}</CardTitle>
                   <Inbox className="h-5 w-5 text-primary" aria-hidden="true" />
                 </CardHeader>
                 <CardContent>
@@ -217,7 +219,7 @@ export default function HomePage() {
                     {loading ? "..." : stats.unacknowledged}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Venter på bekreftelse
+                    {t("dashboard.awaiting_confirmation")}
                   </p>
                 </CardContent>
               </Card>
@@ -226,7 +228,7 @@ export default function HomePage() {
             <Link href="/admin" className="block">
               <Card className="border-2 hover:border-primary transition-colors cursor-pointer h-full">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Operative grupper</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("dashboard.operational_groups")}</CardTitle>
                   <Users className="h-5 w-5 text-primary" aria-hidden="true" />
                 </CardHeader>
                 <CardContent>
@@ -234,7 +236,7 @@ export default function HomePage() {
                     {loading ? "..." : stats.operationalGroups}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Aktive innbokser
+                    {t("dashboard.active_inboxes")}
                   </p>
                 </CardContent>
               </Card>
@@ -243,7 +245,7 @@ export default function HomePage() {
             <Link href="/admin" className="block">
               <Card className="border-2 hover:border-primary transition-colors cursor-pointer h-full">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">On-duty brukere</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("dashboard.on_duty_users")}</CardTitle>
                   <Clock className="h-5 w-5 text-primary" aria-hidden="true" />
                 </CardHeader>
                 <CardContent>
@@ -251,7 +253,7 @@ export default function HomePage() {
                     {loading ? "..." : stats.onDutyUsers}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Aktive operatører
+                    {t("dashboard.active_operators")}
                   </p>
                 </CardContent>
               </Card>
@@ -260,13 +262,13 @@ export default function HomePage() {
             <Link href="/admin" className="block">
               <Card className="border-2 hover:border-primary transition-colors cursor-pointer h-full">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Gjennomsnittlig svartid</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("dashboard.avg_response_time")}</CardTitle>
                   <AlertCircle className="h-5 w-5 text-primary" aria-hidden="true" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-foreground">{stats.avgResponseTime}</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Siste 24 timer
+                    {t("dashboard.last_24h")}
                   </p>
                 </CardContent>
               </Card>
@@ -276,19 +278,19 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Siste meldinger</CardTitle>
+                <CardTitle>{t("dashboard.recent_messages")}</CardTitle>
                 <CardDescription>
-                  Nyeste inngående meldinger på tvers av grupper
+                  {t("dashboard.newest_inbound")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {loading ? (
-                    <p className="text-muted-foreground text-center py-8">Laster...</p>
+                    <p className="text-muted-foreground text-center py-8">{t("common.loading")}</p>
                   ) : recentMessages.length === 0 ? (
                     <div className="text-center py-8">
                       <Inbox className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
-                      <p className="text-muted-foreground">Ingen meldinger ennå</p>
+                      <p className="text-muted-foreground">{t("dashboard.no_messages")}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -314,7 +316,7 @@ export default function HomePage() {
                   )}
                   <Link href="/inbox">
                     <Button variant="outline" className="w-full mt-4">
-                      Se alle meldinger
+                      {t("dashboard.see_all_messages")}
                     </Button>
                   </Link>
                 </div>
@@ -323,22 +325,22 @@ export default function HomePage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Vakt-status</CardTitle>
+                <CardTitle>{t("dashboard.duty_status")}</CardTitle>
                 <CardDescription>
-                  Oversikt over on-duty dekning per gruppe
+                  {t("dashboard.on_duty_coverage")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {loading ? (
-                    <p className="text-muted-foreground text-center py-8">Laster...</p>
+                    <p className="text-muted-foreground text-center py-8">{t("common.loading")}</p>
                   ) : groupStatuses.length === 0 ? (
                     <div className="text-center py-8">
                       <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
-                      <p className="text-muted-foreground">Ingen operative grupper opprettet</p>
+                      <p className="text-muted-foreground">{t("dashboard.no_operational_groups")}</p>
                       <Link href="/admin">
                         <Button variant="outline" className="mt-4">
-                          Opprett første gruppe
+                          {t("dashboard.create_first_group")}
                         </Button>
                       </Link>
                     </div>
@@ -350,11 +352,11 @@ export default function HomePage() {
                             <div>
                               <p className="font-medium text-foreground">{group.name}</p>
                               <p className="text-sm text-muted-foreground">
-                                {group.on_duty_count} on-duty
+                                {group.on_duty_count} {t("dashboard.on_duty")}
                               </p>
                             </div>
                             <Badge variant={group.on_duty_count > 0 ? "default" : "outline"}>
-                              {group.on_duty_count > 0 ? "Åpen" : "Stengt"}
+                              {group.on_duty_count > 0 ? t("dashboard.open") : t("dashboard.closed")}
                             </Badge>
                           </div>
                         </Link>
@@ -363,7 +365,7 @@ export default function HomePage() {
                   )}
                   <Link href="/admin">
                     <Button variant="outline" className="w-full mt-4">
-                      Administrer grupper
+                      {t("dashboard.manage_groups")}
                     </Button>
                   </Link>
                 </div>
