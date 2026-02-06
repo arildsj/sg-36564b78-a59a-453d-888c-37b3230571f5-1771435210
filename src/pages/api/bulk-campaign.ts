@@ -42,25 +42,31 @@ export default async function handler(
 
     console.log(`🚀 Triggering bulk campaign: ${campaign_id}`);
 
-    // Call the bulk-campaign Edge Function
-    const { data, error } = await supabase.functions.invoke("bulk-campaign", {
-      body: { campaign_id },
-    });
+    // Invoke Edge Function
+    const { data: functionData, error: functionError } = await supabase.functions.invoke(
+      "bulk-campaign",
+      {
+        body: { campaign_id: campaign_id },
+      }
+    );
 
-    if (error) {
-      console.error("❌ Edge Function error:", error);
+    console.log("Edge Function response:", { functionData, functionError });
+
+    if (functionError) {
+      console.error("Edge Function error details:", JSON.stringify(functionError, null, 2));
       return res.status(500).json({
         error: "Failed to trigger campaign",
-        details: error.message,
+        details: functionError.message || "Edge Function returned a non-2xx status code",
+        fullError: functionError,
       });
     }
 
-    console.log("✅ Campaign triggered successfully:", data);
+    console.log("✅ Campaign triggered successfully:", functionData);
 
     return res.status(200).json({
       success: true,
       message: "Campaign processing started",
-      data,
+      data: functionData,
     });
   } catch (error: unknown) {
     console.error("❌ Bulk campaign API error:", error);
