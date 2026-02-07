@@ -242,6 +242,20 @@ export const userService = {
     return userProfile;
   },
 
+  async deleteUser(userId: string) {
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (error) throw error;
+    
+    // Also delete from auth (requires admin privileges or edge function usually, 
+    // but we'll start with DB record which might trigger cascade or be enough for soft delete logic if implemented)
+    // For now, we assume DB deletion is what's requested.
+    return true;
+  },
+
   async getUsersByGroup(groupId: string): Promise<User[]> {
     const { data, error } = await supabase
       .from("group_memberships")

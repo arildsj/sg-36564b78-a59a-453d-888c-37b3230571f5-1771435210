@@ -108,7 +108,7 @@ interface Group {
 type User = Database["public"]["Tables"]["users"]["Row"] & {
   groups?: string[];
   group_ids?: string[];
-  user_groups?: { groups: { name: string } | null }[];
+  user_groups?: { groups: { id: string; name: string } | null }[];
   on_duty?: boolean;
 };
 
@@ -167,6 +167,7 @@ export default function AdminPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   
   // UI states
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [creating, setCreating] = useState(false);
   
@@ -226,6 +227,48 @@ export default function AdminPage() {
     pattern: "",
     is_active: true,
   });
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [
+        groupsData, 
+        usersData, 
+        gatewaysData, 
+        routingRulesData,
+        currentUserData
+      ] = await Promise.all([
+        groupService.getAllGroups(),
+        userService.getAllUsers(),
+        gatewayService.getAllGateways(),
+        routingRuleService.getRoutingRules(),
+        userService.getCurrentUser()
+      ]);
+
+      setGroups(groupsData as GroupNode[]);
+      setAllGroups(groupsData as GroupNode[]); // Keep a copy for dropdowns
+      setUsers(usersData as User[]);
+      setGateways(gatewaysData as Gateway[]);
+      setRoutingRules(routingRulesData as RoutingRule[]);
+      
+      if (currentUserData) {
+        setRealUser(currentUserData as User);
+        if (!isDemoMode && !currentUser) {
+          setCurrentUser(currentUserData as User);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load data:", error);
+      toast({ title: "Feil ved lastning av data", variant: "destructive" });
+    } finally {
+      setLoading(false);
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const handleDeleteUser = async (userId: string) => {
     if (!confirm("Er du sikker på at du vil slette denne brukeren?")) return;
@@ -608,150 +651,131 @@ export default function AdminPage() {
 
   // Helper function to render group hierarchy with visual tree structure
   const renderGroupHierarchy = () => {
-    const buildTree = (parentId: string | null, level: number = 0, siblings: string[] = []): JSX.Element[] => {
-      const children = groups.filter(g => g.parent_group_id === parentId);
-      
-      return children.flatMap((group, index) => {
-        const hasChildren = groups.some(g => g.parent_group_id === group.id);
-        const isExpanded = expandedGroups.has(group.id);
-        
-        // Tree structure indicators
-        const indent = level * 24; // 24px per level
-        const isLastChild = index === children.length - 1;
-        
-        const row = (
-          <TableRow 
-            key={group.id}
-            className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-          >
-            <TableCell>
-              <div className="flex items-center gap-2" style={{ paddingLeft: `${indent}px` }}>
-                {/* Tree structure visual */}
-                {level > 0 && (
-                  <div className="flex items-center">
-                    <div className={cn(
-                      "w-4 h-4 border-l-2 border-b-2 border-gray-300 dark:border-gray-600",
-                      isLastChild ? "rounded-bl" : ""
-                    )} />
-                  </div>
-                )}
-                
-                {/* Expand/collapse button for groups with children */}
-                {hasChildren && (
-                  <button
-                    onClick={() => {
-                      const newExpanded = new Set(expandedGroups);
-                      if (isExpanded) {
-                        newExpanded.delete(group.id);
-                      } else {
-                        newExpanded.add(group.id);
-                      }
-                      setExpandedGroups(newExpanded);
-                    }}
-                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors mr-1"
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
-                  </button>
-                )}
-                
-                {/* Group name with kind badge */}
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{group.name}</span>
-                  {group.kind === "structural" && (
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                      {t("admin.structural")}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </TableCell>
-            
-            <TableCell className="text-center">
-              <span className="font-semibold text-green-600 dark:text-green-400">
-                {group.on_duty_count}
-              </span>
-            </TableCell>
-            
-            <TableCell className="text-center">
-              <span className="font-medium">{group.total_members}</span>
-            </TableCell>
-            
-            <TableCell>
-              {group.parent_group_id ? (
-                <span className="text-gray-600 dark:text-gray-400">
-                  {groups.find(g => g.id === group.parent_group_id)?.name || "-"}
-                </span>
-              ) : (
-                <span className="text-gray-400 dark:text-gray-600">-</span>
-              )}
-            </TableCell>
-            
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleSelectGroup(group)}
-                  title={t("admin.view_members")}
-                >
-                  <Users className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEditGroup(group)}
-                  title={t("common.edit")}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteGroup(group.id)}
-                  title={t("common.delete")}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        );
-        
-        // Recursively add child rows if expanded
-        let childRows: JSX.Element[] = [];
-        if (hasChildren && isExpanded) {
-          const childIds = groups.filter(g => g.parent_group_id === group.id).map(g => g.id);
-          childRows = buildTree(group.id, level + 1, childIds);
-        }
-        
-        return [row, ...childRows];
-      });
-    };
-
-    // Start with root groups (no parent)
-    const rootGroups = groups.filter(g => !g.parent_group_id);
-    
-    if (rootGroups.length === 0 && groups.length > 0) {
-      // Fallback if no explicit root groups found but groups exist (e.g. circular dependency or data issue)
-      return buildTree(null, 0, []); 
-    }
-    
-    const rows = buildTree(null, 0, rootGroups.map(g => g.id));
-    
-    if (rows.length === 0) {
+    if (groups.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400 py-8">
+          <TableCell colSpan={5} className="text-center text-gray-500 py-8">
             {t("admin.no_groups")}
           </TableCell>
         </TableRow>
       );
     }
+
+    const rows: JSX.Element[] = [];
+    
+    // Build tree structure
+    const buildTree = (parentId: string | null, depth: number, path: boolean[] = []) => {
+      const children = groups
+        .filter(g => g.parent_group_id === parentId)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      children.forEach((group, index) => {
+        const isLast = index === children.length - 1;
+        const hasChildren = groups.some(g => g.parent_group_id === group.id);
+        
+        // Build visual tree characters
+        let treeChars = "";
+        for (let i = 0; i < depth; i++) {
+          if (path[i]) {
+            treeChars += "│  "; // Vertical line for parent levels
+          } else {
+            treeChars += "   "; // Empty space
+          }
+        }
+        
+        if (depth > 0) {
+          treeChars += isLast ? "└─ " : "├─ ";
+        }
+
+        // Count users in this group
+        const groupUsers = users.filter(u => 
+          u.user_groups?.some(ug => ug.groups?.id === group.id)
+        );
+        const onDutyCount = groupUsers.filter(u => u.on_duty).length;
+        
+        // Get parent group name
+        const parentGroup = groups.find(g => g.id === group.parent_group_id);
+
+        rows.push(
+          <TableRow key={group.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+            <TableCell className="font-medium">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-gray-400 select-none" style={{ whiteSpace: "pre" }}>
+                  {treeChars}
+                </span>
+                <span>{group.name}</span>
+                {group.kind === "structural" && (
+                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded">
+                    {t("admin.structural")}
+                  </span>
+                )}
+              </div>
+            </TableCell>
+            <TableCell className="text-center">
+              <span className="font-semibold text-green-600 dark:text-green-400">
+                {onDutyCount}
+              </span>
+            </TableCell>
+            <TableCell className="text-center">
+              {groupUsers.length}
+            </TableCell>
+            <TableCell className="text-center text-gray-500">
+              {parentGroup ? parentGroup.name : "-"}
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedGroup(group);
+                    setShowGroupDetails(true);
+                  }}
+                >
+                  <Users className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingGroup({
+                      id: group.id,
+                      name: group.name,
+                      parent_group_id: group.parent_group_id || null,
+                      on_duty_count: group.on_duty_count,
+                      total_members: group.total_members || 0,
+                      kind: group.kind || "operational",
+                      description: group.description || null
+                    });
+                    setShowEditGroupDialog(true);
+                  }}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteGroup(group.id)}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        );
+
+        // Recursively render children with updated path
+        if (hasChildren) {
+          const newPath = [...path];
+          newPath[depth] = !isLast; // true if not last (needs vertical line)
+          buildTree(group.id, depth + 1, newPath);
+        }
+      });
+    };
+
+    // Start with root groups (no parent)
+    buildTree(null, 0);
     
     return rows;
   };
@@ -898,37 +922,35 @@ export default function AdminPage() {
 
             <TabsContent value="groups" className="space-y-4">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">{t("admin.tabs.groups")}</h2>
-                <Button onClick={() => { setNewGroup({ name: "", kind: "operational", parent_id: null, description: "" }); setShowGroupModal(true); }}>
-                  <Plus className="w-4 h-4 mr-2" />
+                <h2 className="text-xl font-semibold">{t("admin.groups")}</h2>
+                <Button onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
                   {t("admin.new_group")}
                 </Button>
               </div>
 
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("admin.group_name")}</TableHead>
-                      <TableHead>{t("admin.on_duty")}</TableHead>
-                      <TableHead>{t("admin.total")}</TableHead>
-                      <TableHead>{t("admin.parent")}</TableHead>
-                      <TableHead className="text-right">{t("admin.actions")}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {groups.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                </div>
+              ) : (
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-gray-500 py-8">
-                          {t("common.loading")}
-                        </TableCell>
+                        <TableHead className="w-[40%]">{t("admin.group_name")}</TableHead>
+                        <TableHead className="text-center w-[15%]">{t("admin.on_duty")}</TableHead>
+                        <TableHead className="text-center w-[15%]">{t("admin.total")}</TableHead>
+                        <TableHead className="w-[20%]">{t("admin.parent")}</TableHead>
+                        <TableHead className="text-right w-[10%]">{t("admin.actions")}</TableHead>
                       </TableRow>
-                    ) : (
-                      renderGroupHierarchy()
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {renderGroupHierarchy()}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="users" className="space-y-4">
@@ -978,7 +1000,7 @@ export default function AdminPage() {
                           <TableRow key={user.id}>
                             <TableCell>{user.name || "-"}</TableCell>
                             <TableCell>{user.email}</TableCell>
-                            <TableCell>{user.phone_number || user.phone || "-"}</TableCell>
+                            <TableCell>{(user as any).phone_number || "-"}</TableCell>
                             <TableCell>
                               {user.user_groups?.map((ug) => ug.groups?.name).filter(Boolean).join(", ") || "-"}
                             </TableCell>
