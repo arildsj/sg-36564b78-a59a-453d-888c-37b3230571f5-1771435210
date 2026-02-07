@@ -183,7 +183,8 @@ const translations: Record<string, Record<Language, string>> = {
   "common.finish": { no: "Fullfør", en: "Finish", de: "Fertig", fr: "Terminer", es: "Finalizar", it: "Fine", pl: "Zakończ" },
 
   // Dashboard
-  "dashboard.description": { no: "Oversikt over systemstatus og aktivitet", en: "System status and activity overview", de: "System-Status und Aktivitätsübersicht", fr: "Vue d'ensemble de l'état du système et de l'activité", es: "Resumen del estado del sistema y actividad", it: "Panoramica dello stato del sistema e dell'attività", pl: "Przegląd stanu systemu i aktywności" },
+  "dashboard.title": { no: "Dashboard", en: "Dashboard", de: "Dashboard", fr: "Tableau de bord", es: "Panel de control", it: "Cruscotto", pl: "Panel" },
+  "dashboard.description": { no: "Oversikt over systemstatus og aktivitet", en: "Overview of system status and activity", de: "Übersicht über Systemstatus und Aktivität", fr: "Aperçu de l'état du système et de l'activité", es: "Resumen del estado del sistema y la actividad", it: "Panoramica dello stato del sistema e dell'attività", pl: "Przegląd stanu systemu i aktywności" },
   "dashboard.unhandled_messages": { no: "Uhåndterte meldinger", en: "Unhandled messages", de: "Unbearbeitete Nachrichten", fr: "Messages non traités", es: "Mensajes sin manejar", it: "Messaggi non gestiti", pl: "Nieobsłużone wiadomości" },
   "dashboard.operational_groups": { no: "Operative grupper", en: "Operational groups", de: "Operative Gruppen", fr: "Groupes opérationnels", es: "Grupos operacionales", it: "Gruppi operativi", pl: "Grupy operacyjne" },
   "dashboard.on_duty_users": { no: "Brukere på vakt", en: "On-duty users", de: "Benutzer im Dienst", fr: "Utilisateurs de service", es: "Usuarios de guardia", it: "Utenti di turno", pl: "Użytkownicy na dyżurze" },

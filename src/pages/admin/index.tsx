@@ -108,6 +108,8 @@ interface Group {
 type User = Database["public"]["Tables"]["users"]["Row"] & {
   groups?: string[];
   group_ids?: string[];
+  user_groups?: { groups: { name: string } | null }[];
+  on_duty?: boolean;
 };
 
 type Gateway = {
@@ -225,76 +227,19 @@ export default function AdminPage() {
     is_active: true,
   });
 
-  // State for expanded groups
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("Er du sikker på at du vil slette denne brukeren?")) return;
+    
     try {
-      setLoading(true);
-      setLoadingUsers(true);
-      const [groupsData, usersData, currentUserData, realUserData, gatewaysData, routingRulesData] = await Promise.all([
-        groupService.getGroupsHierarchy(),
-        userService.getAllUsers(),
-        userService.getCurrentUserWithDemo(),
-        userService.getCurrentUser(),
-        gatewayService.getAllGateways(),
-        routingRuleService.getRoutingRules(),
-      ]);
-
-      console.log("Admin data loaded:", { 
-        groupsCount: groupsData?.length, 
-        usersCount: usersData?.length,
-        currentUser: currentUserData?.name,
-        gatewaysCount: gatewaysData?.length,
-        routingRulesCount: routingRulesData?.length
-      });
-
-      // Fetch audit logs separately to not block main data if it fails (e.g. RLS)
-      try {
-        if (currentUserData?.role === 'tenant_admin') {
-          const logs = await auditService.getAuditLogs(100);
-          setAuditLogs(logs);
-        }
-      } catch (e) {
-        console.error("Could not fetch audit logs:", e);
-      }
-
-      setGroups(groupsData as GroupNode[]);
-      
-      const flattenGroups = (groups: GroupNode[]): GroupNode[] => {
-        const flat: GroupNode[] = [];
-        const traverse = (g: GroupNode[]) => {
-          g.forEach(group => {
-            flat.push(group);
-            if (group.children) traverse(group.children);
-          });
-        };
-        traverse(groups);
-        return flat;
-      };
-      setAllGroups(flattenGroups(groupsData as GroupNode[]));
-      
-      console.log("Setting users:", usersData);
-      setUsers(usersData as User[]);
-      setCurrentUser(currentUserData as unknown as User);
-      setRealUser(realUserData as unknown as User);
-      setIsDemoMode(currentUserData?.id !== realUserData?.id);
-      setGateways(gatewaysData as Gateway[]);
-      setRoutingRules(routingRulesData as RoutingRule[]);
-    } catch (error) {
-      console.error("Failed to load admin data:", error);
-      toast({ 
-        title: t("error.load_failed"), 
-        description: t("error.unexpected"), 
-        variant: "destructive" 
-      });
+      setCreating(true);
+      await userService.deleteUser(userId);
+      await loadData();
+      toast({ title: "Bruker slettet" });
+    } catch (error: any) {
+      console.error("Failed to delete user:", error);
+      toast({ title: "Feil ved sletting", description: error.message, variant: "destructive" });
     } finally {
-      setLoading(false);
-      setLoadingUsers(false);
+      setCreating(false);
     }
   };
 
@@ -954,130 +899,32 @@ export default function AdminPage() {
             <TabsContent value="groups" className="space-y-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">{t("admin.tabs.groups")}</h2>
-                <Button
-                  onClick={() => {
-                    setNewGroup({
-                      name: "",
-                      kind: "operational",
-                      parent_id: null,
-                      description: "",
-                    });
-                    setShowCreateDialog(true);
-                  }}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
+                <Button onClick={() => { setNewGroup({ name: "", kind: "operational", parent_id: null, description: "" }); setShowGroupModal(true); }}>
                   <Plus className="w-4 h-4 mr-2" />
                   {t("admin.new_group")}
                 </Button>
               </div>
 
-              {activeTab === "groups" && (
-                <div className="space-y-6">
-                  <div className="border rounded-lg overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gray-50 dark:bg-gray-800">
-                          <TableHead className="w-[40%]">{t("admin.group_name")}</TableHead>
-                          <TableHead className="text-center w-[15%]">{t("admin.on_duty")}</TableHead>
-                          <TableHead className="text-center w-[15%]">{t("admin.total")}</TableHead>
-                          <TableHead className="w-[20%]">{t("admin.parent")}</TableHead>
-                          <TableHead className="text-right w-[10%]">{t("admin.actions")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {loading ? (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                              {t("common.loading")}
-                            </TableCell>
-                          </TableRow>
-                        ) : groups.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                              {t("admin.no_groups")}
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          renderGroupHierarchy()
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+              <div className="border rounded-lg">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[200px]">{t("contacts.name")}</TableHead>
-                      <TableHead className="min-w-[200px]">{t("contacts.email")}</TableHead>
-                      <TableHead className="min-w-[150px]">{t("contacts.phone")}</TableHead>
-                      <TableHead className="min-w-[150px]">{t("contacts.groups")}</TableHead>
-                      <TableHead className="min-w-[100px]">{t("admin.on_duty")}</TableHead>
-                      <TableHead className="min-w-[100px]">{t("admin.role")}</TableHead>
-                      <TableHead className="min-w-[120px] text-right">{t("admin.actions")}</TableHead>
+                      <TableHead>{t("admin.group_name")}</TableHead>
+                      <TableHead>{t("admin.on_duty")}</TableHead>
+                      <TableHead>{t("admin.total")}</TableHead>
+                      <TableHead>{t("admin.parent")}</TableHead>
+                      <TableHead className="text-right">{t("admin.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {loadingUsers ? (
+                    {groups.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8">
-                          {t("admin.loading_users")}
-                        </TableCell>
-                      </TableRow>
-                    ) : users.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          {t("admin.no_users")}
+                        <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                          {t("common.loading")}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      users.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>{(user as any).phone_number || "-"}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {user.group_ids && user.group_ids.length > 0 ? (
-                                user.group_ids.map((gid: string) => {
-                                  const g = allGroups.find(ag => ag.id === gid);
-                                  return (
-                                    <Badge key={gid} variant="secondary">
-                                      {g?.name || "Unknown"}
-                                    </Badge>
-                                  );
-                                })
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={(user as any).on_duty ? "default" : "secondary"}>
-                              {(user as any).on_duty ? "Ja" : "Nei"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={user.role === "tenant_admin" ? "default" : "secondary"}>
-                              {user.role === "tenant_admin" ? "Ja" : "Nei"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleOpenEditUser(user)}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      renderGroupHierarchy()
                     )}
                   </TableBody>
                 </Table>
@@ -1127,15 +974,36 @@ export default function AdminPage() {
                               {t("common.loading")}
                             </TableCell>
                           </TableRow>
-                        ) : groups.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                              {t("admin.no_groups")}
+                        ) : users.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell>{user.name || "-"}</TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>{user.phone_number || user.phone || "-"}</TableCell>
+                            <TableCell>
+                              {user.user_groups?.map((ug) => ug.groups?.name).filter(Boolean).join(", ") || "-"}
+                            </TableCell>
+                            <TableCell>
+                              <span className={`px-2 py-1 rounded text-xs ${user.on_duty ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
+                                {user.on_duty ? t("common.yes") : t("common.no")}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={getRoleBadgeVariant(user.role)}>
+                                {getRoleLabel(user.role)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2 justify-end">
+                                <Button variant="outline" size="sm" onClick={() => handleOpenEditUser(user)}>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => handleDeleteUser(user.id)}>
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
-                        ) : (
-                          renderGroupHierarchy()
-                        )}
+                        ))}
                       </TableBody>
                     </Table>
                   </div>
