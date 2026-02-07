@@ -3,242 +3,487 @@ import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Printer, Send, CheckCircle2, Clock, QrCode, BarChart3, Users, Phone } from "lucide-react";
-import { useLanguage } from "@/contexts/LanguageProvider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { Send, QrCode, CheckCircle, Clock, AlertCircle, Search, X } from "lucide-react";
 
 interface Contact {
   id: string;
-  phone_number: string;
   name: string;
+  phone_number: string;
 }
 
 interface Group {
   id: string;
   name: string;
-  member_count?: number;
+  description: string | null;
 }
 
-interface LabelData {
-  title: string;
-  reference_id: string;
-  body_lines: string[];
-  label_type: string;
-  qr_enabled: boolean;
-  qr_validity?: string;
-  expected_reply?: string;
+interface ValidationErrors {
+  pastedText?: string;
+  labelType?: string;
+  recipients?: string;
+  referenceId?: string;
+  expectedReply?: string;
 }
 
 export default function PrintToSMS() {
   const router = useRouter();
-  const { t } = useLanguage();
-  const [rawText, setRawText] = useState("");
-  const [labelType, setLabelType] = useState("alert");
+  
+  // Form state
+  const [pastedText, setPastedText] = useState("");
+  const [labelType, setLabelType] = useState<string>("");
   const [referenceId, setReferenceId] = useState("");
-  const [qrEnabled, setQrEnabled] = useState(false);
-  const [qrValidity, setQrValidity] = useState("1hour");
   const [expectedReply, setExpectedReply] = useState("");
-  const [manualPhone, setManualPhone] = useState("");
-  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
-  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [enableQR, setEnableQR] = useState(false);
+  const [qrValidity, setQrValidity] = useState("1h");
+  
+  // Recipient state
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [labelId, setLabelId] = useState("");
-  const [deliveryMode, setDeliveryMode] = useState<"sms" | "mms">("sms");
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Preview state
+  const [previewMode, setPreviewMode] = useState<"sms" | "mms">("sms");
+  
+  // Send state
+  const [isSending, setSending] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState(false);
+  const [generatedLabelId, setGeneratedLabelId] = useState<string | null>(null);
+  const [sentTimestamp, setSentTimestamp] = useState<string | null>(null);
+  
+  // Validation state
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [touched, setTouched] = useState<Set<string>>(new Set());
 
+  // Load contacts and groups
   useEffect(() => {
-    fetchContactsAndGroups();
-  }, []);
-
-  const fetchContactsAndGroups = async () => {
-    try {
+    async function loadData() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        router.push("/login");
+        return;
+      }
 
-      const { data: contactsData } = await supabase
+      // Fetch contacts separately to avoid deep type instantiation in Promise.all
+      const { data: contactsData, error: contactsError } = await supabase
         .from("contacts")
-        .select("id, phone_number, name")
+        .select("id, name, phone_number")
+        .eq("created_by", user.id)
         .order("name");
 
-      const { data: groupsData } = await supabase
+      if (contactsError) {
+        console.error("Error fetching contacts:", contactsError);
+      } else if (contactsData) {
+        setContacts(contactsData);
+      }
+
+      // Fetch groups separately
+      const { data: groupsData, error: groupsError } = await supabase
         .from("groups")
-        .select("id, name")
+        .select("id, name, description")
+        .eq("created_by", user.id)
         .order("name");
-
-      if (contactsData) setContacts(contactsData);
-      if (groupsData) setGroups(groupsData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
+        
+      if (groupsError) {
+        console.error("Error fetching groups:", groupsError);
+      } else if (groupsData) {
+        setGroups(groupsData);
+      }
     }
+
+    loadData();
+  }, [router]);
+
+  // Validation functions
+  const validatePastedText = (value: string): string | undefined => {
+    if (!value.trim()) {
+      return "Please paste some content to create a label";
+    }
+    if (value.length > 2000) {
+      return "Content is too long (max 2000 characters)";
+    }
+    return undefined;
   };
 
-  const parseLabelData = (): LabelData => {
-    const lines = rawText.split("\n").filter(line => line.trim().length > 0);
-    const title = lines[0]?.substring(0, 50) || "Untitled Label";
-    const bodyLines = lines.slice(1, 9).map(line => line.substring(0, 160));
+  const validateLabelType = (value: string): string | undefined => {
+    if (!value) {
+      return "Please select a label type";
+    }
+    return undefined;
+  };
 
+  const validateRecipients = (): string | undefined => {
+    if (selectedContacts.length === 0 && selectedGroups.length === 0) {
+      return "Please select at least one recipient (contact or group)";
+    }
+    return undefined;
+  };
+
+  const validateReferenceId = (value: string): string | undefined => {
+    if (value && value.length > 50) {
+      return "Reference ID is too long (max 50 characters)";
+    }
+    return undefined;
+  };
+
+  const validateExpectedReply = (value: string): string | undefined => {
+    if (value && value.length > 100) {
+      return "Expected reply is too long (max 100 characters)";
+    }
+    return undefined;
+  };
+
+  // Run validation
+  const runValidation = (): ValidationErrors => {
     return {
-      title,
-      reference_id: referenceId,
-      body_lines: bodyLines,
-      label_type: labelType,
-      qr_enabled: qrEnabled,
-      qr_validity: qrEnabled ? qrValidity : undefined,
-      expected_reply: expectedReply || undefined
+      pastedText: validatePastedText(pastedText),
+      labelType: validateLabelType(labelType),
+      recipients: validateRecipients(),
+      referenceId: validateReferenceId(referenceId),
+      expectedReply: validateExpectedReply(expectedReply),
     };
   };
 
+  // Check if form is valid
+  const isFormValid = (): boolean => {
+    const validationErrors = runValidation();
+    return Object.values(validationErrors).every(error => error === undefined);
+  };
+
+  // Handle field blur
+  const handleBlur = (fieldName: string) => {
+    setTouched(prev => new Set(prev).add(fieldName));
+    setErrors(runValidation());
+  };
+
+  // Handle field change with validation
+  const handleFieldChange = (fieldName: string, value: string) => {
+    if (touched.has(fieldName)) {
+      setErrors(runValidation());
+    }
+  };
+
+  // Filter contacts and groups by search
+  const filteredContacts = contacts.filter(contact =>
+    contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.phone_number.includes(searchQuery)
+  );
+
+  const filteredGroups = groups.filter(group =>
+    group.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Toggle contact selection
+  const toggleContact = (contactId: string) => {
+    setSelectedContacts(prev =>
+      prev.includes(contactId)
+        ? prev.filter(id => id !== contactId)
+        : [...prev, contactId]
+    );
+    if (touched.has("recipients")) {
+      setErrors(runValidation());
+    }
+  };
+
+  // Toggle group selection
+  const toggleGroup = (groupId: string) => {
+    setSelectedGroups(prev =>
+      prev.includes(groupId)
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+    if (touched.has("recipients")) {
+      setErrors(runValidation());
+    }
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery("");
+  };
+
+  // Generate label lines
+  const generateLabelLines = (): string[] => {
+    if (!pastedText.trim()) return [];
+    
+    const lines = pastedText
+      .split("\n")
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+    
+    return lines.slice(0, 8).map(line => 
+      line.length > 60 ? line.substring(0, 60) + "..." : line
+    );
+  };
+
+  // Generate QR token
   const generateQRToken = (): string => {
-    return `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`.toUpperCase();
+    return `QR-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
   };
 
-  const formatSMSPreview = (label: LabelData): string => {
-    let message = `📋 ${label.title}\n`;
-    if (label.reference_id) {
-      message += `Ref: ${label.reference_id}\n`;
-    }
-    message += "\n";
-    label.body_lines.forEach(line => {
-      message += `${line}\n`;
-    });
-    if (label.expected_reply) {
-      message += `\n✉️ Reply: ${label.expected_reply}`;
-    }
-    if (label.qr_enabled) {
-      const token = generateQRToken();
-      message += `\n\n🔗 Access: ${token}`;
-      message += `\nValid: ${label.qr_validity === "10min" ? "10 minutes" : label.qr_validity === "1hour" ? "1 hour" : label.qr_validity === "1day" ? "1 day" : "single use"}`;
-    }
-    return message;
+  // Format validity text
+  const getValidityText = (): string => {
+    const validityMap: { [key: string]: string } = {
+      "10m": "10 minutes",
+      "1h": "1 hour",
+      "1d": "1 day",
+      "single": "Single use"
+    };
+    return validityMap[qrValidity] || "1 hour";
   };
 
+  // Handle send
   const handleSend = async () => {
-    if (!rawText.trim()) {
-      toast({
-        title: "Missing Content",
-        description: "Please paste some text to create a label",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (selectedContacts.length === 0 && selectedGroups.length === 0 && !manualPhone) {
-      toast({
-        title: "Missing Recipients",
-        description: "Please select at least one contact or group",
-        variant: "destructive"
-      });
+    // Mark all fields as touched
+    setTouched(new Set(["pastedText", "labelType", "recipients", "referenceId", "expectedReply"]));
+    
+    // Validate
+    const validationErrors = runValidation();
+    setErrors(validationErrors);
+    
+    if (!isFormValid()) {
       return;
     }
 
     setSending(true);
-    
-    try {
-      const label = parseLabelData();
-      const generatedLabelId = `LBL-${Date.now()}`;
-      const qrToken = qrEnabled ? generateQRToken() : null;
 
-      // Simulate sending (in production, this would call your message service)
+    try {
+      // Generate label ID and timestamp
+      const labelId = `LABEL-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      const timestamp = new Date().toISOString();
+
+      // Simulate sending delay
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      setLabelId(generatedLabelId);
-      setSent(true);
-      
-      toast({
-        title: "Label Sent Successfully",
-        description: `${selectedContacts.length + selectedGroups.length + (manualPhone ? 1 : 0)} recipient(s) queued for delivery`,
-      });
+      // Set success state
+      setGeneratedLabelId(labelId);
+      setSentTimestamp(timestamp);
+      setSendSuccess(true);
 
-      // Reset form
+      // Auto-hide success message after 5 seconds
       setTimeout(() => {
-        setRawText("");
-        setReferenceId("");
-        setQrEnabled(false);
-        setExpectedReply("");
-        setManualPhone("");
-        setSelectedContacts([]);
-        setSelectedGroups([]);
-        setSent(false);
+        setSendSuccess(false);
       }, 5000);
 
     } catch (error) {
       console.error("Error sending label:", error);
-      toast({
-        title: "Send Failed",
-        description: "Unable to send label. Please try again.",
-        variant: "destructive"
-      });
     } finally {
       setSending(false);
     }
   };
 
-  const labelData = rawText.trim() ? parseLabelData() : null;
-  const smsPreview = labelData ? formatSMSPreview(labelData) : "";
+  // Render SMS preview
+  const renderSMSPreview = () => {
+    const lines = generateLabelLines();
+    
+    return (
+      <div className="space-y-3 font-mono text-sm">
+        <div className="font-bold text-base">
+          [{labelType || "TYPE"}] {referenceId && `Ref: ${referenceId}`}
+        </div>
+        
+        <Separator />
+        
+        <div className="space-y-1">
+          {lines.length > 0 ? (
+            lines.map((line, idx) => (
+              <div key={idx}>{line}</div>
+            ))
+          ) : (
+            <div className="text-muted-foreground italic">
+              Paste content to see preview...
+            </div>
+          )}
+        </div>
+
+        {expectedReply && (
+          <>
+            <Separator />
+            <div className="text-muted-foreground">
+              Reply: {expectedReply}
+            </div>
+          </>
+        )}
+
+        {enableQR && (
+          <>
+            <Separator />
+            <div className="text-muted-foreground">
+              QR: {generateQRToken()}
+              <br />
+              Valid for: {getValidityText()}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // Render MMS preview
+  const renderMMSPreview = () => {
+    const lines = generateLabelLines();
+    
+    return (
+      <Card className="border-2">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1 flex-1">
+              <CardTitle className="text-lg">
+                {labelType || "Label Type"}
+              </CardTitle>
+              {referenceId && (
+                <CardDescription className="font-mono text-xs">
+                  Ref: {referenceId}
+                </CardDescription>
+              )}
+            </div>
+            <Badge variant="secondary" className="ml-2">
+              {labelType || "TYPE"}
+            </Badge>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            {lines.length > 0 ? (
+              lines.map((line, idx) => (
+                <div key={idx} className="text-sm">
+                  {line}
+                </div>
+              ))
+            ) : (
+              <div className="text-muted-foreground text-sm italic">
+                Paste content to see preview...
+              </div>
+            )}
+          </div>
+
+          {expectedReply && (
+            <div className="pt-2 border-t">
+              <div className="text-xs text-muted-foreground mb-1">Expected Reply:</div>
+              <Badge variant="outline">{expectedReply}</Badge>
+            </div>
+          )}
+
+          {enableQR && (
+            <div className="pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-xs text-muted-foreground">QR Code:</div>
+                  <div className="font-mono text-xs">{generateQRToken()}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Valid: {getValidityText()}
+                  </div>
+                </div>
+                <div className="w-24 h-24 bg-muted rounded flex items-center justify-center">
+                  <QrCode className="h-16 w-16 text-muted-foreground" />
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <AppLayout>
       <SEO 
         title="Print to SMS - SeMSe"
-        description="Convert any text into structured SMS/MMS labels with QR codes"
+        description="Convert copied content into structured SMS/MMS labels"
       />
-      
-      <div className="container mx-auto py-8 px-4 max-w-7xl">
+
+      <div className="space-y-6">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Printer className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold">Print to SMS</h1>
-          </div>
-          <p className="text-muted-foreground text-lg">
-            Convert any text into structured SMS/MMS messages with optional QR codes
+        <div>
+          <h1 className="text-3xl font-bold">Print to SMS</h1>
+          <p className="text-muted-foreground mt-1">
+            Convert copied content into structured SMS/MMS labels
           </p>
         </div>
 
+        {/* Info Card */}
+        <Alert className="bg-blue-50 border-blue-200">
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-900">
+            <strong>How it works:</strong> Paste content from any system → Convert to structured label → Send as SMS/MMS. 
+            No app required for recipients. QR codes enable time-limited actions.
+          </AlertDescription>
+        </Alert>
+
         {/* Success Alert */}
-        {sent && (
-          <Alert className="mb-6 border-green-500 bg-green-50 dark:bg-green-950">
-            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-            <AlertDescription className="text-green-800 dark:text-green-200">
+        {sendSuccess && (
+          <Alert className="bg-green-50 border-green-200">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-900">
               <strong>Label sent successfully!</strong>
-              <br />
-              Label ID: <code className="font-mono bg-green-100 dark:bg-green-900 px-1 rounded">{labelId}</code>
-              <br />
-              Status: Queued for delivery at {new Date().toLocaleTimeString()}
+              <div className="mt-2 space-y-1 text-sm">
+                <div>Label ID: <span className="font-mono">{generatedLabelId}</span></div>
+                <div>Timestamp: {sentTimestamp && new Date(sentTimestamp).toLocaleString()}</div>
+                <div className="flex items-center gap-2 mt-2">
+                  <Clock className="h-3 w-3" />
+                  <span>Status: Queued for delivery</span>
+                </div>
+              </div>
             </AlertDescription>
           </Alert>
         )}
 
+        {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
           {/* LEFT COLUMN: Input & Options */}
           <div className="space-y-6">
+            
             {/* Input Section */}
             <Card>
               <CardHeader>
-                <CardTitle>1. Paste Content</CardTitle>
-                <CardDescription>Copy text from any system and paste it here</CardDescription>
+                <CardTitle>1. Input Content</CardTitle>
+                <CardDescription>
+                  Paste information copied from another system
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Paste information here (copied from another system)&#10;&#10;Example:&#10;Delivery Notice&#10;Your package #12345 is ready&#10;Pickup at warehouse A&#10;Gate code: 4567"
-                  value={rawText}
-                  onChange={(e) => setRawText(e.target.value)}
-                  className="min-h-[200px] font-mono text-sm"
-                />
-                <div className="mt-2 text-xs text-muted-foreground">
-                  First line becomes the title. Up to 8 additional lines for body content.
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pasted-text">
+                    Pasted Content <span className="text-red-500">*</span>
+                  </Label>
+                  <Textarea
+                    id="pasted-text"
+                    placeholder="Paste information here (copied from another system)&#10;&#10;Example:&#10;Order #12345&#10;Customer: John Doe&#10;Delivery: Tomorrow 10:00&#10;Address: Main St 123"
+                    value={pastedText}
+                    onChange={(e) => {
+                      setPastedText(e.target.value);
+                      handleFieldChange("pastedText", e.target.value);
+                    }}
+                    onBlur={() => handleBlur("pastedText")}
+                    className={`min-h-[200px] font-mono text-sm ${
+                      touched.has("pastedText") && errors.pastedText ? "border-red-500" : ""
+                    }`}
+                  />
+                  {touched.has("pastedText") && errors.pastedText && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.pastedText}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {pastedText.length}/2000 characters
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -247,280 +492,307 @@ export default function PrintToSMS() {
             <Card>
               <CardHeader>
                 <CardTitle>2. Label Options</CardTitle>
-                <CardDescription>Configure label type and features</CardDescription>
+                <CardDescription>
+                  Configure label structure and metadata
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Label Type</Label>
-                  <Select value={labelType} onValueChange={setLabelType}>
-                    <SelectTrigger>
-                      <SelectValue />
+                  <Label htmlFor="label-type">
+                    Label Type <span className="text-red-500">*</span>
+                  </Label>
+                  <Select 
+                    value={labelType} 
+                    onValueChange={(value) => {
+                      setLabelType(value);
+                      handleFieldChange("labelType", value);
+                      if (!touched.has("labelType")) {
+                        setTouched(prev => new Set(prev).add("labelType"));
+                      }
+                    }}
+                  >
+                    <SelectTrigger 
+                      id="label-type"
+                      className={touched.has("labelType") && errors.labelType ? "border-red-500" : ""}
+                    >
+                      <SelectValue placeholder="Select label type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="alert">🚨 Alert</SelectItem>
-                      <SelectItem value="task">✓ Task</SelectItem>
-                      <SelectItem value="access">🔑 Access</SelectItem>
-                      <SelectItem value="delivery">📦 Delivery</SelectItem>
+                      <SelectItem value="Alert">Alert</SelectItem>
+                      <SelectItem value="Task">Task</SelectItem>
+                      <SelectItem value="Access">Access</SelectItem>
+                      <SelectItem value="Delivery">Delivery</SelectItem>
+                      <SelectItem value="Confirmation">Confirmation</SelectItem>
+                      <SelectItem value="Reminder">Reminder</SelectItem>
                     </SelectContent>
                   </Select>
+                  {touched.has("labelType") && errors.labelType && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.labelType}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Reference ID (Optional)</Label>
+                  <Label htmlFor="reference-id">Reference ID</Label>
                   <Input
-                    placeholder="e.g. Order #12345"
+                    id="reference-id"
+                    placeholder="e.g., Order #12345, Case #ABC-001"
                     value={referenceId}
-                    onChange={(e) => setReferenceId(e.target.value)}
+                    onChange={(e) => {
+                      setReferenceId(e.target.value);
+                      handleFieldChange("referenceId", e.target.value);
+                    }}
+                    onBlur={() => handleBlur("referenceId")}
+                    className={touched.has("referenceId") && errors.referenceId ? "border-red-500" : ""}
                   />
+                  {touched.has("referenceId") && errors.referenceId && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.referenceId}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Expected Reply (Optional)</Label>
+                  <Label htmlFor="expected-reply">Expected Reply</Label>
                   <Input
-                    placeholder="e.g. OK, YES, CALL"
+                    id="expected-reply"
+                    placeholder="e.g., OK, YES, CALL, CONFIRM"
                     value={expectedReply}
-                    onChange={(e) => setExpectedReply(e.target.value)}
+                    onChange={(e) => {
+                      setExpectedReply(e.target.value);
+                      handleFieldChange("expectedReply", e.target.value);
+                    }}
+                    onBlur={() => handleBlur("expectedReply")}
+                    className={touched.has("expectedReply") && errors.expectedReply ? "border-red-500" : ""}
                   />
+                  {touched.has("expectedReply") && errors.expectedReply && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.expectedReply}
+                    </p>
+                  )}
                 </div>
 
                 <Separator />
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Generate QR Code</Label>
-                      <div className="text-xs text-muted-foreground">
-                        Time-limited and server-controlled
-                      </div>
+                      <Label htmlFor="enable-qr">Generate QR Code</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Add time-limited QR code to label
+                      </p>
                     </div>
                     <Switch
-                      checked={qrEnabled}
-                      onCheckedChange={setQrEnabled}
+                      id="enable-qr"
+                      checked={enableQR}
+                      onCheckedChange={setEnableQR}
                     />
                   </div>
 
-                  {qrEnabled && (
-                    <div className="space-y-2 pl-4 border-l-2 border-primary">
-                      <Label>QR Code Validity</Label>
+                  {enableQR && (
+                    <div className="space-y-2 pl-4 border-l-2">
+                      <Label htmlFor="qr-validity">QR Code Validity</Label>
                       <Select value={qrValidity} onValueChange={setQrValidity}>
-                        <SelectTrigger>
+                        <SelectTrigger id="qr-validity">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="10min">10 minutes</SelectItem>
-                          <SelectItem value="1hour">1 hour</SelectItem>
-                          <SelectItem value="1day">1 day</SelectItem>
+                          <SelectItem value="10m">10 minutes</SelectItem>
+                          <SelectItem value="1h">1 hour</SelectItem>
+                          <SelectItem value="1d">1 day</SelectItem>
                           <SelectItem value="single">Single use</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground">
+                        QR codes are time-limited and server-controlled
+                      </p>
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Recipients */}
+            {/* Recipient Selection */}
             <Card>
               <CardHeader>
                 <CardTitle>3. Select Recipients</CardTitle>
-                <CardDescription>Choose contacts or groups to send to</CardDescription>
+                <CardDescription>
+                  Choose contacts and groups to receive this label
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Contacts
-                  </Label>
-                  <div className="border rounded-md p-3 max-h-[150px] overflow-y-auto space-y-1">
-                    {contacts.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">No contacts available</div>
-                    ) : (
-                      contacts.map(contact => (
-                        <label key={contact.id} className="flex items-center gap-2 p-2 hover:bg-accent rounded cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedContacts.includes(contact.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedContacts([...selectedContacts, contact.id]);
-                              } else {
-                                setSelectedContacts(selectedContacts.filter(id => id !== contact.id));
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <span className="text-sm">
-                            {contact.name} ({contact.phone_number})
-                          </span>
-                        </label>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Groups
-                  </Label>
-                  <div className="border rounded-md p-3 max-h-[150px] overflow-y-auto space-y-1">
-                    {groups.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">No groups available</div>
-                    ) : (
-                      groups.map(group => (
-                        <label key={group.id} className="flex items-center gap-2 p-2 hover:bg-accent rounded cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedGroups.includes(group.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedGroups([...selectedGroups, group.id]);
-                              } else {
-                                setSelectedGroups(selectedGroups.filter(id => id !== group.id));
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <span className="text-sm font-medium">{group.name}</span>
-                        </label>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    Manual Phone Number (Demo)
-                  </Label>
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="+47 123 45 678"
-                    value={manualPhone}
-                    onChange={(e) => setManualPhone(e.target.value)}
+                    placeholder="Search contacts and groups..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-9"
+                    onFocus={() => handleBlur("recipients")}
                   />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                      onClick={clearSearch}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
+
+                {/* Validation Error */}
+                {touched.has("recipients") && errors.recipients && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{errors.recipients}</AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Selection Summary */}
+                {(selectedContacts.length > 0 || selectedGroups.length > 0) && (
+                  <div className="flex flex-wrap gap-2 p-3 bg-muted rounded-lg">
+                    <Badge variant="secondary">
+                      {selectedContacts.length} contact{selectedContacts.length !== 1 ? "s" : ""}
+                    </Badge>
+                    <Badge variant="secondary">
+                      {selectedGroups.length} group{selectedGroups.length !== 1 ? "s" : ""}
+                    </Badge>
+                  </div>
+                )}
+
+                <Tabs defaultValue="contacts" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="contacts">
+                      Contacts ({filteredContacts.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="groups">
+                      Groups ({filteredGroups.length})
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="contacts" className="space-y-2 mt-4">
+                    <ScrollArea className="h-[250px] pr-4">
+                      {filteredContacts.length > 0 ? (
+                        <div className="space-y-2">
+                          {filteredContacts.map((contact) => (
+                            <div
+                              key={contact.id}
+                              className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-accent transition-colors cursor-pointer"
+                              onClick={() => toggleContact(contact.id)}
+                            >
+                              <Checkbox
+                                checked={selectedContacts.includes(contact.id)}
+                                onCheckedChange={() => toggleContact(contact.id)}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium truncate">
+                                  {contact.name}
+                                </div>
+                                <div className="text-sm text-muted-foreground font-mono">
+                                  {contact.phone_number}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          {searchQuery ? "No contacts found" : "No contacts available"}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </TabsContent>
+
+                  <TabsContent value="groups" className="space-y-2 mt-4">
+                    <ScrollArea className="h-[250px] pr-4">
+                      {filteredGroups.length > 0 ? (
+                        <div className="space-y-2">
+                          {filteredGroups.map((group) => (
+                            <div
+                              key={group.id}
+                              className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-accent transition-colors cursor-pointer"
+                              onClick={() => toggleGroup(group.id)}
+                            >
+                              <Checkbox
+                                checked={selectedGroups.includes(group.id)}
+                                onCheckedChange={() => toggleGroup(group.id)}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium truncate">
+                                  {group.name}
+                                </div>
+                                {group.description && (
+                                  <div className="text-sm text-muted-foreground truncate">
+                                    {group.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          {searchQuery ? "No groups found" : "No groups available"}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>
 
           {/* RIGHT COLUMN: Preview & Send */}
           <div className="space-y-6">
-            {/* Delivery Mode */}
+            
+            {/* Preview Section */}
             <Card>
               <CardHeader>
-                <CardTitle>4. Preview & Send</CardTitle>
-                <CardDescription>Review how your label will appear</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>4. Preview</CardTitle>
+                    <CardDescription>
+                      See how the label will appear
+                    </CardDescription>
+                  </div>
+                  <Tabs value={previewMode} onValueChange={(v) => setPreviewMode(v as "sms" | "mms")}>
+                    <TabsList>
+                      <TabsTrigger value="sms">SMS</TabsTrigger>
+                      <TabsTrigger value="mms">MMS</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Button
-                    variant={deliveryMode === "sms" ? "default" : "outline"}
-                    onClick={() => setDeliveryMode("sms")}
-                    className="flex-1"
-                  >
-                    SMS Preview
-                  </Button>
-                  <Button
-                    variant={deliveryMode === "mms" ? "default" : "outline"}
-                    onClick={() => setDeliveryMode("mms")}
-                    className="flex-1"
-                  >
-                    MMS Preview
-                  </Button>
+              <CardContent>
+                <div className="border rounded-lg p-4 bg-muted/30 min-h-[300px]">
+                  {previewMode === "sms" ? renderSMSPreview() : renderMMSPreview()}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Preview */}
-            {deliveryMode === "sms" ? (
-              <Card className="border-2 border-primary">
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium text-muted-foreground">SMS Preview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {!rawText.trim() ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Paste content to see preview
-                    </div>
-                  ) : (
-                    <div className="bg-muted p-4 rounded-lg font-mono text-sm whitespace-pre-wrap">
-                      {smsPreview}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border-2 border-primary">
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium text-muted-foreground">MMS Preview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {!rawText.trim() ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Paste content to see preview
-                    </div>
-                  ) : (
-                    <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 p-6 rounded-lg space-y-4">
-                      <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-lg">
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="font-bold text-lg">{labelData?.title}</h3>
-                          <Badge variant="outline">{labelType}</Badge>
-                        </div>
-                        
-                        {referenceId && (
-                          <div className="text-sm text-muted-foreground mb-3">
-                            Ref: {referenceId}
-                          </div>
-                        )}
-                        
-                        <div className="space-y-2 mb-4">
-                          {labelData?.body_lines.map((line, idx) => (
-                            <p key={idx} className="text-sm">{line}</p>
-                          ))}
-                        </div>
-
-                        {expectedReply && (
-                          <div className="border-t pt-3 mt-3">
-                            <div className="text-xs text-muted-foreground">Expected reply:</div>
-                            <div className="font-medium">{expectedReply}</div>
-                          </div>
-                        )}
-
-                        {qrEnabled && (
-                          <div className="border-t pt-4 mt-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="text-xs text-muted-foreground">Secure Access Code</div>
-                                <div className="font-mono text-sm font-bold">{generateQRToken()}</div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Valid: {qrValidity === "10min" ? "10 minutes" : qrValidity === "1hour" ? "1 hour" : qrValidity === "1day" ? "1 day" : "single use"}
-                                </div>
-                              </div>
-                              <div className="w-24 h-24 bg-white border-2 border-gray-300 rounded flex items-center justify-center">
-                                <QrCode className="h-16 w-16 text-gray-400" />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Send Action */}
+            {/* Send Section */}
             <Card>
-              <CardContent className="pt-6">
-                <Button
-                  size="lg"
-                  className="w-full"
+              <CardHeader>
+                <CardTitle>5. Send Label</CardTitle>
+                <CardDescription>
+                  Deliver label to selected recipients
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button 
                   onClick={handleSend}
-                  disabled={sending || !rawText.trim()}
+                  disabled={isSending || !isFormValid()}
+                  className="w-full"
+                  size="lg"
                 >
-                  {sending ? (
+                  {isSending ? (
                     <>
                       <Clock className="mr-2 h-4 w-4 animate-spin" />
                       Sending...
@@ -528,38 +800,30 @@ export default function PrintToSMS() {
                   ) : (
                     <>
                       <Send className="mr-2 h-4 w-4" />
-                      Send as {deliveryMode.toUpperCase()}
+                      Send as {previewMode.toUpperCase()}
                     </>
                   )}
                 </Button>
 
-                <div className="mt-4 text-xs text-center text-muted-foreground space-y-1">
-                  <p>✓ No app required for recipients</p>
-                  <p>✓ Works on any mobile phone</p>
-                  <p>✓ QR codes are time-limited and secure</p>
+                {!isFormValid() && touched.size > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Please fix all validation errors before sending
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div>• Labels are delivered immediately</div>
+                  <div>• Recipients receive structured content via SMS/MMS</div>
+                  <div>• QR codes enable time-limited actions</div>
+                  <div>• No app required for recipients</div>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
-
-        {/* Info Section */}
-        <Card className="mt-8 border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
-          <CardHeader>
-            <CardTitle className="text-blue-900 dark:text-blue-100">About Print to SMS</CardTitle>
-          </CardHeader>
-          <CardContent className="text-blue-800 dark:text-blue-200 space-y-2">
-            <p>
-              <strong>Print to SMS</strong> converts any text into structured SMS/MMS messages that can be sent to mobile phones.
-            </p>
-            <p>
-              This is a <strong>label-based messaging workflow</strong>, not a print driver or document renderer.
-            </p>
-            <p>
-              Recipients receive clear, structured information via standard SMS/MMS - no special app required.
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </AppLayout>
   );
