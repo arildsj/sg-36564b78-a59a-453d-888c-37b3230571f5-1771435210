@@ -78,9 +78,9 @@ export default function PrintToSMS() {
         return;
       }
 
-      // Fetch contacts separately to avoid deep type instantiation in Promise.all
+      // Use type assertion to avoid "excessively deep" TypeScript errors with complex schemas
       const { data: contactsData, error: contactsError } = await supabase
-        .from("contacts")
+        .from("contacts" as any)
         .select("id, name, phone_number")
         .eq("created_by", user.id)
         .order("name");
@@ -88,12 +88,12 @@ export default function PrintToSMS() {
       if (contactsError) {
         console.error("Error fetching contacts:", contactsError);
       } else if (contactsData) {
-        setContacts(contactsData);
+        setContacts(contactsData as unknown as Contact[]);
       }
 
-      // Fetch groups separately
+      // Use type assertion for groups as well
       const { data: groupsData, error: groupsError } = await supabase
-        .from("groups")
+        .from("groups" as any)
         .select("id, name, description")
         .eq("created_by", user.id)
         .order("name");
@@ -101,7 +101,7 @@ export default function PrintToSMS() {
       if (groupsError) {
         console.error("Error fetching groups:", groupsError);
       } else if (groupsData) {
-        setGroups(groupsData);
+        setGroups(groupsData as unknown as Group[]);
       }
     }
 
