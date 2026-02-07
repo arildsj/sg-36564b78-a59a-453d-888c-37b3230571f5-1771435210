@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-type Language = "no" | "en" | "de" | "fr" | "es" | "it" | "pl" | "sv";
+type Language = "no" | "en" | "de" | "fr" | "es" | "it" | "pl";
 
 interface LanguageContextType {
   language: Language;
@@ -108,17 +108,105 @@ const translations: Record<string, Record<Language, string>> = {
   "admin.users": { no: "Brukere", en: "Users", de: "Benutzer", fr: "Utilisateurs", es: "Usuarios", it: "Utenti", pl: "Użytkownicy" },
   "admin.gateways": { no: "Gatewayer", en: "Gateways", de: "Gateways", fr: "Passerelles", es: "Puertas de enlace", it: "Gateway", pl: "Bramy" },
   "admin.audit_log": { no: "Revisjonslogg", en: "Audit log", de: "Überwachungsprotokoll", fr: "Journal d'audit", es: "Registro de auditoría", it: "Registro di audit", pl: "Dziennik audytu" },
-  "admin.active_user": { no: "Aktiv bruker", en: "Active user", de: "Aktiver Benutzer", sv: "Aktiv användare", pl: "Aktywny użytkownik" },
-  "admin.description": { no: "Administrer brukere, grupper og gateway", en: "Manage users, groups and gateways", de: "Benutzer, Gruppen und Gateways verwalten", sv: "Hantera användare, grupper och gateways", pl: "Zarządzaj użytkownikami, grupami i bramkami" },
-  "admin.create_group": { no: "Opprett gruppe", en: "Create group", de: "Gruppe erstellen", sv: "Skapa grupp", pl: "Utwórz grupę" },
-  "admin.new_group": { no: "Ny gruppe", en: "New group", de: "Neue Gruppe", sv: "Ny grupp", pl: "Nowa grupa" },
-  "admin.tabs.groups": { no: "Grupper", en: "Groups", de: "Gruppen", sv: "Grupper", pl: "Grupy" },
-  "admin.tabs.users": { no: "Brukere", en: "Users", de: "Benutzer", sv: "Användare", pl: "Użytkownicy" },
-  "admin.tabs.gateways": { no: "Gateway", en: "Gateways", de: "Gateways", sv: "Gateways", pl: "Bramki" },
-  "admin.on_duty": { no: "På vakt", en: "On duty", de: "Im Dienst", sv: "I tjänst", pl: "Na dyżurze" },
-  "admin.total": { no: "Totalt", en: "Total", de: "Gesamt", sv: "Totalt", pl: "Suma" },
-  "admin.parent": { no: "Overordnet", en: "Parent", de: "Übergeordnet", sv: "Överordnad", pl: "Nadrzędny" },
-  "admin.actions": { no: "Handlinger", en: "Actions", de: "Aktionen", sv: "Åtgärder", pl: "Akcje" },
+  "admin.active_user": { 
+    no: "Aktiv bruker", 
+    en: "Active user", 
+    de: "Aktiver Benutzer", 
+    fr: "Utilisateur actif", 
+    es: "Usuario activo", 
+    it: "Utente attivo", 
+    pl: "Aktywny użytkownik" 
+  },
+  "admin.description": { 
+    no: "Administrer brukere, grupper og gateway", 
+    en: "Manage users, groups and gateways", 
+    de: "Benutzer, Gruppen und Gateways verwalten", 
+    fr: "Gérer les utilisateurs, les groupes et les passerelles", 
+    es: "Gestionar usuarios, grupos y puertas de enlace", 
+    it: "Gestisci utenti, gruppi e gateway", 
+    pl: "Zarządzaj użytkownikami, grupami i bramkami" 
+  },
+  "admin.create_group": { 
+    no: "Opprett gruppe", 
+    en: "Create group", 
+    de: "Gruppe erstellen", 
+    fr: "Créer un groupe", 
+    es: "Crear grupo", 
+    it: "Crea gruppo", 
+    pl: "Utwórz grupę" 
+  },
+  "admin.new_group": { 
+    no: "Ny gruppe", 
+    en: "New group", 
+    de: "Neue Gruppe", 
+    fr: "Nouveau groupe", 
+    es: "Nuevo grupo", 
+    it: "Nuovo gruppo", 
+    pl: "Nowa grupa" 
+  },
+  "admin.tabs.groups": { 
+    no: "Grupper", 
+    en: "Groups", 
+    de: "Gruppen", 
+    fr: "Groupes", 
+    es: "Grupos", 
+    it: "Gruppi", 
+    pl: "Grupy" 
+  },
+  "admin.tabs.users": { 
+    no: "Brukere", 
+    en: "Users", 
+    de: "Benutzer", 
+    fr: "Utilisateurs", 
+    es: "Usuarios", 
+    it: "Utenti", 
+    pl: "Użytkownicy" 
+  },
+  "admin.tabs.gateways": { 
+    no: "Gateway", 
+    en: "Gateways", 
+    de: "Gateways", 
+    fr: "Passerelles", 
+    es: "Puertas de enlace", 
+    it: "Gateway", 
+    pl: "Bramki" 
+  },
+  "admin.on_duty": { 
+    no: "På vakt", 
+    en: "On duty", 
+    de: "Im Dienst", 
+    fr: "En service", 
+    es: "De guardia", 
+    it: "In servizio", 
+    pl: "Na dyżurze" 
+  },
+  "admin.total": { 
+    no: "Totalt", 
+    en: "Total", 
+    de: "Gesamt", 
+    fr: "Total", 
+    es: "Total", 
+    it: "Totale", 
+    pl: "Suma" 
+  },
+  "admin.parent": { 
+    no: "Overordnet", 
+    en: "Parent", 
+    de: "Übergeordnet", 
+    fr: "Parent", 
+    es: "Padre", 
+    it: "Genitore", 
+    pl: "Nadrzędny" 
+  },
+  "admin.actions": { 
+    no: "Handlinger", 
+    en: "Actions", 
+    de: "Aktionen", 
+    fr: "Actions", 
+    es: "Acciones", 
+    it: "Azioni", 
+    pl: "Akcje" 
+  },
   
   "settings.title": { no: "Innstillinger", en: "Settings", de: "Einstellungen", fr: "Paramètres", es: "Configuración", it: "Impostazioni", pl: "Ustawienia" },
   "settings.subtitle": { no: "Konfigurer systeminnstillinger", en: "Configure system settings", de: "Systemeinstellungen konfigurieren", fr: "Configurer les paramètres système", es: "Configurar ajustes del sistema", it: "Configura impostazioni di sistema", pl: "Skonfiguruj ustawienia systemu" },
@@ -145,7 +233,44 @@ const translations: Record<string, Record<Language, string>> = {
   "common.close": { no: "Lukk", en: "Close", de: "Schließen", fr: "Fermer", es: "Cerrar", it: "Chiudi", pl: "Zamknij" },
   "common.back": { no: "Tilbake", en: "Back", de: "Zurück", fr: "Retour", es: "Atrás", it: "Indietro", pl: "Wstecz" },
   "common.next": { no: "Neste", en: "Next", de: "Weiter", fr: "Suivant", es: "Siguiente", it: "Avanti", pl: "Dalej" },
-  "common.finish": { no: "Fullfør", en: "Finish", de: "Fertig", fr: "Terminer", es: "Finalizar", it: "Fine", pl: "Zakończ" }
+  "common.finish": { no: "Fullfør", en: "Finish", de: "Fertig", fr: "Terminer", es: "Finalizar", it: "Fine", pl: "Zakończ" },
+
+  // Dashboard translations
+  "dashboard.title": { no: "Kontrollpanel", en: "Dashboard", de: "Übersicht", fr: "Tableau de bord", es: "Panel de control", it: "Cruscotto", pl: "Panel kontrolny" },
+  "dashboard.description": { no: "Oversikt over systemstatus og aktivitet", en: "System status and activity overview", de: "System-Status und Aktivitätsübersicht", fr: "Vue d'ensemble de l'état du système et de l'activité", es: "Resumen del estado del sistema y actividad", it: "Panoramica dello stato del sistema e dell'attività", pl: "Przegląd stanu systemu i aktywności" },
+  "dashboard.unhandled_messages": { no: "Uhåndterte meldinger", en: "Unhandled messages", de: "Unbearbeitete Nachrichten", fr: "Messages non traités", es: "Mensajes sin manejar", it: "Messaggi non gestiti", pl: "Nieobsłużone wiadomości" },
+  "dashboard.operational_groups": { no: "Operative grupper", en: "Operational groups", de: "Operative Gruppen", fr: "Groupes opérationnels", es: "Grupos operacionales", it: "Gruppi operativi", pl: "Grupy operacyjne" },
+  "dashboard.on_duty_users": { no: "Brukere på vakt", en: "On-duty users", de: "Benutzer im Dienst", fr: "Utilisateurs de service", es: "Usuarios de guardia", it: "Utenti di turno", pl: "Użytkownicy na dyżurze" },
+  "dashboard.avg_response_time": { no: "Gj.snitt svartid", en: "Avg response time", de: "Durchschn. Antwortzeit", fr: "Temps de réponse moyen", es: "Tiempo de respuesta promedio", it: "Tempo di risposta medio", pl: "Średni czas odpowiedzi" },
+  "dashboard.awaiting_confirmation": { no: "Venter på bekreftelse", en: "Awaiting confirmation", de: "Warten auf Bestätigung", fr: "En attente de confirmation", es: "Esperando confirmación", it: "In attesa di conferma", pl: "Oczekuje na potwierdzenie" },
+  "dashboard.active_inboxes": { no: "Aktive innbokser", en: "Active inboxes", de: "Aktive Posteingänge", fr: "Boîtes de réception actives", es: "Bandejas de entrada activas", it: "Caselle di posta attive", pl: "Aktywne skrzynki odbiorcze" },
+  "dashboard.active_operators": { no: "Aktive operatører", en: "Active operators", de: "Aktive Betreiber", fr: "Opérateurs actifs", es: "Operadores activos", it: "Operatori attivi", pl: "Aktywni operatorzy" },
+  "dashboard.last_24h": { no: "Siste 24t", en: "Last 24h", de: "Letzte 24h", fr: "Dernières 24h", es: "Últimas 24h", it: "Ultime 24h", pl: "Ostatnie 24h" },
+  "dashboard.recent_messages": { no: "Siste meldinger", en: "Recent messages", de: "Neueste Nachrichten", fr: "Messages récents", es: "Mensajes recientes", it: "Messaggi recenti", pl: "Ostatnie wiadomości" },
+  "dashboard.newest_inbound": { no: "Nyeste innkommende", en: "Newest inbound", de: "Neueste eingehend", fr: "Plus récents entrants", es: "Más recientes entrantes", it: "Più recenti in entrata", pl: "Najnowsze przychodzące" },
+  "dashboard.duty_status": { no: "Vaktstatus", en: "Duty status", de: "Dienststatus", fr: "Statut de service", es: "Estado de guardia", it: "Stato di turno", pl: "Status dyżuru" },
+  "dashboard.on_duty_coverage": { no: "Vaktdekning", en: "On-duty coverage", de: "Dienstabdeckung", fr: "Couverture de service", es: "Cobertura de guardia", it: "Copertura di turno", pl: "Pokrycie dyżuru" },
+  "dashboard.on_duty": { no: "på vakt", en: "on duty", de: "im Dienst", fr: "de service", es: "de guardia", it: "di turno", pl: "na dyżurze" },
+  "dashboard.open": { no: "Åpne", en: "Open", de: "Öffnen", fr: "Ouvrir", es: "Abrir", it: "Apri", pl: "Otwórz" },
+  "dashboard.closed": { no: "Stengt", en: "Closed", de: "Geschlossen", fr: "Fermé", es: "Cerrado", it: "Chiuso", pl: "Zamknięte" },
+
+  // Settings translations
+  "settings.title": { no: "Innstillinger", en: "Settings", de: "Einstellungen", fr: "Paramètres", es: "Configuración", it: "Impostazioni", pl: "Ustawienia" },
+  "settings.subtitle": { no: "Konfigurer systeminnstillinger", en: "Configure system settings", de: "Systemeinstellungen konfigurieren", fr: "Configurer les paramètres système", es: "Configurar ajustes del sistema", it: "Configura impostazioni di sistema", pl: "Skonfiguruj ustawienia systemu" },
+  "settings.profile": { no: "Profil", en: "Profile", de: "Profil", fr: "Profil", es: "Perfil", it: "Profilo", pl: "Profil" },
+  "settings.routing": { no: "Ruting", en: "Routing", de: "Routing", fr: "Routage", es: "Enrutamiento", it: "Routing", pl: "Routing" },
+  "settings.notifications": { no: "Varsler", en: "Notifications", de: "Benachrichtigungen", fr: "Notifications", es: "Notificaciones", it: "Notifiche", pl: "Powiadomienia" },
+
+  // Days of week
+  "monday": { no: "Mandag", en: "Monday", de: "Montag", fr: "Lundi", es: "Lunes", it: "Lunedì", pl: "Poniedziałek" },
+  "tuesday": { no: "Tirsdag", en: "Tuesday", de: "Dienstag", fr: "Mardi", es: "Martes", it: "Martedì", pl: "Wtorek" },
+  "wednesday": { no: "Onsdag", en: "Wednesday", de: "Mittwoch", fr: "Mercredi", es: "Miércoles", it: "Mercoledì", pl: "Środa" },
+  "thursday": { no: "Torsdag", en: "Thursday", de: "Donnerstag", fr: "Jeudi", es: "Jueves", it: "Giovedì", pl: "Czwartek" },
+  "friday": { no: "Fredag", en: "Friday", de: "Freitag", fr: "Vendredi", es: "Viernes", it: "Venerdì", pl: "Piątek" },
+  "saturday": { no: "Lørdag", en: "Saturday", de: "Samstag", fr: "Samedi", es: "Sábado", it: "Sabato", pl: "Sobota" },
+  "sunday": { no: "Søndag", en: "Sunday", de: "Sonntag", fr: "Dimanche", es: "Domingo", it: "Domenica", pl: "Niedziela" },
+
+  "open_time": { no: "Åpningstid", en: "Open time", de: "Öffnungszeit", fr: "Heure d'ouverture", es: "Hora de apertura", it: "Orario di apertura", pl: "Czas otwarcia" }
 };
 
 export function LanguageProvider({ children }: { children: ReactNode }) {

@@ -33,109 +33,110 @@ export default function SettingsPage() {
       <AppLayout>
         <div className="space-y-6">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">{t("settings.title")}</h2>
-            <p className="text-muted-foreground mt-2">
+            <h1 className="text-3xl font-bold">{t("settings.title")}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
               {t("settings.description")}
             </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-              <TabsTrigger value="hours" className="gap-2">
-                <Clock className="h-4 w-4" />
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="hours" className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
                 {t("settings.tabs.hours")}
               </TabsTrigger>
-              <TabsTrigger value="replies" className="gap-2">
-                <MessageSquare className="h-4 w-4" />
+              <TabsTrigger value="replies" className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" />
                 {t("settings.tabs.replies")}
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="gap-2">
-                <Bell className="h-4 w-4" />
+              <TabsTrigger value="notifications" className="flex items-center gap-2">
+                <Bell className="w-4 h-4" />
                 {t("settings.tabs.notifications")}
               </TabsTrigger>
-              <TabsTrigger value="routing" className="gap-2">
-                <Network className="h-4 w-4" />
+              <TabsTrigger value="routing" className="flex items-center gap-2">
+                <Network className="w-4 h-4" />
                 {t("settings.tabs.routing")}
               </TabsTrigger>
             </TabsList>
 
             {/* Opening Hours Tab */}
-            <TabsContent value="hours" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("settings.tabs.hours")}</CardTitle>
-                  <CardDescription>
-                    {t("settings.description")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="group-select">{t("settings.select_group")}</Label>
-                    <Select defaultValue="kundeservice">
-                      <SelectTrigger id="group-select" className="focus:ring-2 focus:ring-primary">
-                        <SelectValue placeholder="Velg en gruppe" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="kundeservice">Kundeservice</SelectItem>
-                        <SelectItem value="support">Support</SelectItem>
-                        <SelectItem value="salg">Salg</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+            <TabsContent value="hours" className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-1">{t("settings.tabs.hours")}</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {t("settings.hours_description")}
+                </p>
+              </div>
 
-                  <div className="space-y-4 border rounded-lg p-4">
-                    <h3 className="font-semibold">{t("settings.weekly_schedule")}</h3>
-                    {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => (
-                      <div key={day} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                        <Label className="font-medium">{t(`days.${day}`)}</Label>
-                        <div className="flex items-center gap-2">
-                          <Switch id={`${day}-enabled`} defaultChecked={day !== "sunday"} />
-                          <Label htmlFor={`${day}-enabled`} className="text-sm text-muted-foreground">
-                            {t("settings.open")}
-                          </Label>
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`${day}-from`} className="text-xs">
-                            {t("settings.from")}
-                          </Label>
-                          <Input
-                            type="time"
-                            id={`${day}-from`}
-                            defaultValue="09:00"
-                            className="focus:ring-2 focus:ring-primary"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`${day}-to`} className="text-xs">
-                            {t("settings.to")}
-                          </Label>
-                          <Input
-                            type="time"
-                            id={`${day}-to`}
-                            defaultValue="16:00"
-                            className="focus:ring-2 focus:ring-primary"
-                          />
-                        </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    {t("settings.select_group")}
+                  </label>
+                  <Select defaultValue="kundeservice">
+                    <SelectTrigger className="focus:ring-2 focus:ring-primary">
+                      <SelectValue placeholder="Velg en gruppe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kundeservice">Kundeservice</SelectItem>
+                      <SelectItem value="support">Support</SelectItem>
+                      <SelectItem value="salg">Salg</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-4 border rounded-lg p-4">
+                  <h3 className="font-semibold">{t("settings.weekly_schedule")}</h3>
+                  {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => (
+                    <div key={day} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                      <Label className="font-medium">{t(`days.${day}`)}</Label>
+                      <div className="flex items-center gap-2">
+                        <Switch id={`${day}-enabled`} defaultChecked={day !== "sunday"} />
+                        <Label htmlFor={`${day}-enabled`} className="text-sm text-muted-foreground">
+                          {t("settings.open")}
+                        </Label>
                       </div>
-                    ))}
-                  </div>
+                      <div className="space-y-1">
+                        <Label htmlFor={`${day}-from`} className="text-xs">
+                          {t("settings.from")}
+                        </Label>
+                        <Input
+                          type="time"
+                          id={`${day}-from`}
+                          defaultValue="09:00"
+                          className="focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor={`${day}-to`} className="text-xs">
+                          {t("settings.to")}
+                        </Label>
+                        <Input
+                          type="time"
+                          id={`${day}-to`}
+                          defaultValue="16:00"
+                          className="focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-                  <div className="space-y-4 border rounded-lg p-4">
-                    <h3 className="font-semibold">{t("settings.special_days")}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {t("settings.special_days_help")}
-                    </p>
-                    <Button variant="outline">{t("settings.add_exception")}</Button>
-                  </div>
+                <div className="space-y-4 border rounded-lg p-4">
+                  <h3 className="font-semibold">{t("settings.special_days")}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {t("settings.special_days_help")}
+                  </p>
+                  <Button variant="outline">{t("settings.add_exception")}</Button>
+                </div>
 
-                  <div className="flex justify-end">
-                    <Button className="gap-2">
-                      <Save className="h-4 w-4" />
-                      {t("settings.save_hours")}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                <div className="flex justify-end">
+                  <Button className="gap-2">
+                    <Save className="h-4 w-4" />
+                    {t("settings.save_hours")}
+                  </Button>
+                </div>
+              </div>
             </TabsContent>
 
             {/* Auto Replies Tab */}

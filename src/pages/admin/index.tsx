@@ -56,6 +56,7 @@ import {
   Edit, 
   Check, 
   X,
+  ChevronDown,
   ChevronRight,
   Shield,
   Radio,
@@ -149,7 +150,7 @@ type Contact = {
 export default function AdminPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<string>("groups");
+  const [activeTab, setActiveTab] = useState<"groups" | "users" | "gateways">("groups");
   const [loading, setLoading] = useState(true);
   
   // Data states
@@ -181,7 +182,7 @@ export default function AdminPage() {
   const [showAuditDialog, setShowAuditDialog] = useState(false);
 
   // Selection states
-  const [editingGroup, setEditGroup] = useState<Group | null>(null); // For the group being edited
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null); // For the group being edited
   const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null); // For the group being viewed
   const [editUser, setEditUser] = useState<User | null>(null);
   
@@ -223,6 +224,9 @@ export default function AdminPage() {
     pattern: "",
     is_active: true,
   });
+
+  // State for expanded groups
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadData();
@@ -367,29 +371,39 @@ export default function AdminPage() {
   };
 
   const handleEditGroup = (group: GroupNode) => {
-    setEditGroup(group);
+    // Convert GroupNode to Group for editing
+    const groupForEdit: Group = {
+      id: group.id,
+      name: group.name,
+      parent_group_id: group.parent_group_id || null,
+      on_duty_count: group.on_duty_count,
+      total_members: group.total_members || 0,
+      kind: group.kind || "operational",
+      description: group.description || null
+    };
+    setEditingGroup(groupForEdit);
     setShowGroupDetails(false);
     setShowEditGroupDialog(true);
   };
 
   const handleUpdateGroup = async () => {
-    if (!editGroup) return;
+    if (!editingGroup) return;
     
     try {
       setCreating(true);
 
-      if (!editGroup.name.trim()) {
+      if (!editingGroup.name.trim()) {
         toast({ title: "Mangler gruppenavn", variant: "destructive" });
         return;
       }
 
-      await groupService.updateGroup(editGroup.id, {
-        name: editGroup.name,
-        description: editGroup.description || null,
-        is_fallback: (editGroup as any).is_fallback || false,
+      await groupService.updateGroup(editingGroup.id, {
+        name: editingGroup.name,
+        description: editingGroup.description || null,
+        is_fallback: (editingGroup as any).is_fallback || false,
       });
 
-      setEditGroup(null);
+      setEditingGroup(null);
       setShowEditGroupDialog(false);
       await loadData();
       toast({ title: "Gruppe oppdatert" });
@@ -649,87 +663,95 @@ export default function AdminPage() {
 
   // Helper function to render group hierarchy with visual tree structure
   const renderGroupHierarchy = () => {
-    const buildTree = (parentId: string | null, level: number = 0): any[] => {
+    const buildTree = (parentId: string | null, level: number = 0, siblings: string[] = []): JSX.Element[] => {
       const children = groups.filter(g => g.parent_group_id === parentId);
       
       return children.flatMap((group, index) => {
-        const isLast = index === children.length - 1;
         const hasChildren = groups.some(g => g.parent_group_id === group.id);
+        const isExpanded = expandedGroups.has(group.id);
         
-        // Build visual prefix based on hierarchy level
-        const prefix = level === 0 ? "" : 
-          Array.from({ length: level }, (_, i) => {
-            if (i === level - 1) {
-              return isLast ? "└─ " : "├─ ";
-            }
-            return "│  ";
-          }).join("");
-
+        // Tree structure indicators
+        const indent = level * 24; // 24px per level
+        const isLastChild = index === children.length - 1;
+        
         const row = (
           <TableRow 
             key={group.id}
-            className={cn(
-              "hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors",
-              level > 0 && "bg-gray-50/50 dark:bg-gray-800/50"
-            )}
+            className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
           >
-            <TableCell className="font-medium">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400 dark:text-gray-600 font-mono text-sm whitespace-pre">
-                  {prefix}
-                </span>
-                <div 
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-md",
-                    level === 0 && "bg-blue-50 dark:bg-blue-900/20",
-                    level === 1 && "bg-green-50 dark:bg-green-900/20",
-                    level === 2 && "bg-amber-50 dark:bg-amber-900/20",
-                    level >= 3 && "bg-purple-50 dark:bg-purple-900/20"
-                  )}
-                >
-                  {hasChildren && (
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                  )}
-                  <span className={cn(
-                    level === 0 && "font-semibold text-blue-700 dark:text-blue-300",
-                    level === 1 && "font-medium text-green-700 dark:text-green-300",
-                    level === 2 && "text-amber-700 dark:text-amber-300",
-                    level >= 3 && "text-purple-700 dark:text-purple-300"
-                  )}>
-                    {group.name}
-                  </span>
+            <TableCell>
+              <div className="flex items-center gap-2" style={{ paddingLeft: `${indent}px` }}>
+                {/* Tree structure visual */}
+                {level > 0 && (
+                  <div className="flex items-center">
+                    <div className={cn(
+                      "w-4 h-4 border-l-2 border-b-2 border-gray-300 dark:border-gray-600",
+                      isLastChild ? "rounded-bl" : ""
+                    )} />
+                  </div>
+                )}
+                
+                {/* Expand/collapse button for groups with children */}
+                {hasChildren && (
+                  <button
+                    onClick={() => {
+                      const newExpanded = new Set(expandedGroups);
+                      if (isExpanded) {
+                        newExpanded.delete(group.id);
+                      } else {
+                        newExpanded.add(group.id);
+                      }
+                      setExpandedGroups(newExpanded);
+                    }}
+                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors mr-1"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
+                
+                {/* Group name with kind badge */}
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{group.name}</span>
                   {group.kind === "structural" && (
-                    <Badge variant="outline" className="ml-2 text-[10px] h-5 px-1">
-                      Struktur
+                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      {t("admin.structural")}
                     </Badge>
                   )}
                 </div>
               </div>
             </TableCell>
+            
             <TableCell className="text-center">
-              <Badge variant={group.on_duty_count > 0 ? "default" : "secondary"}>
+              <span className="font-semibold text-green-600 dark:text-green-400">
                 {group.on_duty_count}
-              </Badge>
+              </span>
             </TableCell>
+            
             <TableCell className="text-center">
-              <Badge variant="outline">{group.total_members}</Badge>
+              <span className="font-medium">{group.total_members}</span>
             </TableCell>
+            
             <TableCell>
-              {group.parent_group_id && (
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+              {group.parent_group_id ? (
+                <span className="text-gray-600 dark:text-gray-400">
                   {groups.find(g => g.id === group.parent_group_id)?.name || "-"}
                 </span>
-              )}
-              {!group.parent_group_id && (
-                <span className="text-sm text-gray-400 dark:text-gray-600">-</span>
+              ) : (
+                <span className="text-gray-400 dark:text-gray-600">-</span>
               )}
             </TableCell>
+            
             <TableCell className="text-right">
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSelectGroup(group)}
+                  title={t("admin.view_members")}
                 >
                   <Users className="w-4 h-4" />
                 </Button>
@@ -737,22 +759,44 @@ export default function AdminPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleEditGroup(group)}
+                  title={t("common.edit")}
                 >
                   <Edit className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteGroup(group.id)}
+                  title={t("common.delete")}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
             </TableCell>
           </TableRow>
         );
-
-        // Recursively render children
-        const childRows = buildTree(group.id, level + 1);
+        
+        // Recursively add child rows if expanded
+        let childRows: JSX.Element[] = [];
+        if (hasChildren && isExpanded) {
+          const childIds = groups.filter(g => g.parent_group_id === group.id).map(g => g.id);
+          childRows = buildTree(group.id, level + 1, childIds);
+        }
+        
         return [row, ...childRows];
       });
     };
 
     // Start with root groups (no parent)
-    const rows = buildTree(null, 0);
+    const rootGroups = groups.filter(g => !g.parent_group_id);
+    
+    if (rootGroups.length === 0 && groups.length > 0) {
+      // Fallback if no explicit root groups found but groups exist (e.g. circular dependency or data issue)
+      return buildTree(null, 0, []); 
+    }
+    
+    const rows = buildTree(null, 0, rootGroups.map(g => g.id));
     
     if (rows.length === 0) {
       return (
@@ -851,6 +895,17 @@ export default function AdminPage() {
                 <Plus className="w-4 h-4 mr-2" />
                 {t("admin.create_group")}
               </Button>
+              <Button
+                onClick={() => {
+                  setShowGroupModal(true);
+                  setEditingGroup(null);
+                }}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {t("admin.new_group")}
+              </Button>
             </div>
           </div>
 
@@ -912,112 +967,119 @@ export default function AdminPage() {
                 </Button>
               </div>
 
+              {activeTab === "groups" && (
+                <div className="space-y-6">
+                  <div cla
+                    {/* Group hierarchy table with inline actions */}
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gray-50 dark:bg-gray-800">
+                            <TableHead className="w-[40%]">{t("admin.group_name")}</TableHead>
+                            <TableHead className="text-center w-[15%]">{t("admin.on_duty")}</TableHead>
+                            <TableHead className="text-center w-[15%]">{t("admin.total")}</TableHead>
+                            <TableHead className="w-[20%]">{t("admin.parent")}</TableHead>
+                            <TableHead className="text-right w-[10%]">{t("admin.actions")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {loading ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                                {t("common.loading")}
+                              </TableCell>
+                            </TableRow>
+                          ) : groups.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                                {t("admin.no_groups")}
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            renderGroupHierarchy()
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[40%]">{t("admin.tabs.groups")}</TableHead>
-                      <TableHead className="text-center w-[15%]">{t("admin.on_duty")}</TableHead>
-                      <TableHead className="text-center w-[15%]">{t("admin.total")}</TableHead>
-                      <TableHead className="w-[15%]">{t("admin.parent")}</TableHead>
-                      <TableHead className="text-right w-[15%]">{t("admin.actions")}</TableHead>
+                      <TableHead className="min-w-[200px]">{t("contacts.name")}</TableHead>
+                      <TableHead className="min-w-[200px]">{t("contacts.email")}</TableHead>
+                      <TableHead className="min-w-[150px]">{t("contacts.phone")}</TableHead>
+                      <TableHead className="min-w-[150px]">{t("contacts.groups")}</TableHead>
+                      <TableHead className="min-w-[100px]">{t("admin.on_duty")}</TableHead>
+                      <TableHead className="min-w-[100px]">{t("admin.role")}</TableHead>
+                      <TableHead className="min-w-[120px] text-right">{t("admin.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {renderGroupHierarchy()}
+                    {loadingUsers ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          {t("admin.loading_users")}
+                        </TableCell>
+                      </TableRow>
+                    ) : users.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          {t("admin.no_users")}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>{(user as any).phone_number || "-"}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {user.group_ids && user.group_ids.length > 0 ? (
+                                user.group_ids.map((gid: string) => {
+                                  const g = allGroups.find(ag => ag.id === gid);
+                                  return (
+                                    <Badge key={gid} variant="secondary">
+                                      {g?.name || "Unknown"}
+                                    </Badge>
+                                  );
+                                })
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={(user as any).on_duty ? "default" : "secondary"}>
+                              {(user as any).on_duty ? "Ja" : "Nei"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.role === "tenant_admin" ? "default" : "secondary"}>
+                              {user.role === "tenant_admin" ? "Ja" : "Nei"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenEditUser(user)}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
-            </TabsContent>
-
-            <TabsContent value="users" className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">{t("admin.tabs.users")}</h2>
-                <Button onClick={() => setShowCreateUserDialog(true)} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t("admin.new_user")}
-                </Button>
-              </div>
-
-              <Card>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="min-w-[200px]">{t("contacts.name")}</TableHead>
-                          <TableHead className="min-w-[200px]">{t("contacts.email")}</TableHead>
-                          <TableHead className="min-w-[150px]">{t("contacts.phone")}</TableHead>
-                          <TableHead className="min-w-[150px]">{t("contacts.groups")}</TableHead>
-                          <TableHead className="min-w-[100px]">{t("admin.on_duty")}</TableHead>
-                          <TableHead className="min-w-[100px]">{t("admin.role")}</TableHead>
-                          <TableHead className="min-w-[120px] text-right">{t("admin.actions")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {loadingUsers ? (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8">
-                              {t("admin.loading_users")}
-                            </TableCell>
-                          </TableRow>
-                        ) : users.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                              {t("admin.no_users")}
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          users.map((user) => (
-                            <TableRow key={user.id}>
-                              <TableCell className="font-medium">{user.name}</TableCell>
-                              <TableCell>{user.email}</TableCell>
-                              <TableCell>{(user as any).phone_number || "-"}</TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap gap-1">
-                                  {user.group_ids && user.group_ids.length > 0 ? (
-                                    user.group_ids.map((gid: string) => {
-                                      const g = allGroups.find(ag => ag.id === gid);
-                                      return (
-                                        <Badge key={gid} variant="secondary">
-                                          {g?.name || "Unknown"}
-                                        </Badge>
-                                      );
-                                    })
-                                  ) : (
-                                    <span className="text-muted-foreground">-</span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={(user as any).on_duty ? "default" : "secondary"}>
-                                  {(user as any).on_duty ? "Ja" : "Nei"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={user.role === "tenant_admin" ? "default" : "secondary"}>
-                                  {user.role === "tenant_admin" ? "Ja" : "Nei"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleOpenEditUser(user)}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="gateways" className="space-y-4">
@@ -1827,22 +1889,22 @@ export default function AdminPage() {
               Oppdater gruppeinformasjon og innstillinger.
             </DialogDescription>
           </DialogHeader>
-          {editGroup && (
+          {editingGroup && (
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-group-name">Gruppenavn *</Label>
                 <Input
                   id="edit-group-name"
                   placeholder="F.eks. Support, Salg, IT-avdelingen"
-                  value={editGroup.name}
-                  onChange={(e) => setEditGroup({ ...editGroup, name: e.target.value })}
+                  value={editingGroup.name}
+                  onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })}
                 />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="edit-group-kind">Type</Label>
-                <Badge variant={editGroup.kind === "operational" ? "default" : "secondary"}>
-                  {editGroup.kind === "operational" ? "Operasjonell" : "Strukturell"}
+                <Badge variant={editingGroup.kind === "operational" ? "default" : "secondary"}>
+                  {editingGroup.kind === "operational" ? "Operasjonell" : "Strukturell"}
                 </Badge>
                 <p className="text-xs text-muted-foreground">
                   Type kan ikke endres etter opprettelse
@@ -1854,12 +1916,12 @@ export default function AdminPage() {
                 <Textarea
                   id="edit-group-description"
                   placeholder="Kort beskrivelse av gruppens formål..."
-                  value={editGroup.description || ""}
-                  onChange={(e) => setEditGroup({ ...editGroup, description: e.target.value })}
+                  value={editingGroup.description || ""}
+                  onChange={(e) => setEditingGroup({ ...editingGroup, description: e.target.value })}
                 />
               </div>
 
-              {editGroup.kind === "operational" && (
+              {editingGroup.kind === "operational" && (
                 <div className="space-y-3 pt-2 border-t">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
@@ -1875,8 +1937,8 @@ export default function AdminPage() {
                     </div>
                     <Switch
                       id="edit-group-fallback"
-                      checked={(editGroup as any).is_fallback || false}
-                      onCheckedChange={(checked) => setEditGroup({ ...editGroup, is_fallback: checked } as any)}
+                      checked={(editingGroup as any).is_fallback || false}
+                      onCheckedChange={(checked) => setEditingGroup({ ...editingGroup, is_fallback: checked } as any)}
                     />
                   </div>
                 </div>
