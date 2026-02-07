@@ -18,6 +18,7 @@ import {
   LogOut,
   Shield,
   Megaphone,
+  Printer,
 } from "lucide-react";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
@@ -84,6 +85,56 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
     return true;
   });
+
+  const menuItems = [
+    { 
+      href: "/", 
+      label: t("nav.home"), 
+      icon: <Home className="h-4 w-4" /> 
+    },
+    { 
+      href: "/inbox", 
+      label: t("nav.inbox"), 
+      icon: <MessageSquare className="h-4 w-4" />,
+      badge: unreadCount > 0 ? unreadCount : undefined 
+    },
+    { 
+      href: "/contacts", 
+      label: t("nav.contacts"), 
+      icon: <Users className="h-4 w-4" /> 
+    },
+    { 
+      href: "/sending", 
+      label: t("nav.sending"), 
+      icon: <Send className="h-4 w-4" /> 
+    },
+    { 
+      href: "/campaigns", 
+      label: t("nav.campaigns"), 
+      icon: <BarChart className="h-4 w-4" /> 
+    },
+    { 
+      href: "/print-to-sms", 
+      label: "Print to SMS", 
+      icon: <Printer className="h-4 w-4" /> 
+    },
+    { 
+      href: "/simulate", 
+      label: t("nav.simulate"), 
+      icon: <TestTube className="h-4 w-4" /> 
+    },
+    { 
+      href: "/admin", 
+      label: t("nav.admin"), 
+      icon: <Shield className="h-4 w-4" />,
+      requiresAdmin: true 
+    },
+    { 
+      href: "/settings", 
+      label: t("nav.settings"), 
+      icon: <Settings className="h-4 w-4" /> 
+    }
+  ];
 
   if (loading) {
     return (

@@ -16,16 +16,15 @@ export default async function handler(
       return res.status(400).json({ error: "campaign_id is required" });
     }
 
-    // Use anon key with authorization header from client
+    // Get Supabase credentials from environment
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error("Missing Supabase environment variables");
-      return res.status(500).json({ error: "Server configuration error" });
+      return res.status(500).json({ error: "Supabase credentials missing" });
     }
 
-    // Get authorization token from request
+    // Get auth token from request
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       return res.status(401).json({ error: "Unauthorized - no auth token" });
@@ -34,42 +33,54 @@ export default async function handler(
     // Create Supabase client with user's auth token
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
-        headers: {
-          Authorization: authHeader,
-        },
+        headers: { Authorization: authHeader },
       },
     });
 
-    console.log(`🚀 Triggering bulk campaign: ${campaign_id}`);
+    console.log("Invoking Edge Function with campaign_id:", campaign_id);
 
     // Invoke Edge Function
     const { data: functionData, error: functionError } = await supabase.functions.invoke(
       "bulk-campaign",
       {
-        body: { campaign_id: campaign_id },
+        body: { campaign_id },
       }
     );
 
-    console.log("Edge Function response:", { functionData, functionError });
+    // Log the full response for debugging
+    console.log("Edge Function response:", {
+      data: functionData,
+      error: functionError,
+      hasError: !!functionError,
+    });
 
     if (functionError) {
-      console.error("Edge Function error details:", JSON.stringify(functionError, null, 2));
+      console.error("Edge Function error details:", {
+        name: functionError.name,
+        message: functionError.message,
+        context: functionError.context,
+        status: functionError.context?.status,
+        statusText: functionError.context?.statusText,
+      });
+
       return res.status(500).json({
         error: "Failed to trigger campaign",
         details: functionError.message || "Edge Function returned a non-2xx status code",
-        fullError: functionError,
+        fullError: {
+          name: functionError.name,
+          message: functionError.message,
+          context: functionError.context,
+        },
       });
     }
-
-    console.log("✅ Campaign triggered successfully:", functionData);
 
     return res.status(200).json({
       success: true,
       message: "Campaign processing started",
       data: functionData,
     });
-  } catch (error: unknown) {
-    console.error("❌ Bulk campaign API error:", error);
+  } catch (error) {
+    console.error("API route error:", error);
     return res.status(500).json({
       error: error instanceof Error ? error.message : "Internal server error",
     });
