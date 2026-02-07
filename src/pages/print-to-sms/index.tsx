@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import AppLayout from "@/components/layout/AppLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,8 +20,7 @@ import { toast } from "@/hooks/use-toast";
 interface Contact {
   id: string;
   phone_number: string;
-  first_name?: string;
-  last_name?: string;
+  name: string;
 }
 
 interface Group {
@@ -70,8 +69,8 @@ export default function PrintToSMS() {
 
       const { data: contactsData } = await supabase
         .from("contacts")
-        .select("id, phone_number, first_name, last_name")
-        .order("first_name");
+        .select("id, phone_number, name")
+        .order("name");
 
       const { data: groupsData } = await supabase
         .from("groups")
@@ -351,7 +350,7 @@ export default function PrintToSMS() {
                             className="rounded"
                           />
                           <span className="text-sm">
-                            {contact.first_name} {contact.last_name} ({contact.phone_number})
+                            {contact.name} ({contact.phone_number})
                           </span>
                         </label>
                       ))
