@@ -36,7 +36,6 @@ const navItems: NavItem[] = [
   { labelKey: "nav.inbox", href: "/inbox", icon: Inbox },
   { labelKey: "nav.contacts", href: "/contacts", icon: Users },
   { labelKey: "nav.send", href: "/sending", icon: Send },
-  { labelKey: "nav.campaigns", href: "/campaigns", icon: Megaphone },
   { labelKey: "nav.print_to_sms", rawLabel: "Print to SMS", href: "/print-to-sms", icon: Printer },
   { labelKey: "nav.simulate", href: "/simulate", icon: PlayCircle },
   { labelKey: "nav.admin", href: "/admin", icon: Shield, adminOnly: true },
