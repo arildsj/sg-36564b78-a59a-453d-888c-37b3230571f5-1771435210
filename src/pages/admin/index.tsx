@@ -956,8 +956,13 @@ export default function AdminPage() {
                 <h2 className="text-xl font-semibold">{t("admin.tabs.groups")}</h2>
                 <Button
                   onClick={() => {
-                    setShowGroupModal(true);
-                    setEditingGroup(null);
+                    setNewGroup({
+                      name: "",
+                      kind: "operational",
+                      parent_id: null,
+                      description: "",
+                    });
+                    setShowCreateDialog(true);
                   }}
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700"
@@ -969,39 +974,36 @@ export default function AdminPage() {
 
               {activeTab === "groups" && (
                 <div className="space-y-6">
-                  <div cla
-                    {/* Group hierarchy table with inline actions */}
-                    <div className="border rounded-lg overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-gray-50 dark:bg-gray-800">
-                            <TableHead className="w-[40%]">{t("admin.group_name")}</TableHead>
-                            <TableHead className="text-center w-[15%]">{t("admin.on_duty")}</TableHead>
-                            <TableHead className="text-center w-[15%]">{t("admin.total")}</TableHead>
-                            <TableHead className="w-[20%]">{t("admin.parent")}</TableHead>
-                            <TableHead className="text-right w-[10%]">{t("admin.actions")}</TableHead>
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 dark:bg-gray-800">
+                          <TableHead className="w-[40%]">{t("admin.group_name")}</TableHead>
+                          <TableHead className="text-center w-[15%]">{t("admin.on_duty")}</TableHead>
+                          <TableHead className="text-center w-[15%]">{t("admin.total")}</TableHead>
+                          <TableHead className="w-[20%]">{t("admin.parent")}</TableHead>
+                          <TableHead className="text-right w-[10%]">{t("admin.actions")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                              {t("common.loading")}
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {loading ? (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                                {t("common.loading")}
-                              </TableCell>
-                            </TableRow>
-                          ) : groups.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                                {t("admin.no_groups")}
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            renderGroupHierarchy()
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
+                        ) : groups.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                              {t("admin.no_groups")}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          renderGroupHierarchy()
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               )}
 
