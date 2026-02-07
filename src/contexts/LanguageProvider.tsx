@@ -11462,10 +11462,4 @@ const translations: Translations = {
     pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
   },
   "sending.bulk_info": { 
-    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
-    en: "All replies within the selected time window are automatically linked to this campaign.", 
-    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
-    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
-    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
-    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
-    pl: "Wszystkie odpowiedzi w wybranym ok
+    no: "Alle svar inn
