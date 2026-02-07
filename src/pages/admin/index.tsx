@@ -89,6 +89,7 @@ interface GroupNode {
   name: string;
   on_duty_count: number;
   parent_group_id?: string | null;
+  parent_id?: string | null;
   total_members?: number;
   children?: GroupNode[];
   kind?: "structural" | "operational";
@@ -663,15 +664,15 @@ export default function AdminPage() {
 
     const rows: JSX.Element[] = [];
     
-    // Build tree structure
+    // Build tree structure - FIXED: use parent_id instead of parent_group_id
     const buildTree = (parentId: string | null, depth: number, path: boolean[] = []) => {
       const children = groups
-        .filter(g => g.parent_group_id === parentId)
+        .filter(g => (g.parent_id || g.parent_group_id) === parentId)
         .sort((a, b) => a.name.localeCompare(b.name));
 
       children.forEach((group, index) => {
         const isLast = index === children.length - 1;
-        const hasChildren = groups.some(g => g.parent_group_id === group.id);
+        const hasChildren = groups.some(g => (g.parent_id || g.parent_group_id) === group.id);
         
         // Build visual tree characters
         let treeChars = "";
@@ -694,7 +695,7 @@ export default function AdminPage() {
         const onDutyCount = groupUsers.filter(u => u.on_duty).length;
         
         // Get parent group name
-        const parentGroup = groups.find(g => g.id === group.parent_group_id);
+        const parentGroup = groups.find(g => g.id === (group.parent_id || group.parent_group_id));
 
         rows.push(
           <TableRow key={group.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
@@ -727,28 +728,14 @@ export default function AdminPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    setSelectedGroup(group);
-                    setShowGroupDetails(true);
-                  }}
+                  onClick={() => handleSelectGroup(group)}
                 >
                   <Users className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    setEditingGroup({
-                      id: group.id,
-                      name: group.name,
-                      parent_group_id: group.parent_group_id || null,
-                      on_duty_count: group.on_duty_count,
-                      total_members: group.total_members || 0,
-                      kind: group.kind || "operational",
-                      description: group.description || null
-                    });
-                    setShowEditGroupDialog(true);
-                  }}
+                  onClick={() => handleEditGroup(group)}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
