@@ -1084,6 +1084,65 @@ export default function AdminPage() {
               </div>
             </TabsContent>
 
+            <TabsContent value="users" className="space-y-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">{t("admin.tabs.users")}</h2>
+                <Button
+                  onClick={() => {
+                    setNewUser({
+                      name: "",
+                      email: "",
+                      phone: "",
+                      role: "member",
+                      password: "",
+                      group_ids: []
+                    });
+                    setShowCreateUserDialog(true);
+                  }}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t("admin.new_user")}
+                </Button>
+              </div>
+
+              {activeTab === "users" && (
+                <div className="space-y-6">
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50 dark:bg-gray-800">
+                          <TableHead className="w-[40%]">{t("admin.group_name")}</TableHead>
+                          <TableHead className="text-center w-[15%]">{t("admin.on_duty")}</TableHead>
+                          <TableHead className="text-center w-[15%]">{t("admin.total")}</TableHead>
+                          <TableHead className="w-[20%]">{t("admin.parent")}</TableHead>
+                          <TableHead className="text-right w-[10%]">{t("admin.actions")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                              {t("common.loading")}
+                            </TableCell>
+                          </TableRow>
+                        ) : groups.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                              {t("admin.no_groups")}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          renderGroupHierarchy()
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
             <TabsContent value="gateways" className="space-y-4">
               <Card>
                 <CardHeader>
