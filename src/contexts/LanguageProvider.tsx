@@ -2074,7 +2074,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2083,7 +2083,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2128,7 +2128,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2137,7 +2137,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2182,7 +2182,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2191,7 +2191,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2236,7 +2236,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2245,7 +2245,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2290,7 +2290,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2299,7 +2299,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2344,7 +2344,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2353,7 +2353,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2398,7 +2398,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2407,7 +2407,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2452,7 +2452,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2461,7 +2461,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2506,7 +2506,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2515,7 +2515,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2560,7 +2560,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2569,7 +2569,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2614,7 +2614,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2623,7 +2623,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2668,7 +2668,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2677,7 +2677,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2722,7 +2722,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2731,7 +2731,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2776,7 +2776,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2785,7 +2785,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2830,7 +2830,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2839,7 +2839,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2884,7 +2884,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2893,7 +2893,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2938,7 +2938,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -2947,7 +2947,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -2992,7 +2992,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3001,7 +3001,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3046,7 +3046,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3055,7 +3055,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3100,7 +3100,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3109,7 +3109,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3154,7 +3154,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3163,7 +3163,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3208,7 +3208,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3217,7 +3217,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3262,7 +3262,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3271,7 +3271,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3316,7 +3316,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3325,7 +3325,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3370,7 +3370,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3379,7 +3379,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3424,7 +3424,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3433,7 +3433,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3478,7 +3478,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3487,7 +3487,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3532,7 +3532,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3541,7 +3541,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3586,7 +3586,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3595,7 +3595,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3640,7 +3640,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3649,7 +3649,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3694,7 +3694,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3703,7 +3703,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3748,7 +3748,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3757,7 +3757,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3802,7 +3802,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3811,7 +3811,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3856,7 +3856,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3865,7 +3865,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3910,7 +3910,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3919,7 +3919,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -3964,7 +3964,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -3973,7 +3973,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4018,7 +4018,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4027,7 +4027,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4072,7 +4072,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4081,7 +4081,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4126,7 +4126,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4135,7 +4135,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4180,7 +4180,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4189,7 +4189,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4234,7 +4234,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4243,7 +4243,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4288,7 +4288,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4297,7 +4297,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4342,7 +4342,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4351,7 +4351,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4396,7 +4396,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4405,7 +4405,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4450,7 +4450,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4459,7 +4459,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4504,7 +4504,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4513,7 +4513,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4558,7 +4558,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4567,7 +4567,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4612,7 +4612,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4621,7 +4621,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4666,7 +4666,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4675,7 +4675,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4720,7 +4720,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4729,7 +4729,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4774,7 +4774,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4783,7 +4783,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4828,7 +4828,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4837,7 +4837,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4882,7 +4882,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4891,7 +4891,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4936,7 +4936,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4945,7 +4945,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -4990,7 +4990,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -4999,7 +4999,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5044,7 +5044,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5053,7 +5053,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5098,7 +5098,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5107,7 +5107,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5152,7 +5152,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5161,7 +5161,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5206,7 +5206,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5215,7 +5215,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5260,7 +5260,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5269,7 +5269,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5314,7 +5314,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5323,7 +5323,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5368,7 +5368,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5377,7 +5377,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5422,7 +5422,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5431,7 +5431,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5476,7 +5476,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5485,7 +5485,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5530,7 +5530,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5539,7 +5539,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5584,7 +5584,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5593,7 +5593,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5638,7 +5638,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5647,7 +5647,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5692,7 +5692,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5701,7 +5701,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5746,7 +5746,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5755,7 +5755,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5800,7 +5800,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5809,7 +5809,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5854,7 +5854,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5863,7 +5863,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5908,7 +5908,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5917,7 +5917,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -5962,7 +5962,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -5971,7 +5971,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6016,7 +6016,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6025,7 +6025,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6070,7 +6070,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6079,7 +6079,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6124,7 +6124,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6133,7 +6133,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6178,7 +6178,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6187,7 +6187,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6232,7 +6232,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6241,7 +6241,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6286,7 +6286,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6295,7 +6295,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6340,7 +6340,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6349,7 +6349,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6394,7 +6394,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6403,7 +6403,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6448,7 +6448,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6457,7 +6457,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6502,7 +6502,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6511,7 +6511,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6556,7 +6556,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6565,7 +6565,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6610,7 +6610,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6619,7 +6619,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6664,7 +6664,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6673,7 +6673,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6718,7 +6718,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6727,7 +6727,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6772,7 +6772,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6781,7 +6781,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6826,7 +6826,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6835,7 +6835,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6880,7 +6880,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6889,7 +6889,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6934,7 +6934,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6943,7 +6943,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -6988,7 +6988,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -6997,7 +6997,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7042,7 +7042,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7051,7 +7051,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7096,7 +7096,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7105,7 +7105,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7150,7 +7150,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7159,7 +7159,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7204,7 +7204,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7213,7 +7213,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7258,7 +7258,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7267,7 +7267,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7312,7 +7312,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7321,7 +7321,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7366,7 +7366,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7375,7 +7375,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7420,7 +7420,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7429,7 +7429,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7474,7 +7474,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7483,7 +7483,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7528,7 +7528,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7537,7 +7537,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7582,7 +7582,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7591,7 +7591,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7636,7 +7636,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7645,7 +7645,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7690,7 +7690,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7699,7 +7699,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7744,7 +7744,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7753,7 +7753,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7798,7 +7798,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7807,7 +7807,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7852,7 +7852,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7861,7 +7861,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7906,7 +7906,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7915,7 +7915,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -7960,7 +7960,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -7969,7 +7969,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8014,7 +8014,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8023,7 +8023,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8068,7 +8068,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8077,7 +8077,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8122,7 +8122,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8131,7 +8131,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8176,7 +8176,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8185,7 +8185,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8230,7 +8230,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8239,7 +8239,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8284,7 +8284,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8293,7 +8293,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8338,7 +8338,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8347,7 +8347,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8392,7 +8392,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8401,7 +8401,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8446,7 +8446,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8455,7 +8455,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8500,7 +8500,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8509,7 +8509,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8554,7 +8554,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8563,7 +8563,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8608,7 +8608,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8617,7 +8617,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8662,7 +8662,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8671,7 +8671,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8716,7 +8716,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8725,7 +8725,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8770,7 +8770,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8779,7 +8779,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8824,7 +8824,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8833,7 +8833,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8878,7 +8878,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8887,7 +8887,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8932,7 +8932,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8941,7 +8941,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -8986,7 +8986,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -8995,7 +8995,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9040,7 +9040,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9049,7 +9049,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9094,7 +9094,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9103,7 +9103,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9148,7 +9148,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9157,7 +9157,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9202,7 +9202,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9211,7 +9211,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9256,7 +9256,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9265,7 +9265,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9310,7 +9310,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9319,7 +9319,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9364,7 +9364,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9373,7 +9373,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9418,7 +9418,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9427,7 +9427,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9472,7 +9472,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9481,7 +9481,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9526,7 +9526,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9535,7 +9535,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9580,7 +9580,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9589,7 +9589,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9634,7 +9634,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9643,7 +9643,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9688,7 +9688,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9697,7 +9697,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9742,7 +9742,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9751,7 +9751,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9796,7 +9796,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9805,7 +9805,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9850,7 +9850,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9859,7 +9859,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9904,7 +9904,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9913,7 +9913,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -9958,7 +9958,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -9967,7 +9967,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10012,7 +10012,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10021,7 +10021,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10066,7 +10066,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10075,7 +10075,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10120,7 +10120,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10129,7 +10129,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10174,7 +10174,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10183,7 +10183,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10228,7 +10228,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10237,7 +10237,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10282,7 +10282,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10291,7 +10291,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10336,7 +10336,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10345,7 +10345,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10390,7 +10390,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10399,7 +10399,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10444,7 +10444,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10453,7 +10453,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10498,7 +10498,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10507,7 +10507,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10552,7 +10552,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10561,7 +10561,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10606,7 +10606,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10615,7 +10615,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10660,7 +10660,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10669,7 +10669,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10714,7 +10714,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10723,7 +10723,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10768,7 +10768,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10777,7 +10777,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10822,7 +10822,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10831,7 +10831,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10876,7 +10876,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10885,7 +10885,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10930,7 +10930,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10939,7 +10939,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -10984,7 +10984,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -10993,7 +10993,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -11038,7 +11038,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -11047,7 +11047,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -11092,7 +11092,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -11101,7 +11101,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -11146,7 +11146,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -11155,7 +11155,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -11200,7 +11200,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -11209,7 +11209,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -11254,7 +11254,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -11263,7 +11263,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -11308,7 +11308,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -11317,7 +11317,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -11362,7 +11362,7 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
+  "sending.bulk_subject": { 
     no: "Emne/Overskrift", 
     en: "Subject", 
     de: "Betreff", 
@@ -11371,7 +11371,7 @@ const translations: Translations = {
     it: "Oggetto", 
     pl: "Temat"
   },
-  "sending.subject_placeholder": { 
+  "sending.bulk_subject_placeholder": { 
     no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
     en: "E.g. Meeting invite, Reminder, etc.", 
     de: "z.B. Einladung, Erinnerung, usw.", 
@@ -11416,50 +11416,5 @@ const translations: Translations = {
     it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
     pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
   },
-  "sending.subject": { 
-    no: "Emne/Overskrift", 
-    en: "Subject", 
-    de: "Betreff", 
-    fr: "Sujet", 
-    es: "Asunto", 
-    it: "Oggetto", 
-    pl: "Temat"
-  },
-  "sending.subject_placeholder": { 
-    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
-    en: "E.g. Meeting invite, Reminder, etc.", 
-    de: "z.B. Einladung, Erinnerung, usw.", 
-    fr: "Ex. Invitation, Rappel, etc.", 
-    es: "Ej. Invitación, Recordatorio, etc.", 
-    it: "Es. Invito, Promemoria, ecc.", 
-    pl: "Np. Zaproszenie, Przypomnienie, itp."
-  },
-  "sending.reply_window": { 
-    no: "Svar-vindu", 
-    en: "Reply window", 
-    de: "Antwortfenster", 
-    fr: "Fenêtre de réponse", 
-    es: "Ventana de respuesta", 
-    it: "Finestra di risposta", 
-    pl: "Okno odpowiedzi"
-  },
-  "sending.hours": { 
-    no: "timer", 
-    en: "hours", 
-    de: "Stunden", 
-    fr: "heures", 
-    es: "horas", 
-    it: "ore", 
-    pl: "godziny"
-  },
-  "sending.reply_window_help": { 
-    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
-    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
-    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
-    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
-    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
-    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
-    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
-  },
-  "sending.bulk_info": { 
-    no: "Alle svar inn
+  "sending.bulk_subject": { 
+    no: "Emne/Overskrift
