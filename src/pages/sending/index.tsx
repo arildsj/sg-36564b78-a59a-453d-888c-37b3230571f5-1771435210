@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/popover";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageProvider";
 
 type Group = { 
   id: string; 
@@ -60,6 +61,7 @@ type Member = {
 
 export default function SendingPage() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [groups, setGroups] = useState<Group[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string>("");
@@ -81,6 +83,14 @@ export default function SendingPage() {
   const [messageContent, setMessageContent] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [sendingStats, setSendingStats] = useState({ total: 0, sent: 0, failed: 0 });
+
+  const [bulkMode, setBulkMode] = useState(false);
+  const [recipientSelection, setRecipientSelection] = useState<{
+    contacts: string[];
+    groups: string[];
+  }>({ contacts: [], groups: [] });
+  const [subjectLine, setSubjectLine] = useState("");
+  const [replyWindowHours, setReplyWindowHours] = useState(6);
 
   useEffect(() => {
     loadData();
@@ -269,12 +279,22 @@ export default function SendingPage() {
     try {
       const group = groups.find(g => g.id === selectedGroup);
       
+      const campaignData = {
+        name: subjectLine || `Bulk ${new Date().toISOString()}`,
+        message_template: messageContent,
+        subject_line: subjectLine,
+        reply_window_hours: replyWindowHours,
+        recipient_contacts: [],
+        recipient_groups: [selectedGroup],
+      };
+
       await bulkService.sendBulkToInternalGroup(
         messageContent,
         selectedGroup,
         group?.name || "Ukjent gruppe",
         bulkSubject,
-        selectedMembers
+        selectedMembers,
+        campaignData
       );
 
       toast({
@@ -596,6 +616,30 @@ export default function SendingPage() {
                          <span>{messageContent.length} tegn</span>
                          <span>Vil sendes som {Math.ceil(messageContent.length / 160)} SMS</span>
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="replyWindow">
+                        {t("sending.reply_window")}
+                      </Label>
+                      <select
+                        id="replyWindow"
+                        value={replyWindowHours}
+                        onChange={(e) => setReplyWindowHours(Number(e.target.value))}
+                        className="w-full px-3 py-2 border border-input bg-background rounded-md"
+                      >
+                        <option value={6}>6 {t("sending.hours")}</option>
+                        <option value={12}>12 {t("sending.hours")}</option>
+                        <option value={18}>18 {t("sending.hours")}</option>
+                        <option value={24}>24 {t("sending.hours")}</option>
+                        <option value={30}>30 {t("sending.hours")}</option>
+                        <option value={36}>36 {t("sending.hours")}</option>
+                        <option value={42}>42 {t("sending.hours")}</option>
+                        <option value={48}>48 {t("sending.hours")}</option>
+                      </select>
+                      <p className="text-sm text-muted-foreground">
+                        {t("sending.reply_window_help")}
+                      </p>
                     </div>
 
                     <div className="bg-muted/30 p-3 rounded-md text-xs space-y-1">

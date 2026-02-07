@@ -110,33 +110,72 @@ serve(async (req) => {
     // Rule: Incoming message should ALWAYS be linked to last outbound message
     // ============================================================================
     
-    const { data: lastOutboundMessage, error: lastOutboundError } = await supabaseClient
+    // === STEP 3: Find last outbound message to this contact (with campaign info) ===
+    const { data: lastOutboundMessage, error: outboundError } = await supabaseClient
       .from("messages")
       .select(`
-        id, 
-        thread_id, 
+        id,
+        thread_id,
         campaign_id,
         resolved_group_id,
-        message_threads!inner(
+        created_at,
+        message_threads(
           id,
-          contact_phone,
-          gateway_id,
-          resolved_group_id
+          resolved_group_id,
+          contact_phone
+        ),
+        bulk_campaigns(
+          id,
+          reply_window_hours,
+          target_group_id
         )
       `)
       .eq("direction", "outbound")
       .eq("to_number", normalizedFrom)
       .eq("gateway_id", gateway.id)
-      .eq("tenant_id", gateway.tenant_id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (lastOutboundError) {
-      console.error("Error finding last outbound message:", lastOutboundError);
+    if (outboundError) {
+      console.error("Error finding last outbound:", outboundError);
     }
 
-    if (lastOutboundMessage && lastOutboundMessage.message_threads) {
+    console.log("Last outbound message:", lastOutboundMessage);
+
+    // === STEP 4: Link to outbound if within reply window ===
+    // Check if message is within the campaign's reply window (default 6 hours)
+    let shouldLinkToOutbound = false;
+    let replyWindowHours = 6; // Default
+
+    if (lastOutboundMessage) {
+      // Get reply window from campaign if available
+      if (lastOutboundMessage.bulk_campaigns?.reply_window_hours) {
+        replyWindowHours = lastOutboundMessage.bulk_campaigns.reply_window_hours;
+      }
+
+      const replyWindowMs = replyWindowHours * 60 * 60 * 1000;
+      const outboundTime = new Date(lastOutboundMessage.created_at).getTime();
+      const now = Date.now();
+      const timeDiff = now - outboundTime;
+
+      shouldLinkToOutbound = timeDiff <= replyWindowMs;
+
+      console.log("Reply window check:", {
+        replyWindowHours,
+        outboundTime: new Date(outboundTime).toISOString(),
+        now: new Date(now).toISOString(),
+        diffHours: (timeDiff / (60 * 60 * 1000)).toFixed(2),
+        shouldLink: shouldLinkToOutbound
+      });
+    }
+
+    let threadId: string | null = null;
+    let recipientGroupId: string | null = null;
+    let subjectLine: string | null = null;
+
+    // === STEP 4: Link to outbound if within 6 hours ===
+    if (shouldLinkToOutbound && lastOutboundMessage) {
       // Found last outbound message - use its thread and group
       console.log("✅ Found last outbound message:", lastOutboundMessage.id);
       thread = lastOutboundMessage.message_threads;

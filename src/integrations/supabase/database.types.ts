@@ -176,6 +176,7 @@ export type Database = {
           id: string
           message_template: string
           name: string
+          reply_window_hours: number
           scheduled_at: string | null
           sent_count: number | null
           source_group_id: string | null
@@ -196,6 +197,7 @@ export type Database = {
           id?: string
           message_template: string
           name: string
+          reply_window_hours?: number
           scheduled_at?: string | null
           sent_count?: number | null
           source_group_id?: string | null
@@ -216,6 +218,7 @@ export type Database = {
           id?: string
           message_template?: string
           name?: string
+          reply_window_hours?: number
           scheduled_at?: string | null
           sent_count?: number | null
           source_group_id?: string | null

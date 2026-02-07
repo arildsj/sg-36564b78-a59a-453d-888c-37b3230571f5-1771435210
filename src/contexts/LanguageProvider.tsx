@@ -1671,7 +1671,7 @@ const translations: Translations = {
     de: "Nur im Dienst", 
     fr: "Seulement en service", 
     es: "Solo cuando esté de guardia", 
-    it: "Solo cuando esté de guardia", 
+    it: "Solo quando esté de guardia", 
     pl: "Tylko podczas dyżuru"
   },
   "settings.only_on_duty_help": { 
@@ -1901,7 +1901,7 @@ const translations: Translations = {
     fr: "Échoué", 
     es: "Fallido", 
     it: "Fallito", 
-    pl: "Błędy"
+    pl: "Błąd"
   },
   "campaigns.dashboard.deliveryRate": { 
     no: "Leveringsrate", 
@@ -1965,45 +1965,9507 @@ const translations: Translations = {
     es: "Desconocido", 
     it: "Sconosciuto", 
     pl: "Nieznany"
-  }
-};
-
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("no");
-
-  // Load language from localStorage on mount
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem("semse-language") as Language;
-    if (savedLanguage && ["no", "en", "de", "fr", "es", "it", "pl"].includes(savedLanguage)) {
-      setLanguageState(savedLanguage);
-    }
-  }, []);
-
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem("semse-language", lang);
-  };
-
-  const t = (key: string): string => {
-    const translation = translations[key];
-    if (!translation) {
-      console.warn(`Missing translation for key: ${key}`);
-      return key;
-    }
-    return translation[language] || key;
-  };
-
-  return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
-      {children}
-    </LanguageContext.Provider>
-  );
-}
-
-export function useLanguage() {
-  const context = useContext(LanguageContext);
-  if (!context) {
-    throw new Error("useLanguage must be used within LanguageProvider");
-  }
-  return context;
-}
+  },
+  "sending.bulk_subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.bulk_subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.bulk_subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym oknie czasowym są automatycznie łączone z tą kampanią."
+  },
+  "sending.subject": { 
+    no: "Emne/Overskrift", 
+    en: "Subject", 
+    de: "Betreff", 
+    fr: "Sujet", 
+    es: "Asunto", 
+    it: "Oggetto", 
+    pl: "Temat"
+  },
+  "sending.subject_placeholder": { 
+    no: "F.eks. Møteinnkalling, Påminnelse, etc.", 
+    en: "E.g. Meeting invite, Reminder, etc.", 
+    de: "z.B. Einladung, Erinnerung, usw.", 
+    fr: "Ex. Invitation, Rappel, etc.", 
+    es: "Ej. Invitación, Recordatorio, etc.", 
+    it: "Es. Invito, Promemoria, ecc.", 
+    pl: "Np. Zaproszenie, Przypomnienie, itp."
+  },
+  "sending.reply_window": { 
+    no: "Svar-vindu", 
+    en: "Reply window", 
+    de: "Antwortfenster", 
+    fr: "Fenêtre de réponse", 
+    es: "Ventana de respuesta", 
+    it: "Finestra di risposta", 
+    pl: "Okno odpowiedzi"
+  },
+  "sending.hours": { 
+    no: "timer", 
+    en: "hours", 
+    de: "Stunden", 
+    fr: "heures", 
+    es: "horas", 
+    it: "ore", 
+    pl: "godziny"
+  },
+  "sending.reply_window_help": { 
+    no: "Svar innen denne tiden kobles automatisk til denne utsendelsen. Ved purring utvides fristen fra nytt sendetidspunkt.", 
+    en: "Replies within this time are automatically linked to this campaign. For reminders, the deadline is extended from the new send time.", 
+    de: "Antworten innerhalb dieser Zeit werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Les réponses dans ce délai sont automatiquement liées à cette campagne.", 
+    es: "Las respuestas dentro de este tiempo se vinculan automáticamente a esta campaña.", 
+    it: "Le risposte entro questo tempo sono collegate automaticamente a questa campagna.", 
+    pl: "Odpowiedzi w tym czasie są automatycznie łączone z tą kampanią."
+  },
+  "sending.bulk_info": { 
+    no: "Alle svar innen valgt tidsvindu kobles automatisk til denne utsendelsen.", 
+    en: "All replies within the selected time window are automatically linked to this campaign.", 
+    de: "Alle Antworten innerhalb des gewählten Zeitfensters werden automatisch mit dieser Kampagne verknüpft.", 
+    fr: "Toutes les réponses dans la fenêtre de temps sélectionnée sont automatiquement liées à cette campagne.", 
+    es: "Todas las respuestas dentro de la ventana de tiempo seleccionada se vinculan automáticamente a esta campaña.", 
+    it: "Tutte le risposte entro la finestra temporale selezionata sono collegate automaticamente a questa campagna.", 
+    pl: "Wszystkie odpowiedzi w wybranym ok

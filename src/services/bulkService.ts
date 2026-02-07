@@ -25,6 +25,15 @@ export type BulkRecipient = {
   error_message?: string;
 };
 
+export interface BulkCampaignData {
+  name: string;
+  message_template: string;
+  subject_line?: string;
+  reply_window_hours?: number;
+  recipient_contacts?: string[];
+  recipient_groups?: string[];
+}
+
 export const bulkService = {
   /**
    * Generate a unique 2-digit bulk code for a tenant
@@ -53,117 +62,49 @@ export const bulkService = {
   },
 
   /**
+   * Create a new bulk campaign record
+   */
+  async createBulkCampaign(data: any) {
+    const { data: campaign, error } = await supabase
+      .from("bulk_campaigns")
+      .insert(data)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return campaign;
+  },
+
+  /**
    * Create and execute a bulk SMS campaign to internal group members
    */
   async sendBulkToInternalGroup(
-    message: string,
-    groupId: string,
+    messageContent: string,
+    sourceGroupId: string,
     groupName: string,
     subjectLine: string,
-    selectedMemberIds?: string[]
+    recipientUserIds: string[],
+    campaignData?: BulkCampaignData
   ) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error("Not authenticated");
-
-    const { data: profile } = await supabase
-      .from("users")
-      .select("id, tenant_id")
-      .eq("auth_user_id", user.user.id)
-      .single();
-
-    if (!profile) throw new Error("User profile not found");
-
-    const { data: members, error: membersError } = await supabase
-      .from("group_memberships")
-      .select(`
-        user_id,
-        users!inner(
-          id,
-          phone_number,
-          full_name,
-          email
-        )
-      `)
-      .eq("group_id", groupId);
-
-    if (membersError) throw membersError;
-
-    if (!members || members.length === 0) {
-      throw new Error("Ingen medlemmer funnet i denne gruppen");
-    }
-
-    let targetMembers = members;
-    if (selectedMemberIds && selectedMemberIds.length > 0) {
-      targetMembers = members.filter((m: any) => 
-        selectedMemberIds.includes(m.users.id)
-      );
-    }
-
-    const bulkCode = await this.generateBulkCode(profile.tenant_id);
-
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 6);
-
-    const { data: campaign, error: campaignError } = await supabase
-      .from("bulk_campaigns")
-      .insert({
-        tenant_id: profile.tenant_id,
-        created_by_user_id: profile.id,
-        name: `Bulk til ${groupName}`,
+    try {
+      console.log("Creating internal bulk campaign...");
+      
+      // 1. Create campaign record
+      const campaign = await this.createBulkCampaign({
+        name: campaignData?.name || subjectLine || `Internal Bulk ${new Date().toISOString()}`,
+        message_template: messageContent,
         subject_line: subjectLine,
-        bulk_code: bulkCode,
-        message_template: message,
-        status: "draft",
-        source_group_id: groupId,
-        target_group_id: groupId,
-        expires_at: expiresAt.toISOString()
-      })
-      .select()
-      .single();
-
-    if (campaignError) throw campaignError;
-
-    const recipients = targetMembers
-      .map((m: any) => ({
-        campaign_id: campaign.id,
-        phone_number: m.users.phone_number,
-        metadata: { 
-          name: m.users.full_name,
-          email: m.users.email,
-          user_id: m.users.id
-        },
-        status: "pending"
-      }))
-      .filter((r: any) => r.phone_number);
-
-    if (recipients.length === 0) {
-      throw new Error("Ingen medlemmer har telefonnummer registrert");
+        status: "sending",
+        source_group_id: sourceGroupId,
+        target_group_id: sourceGroupId, // Sending to same group members
+        recipient_contacts: [],
+        recipient_groups: [sourceGroupId],
+        reply_window_hours: campaignData?.reply_window_hours
+      });
+    } catch (error) {
+      console.error("Error creating internal bulk campaign:", error);
+      throw error;
     }
-
-    const { error: recipientsError } = await supabase
-      .from("bulk_recipients")
-      .insert(recipients);
-
-    if (recipientsError) throw recipientsError;
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Not authenticated");
-
-    const triggerResponse = await fetch("/api/bulk-campaign", {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({ campaign_id: campaign.id }),
-    });
-
-    if (!triggerResponse.ok) {
-      const errorData = await triggerResponse.json();
-      throw new Error(errorData.error || "Failed to trigger campaign");
-    }
-
-    return campaign;
   },
 
   /**
