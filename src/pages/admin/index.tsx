@@ -47,7 +47,29 @@ import { gatewayService } from "@/services/gatewayService";
 import { routingRuleService } from "@/services/routingRuleService";
 import { contactService } from "@/services/contactService";
 import { auditService, type AuditLogEntry } from "@/services/auditService";
-import { Users, FolderTree, Shield, Plus, Settings, Wifi, Star, GitBranch, Trash2, AlertTriangle, UserCog, Clock, Phone, FileText, Activity, Edit2 } from "lucide-react";
+import { 
+  Users, 
+  Settings, 
+  Search, 
+  Plus, 
+  Trash2, 
+  Edit, 
+  Check, 
+  X,
+  ChevronRight,
+  Shield,
+  Radio,
+  MessageSquare,
+  UserCheck,
+  AlertTriangle,
+  UserCog,
+  Edit2,
+  Wifi,
+  Star,
+  GitBranch,
+  Phone,
+  Clock
+} from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -59,17 +81,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/contexts/LanguageProvider";
+import { cn } from "@/lib/utils";
 
-type GroupNode = {
+interface GroupNode {
   id: string;
   name: string;
-  kind: "structural" | "operational";
-  parent_id: string | null;
-  description?: string | null;
-  member_count?: number;
-  on_duty_count?: number;
+  on_duty_count: number;
+  parent_group_id?: string | null;
+  total_members?: number;
   children?: GroupNode[];
-};
+  kind?: "structural" | "operational";
+  description?: string | null;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  parent_group_id: string | null;
+  on_duty_count: number;
+  total_members: number;
+  kind: "structural" | "operational";
+  description: string | null;
+}
 
 type User = Database["public"]["Tables"]["users"]["Row"] & {
   groups?: string[];
@@ -116,7 +149,10 @@ type Contact = {
 export default function AdminPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState("groups");
+  const [activeTab, setActiveTab] = useState<string>("groups");
+  const [loading, setLoading] = useState(true);
+  
+  // Data states
   const [groups, setGroups] = useState<GroupNode[]>([]);
   const [allGroups, setAllGroups] = useState<GroupNode[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -126,23 +162,34 @@ export default function AdminPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [realUser, setRealUser] = useState<User | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  
+  // UI states
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null);
-  const [groupMembers, setGroupMembers] = useState<User[]>([]);
-  const [groupContacts, setGroupContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showGroupDetails, setShowGroupDetails] = useState(false);
-  const [showEditGroupDialog, setShowEditGroupDialog] = useState(false);
-  const [editGroup, setEditGroup] = useState<GroupNode | null>(null);
+  const [creating, setCreating] = useState(false);
+  
+  // Modal states
+  const [showCreateDialog, setShowCreateDialog] = useState(false); // For creating new groups
+  const [showGroupModal, setShowGroupModal] = useState(false); // Helper for editing (can be removed if duplicates showEditGroupDialog)
+  const [showEditGroupDialog, setShowEditGroupDialog] = useState(false); // For editing existing groups
+  const [showGroupDetails, setShowGroupDetails] = useState(false); // For viewing group details (Sheet)
+  const [showMembersModal, setShowMembersModal] = useState(false); // For managing members
+  
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
   const [showEditUserDialog, setShowEditUserDialog] = useState(false);
-  const [editUser, setEditUser] = useState<User | null>(null);
   const [showCreateGatewayDialog, setShowCreateGatewayDialog] = useState(false);
   const [showCreateRoutingRuleDialog, setShowCreateRoutingRuleDialog] = useState(false);
   const [showAuditDialog, setShowAuditDialog] = useState(false);
-  const [creating, setCreating] = useState(false);
 
+  // Selection states
+  const [editingGroup, setEditGroup] = useState<Group | null>(null); // For the group being edited
+  const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null); // For the group being viewed
+  const [editUser, setEditUser] = useState<User | null>(null);
+  
+  // Detail data states
+  const [groupMembers, setGroupMembers] = useState<User[]>([]);
+  const [groupContacts, setGroupContacts] = useState<Contact[]>([]);
+
+  // Form states
   const [newGroup, setNewGroup] = useState({
     name: "",
     kind: "operational" as "structural" | "operational",
@@ -600,6 +647,127 @@ export default function AdminPage() {
     }
   };
 
+  // Helper function to render group hierarchy with visual tree structure
+  const renderGroupHierarchy = () => {
+    const buildTree = (parentId: string | null, level: number = 0): any[] => {
+      const children = groups.filter(g => g.parent_group_id === parentId);
+      
+      return children.flatMap((group, index) => {
+        const isLast = index === children.length - 1;
+        const hasChildren = groups.some(g => g.parent_group_id === group.id);
+        
+        // Build visual prefix based on hierarchy level
+        const prefix = level === 0 ? "" : 
+          Array.from({ length: level }, (_, i) => {
+            if (i === level - 1) {
+              return isLast ? "└─ " : "├─ ";
+            }
+            return "│  ";
+          }).join("");
+
+        const row = (
+          <TableRow 
+            key={group.id}
+            className={cn(
+              "hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors",
+              level > 0 && "bg-gray-50/50 dark:bg-gray-800/50"
+            )}
+          >
+            <TableCell className="font-medium">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 dark:text-gray-600 font-mono text-sm whitespace-pre">
+                  {prefix}
+                </span>
+                <div 
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-md",
+                    level === 0 && "bg-blue-50 dark:bg-blue-900/20",
+                    level === 1 && "bg-green-50 dark:bg-green-900/20",
+                    level === 2 && "bg-amber-50 dark:bg-amber-900/20",
+                    level >= 3 && "bg-purple-50 dark:bg-purple-900/20"
+                  )}
+                >
+                  {hasChildren && (
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                  )}
+                  <span className={cn(
+                    level === 0 && "font-semibold text-blue-700 dark:text-blue-300",
+                    level === 1 && "font-medium text-green-700 dark:text-green-300",
+                    level === 2 && "text-amber-700 dark:text-amber-300",
+                    level >= 3 && "text-purple-700 dark:text-purple-300"
+                  )}>
+                    {group.name}
+                  </span>
+                  {group.kind === "structural" && (
+                    <Badge variant="outline" className="ml-2 text-[10px] h-5 px-1">
+                      Struktur
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </TableCell>
+            <TableCell className="text-center">
+              <Badge variant={group.on_duty_count > 0 ? "default" : "secondary"}>
+                {group.on_duty_count}
+              </Badge>
+            </TableCell>
+            <TableCell className="text-center">
+              <Badge variant="outline">{group.total_members}</Badge>
+            </TableCell>
+            <TableCell>
+              {group.parent_group_id && (
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {groups.find(g => g.id === group.parent_group_id)?.name || "-"}
+                </span>
+              )}
+              {!group.parent_group_id && (
+                <span className="text-sm text-gray-400 dark:text-gray-600">-</span>
+              )}
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSelectGroup(group)}
+                >
+                  <Users className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEditGroup(group)}
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        );
+
+        // Recursively render children
+        const childRows = buildTree(group.id, level + 1);
+        return [row, ...childRows];
+      });
+    };
+
+    // Start with root groups (no parent)
+    const rows = buildTree(null, 0);
+    
+    if (rows.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400 py-8">
+            {t("admin.no_groups")}
+          </TableCell>
+        </TableRow>
+      );
+    }
+    
+    return rows;
+  };
+
+  // Group management
   return (
     <>
       <Head>
@@ -668,95 +836,98 @@ export default function AdminPage() {
                 </div>
               </Card>
 
-              <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
-                <Plus className="h-4 w-4" />
+              <Button
+                onClick={() => {
+                  setNewGroup({
+                    name: "",
+                    kind: "operational",
+                    parent_id: null,
+                    description: "",
+                  });
+                  setShowCreateDialog(true);
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
                 {t("admin.create_group")}
               </Button>
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="groups">{t("admin.tabs.groups")}</TabsTrigger>
-              <TabsTrigger value="users">{t("admin.tabs.users")}</TabsTrigger>
-              <TabsTrigger value="gateways">{t("admin.tabs.gateways")}</TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)} className="space-y-4">
+            <div className="border-b border-gray-200 dark:border-gray-700">
+              <div className="flex space-x-8">
+                <button
+                  onClick={() => setActiveTab("groups")}
+                  className={cn(
+                    "pb-4 px-1 border-b-2 font-medium text-sm transition-colors",
+                    activeTab === "groups"
+                      ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  )}
+                >
+                  <MessageSquare className="w-4 h-4 inline mr-2" />
+                  {t("admin.tabs.groups")}
+                </button>
+                <button
+                  onClick={() => setActiveTab("users")}
+                  className={cn(
+                    "pb-4 px-1 border-b-2 font-medium text-sm transition-colors",
+                    activeTab === "users"
+                      ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  )}
+                >
+                  <UserCheck className="w-4 h-4 inline mr-2" />
+                  {t("admin.tabs.users")}
+                </button>
+                <button
+                  onClick={() => setActiveTab("gateways")}
+                  className={cn(
+                    "pb-4 px-1 border-b-2 font-medium text-sm transition-colors",
+                    activeTab === "gateways"
+                      ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  )}
+                >
+                  <Radio className="w-4 h-4 inline mr-2" />
+                  {t("admin.tabs.gateways")}
+                </button>
+              </div>
+            </div>
 
             <TabsContent value="groups" className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">{t("admin.tabs.groups")}</h2>
-                <Button onClick={() => setShowCreateDialog(true)} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button
+                  onClick={() => {
+                    setShowGroupModal(true);
+                    setEditingGroup(null);
+                  }}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
                   {t("admin.new_group")}
                 </Button>
               </div>
 
-              <Card>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="min-w-[200px]">{t("contacts.name")}</TableHead>
-                          <TableHead className="min-w-[100px]">{t("admin.on_duty")}</TableHead>
-                          <TableHead className="min-w-[100px]">{t("admin.total")}</TableHead>
-                          <TableHead className="min-w-[150px]">{t("admin.parent")}</TableHead>
-                          <TableHead className="min-w-[120px] text-right">{t("admin.actions")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {loading ? (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8">
-                              {t("admin.loading_groups")}
-                            </TableCell>
-                          </TableRow>
-                        ) : !allGroups || allGroups.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                              {t("admin.no_groups")}
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          allGroups.map((group) => (
-                            <TableRow key={group.id}>
-                              <TableCell className="font-medium">{group.name}</TableCell>
-                              <TableCell>{group.on_duty_count || 0}</TableCell>
-                              <TableCell>{group.member_count || 0}</TableCell>
-                              <TableCell>
-                                {group.parent_id
-                                  ? allGroups.find((g) => g.id === group.parent_id)?.name || "-"
-                                  : "-"}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleSelectGroup(group)}
-                                  >
-                                    <Users className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setEditGroup(group);
-                                      setShowEditGroupDialog(true);
-                                    }}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[40%]">{t("admin.tabs.groups")}</TableHead>
+                      <TableHead className="text-center w-[15%]">{t("admin.on_duty")}</TableHead>
+                      <TableHead className="text-center w-[15%]">{t("admin.total")}</TableHead>
+                      <TableHead className="w-[15%]">{t("admin.parent")}</TableHead>
+                      <TableHead className="text-right w-[15%]">{t("admin.actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {renderGroupHierarchy()}
+                  </TableBody>
+                </Table>
+              </div>
             </TabsContent>
 
             <TabsContent value="users" className="space-y-4">
