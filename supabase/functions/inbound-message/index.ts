@@ -13,7 +13,6 @@ function normalizeE164(phone: string): string {
   
   if (hasLetters) {
     // Alphanumeric sender (e.g., "DALANEKRAFT")
-    // Remove all non-alphanumeric characters and limit to 11 chars
     const cleaned = trimmed.replace(/[^A-Za-z0-9]/g, "");
     return cleaned.substring(0, 11);
   }
@@ -83,14 +82,14 @@ serve(async (req) => {
     if (existingContact) {
       contact = existingContact;
     } else {
-      // Create new contact - use gateway's tenant_id
+      // Create new contact
       const { data: newContact, error: contactError } = await supabaseClient
         .from("contacts")
         .insert({
           phone_number: normalizedFrom,
           name: normalizedFrom,
           tenant_id: gateway.tenant_id,
-          group_id: null, // Will be assigned by routing rules or manually
+          group_id: null,
         })
         .select()
         .single();
@@ -99,67 +98,77 @@ serve(async (req) => {
       contact = newContact;
     }
 
-    // CRITICAL FIX: Check for bulk campaign response FIRST
-    // Priority 1: Use campaign_id and parent_message_id from request (from simulation)
-    // Priority 2: Check bulk_recipients table for sent status
-    let bulkRecipient = null;
-    
-    if (campaign_id && parent_message_id) {
-      console.log("🎯 Campaign response detected from request params");
-      
-      // Find the bulk_recipient record
-      const { data: recipient, error: recipientError } = await supabaseClient
-        .from("bulk_recipients")
-        .select("id, campaign_id, phone_number, sent_message_id, sent_thread_id")
-        .eq("campaign_id", campaign_id)
-        .eq("phone_number", normalizedFrom)
-        .maybeSingle();
-      
-      if (recipientError) {
-        console.error("Bulk recipient lookup error:", recipientError);
-      }
-      
-      if (recipient) {
-        console.log("✅ Found bulk_recipient:", recipient.id);
-        bulkRecipient = recipient;
-      } else {
-        console.warn("⚠️ No bulk_recipient found for campaign:", campaign_id, "phone:", normalizedFrom);
-      }
-    } else {
-      // Fallback: Check bulk_recipients for automatically detected responses
-      const { data: recipient, error: bulkError } = await supabaseClient
-        .from("bulk_recipients")
-        .select("id, campaign_id, phone_number, sent_message_id, sent_thread_id")
-        .eq("phone_number", normalizedFrom)
-        .eq("status", "sent")
-        .maybeSingle();
-
-      if (!bulkError && recipient) {
-        console.log("✅ Auto-detected bulk response for recipient:", recipient.id);
-        bulkRecipient = recipient;
-      }
-    }
-
+    const messageTimestamp = received_at || new Date().toISOString();
     let resolvedGroupId;
     let thread;
-    const messageTimestamp = received_at || new Date().toISOString();
+    let isBulkResponse = false;
+    let detectedCampaignId = campaign_id || null;
+    let detectedParentMessageId = parent_message_id || null;
 
-    if (bulkRecipient && bulkRecipient.sent_thread_id) {
-      // THIS IS A BULK CAMPAIGN RESPONSE - Use existing thread
-      console.log(`Bulk campaign response detected for recipient ${bulkRecipient.id}`);
-      
-      const { data: existingThread, error: threadError } = await supabaseClient
-        .from("message_threads")
-        .select("id, contact_phone, gateway_id, resolved_group_id")
-        .eq("id", bulkRecipient.sent_thread_id)
-        .single();
+    // ============================================================================
+    // CRITICAL FIX: Find the LAST OUTBOUND message to this contact
+    // Rule: Incoming message should ALWAYS be linked to last outbound message
+    // ============================================================================
+    
+    const { data: lastOutboundMessage, error: lastOutboundError } = await supabaseClient
+      .from("messages")
+      .select(`
+        id, 
+        thread_id, 
+        campaign_id,
+        resolved_group_id,
+        message_threads!inner(
+          id,
+          contact_phone,
+          gateway_id,
+          resolved_group_id
+        )
+      `)
+      .eq("direction", "outbound")
+      .eq("to_number", normalizedFrom)
+      .eq("gateway_id", gateway.id)
+      .eq("tenant_id", gateway.tenant_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-      if (threadError || !existingThread) {
-        throw new Error(`Bulk thread lookup failed: ${threadError?.message}`);
+    if (lastOutboundError) {
+      console.error("Error finding last outbound message:", lastOutboundError);
+    }
+
+    if (lastOutboundMessage && lastOutboundMessage.message_threads) {
+      // Found last outbound message - use its thread and group
+      console.log("✅ Found last outbound message:", lastOutboundMessage.id);
+      thread = lastOutboundMessage.message_threads;
+      resolvedGroupId = lastOutboundMessage.message_threads.resolved_group_id;
+      detectedCampaignId = lastOutboundMessage.campaign_id || detectedCampaignId;
+      detectedParentMessageId = lastOutboundMessage.id;
+
+      // Check if this was a bulk campaign message
+      if (lastOutboundMessage.campaign_id) {
+        console.log("🎯 This is a BULK CAMPAIGN RESPONSE");
+        isBulkResponse = true;
+
+        // Find bulk_recipient record and update status
+        const { data: bulkRecipient, error: bulkRecipientError } = await supabaseClient
+          .from("bulk_recipients")
+          .select("id, status")
+          .eq("campaign_id", lastOutboundMessage.campaign_id)
+          .eq("phone_number", normalizedFrom)
+          .maybeSingle();
+
+        if (bulkRecipient && bulkRecipient.status === "sent") {
+          await supabaseClient
+            .from("bulk_recipients")
+            .update({
+              status: "replied",
+              responded_at: messageTimestamp,
+            })
+            .eq("id", bulkRecipient.id);
+
+          console.log(`✅ Updated bulk_recipient ${bulkRecipient.id} to 'replied'`);
+        }
       }
-
-      thread = existingThread;
-      resolvedGroupId = thread.resolved_group_id;
 
       // Update thread's last_message_at
       await supabaseClient
@@ -169,21 +178,13 @@ serve(async (req) => {
         })
         .eq("id", thread.id);
 
-      // Update bulk recipient status
-      await supabaseClient
-        .from("bulk_recipients")
-        .update({
-          status: "replied",
-          responded_at: messageTimestamp,
-        })
-        .eq("id", bulkRecipient.id);
-
-      console.log(`Updated bulk recipient ${bulkRecipient.id} status to replied`);
     } else {
-      // REGULAR MESSAGE - Apply routing rules
+      // No previous outbound message - create new thread with routing rules
+      console.log("ℹ️ No previous outbound message found - applying routing rules");
+
       resolvedGroupId = contact.group_id || gateway.fallback_group_id;
 
-      // Evaluate routing rules based on gateway
+      // Apply routing rules
       const { data: rules, error: rulesError } = await supabaseClient
         .from("routing_rules")
         .select("id, priority, rule_type, pattern, target_group_id, gateway_id")
@@ -194,7 +195,6 @@ serve(async (req) => {
 
       if (rulesError) throw new Error(`Routing rules fetch failed: ${rulesError.message}`);
 
-      // Apply routing rules
       if (rules && rules.length > 0) {
         for (const rule of rules) {
           let matches = false;
@@ -225,53 +225,27 @@ serve(async (req) => {
         throw new Error("No target group found - no routing rules matched and no fallback group configured");
       }
 
-      // Find or create thread for regular messages
-      const { data: existingThread, error: threadLookupError } = await supabaseClient
+      // Create new thread
+      const { data: newThread, error: threadError } = await supabaseClient
         .from("message_threads")
-        .select("id, contact_phone, gateway_id, resolved_group_id")
-        .eq("tenant_id", gateway.tenant_id)
-        .eq("contact_phone", normalizedFrom)
-        .eq("gateway_id", gateway.id)
-        .maybeSingle();
+        .insert({
+          tenant_id: gateway.tenant_id,
+          gateway_id: gateway.id,
+          contact_phone: normalizedFrom,
+          resolved_group_id: resolvedGroupId,
+          last_message_at: messageTimestamp,
+          is_resolved: false,
+        })
+        .select()
+        .single();
 
-      if (threadLookupError) {
-        throw new Error(`Thread lookup failed: ${threadLookupError.message}`);
+      if (threadError) {
+        throw new Error(`Thread creation failed: ${threadError.message}`);
       }
-
-      if (existingThread) {
-        thread = existingThread;
-        
-        // Update thread's last_message_at and resolved_group_id if changed
-        await supabaseClient
-          .from("message_threads")
-          .update({ 
-            last_message_at: messageTimestamp,
-            resolved_group_id: resolvedGroupId,
-          })
-          .eq("id", thread.id);
-      } else {
-        // Create new thread
-        const { data: newThread, error: threadError } = await supabaseClient
-          .from("message_threads")
-          .insert({
-            tenant_id: gateway.tenant_id,
-            gateway_id: gateway.id,
-            contact_phone: normalizedFrom,
-            resolved_group_id: resolvedGroupId,
-            last_message_at: messageTimestamp,
-            is_resolved: false,
-          })
-          .select()
-          .single();
-
-        if (threadError) {
-          throw new Error(`Thread creation failed: ${threadError.message}`);
-        }
-        thread = newThread;
-      }
+      thread = newThread;
     }
 
-    // Create message in the correct thread
+    // Create inbound message in the correct thread
     const { data: message, error: messageError } = await supabaseClient
       .from("messages")
       .insert({
@@ -286,13 +260,22 @@ serve(async (req) => {
         to_number: normalizedTo,
         thread_key: `${normalizedFrom}-${gateway.id}`,
         created_at: messageTimestamp,
-        campaign_id: campaign_id || null,
-        parent_message_id: parent_message_id || null,
+        campaign_id: detectedCampaignId,
+        parent_message_id: detectedParentMessageId,
       })
       .select()
       .single();
 
     if (messageError) throw new Error(`Message creation failed: ${messageError.message}`);
+
+    console.log("✅ Message created successfully:", {
+      message_id: message.id,
+      thread_id: thread.id,
+      group_id: resolvedGroupId,
+      is_bulk_response: isBulkResponse,
+      campaign_id: detectedCampaignId,
+      parent_message_id: detectedParentMessageId,
+    });
 
     return new Response(
       JSON.stringify({
@@ -301,7 +284,9 @@ serve(async (req) => {
         thread_id: thread.id,
         contact_phone: normalizedFrom,
         resolved_group_id: resolvedGroupId,
-        is_bulk_response: !!bulkRecipient,
+        is_bulk_response: isBulkResponse,
+        campaign_id: detectedCampaignId,
+        parent_message_id: detectedParentMessageId,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
