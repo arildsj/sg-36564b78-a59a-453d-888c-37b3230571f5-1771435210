@@ -946,7 +946,15 @@ export default function AdminPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {renderGroupHierarchy()}
+                      {groups.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                            {t("common.loading")}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        renderGroupHierarchy()
+                      )}
                     </TableBody>
                   </Table>
                 </div>
