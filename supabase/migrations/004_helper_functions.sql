@@ -38,6 +38,30 @@ BEFORE INSERT OR UPDATE ON groups
 FOR EACH ROW EXECUTE FUNCTION update_group_path();
 
 -- ============================================================================
+-- GROUP HIERARCHY: Cascade path updates to descendants
+-- ============================================================================
+CREATE OR REPLACE FUNCTION cascade_group_path_update()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Only proceed if path has changed and it's an update
+  IF TG_OP = 'UPDATE' AND OLD.path IS DISTINCT FROM NEW.path THEN
+    -- Update all descendants: replace old prefix with new prefix
+    UPDATE groups
+    SET path = NEW.path || path[array_length(OLD.path, 1) + 1:],
+        depth = array_length(NEW.path || path[array_length(OLD.path, 1) + 1:], 1) - 1
+    WHERE path @> OLD.path 
+      AND id != NEW.id -- Don't update self (already done)
+      AND tenant_id = NEW.tenant_id;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER maintain_group_path_cascade
+AFTER UPDATE OF path ON groups
+FOR EACH ROW EXECUTE FUNCTION cascade_group_path_update();
+
+-- ============================================================================
 -- CONTACT MANAGEMENT: Ensure primary phone uniqueness
 -- ============================================================================
 CREATE OR REPLACE FUNCTION ensure_single_primary_phone()

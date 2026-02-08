@@ -71,6 +71,22 @@ RETURNS BOOLEAN AS $$
   );
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
+-- Check if user is admin of group or any ancestor (Subtree Access)
+CREATE OR REPLACE FUNCTION auth.is_group_admin_of_subtree(p_target_group_id UUID)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM group_memberships gm
+    JOIN groups g_admin ON gm.group_id = g_admin.id
+    JOIN groups g_target ON g_target.id = p_target_group_id
+    WHERE gm.user_id = auth.uid()
+      AND gm.is_admin = true
+      AND gm.deleted_at IS NULL
+      AND g_target.path @> g_admin.path -- Target is descendant of (or same as) Admin Group
+      AND g_target.deleted_at IS NULL
+  );
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
 -- ============================================================================
 -- TENANTS: Only view own tenant
 -- ============================================================================
@@ -102,7 +118,11 @@ CREATE POLICY "Users can view profiles in same tenant"
 
 CREATE POLICY "Users can update own profile"
   ON user_profiles FOR UPDATE
-  USING (id = auth.uid());
+  USING (id = auth.uid())
+  WITH CHECK (
+    id = auth.uid() 
+    AND role = OLD.role -- Prevent role escalation
+  );
 
 CREATE POLICY "Tenant admins can manage user profiles"
   ON user_profiles FOR ALL
@@ -118,6 +138,7 @@ CREATE POLICY "Users can view groups they belong to"
     AND (
       auth.is_tenant_admin() 
       OR id IN (SELECT auth.user_group_ids())
+      OR auth.is_group_admin_of_subtree(id) -- Allow viewing descendants if admin
     )
   );
 
@@ -129,7 +150,7 @@ CREATE POLICY "Group admins can update their groups"
   ON groups FOR UPDATE
   USING (
     tenant_id = auth.user_tenant_id() 
-    AND auth.is_group_admin(id)
+    AND auth.is_group_admin_of_subtree(id) -- Allow managing descendants
   );
 
 -- ============================================================================
@@ -153,7 +174,7 @@ CREATE POLICY "Tenant admins can manage all memberships"
 
 CREATE POLICY "Group admins can manage their group memberships"
   ON group_memberships FOR ALL
-  USING (auth.is_group_admin(group_id));
+  USING (auth.is_group_admin_of_subtree(group_id)); -- Allow managing descendant memberships
 
 -- ============================================================================
 -- ON-DUTY STATE: Users manage own state
@@ -237,7 +258,7 @@ CREATE POLICY "Tenant admins can manage group contacts"
 
 CREATE POLICY "Group admins can manage their group contacts"
   ON group_contacts FOR ALL
-  USING (auth.is_group_admin(group_id));
+  USING (auth.is_group_admin_of_subtree(group_id));
 
 -- ============================================================================
 -- WHITELISTED NUMBERS: Tenant-scoped
@@ -370,7 +391,7 @@ CREATE POLICY "Group admins can manage group auto replies"
   USING (
     tenant_id = auth.user_tenant_id()
     AND group_id IS NOT NULL
-    AND auth.is_group_admin(group_id)
+    AND auth.is_group_admin_of_subtree(group_id)
   );
 
 -- ============================================================================
@@ -382,7 +403,7 @@ CREATE POLICY "Users can view opening hours for their groups"
 
 CREATE POLICY "Group admins can manage opening hours"
   ON opening_hours FOR ALL
-  USING (auth.is_group_admin(group_id));
+  USING (auth.is_group_admin_of_subtree(group_id));
 
 CREATE POLICY "Tenant admins can manage all opening hours"
   ON opening_hours FOR ALL
@@ -402,7 +423,7 @@ CREATE POLICY "Users can view opening exceptions for their groups"
 
 CREATE POLICY "Group admins can manage opening exceptions"
   ON opening_hour_exceptions FOR ALL
-  USING (auth.is_group_admin(group_id));
+  USING (auth.is_group_admin_of_subtree(group_id));
 
 CREATE POLICY "Tenant admins can manage all opening exceptions"
   ON opening_hour_exceptions FOR ALL
