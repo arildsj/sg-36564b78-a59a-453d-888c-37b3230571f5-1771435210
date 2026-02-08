@@ -101,33 +101,7 @@ export default async function handler(
 
     console.log("✅ Supabase Admin Client created");
 
-    // STEP 1: Check if email already exists
-    console.log("Checking if email exists...");
-    const { data: userList, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (listError) {
-      console.error("❌ Error listing users:", listError);
-      return res.status(500).json({
-        success: false,
-        message: "Kunne ikke sjekke eksisterende brukere",
-        debug: { listError }
-      });
-    }
-
-    const users = userList?.users || [];
-    const emailExists = users.some(u => u.email === email);
-    
-    if (emailExists) {
-      console.log("❌ Email already exists");
-      return res.status(409).json({
-        success: false,
-        message: "E-postadressen er allerede registrert"
-      });
-    }
-
-    console.log("✅ Email is available");
-
-    // STEP 2: Check if organization name already exists
+    // STEP 1: Check if organization name already exists
     console.log("Checking if organization exists...");
     const { data: existingTenant, error: tenantCheckError } = await supabaseAdmin
       .from("tenants")
@@ -154,7 +128,7 @@ export default async function handler(
 
     console.log("✅ Organization name is available");
 
-    // STEP 3: Create Supabase Auth user
+    // STEP 2: Create Supabase Auth user
     console.log("Creating auth user...");
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -167,6 +141,15 @@ export default async function handler(
 
     if (authError) {
       console.error("❌ Auth user creation error:", authError);
+      
+      // Check if error is due to duplicate email
+      if (authError.message?.includes("already registered") || authError.message?.includes("already exists")) {
+        return res.status(409).json({
+          success: false,
+          message: "E-postadressen er allerede registrert"
+        });
+      }
+      
       return res.status(500).json({
         success: false,
         message: "Kunne ikke opprette bruker i autentiseringssystem",
@@ -191,7 +174,7 @@ export default async function handler(
     const authUserId = authData.user.id;
     console.log("✅ Auth user created:", authUserId);
 
-    // STEP 4: Create tenant
+    // STEP 3: Create tenant
     console.log("Creating tenant...");
     const { data: tenantData, error: tenantError } = await supabaseAdmin
       .from("tenants")
@@ -219,7 +202,7 @@ export default async function handler(
     const tenantId = tenantData.id;
     console.log("✅ Tenant created:", tenantId);
 
-    // STEP 5: Create user in users table
+    // STEP 4: Create user in users table
     console.log("Creating user profile...");
     const { data: userData, error: userError } = await supabaseAdmin
       .from("users")
