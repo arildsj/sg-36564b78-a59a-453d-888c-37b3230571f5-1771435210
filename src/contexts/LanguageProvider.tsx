@@ -236,9 +236,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = (key: string) => {
-    if (!mounted) {
+    // CRITICAL: Always return key on server AND before client mount
+    // This prevents hydration mismatches
+    if (typeof window === "undefined" || !mounted) {
       return key;
     }
+    
+    // Only translate after component has mounted on client
     if (translations[key] && translations[key][language]) {
       return translations[key][language];
     }
