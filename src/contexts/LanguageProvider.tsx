@@ -225,8 +225,10 @@ const translations: Record<string, Record<Language, string>> = {
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>("no");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const savedLang = localStorage.getItem("language") as Language;
     if (savedLang) {
       setLanguage(savedLang);
@@ -234,6 +236,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = (key: string) => {
+    if (!mounted) {
+      return key;
+    }
     if (translations[key] && translations[key][language]) {
       return translations[key][language];
     }
