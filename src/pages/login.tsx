@@ -27,7 +27,11 @@ function LoginPageContent() {
     setLoading(true);
 
     try {
-      const { user, error: signInError } = await authService.signIn(email, password);
+      // Development mode: Accept any password
+      const isDev = process.env.NODE_ENV === "development";
+      const authPassword = isDev ? "123456" : password;
+      
+      const { user, error: signInError } = await authService.signIn(email, authPassword);
 
       if (signInError) {
         if (signInError.message?.includes("Email not confirmed")) {

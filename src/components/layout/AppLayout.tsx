@@ -19,6 +19,7 @@ import {
   Shield,
   Megaphone,
   Printer,
+  LayoutDashboard,
 } from "lucide-react";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
@@ -32,11 +33,11 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { labelKey: "nav.dashboard", href: "/", icon: Home },
+  { labelKey: "nav.dashboard", href: "/", icon: LayoutDashboard },
   { labelKey: "nav.inbox", href: "/inbox", icon: Inbox },
   { labelKey: "nav.contacts", href: "/contacts", icon: Users },
-  { labelKey: "nav.send", href: "/sending", icon: Send },
-  { labelKey: "nav.print_to_sms", rawLabel: "Print to SMS", href: "/print-to-sms", icon: Printer },
+  { labelKey: "nav.sending", href: "/sending", icon: Send },
+  { labelKey: "nav.print_to_sms", href: "/print-to-sms", icon: Printer },
   { labelKey: "nav.simulate", href: "/simulate", icon: PlayCircle },
   { labelKey: "nav.admin", href: "/admin", icon: Shield, adminOnly: true },
   { labelKey: "nav.settings", href: "/settings", icon: Settings },
