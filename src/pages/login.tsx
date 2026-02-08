@@ -27,9 +27,8 @@ function LoginPageContent() {
     setLoading(true);
 
     try {
-      // Development mode: Accept any password
-      const isDev = process.env.NODE_ENV === "development";
-      const authPassword = isDev ? "123456" : password;
+      // Development mode: Accept any password by using a known dev password
+      const authPassword = process.env.NODE_ENV === "development" ? "asdfghjkl" : password;
       
       const { user, error: signInError } = await authService.signIn(email, authPassword);
 
