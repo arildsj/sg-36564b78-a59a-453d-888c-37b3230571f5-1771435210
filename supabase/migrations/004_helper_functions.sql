@@ -357,6 +357,82 @@ ALTER TABLE gateways
   ADD CONSTRAINT gateways_e164_check 
   CHECK (validate_e164_phone(phone_number));
 
+-- ============================================================================
+-- ENFORCEMENT: Only operational groups can have messages (F003)
+-- ============================================================================
+CREATE OR REPLACE FUNCTION enforce_operational_group_messages()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_group_kind TEXT;
+BEGIN
+  SELECT kind INTO v_group_kind
+  FROM groups
+  WHERE id = NEW.resolved_group_id;
+
+  IF v_group_kind != 'operational' THEN
+    RAISE EXCEPTION 'Messages can only be assigned to operational groups (id: %)', NEW.resolved_group_id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_message_group_kind
+BEFORE INSERT OR UPDATE OF resolved_group_id ON messages
+FOR EACH ROW EXECUTE FUNCTION enforce_operational_group_messages();
+
+-- ============================================================================
+-- ENFORCEMENT: Minimum on-duty count (F007)
+-- ============================================================================
+CREATE OR REPLACE FUNCTION enforce_min_on_duty_count()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_group_id UUID;
+  v_min_count INTEGER;
+  v_current_count INTEGER;
+BEGIN
+  -- Determine group_id based on operation
+  IF TG_OP = 'DELETE' THEN
+    v_group_id := OLD.group_id;
+    -- Only check if the deleted user was on duty
+    IF OLD.is_on_duty = false THEN RETURN OLD; END IF;
+  ELSE
+    v_group_id := NEW.group_id;
+    -- Only check if toggling OFF
+    IF NEW.is_on_duty = true THEN RETURN NEW; END IF;
+    -- If was already off, no change
+    IF TG_OP = 'UPDATE' AND OLD.is_on_duty = false THEN RETURN NEW; END IF;
+  END IF;
+
+  -- Get group requirement
+  SELECT min_on_duty_count INTO v_min_count
+  FROM groups
+  WHERE id = v_group_id;
+
+  -- Count CURRENT on-duty users (excluding the one being changed effectively)
+  -- Note: MVCC means we see the current state.
+  -- If TG_OP is DELETE, the row is about to go. 
+  -- If UPDATE, it's about to turn false.
+  -- So we count all currently true, and if that count <= min, we block.
+  
+  SELECT COUNT(*) INTO v_current_count
+  FROM on_duty_state
+  WHERE group_id = v_group_id 
+    AND is_on_duty = true
+    AND user_id != COALESCE(OLD.user_id, NEW.user_id); -- Exclude self from "remaining" count
+
+  IF v_current_count < v_min_count THEN
+    RAISE EXCEPTION 'Cannot go off-duty: Group requires minimum % on-duty users. Currently active: %', v_min_count, v_current_count + 1;
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_min_on_duty
+BEFORE DELETE OR UPDATE OF is_on_duty ON on_duty_state
+FOR EACH ROW EXECUTE FUNCTION enforce_min_on_duty_count();
+
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION get_user_accessible_groups TO authenticated;
 GRANT EXECUTE ON FUNCTION get_on_duty_users TO authenticated;

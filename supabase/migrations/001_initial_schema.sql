@@ -72,6 +72,7 @@ CREATE TABLE groups (
   depth INTEGER NOT NULL DEFAULT 0,
   escalation_enabled BOOLEAN NOT NULL DEFAULT false,
   escalation_timeout_minutes INTEGER NOT NULL DEFAULT 30,
+  min_on_duty_count INTEGER NOT NULL DEFAULT 1,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
