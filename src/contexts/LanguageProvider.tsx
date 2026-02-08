@@ -159,9 +159,21 @@ const translations: Record<string, Record<Language, string>> = {
 
   // Auth
   "login.title": { no: "Logg inn", en: "Log in", de: "Anmelden", fr: "Se connecter", es: "Iniciar sesión", it: "Accedi", pl: "Zaloguj się" },
+  "login.description": { no: "Logg inn for å få tilgang til SeMSe", en: "Sign in to access SeMSe", de: "Melden Sie sich an, um auf SeMSe zuzugreifen", fr: "Connectez-vous pour accéder à SeMSe", es: "Inicie sesión para acceder a SeMSe", it: "Accedi per accedere a SeMSe", pl: "Zaloguj się, aby uzyskać dostęp do SeMSe" },
   "login.email": { no: "E-post", en: "Email", de: "E-Mail", fr: "E-mail", es: "Correo electrónico", it: "E-mail", pl: "E-mail" },
+  "login.email_placeholder": { no: "din@epost.no", en: "your@email.com", de: "ihre@email.de", fr: "votre@email.fr", es: "tu@correo.es", it: "tuo@email.it", pl: "twoj@email.pl" },
   "login.password": { no: "Passord", en: "Password", de: "Passwort", fr: "Mot de passe", es: "Contraseña", it: "Password", pl: "Hasło" },
+  "login.password_placeholder": { no: "Skriv inn passord", en: "Enter password", de: "Passwort eingeben", fr: "Entrez le mot de passe", es: "Ingrese la contraseña", it: "Inserisci la password", pl: "Wprowadź hasło" },
+  "login.button": { no: "Logg inn", en: "Log in", de: "Anmelden", fr: "Se connecter", es: "Iniciar sesión", it: "Accedi", pl: "Zaloguj się" },
+  "login.logging_in": { no: "Logger inn...", en: "Logging in...", de: "Anmelden...", fr: "Connexion...", es: "Iniciando sesión...", it: "Accesso...", pl: "Logowanie..." },
+  "login.no_account": { no: "Har du ikke konto? Kontakt administrator", en: "Don't have an account? Contact administrator", de: "Kein Konto? Administrator kontaktieren", fr: "Vous n'avez pas de compte? Contactez l'administrateur", es: "¿No tienes cuenta? Contacta al administrador", it: "Non hai un account? Contatta l'amministratore", pl: "Nie masz konta? Skontaktuj się z administratorem" },
+  "login.forgot_password": { no: "Glemt passord? Kontakt administrator", en: "Forgot password? Contact administrator", de: "Passwort vergessen? Administrator kontaktieren", fr: "Mot de passe oublié? Contactez l'administrateur", es: "¿Olvidaste tu contraseña? Contacta al administrador", it: "Password dimenticata? Contatta l'amministratore", pl: "Zapomniałeś hasła? Skontaktuj się z administratorem" },
   "login.submit": { no: "Logg inn", en: "Log in", de: "Anmelden", fr: "Se connecter", es: "Iniciar sesión", it: "Accedi", pl: "Zaloguj się" },
+
+  // Error messages
+  "error.generic": { no: "En feil oppstod. Prøv igjen.", en: "An error occurred. Please try again.", de: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.", fr: "Une erreur s'est produite. Veuillez réessayer.", es: "Ocurrió un error. Por favor, inténtelo de nuevo.", it: "Si è verificato un errore. Riprova.", pl: "Wystąpił błąd. Spróbuj ponownie." },
+  "error.email_not_confirmed": { no: "E-posten er ikke bekreftet. Sjekk innboksen din.", en: "Email not confirmed. Check your inbox.", de: "E-Mail nicht bestätigt. Überprüfen Sie Ihren Posteingang.", fr: "E-mail non confirmé. Vérifiez votre boîte de réception.", es: "Correo electrónico no confirmado. Revisa tu bandeja de entrada.", it: "E-mail non confermata. Controlla la tua casella di posta.", pl: "E-mail nie został potwierdzony. Sprawdź swoją skrzynkę odbiorczą." },
+  "error.invalid_credentials": { no: "Ugyldig e-post eller passord", en: "Invalid email or password", de: "Ungültige E-Mail oder Passwort", fr: "E-mail ou mot de passe invalide", es: "Correo electrónico o contraseña inválidos", it: "E-mail o password non validi", pl: "Nieprawidłowy e-mail lub hasło" },
 
   // Onboarding
   "onboarding.title": { no: "Velkommen", en: "Welcome", de: "Willkommen", fr: "Bienvenue", es: "Bienvenido", it: "Benvenuto", pl: "Witamy" },
