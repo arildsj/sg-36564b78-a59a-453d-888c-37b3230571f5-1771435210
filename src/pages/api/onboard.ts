@@ -78,8 +78,15 @@ export default async function handler(
     }
 
     // Check if email already exists in auth.users
-    const { data: existingAuthUser } = await supabaseAdmin.auth.admin.listUsers();
-    const emailExists = existingAuthUser.users.some(u => u.email === email);
+    const { data: userList, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (listError) {
+      console.error("Error listing users:", listError);
+      // Continue anyway, createUser will fail if duplicate exists
+    }
+
+    const users = userList?.users || [];
+    const emailExists = users.some(u => u.email === email);
     
     if (emailExists) {
       return res.status(409).json({
