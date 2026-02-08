@@ -32,6 +32,7 @@ CREATE TABLE tenant_settings (
   business_hours_enabled BOOLEAN NOT NULL DEFAULT false,
   default_country_code TEXT NOT NULL DEFAULT 'US',
   max_retry_attempts INTEGER NOT NULL DEFAULT 3,
+  message_retention_days INTEGER NOT NULL DEFAULT 365, -- GDPR Purpose Limitation
   settings JSONB NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -194,6 +195,7 @@ CREATE TABLE whitelisted_number_group_links (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   whitelisted_number_id UUID NOT NULL REFERENCES whitelisted_numbers(id) ON DELETE CASCADE,
   group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  priority INTEGER NOT NULL DEFAULT 0, -- Tiebreaker for multi-group routing
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(whitelisted_number_id, group_id)
 );
@@ -246,6 +248,7 @@ CREATE TABLE message_threads (
   external_number TEXT NOT NULL, -- E.164 format
   gateway_id UUID NOT NULL REFERENCES gateways(id) ON DELETE CASCADE,
   last_message_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_auto_reply_at TIMESTAMPTZ, -- FR3904: Cooldown tracking
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
@@ -565,6 +568,29 @@ CREATE INDEX idx_notification_prefs_user ON notification_preferences(user_id);
 CREATE INDEX idx_notification_prefs_group ON notification_preferences(group_id) WHERE group_id IS NOT NULL;
 
 -- ============================================================================
+-- NOTIFICATION QUEUE: Async delivery for escalations/alerts (F005)
+-- ============================================================================
+CREATE TABLE notification_queue (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('critical', 'high', 'normal', 'low')),
+  channel TEXT NOT NULL CHECK (channel IN ('email', 'sms', 'push', 'webhook')),
+  recipient TEXT NOT NULL,
+  subject TEXT,
+  content TEXT NOT NULL,
+  metadata JSONB DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+  retry_count INTEGER NOT NULL DEFAULT 0,
+  max_retries INTEGER NOT NULL DEFAULT 3,
+  next_retry_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_notification_queue_status ON notification_queue(status, next_retry_at) WHERE status IN ('pending', 'failed');
+CREATE INDEX idx_notification_queue_tenant ON notification_queue(tenant_id);
+
+-- ============================================================================
 -- TRIGGERS: Updated_at automation
 -- ============================================================================
 CREATE OR REPLACE FUNCTION update_updated_at()
@@ -599,3 +625,4 @@ CREATE TRIGGER update_bulk_recipients_updated_at BEFORE UPDATE ON bulk_recipient
 CREATE TRIGGER update_import_jobs_updated_at BEFORE UPDATE ON import_jobs FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER update_simulation_scenarios_updated_at BEFORE UPDATE ON simulation_scenarios FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 CREATE TRIGGER update_notification_preferences_updated_at BEFORE UPDATE ON notification_preferences FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER update_notification_queue_updated_at BEFORE UPDATE ON notification_queue FOR EACH ROW EXECUTE FUNCTION update_updated_at();

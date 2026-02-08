@@ -433,6 +433,63 @@ CREATE TRIGGER check_min_on_duty
 BEFORE DELETE OR UPDATE OF is_on_duty ON on_duty_state
 FOR EACH ROW EXECUTE FUNCTION enforce_min_on_duty_count();
 
+-- ============================================================================
+-- COMPLIANCE: Hard delete tenant data (GDPR Right to Erasure) (F006)
+-- ============================================================================
+CREATE OR REPLACE FUNCTION hard_delete_tenant_data(p_tenant_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  -- Tables with CASCADE will be handled automatically by tenant deletion
+  -- This function is for explicit, irreversible purging
+  
+  -- 1. Log the purge action (if audit log survives)
+  INSERT INTO audit_log (tenant_id, action_type, entity_type, scope, metadata)
+  VALUES (p_tenant_id, 'hard_delete', 'tenant', 'system', '{"reason": "GDPR Right to Erasure"}');
+
+  -- 2. Delete the tenant (cascades to all other tables)
+  DELETE FROM tenants WHERE id = p_tenant_id;
+  
+  -- Note: Storage files must be deleted separately via storage service
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================================
+-- COMPLIANCE: GDPR Data Export (DSAR) (F013)
+-- ============================================================================
+CREATE OR REPLACE FUNCTION export_contact_data(p_phone_number TEXT)
+RETURNS JSONB AS $$
+DECLARE
+  v_tenant_id UUID;
+  v_result JSONB;
+BEGIN
+  -- Get current user's tenant context
+  v_tenant_id := auth.user_tenant_id();
+  IF v_tenant_id IS NULL THEN
+    RAISE EXCEPTION 'Unauthorized: No tenant context';
+  END IF;
+
+  SELECT jsonb_build_object(
+    'contact', (
+      SELECT row_to_json(c) 
+      FROM contacts c
+      JOIN contact_phones cp ON c.id = cp.contact_id
+      WHERE c.tenant_id = v_tenant_id 
+      AND cp.phone_number = p_phone_number
+      LIMIT 1
+    ),
+    'messages', (
+      SELECT json_agg(row_to_json(m))
+      FROM messages m
+      WHERE m.tenant_id = v_tenant_id
+      AND (m.from_number = p_phone_number OR m.to_number = p_phone_number)
+    ),
+    'generated_at', NOW()
+  ) INTO v_result;
+
+  RETURN v_result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION get_user_accessible_groups TO authenticated;
 GRANT EXECUTE ON FUNCTION get_on_duty_users TO authenticated;
@@ -441,3 +498,5 @@ GRANT EXECUTE ON FUNCTION get_or_create_thread TO authenticated;
 GRANT EXECUTE ON FUNCTION soft_delete_entity TO authenticated;
 GRANT EXECUTE ON FUNCTION is_number_whitelisted TO authenticated;
 GRANT EXECUTE ON FUNCTION validate_e164_phone TO authenticated;
+GRANT EXECUTE ON FUNCTION hard_delete_tenant_data TO authenticated;
+GRANT EXECUTE ON FUNCTION export_contact_data TO authenticated;
