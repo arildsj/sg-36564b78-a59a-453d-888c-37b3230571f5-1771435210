@@ -1,18 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
 
-// Initialize Supabase Admin Client (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
-
 interface OnboardRequest {
   full_name: string;
   email: string;
@@ -26,6 +14,7 @@ interface OnboardResponse {
   message?: string;
   tenant_id?: string;
   user_id?: string;
+  debug?: any;
 }
 
 export default async function handler(
@@ -37,6 +26,24 @@ export default async function handler(
     return res.status(405).json({ 
       success: false, 
       message: "Method not allowed" 
+    });
+  }
+
+  // Debug: Check environment variables
+  console.log("=== ONBOARD API DEBUG ===");
+  console.log("NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "✅ Set" : "❌ Missing");
+  console.log("SUPABASE_SERVICE_ROLE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "✅ Set" : "❌ Missing");
+  
+  // Verify environment variables exist
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error("❌ Missing environment variables!");
+    return res.status(500).json({
+      success: false,
+      message: "Server configuration error: Missing environment variables",
+      debug: {
+        hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+      }
     });
   }
 
@@ -77,59 +84,115 @@ export default async function handler(
       });
     }
 
-    // Check if email already exists in auth.users
+    console.log("✅ All validation passed");
+    console.log("Creating Supabase Admin Client...");
+
+    // Initialize Supabase Admin Client
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
+    console.log("✅ Supabase Admin Client created");
+
+    // STEP 1: Check if email already exists
+    console.log("Checking if email exists...");
     const { data: userList, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (listError) {
-      console.error("Error listing users:", listError);
-      // Continue anyway, createUser will fail if duplicate exists
+      console.error("❌ Error listing users:", listError);
+      return res.status(500).json({
+        success: false,
+        message: "Kunne ikke sjekke eksisterende brukere",
+        debug: { listError }
+      });
     }
 
     const users = userList?.users || [];
     const emailExists = users.some(u => u.email === email);
     
     if (emailExists) {
+      console.log("❌ Email already exists");
       return res.status(409).json({
         success: false,
         message: "E-postadressen er allerede registrert"
       });
     }
 
-    // Check if organization name already exists
-    const { data: existingTenant } = await supabaseAdmin
+    console.log("✅ Email is available");
+
+    // STEP 2: Check if organization name already exists
+    console.log("Checking if organization exists...");
+    const { data: existingTenant, error: tenantCheckError } = await supabaseAdmin
       .from("tenants")
       .select("id")
       .eq("name", organization_name)
-      .single();
+      .maybeSingle();
+
+    if (tenantCheckError) {
+      console.error("❌ Error checking tenant:", tenantCheckError);
+      return res.status(500).json({
+        success: false,
+        message: "Kunne ikke sjekke organisasjonsnavn",
+        debug: { tenantCheckError }
+      });
+    }
 
     if (existingTenant) {
+      console.log("❌ Organization name already exists");
       return res.status(409).json({
         success: false,
         message: "Organisasjonsnavnet er allerede tatt"
       });
     }
 
-    // STEP 1: Create Supabase Auth user
+    console.log("✅ Organization name is available");
+
+    // STEP 3: Create Supabase Auth user
+    console.log("Creating auth user...");
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm email for MVP
+      email_confirm: true,
       user_metadata: {
         full_name
       }
     });
 
-    if (authError || !authData.user) {
-      console.error("Auth user creation error:", authError);
+    if (authError) {
+      console.error("❌ Auth user creation error:", authError);
       return res.status(500).json({
         success: false,
-        message: "Kunne ikke opprette bruker i autentiseringssystem"
+        message: "Kunne ikke opprette bruker i autentiseringssystem",
+        debug: { 
+          authError: {
+            message: authError.message,
+            status: authError.status,
+            code: authError.code
+          }
+        }
+      });
+    }
+
+    if (!authData.user) {
+      console.error("❌ No user returned from createUser");
+      return res.status(500).json({
+        success: false,
+        message: "Kunne ikke opprette bruker (ingen brukerdata returnert)"
       });
     }
 
     const authUserId = authData.user.id;
+    console.log("✅ Auth user created:", authUserId);
 
-    // STEP 2: Create tenant
+    // STEP 4: Create tenant
+    console.log("Creating tenant...");
     const { data: tenantData, error: tenantError } = await supabaseAdmin
       .from("tenants")
       .insert({
@@ -140,20 +203,24 @@ export default async function handler(
       .single();
 
     if (tenantError || !tenantData) {
-      console.error("Tenant creation error:", tenantError);
+      console.error("❌ Tenant creation error:", tenantError);
       
       // Rollback: Delete auth user
+      console.log("Rolling back: Deleting auth user...");
       await supabaseAdmin.auth.admin.deleteUser(authUserId);
       
       return res.status(500).json({
         success: false,
-        message: "Kunne ikke opprette organisasjon"
+        message: "Kunne ikke opprette organisasjon",
+        debug: { tenantError }
       });
     }
 
     const tenantId = tenantData.id;
+    console.log("✅ Tenant created:", tenantId);
 
-    // STEP 3: Create user in users table
+    // STEP 5: Create user in users table
+    console.log("Creating user profile...");
     const { data: userData, error: userError } = await supabaseAdmin
       .from("users")
       .insert({
@@ -169,17 +236,22 @@ export default async function handler(
       .single();
 
     if (userError || !userData) {
-      console.error("User creation error:", userError);
+      console.error("❌ User creation error:", userError);
       
       // Rollback: Delete tenant and auth user
+      console.log("Rolling back: Deleting tenant and auth user...");
       await supabaseAdmin.from("tenants").delete().eq("id", tenantId);
       await supabaseAdmin.auth.admin.deleteUser(authUserId);
       
       return res.status(500).json({
         success: false,
-        message: "Kunne ikke opprette brukerprofil"
+        message: "Kunne ikke opprette brukerprofil",
+        debug: { userError }
       });
     }
+
+    console.log("✅ User profile created");
+    console.log("=== ONBOARD SUCCESS ===");
 
     // Success!
     return res.status(201).json({
@@ -189,11 +261,15 @@ export default async function handler(
       user_id: authUserId
     });
 
-  } catch (error) {
-    console.error("Onboarding error:", error);
+  } catch (error: any) {
+    console.error("❌ Unexpected error:", error);
     return res.status(500).json({
       success: false,
-      message: "En uventet feil oppstod"
+      message: "En uventet feil oppstod",
+      debug: {
+        error: error?.message || "Unknown error",
+        stack: error?.stack
+      }
     });
   }
 }
