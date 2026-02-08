@@ -101,34 +101,7 @@ export default async function handler(
 
     console.log("✅ Supabase Admin Client created");
 
-    // STEP 1: Check if organization name already exists
-    console.log("Checking if organization exists...");
-    const { data: existingTenant, error: tenantCheckError } = await supabaseAdmin
-      .from("tenants")
-      .select("id")
-      .eq("name", organization_name)
-      .maybeSingle();
-
-    if (tenantCheckError) {
-      console.error("❌ Error checking tenant:", tenantCheckError);
-      return res.status(500).json({
-        success: false,
-        message: "Kunne ikke sjekke organisasjonsnavn",
-        debug: { tenantCheckError }
-      });
-    }
-
-    if (existingTenant) {
-      console.log("❌ Organization name already exists");
-      return res.status(409).json({
-        success: false,
-        message: "Organisasjonsnavnet er allerede tatt"
-      });
-    }
-
-    console.log("✅ Organization name is available");
-
-    // STEP 2: Create Supabase Auth user
+    // STEP 1: Create Supabase Auth user
     console.log("Creating auth user...");
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -174,7 +147,7 @@ export default async function handler(
     const authUserId = authData.user.id;
     console.log("✅ Auth user created:", authUserId);
 
-    // STEP 3: Create tenant
+    // STEP 2: Create tenant
     console.log("Creating tenant...");
     const { data: tenantData, error: tenantError } = await supabaseAdmin
       .from("tenants")
@@ -185,24 +158,47 @@ export default async function handler(
       .select()
       .single();
 
-    if (tenantError || !tenantData) {
+    if (tenantError) {
       console.error("❌ Tenant creation error:", tenantError);
       
       // Rollback: Delete auth user
       console.log("Rolling back: Deleting auth user...");
       await supabaseAdmin.auth.admin.deleteUser(authUserId);
       
+      // Check if error is due to duplicate organization name
+      if (tenantError.code === "23505" || tenantError.message?.includes("unique")) {
+        return res.status(409).json({
+          success: false,
+          message: "Organisasjonsnavnet er allerede tatt"
+        });
+      }
+      
       return res.status(500).json({
         success: false,
         message: "Kunne ikke opprette organisasjon",
-        debug: { tenantError }
+        debug: { 
+          tenantError: {
+            message: tenantError.message,
+            code: tenantError.code,
+            details: tenantError.details
+          }
+        }
+      });
+    }
+
+    if (!tenantData) {
+      console.error("❌ No tenant data returned");
+      await supabaseAdmin.auth.admin.deleteUser(authUserId);
+      return res.status(500).json({
+        success: false,
+        message: "Kunne ikke opprette organisasjon (ingen data returnert)"
       });
     }
 
     const tenantId = tenantData.id;
     console.log("✅ Tenant created:", tenantId);
 
-    // STEP 4: Create user in users table
+    // STEP 3: Create user in users table
     console.log("Creating user profile...");
     const { data: userData, error: userError } = await supabaseAdmin
       .from("users")
@@ -218,7 +214,7 @@ export default async function handler(
       .select()
       .single();
 
-    if (userError || !userData) {
+    if (userError) {
       console.error("❌ User creation error:", userError);
       
       // Rollback: Delete tenant and auth user
@@ -229,7 +225,23 @@ export default async function handler(
       return res.status(500).json({
         success: false,
         message: "Kunne ikke opprette brukerprofil",
-        debug: { userError }
+        debug: { 
+          userError: {
+            message: userError.message,
+            code: userError.code,
+            details: userError.details
+          }
+        }
+      });
+    }
+
+    if (!userData) {
+      console.error("❌ No user data returned");
+      await supabaseAdmin.from("tenants").delete().eq("id", tenantId);
+      await supabaseAdmin.auth.admin.deleteUser(authUserId);
+      return res.status(500).json({
+        success: false,
+        message: "Kunne ikke opprette brukerprofil (ingen data returnert)"
       });
     }
 
