@@ -120,13 +120,17 @@ export const messageService = {
       .limit(1)
       .maybeSingle();
 
+    if (!gateway) {
+      throw new Error("No active gateway found. Please configure a gateway in Admin settings before sending messages.");
+    }
+
     // 4. Create new thread (one per phone number)
     const { data: newThread, error } = await db
       .from("message_threads")
       .insert({
         contact_phone: formattedPhone,
         tenant_id: tenantId,
-        gateway_id: gateway?.id,
+        gateway_id: gateway.id,
         resolved_group_id: targetGroupId || null
       })
       .select("*")
