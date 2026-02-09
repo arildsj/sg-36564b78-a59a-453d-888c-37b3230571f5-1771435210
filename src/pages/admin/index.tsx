@@ -224,6 +224,7 @@ export default function AdminPage() {
         userService.getCurrentUser()
       ]);
 
+      console.log("Loaded groups:", groupsData);
       setGroups(groupsData as GroupNode[]);
       setAllGroups(groupsData as GroupNode[]);
       setUsers(usersData as User[]);
@@ -303,11 +304,12 @@ export default function AdminPage() {
     if (!newGroup.name || !currentUser?.tenant_id) return;
 
     try {
+      setCreating(true);
       await groupService.createGroup({
         name: newGroup.name,
         kind: newGroup.kind,
         description: newGroup.description,
-        parent_group_id: newGroup.parent_id || null, // Map local state to service param
+        parent_group_id: newGroup.parent_id || null,
         gateway_id: newGroup.gateway_id || null,
         tenant_id: currentUser.tenant_id,
         escalation_enabled: newGroup.escalation_enabled,
@@ -809,37 +811,23 @@ export default function AdminPage() {
             </div>
 
             <TabsContent value="groups" className="space-y-4">
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                </div>
-              ) : (
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[30%]">{t("admin.group_name")}</TableHead>
-                        <TableHead className="w-[20%]">Gateway</TableHead>
-                        <TableHead className="text-center w-[10%]">{t("admin.on_duty")}</TableHead>
-                        <TableHead className="text-center w-[10%]">{t("admin.total")}</TableHead>
-                        <TableHead className="w-[15%]">{t("admin.parent")}</TableHead>
-                        <TableHead className="text-right w-[15%]">{t("admin.actions")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {groups.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                            {t("common.loading")}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        renderGroupHierarchy()
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[30%]">{t("admin.group_name")}</TableHead>
+                      <TableHead className="w-[20%]">Gateway</TableHead>
+                      <TableHead className="text-center w-[10%]">{t("admin.on_duty")}</TableHead>
+                      <TableHead className="text-center w-[10%]">{t("admin.total")}</TableHead>
+                      <TableHead className="w-[15%]">{t("admin.parent")}</TableHead>
+                      <TableHead className="text-right w-[15%]">{t("admin.actions")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {renderGroupHierarchy()}
+                  </TableBody>
+                </Table>
+              </div>
             </TabsContent>
 
             <TabsContent value="users" className="space-y-4">
