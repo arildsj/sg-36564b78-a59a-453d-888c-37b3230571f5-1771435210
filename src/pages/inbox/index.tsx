@@ -51,9 +51,10 @@ import {
 import { 
   messageService, 
   type Message, 
-  type ExtendedMessageThread 
+  type MessageFilter,
+  type ExtendedMessageThread
 } from "@/services/messageService";
-import { groupService, type Group } from "@/services/groupService";
+import { groupService, type GroupNode } from "@/services/groupService";
 import { bulkService, type BulkRecipient } from "@/services/bulkService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -98,7 +99,7 @@ const formatMessageTime = (dateString: string) => {
   }).format(date);
 };
 
-export default function InboxPage() {
+export default function Inbox() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"all" | "fallback" | "escalated">("all");
@@ -129,7 +130,7 @@ export default function InboxPage() {
   const [sendingProgress, setSendingProgress] = useState({ sent: 0, total: 0 });
   
   // Restored missing state variables
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [groups, setGroups] = useState<GroupNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>("all");
@@ -137,6 +138,7 @@ export default function InboxPage() {
   const [sending, setSending] = useState(false);
   const [reclassifyDialogOpen, setReclassifyDialogOpen] = useState(false);
   const [reclassifyTargetGroup, setReclassifyTargetGroup] = useState<string>("");
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

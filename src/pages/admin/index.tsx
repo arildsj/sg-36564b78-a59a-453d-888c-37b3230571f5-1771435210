@@ -40,7 +40,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { groupService } from "@/services/groupService";
+import { groupService, type GroupNode } from "@/services/groupService";
 import { userService } from "@/services/userService";
 import { gatewayService } from "@/services/gatewayService";
 import { routingRuleService } from "@/services/routingRuleService";
@@ -83,32 +83,8 @@ import {
 import { useLanguage } from "@/contexts/LanguageProvider";
 import { cn } from "@/lib/utils";
 
-interface GroupNode {
-  id: string;
-  name: string;
-  on_duty_count: number;
-  active_members?: number;
-  parent_group_id?: string | null;
-  parent_id?: string | null;
-  total_members?: number;
-  children?: GroupNode[];
-  kind?: "structural" | "operational";
-  description?: string | null;
-  gateway_id?: string | null;
-  gateway_name?: string | null;
-  is_gateway_inherited?: boolean;
-  effective_gateway_id?: string | null;
-}
-
-interface Group {
-  id: string;
-  name: string;
-  parent_group_id: string | null;
-  on_duty_count: number;
-  total_members: number;
-  kind: "structural" | "operational";
-  description: string | null;
-  gateway_id?: string | null;
+interface Group extends GroupNode {
+  children?: Group[];
 }
 
 type User = Database["public"]["Tables"]["users"]["Row"] & {
@@ -200,6 +176,8 @@ export default function AdminPage() {
     parent_id: null as string | null,
     description: "",
     gateway_id: null as string | null,
+    escalation_enabled: false,
+    escalation_timeout_minutes: "" as string
   });
 
   const [newUser, setNewUser] = useState({
@@ -320,35 +298,29 @@ export default function AdminPage() {
     }
   };
 
-  const handleCreateGroup = async () => {
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGroup.name || !currentUser?.tenant_id) return;
+
     try {
-      setCreating(true);
-
-      if (!newGroup.name.trim()) {
-        toast({ title: "Mangler gruppenavn", variant: "destructive" });
-        return;
-      }
-
-      if (!currentUser?.tenant_id) {
-        toast({ title: "Feil", description: "Mangler tenant ID", variant: "destructive" });
-        return;
-      }
-
       await groupService.createGroup({
         name: newGroup.name,
         kind: newGroup.kind,
-        parent_id: newGroup.parent_id,
-        description: newGroup.description || null,
+        description: newGroup.description,
+        parent_group_id: newGroup.parent_id || null, // Map local state to service param
+        gateway_id: newGroup.gateway_id || null,
         tenant_id: currentUser.tenant_id,
-        gateway_id: newGroup.gateway_id,
+        escalation_enabled: newGroup.escalation_enabled,
+        escalation_timeout_minutes: newGroup.escalation_timeout_minutes ? parseInt(newGroup.escalation_timeout_minutes) : undefined,
       });
-
       setNewGroup({
         name: "",
         kind: "operational",
         parent_id: null,
         description: "",
         gateway_id: null,
+        escalation_enabled: false,
+        escalation_timeout_minutes: ""
       });
       setShowCreateDialog(false);
       await loadData();
@@ -366,7 +338,6 @@ export default function AdminPage() {
       id: group.id,
       name: group.name,
       parent_group_id: group.parent_group_id || null,
-      on_duty_count: group.on_duty_count,
       total_members: group.total_members || 0,
       kind: group.kind || "operational",
       description: group.description || null,
@@ -665,112 +636,43 @@ export default function AdminPage() {
 
     const rows: JSX.Element[] = [];
     
-    const buildTree = (parentId: string | null, depth: number, path: boolean[] = []) => {
-      const children = groups
-        .filter(g => (g.parent_id || g.parent_group_id) === parentId)
-        .sort((a, b) => a.name.localeCompare(b.name));
+    const buildTree = (groups: GroupNode[]): Group[] => {
+      const groupMap = new Map<string, Group>();
+      
+      // First pass: create nodes
+      groups.forEach(group => {
+        // Map GroupNode to Group (UI)
+        const uiGroup: Group = {
+          ...group,
+          children: []
+        };
+        groupMap.set(group.id, uiGroup);
+      });
 
-      children.forEach((group, index) => {
-        const isLast = index === children.length - 1;
-        const hasChildren = groups.some(g => (g.parent_id || g.parent_group_id) === group.id);
-        
-        let treeChars = "";
-        for (let i = 0; i < depth; i++) {
-          if (path[i]) {
-            treeChars += "│  ";
+      const rootGroups: Group[] = [];
+
+      // Second pass: build hierarchy
+      groups.forEach(group => {
+        const node = groupMap.get(group.id)!;
+        // Use parent_group_id from the service/view
+        if (group.parent_group_id) {
+          const parent = groupMap.get(group.parent_group_id);
+          if (parent) {
+            parent.children = parent.children || [];
+            parent.children.push(node);
           } else {
-            treeChars += "   ";
+            // Parent not found in set (maybe filtered out?), treat as root
+            rootGroups.push(node);
           }
-        }
-        
-        if (depth > 0) {
-          treeChars += isLast ? "└─ " : "├─ ";
-        }
-
-        const groupUsers = users.filter(u => 
-          u.user_groups?.some(ug => ug.groups?.id === group.id)
-        );
-        const onDutyCount = groupUsers.filter(u => u.on_duty).length;
-        
-        const parentGroup = groups.find(g => g.id === (group.parent_id || group.parent_group_id));
-
-        rows.push(
-          <TableRow key={group.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-            <TableCell className="font-medium">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-gray-400 select-none" style={{ whiteSpace: "pre" }}>
-                  {treeChars}
-                </span>
-                <span>{group.name}</span>
-                {group.kind === "structural" && (
-                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded">
-                    {t("admin.structural")}
-                  </span>
-                )}
-              </div>
-            </TableCell>
-            <TableCell>
-              {group.gateway_name ? (
-                <div className="flex items-center gap-2">
-                  <Radio className="h-3 w-3 text-green-600" />
-                  <span className="text-sm font-medium">{group.gateway_name}</span>
-                  {group.is_gateway_inherited && (
-                    <Badge variant="outline" className="text-xs">Arvet</Badge>
-                  )}
-                </div>
-              ) : (
-                <span className="text-sm text-gray-400">Ingen gateway</span>
-              )}
-            </TableCell>
-            <TableCell className="text-center">
-              <span className="font-semibold text-green-600 dark:text-green-400">
-                {onDutyCount}
-              </span>
-            </TableCell>
-            <TableCell className="text-center">
-              {groupUsers.length}
-            </TableCell>
-            <TableCell className="text-center text-gray-500">
-              {parentGroup ? parentGroup.name : "-"}
-            </TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleSelectGroup(group)}
-                >
-                  <Users className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEditGroup(group)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteGroup(group.id)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        );
-
-        if (hasChildren) {
-          const newPath = [...path];
-          newPath[depth] = !isLast;
-          buildTree(group.id, depth + 1, newPath);
+        } else {
+          rootGroups.push(node);
         }
       });
+
+      return rootGroups;
     };
 
-    buildTree(null, 0);
+    buildTree(groups);
     
     return rows;
   };

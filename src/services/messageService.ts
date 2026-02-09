@@ -3,6 +3,8 @@ import type { Database } from "@/integrations/supabase/types";
 import { formatPhoneNumber } from "@/lib/utils";
 
 // Define simpler types to avoid TS deep instantiation errors with complex Supabase types
+export type MessageFilter = "all" | "unread" | "resolved";
+
 export type Message = {
   id: string;
   created_at: string;

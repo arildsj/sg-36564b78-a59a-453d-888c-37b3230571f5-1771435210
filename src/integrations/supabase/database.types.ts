@@ -1486,12 +1486,12 @@ export type Database = {
           effective_gateway_id: string | null
           gateway_id: string | null
           gateway_name: string | null
-          gateway_phone: string | null
           id: string | null
           is_gateway_inherited: boolean | null
           kind: string | null
           name: string | null
-          parent_id: string | null
+          parent_group_id: string | null
+          parent_name: string | null
           tenant_id: string | null
           total_members: number | null
           updated_at: string | null
@@ -1506,14 +1506,14 @@ export type Database = {
           },
           {
             foreignKeyName: "groups_parent_id_fkey"
-            columns: ["parent_id"]
+            columns: ["parent_group_id"]
             isOneToOne: false
             referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "groups_parent_id_fkey"
-            columns: ["parent_id"]
+            columns: ["parent_group_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
