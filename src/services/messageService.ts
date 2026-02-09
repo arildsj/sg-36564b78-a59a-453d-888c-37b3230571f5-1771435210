@@ -64,10 +64,12 @@ export const messageService = {
   /**
    * Find or create a message thread for a contact
    * NEW LOGIC: One thread per phone number, dynamically update resolved_group_id
+   * Gateway is determined by the group sending the message, not at thread creation
    */
   async findOrCreateThread(
     contactPhone: string,
-    targetGroupId?: string
+    targetGroupId?: string,
+    gatewayId?: string
   ): Promise<MessageThread> {
     const formattedPhone = formatPhoneNumber(contactPhone);
 
@@ -94,34 +96,34 @@ export const messageService = {
       .maybeSingle();
 
     if (existingThread) {
-      // Thread exists - update resolved_group_id if targetGroupId is provided
+      // Thread exists - update resolved_group_id and gateway_id if provided
+      const updates: any = { updated_at: new Date().toISOString() };
+      
       if (targetGroupId && existingThread.resolved_group_id !== targetGroupId) {
+        updates.resolved_group_id = targetGroupId;
+      }
+      
+      if (gatewayId && existingThread.gateway_id !== gatewayId) {
+        updates.gateway_id = gatewayId;
+      }
+      
+      if (Object.keys(updates).length > 1) { // More than just updated_at
         const { data: updatedThread } = await db
           .from("message_threads")
-          .update({ 
-            resolved_group_id: targetGroupId,
-            updated_at: new Date().toISOString()
-          })
+          .update(updates)
           .eq("id", existingThread.id)
           .select("*")
           .single();
         
         return updatedThread as MessageThread;
       }
+      
       return existingThread as MessageThread;
     }
     
-    // 3. Get default gateway
-    const { data: gateway } = await db
-      .from("gateways")
-      .select("id")
-      .eq("tenant_id", tenantId)
-      .eq("status", "active")
-      .limit(1)
-      .maybeSingle();
-
-    if (!gateway) {
-      throw new Error("No active gateway found. Please configure a gateway in Admin settings before sending messages.");
+    // 3. Gateway is required for new threads
+    if (!gatewayId) {
+      throw new Error("Gateway ID is required to create a new message thread. Please ensure the group has a gateway configured.");
     }
 
     // 4. Create new thread (one per phone number)
@@ -130,7 +132,7 @@ export const messageService = {
       .insert({
         contact_phone: formattedPhone,
         tenant_id: tenantId,
-        gateway_id: gateway.id,
+        gateway_id: gatewayId,
         resolved_group_id: targetGroupId || null
       })
       .select("*")
@@ -489,6 +491,7 @@ export const messageService = {
   /**
    * Send a message with smart thread management
    * NEW LOGIC: Always use/create ONE thread per phone number, update resolved_group_id dynamically
+   * Gateway is determined by the group sending the message
    */
   async sendMessage(
     content: string,
@@ -556,17 +559,71 @@ export const messageService = {
        throw new Error("Could not determine sending group. Please join a group first.");
     }
 
-    // Find or create thread (ONE per phone number, update resolved_group_id to targetGroupId)
-    const thread = await this.findOrCreateThread(formattedToNumber, targetGroupId);
+    // Get gateway from group (with parent inheritance)
+    const { data: groupData } = await db
+      .from("groups")
+      .select("id, name, gateway_id, parent_id")
+      .eq("id", targetGroupId)
+      .single();
+
+    if (!groupData) {
+      throw new Error("Group not found");
+    }
+
+    let gatewayId = groupData.gateway_id;
+
+    // If group doesn't have gateway, inherit from parent
+    if (!gatewayId && groupData.parent_id) {
+      const { data: parentGroup } = await db
+        .from("groups")
+        .select("gateway_id, parent_id")
+        .eq("id", groupData.parent_id)
+        .single();
+
+      if (parentGroup?.gateway_id) {
+        gatewayId = parentGroup.gateway_id;
+      } else if (parentGroup?.parent_id) {
+        // Check grandparent (max 2 levels up)
+        const { data: grandparentGroup } = await db
+          .from("groups")
+          .select("gateway_id")
+          .eq("id", parentGroup.parent_id)
+          .single();
+
+        if (grandparentGroup?.gateway_id) {
+          gatewayId = grandparentGroup.gateway_id;
+        }
+      }
+    }
+
+    if (!gatewayId) {
+      throw new Error(`No gateway configured for group "${groupData.name}" or its parent groups. Please configure a gateway in Admin settings.`);
+    }
+
+    // Find or create thread (ONE per phone number, update resolved_group_id to targetGroupId and gateway)
+    const thread = await this.findOrCreateThread(formattedToNumber, targetGroupId, gatewayId);
+
+    // Get gateway phone number for sending
+    const { data: gateway } = await db
+      .from("gateways")
+      .select("phone_number")
+      .eq("id", gatewayId)
+      .single();
+
+    if (!gateway) {
+      throw new Error("Gateway not found");
+    }
 
     // MOCK SENDING to external API
     console.log("🚀 MOCK API SENDING:", {
       to: formattedToNumber,
-      from: fromNumber,
+      from: gateway.phone_number || fromNumber,
       content,
       threadId: thread.id,
       threadContactPhone: thread.contact_phone,
-      routedToGroup: targetGroupId
+      routedToGroup: targetGroupId,
+      gatewayId,
+      gatewayPhone: gateway.phone_number
     });
 
     // Store in database
@@ -578,7 +635,7 @@ export const messageService = {
         thread_key: thread.contact_phone,
         direction: "outbound",
         content,
-        from_number: fromNumber,
+        from_number: gateway.phone_number || fromNumber,
         to_number: formattedToNumber,
         status: "sent",
         group_id: targetGroupId
