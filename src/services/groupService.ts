@@ -5,6 +5,21 @@ export type Group = Database["public"]["Tables"]["groups"]["Row"];
 type GroupInsert = Database["public"]["Tables"]["groups"]["Insert"];
 type GroupUpdate = Database["public"]["Tables"]["groups"]["Update"];
 
+export interface GroupNode {
+  id: string;
+  name: string;
+  on_duty_count: number;
+  parent_group_id?: string | null;
+  parent_id?: string | null;
+  total_members?: number;
+  children?: GroupNode[];
+  kind?: "structural" | "operational";
+  description?: string | null;
+  gateway_id?: string | null;
+  gateway_name?: string | null;
+  is_gateway_inherited?: boolean;
+}
+
 type GroupWithMembers = Group & {
   member_count?: number;
   on_duty_count?: number;
@@ -12,26 +27,18 @@ type GroupWithMembers = Group & {
 };
 
 export const groupService = {
-  async getAllGroups(): Promise<GroupWithMembers[]> {
-    // Simplified query without complex aggregations
+  async getAllGroups(): Promise<GroupNode[]> {
     const { data, error } = await supabase
-      .from("groups")
+      .from("group_admin_view")
       .select("*")
       .order("name");
-
-    console.log("getAllGroups result:", { data, error });
 
     if (error) {
       console.error("Error fetching groups:", error);
       throw error;
     }
 
-    // Get member counts separately if needed
-    return (data || []).map((group: any) => ({
-      ...group,
-      member_count: 0, // Will be calculated separately if needed
-      on_duty_count: 0,
-    }));
+    return (data || []) as GroupNode[];
   },
 
   async getGroupsHierarchy(): Promise<GroupWithMembers[]> {
@@ -120,6 +127,7 @@ export const groupService = {
     parent_id: string | null;
     description: string | null;
     tenant_id: string;
+    gateway_id?: string | null;
   }) {
     const { data, error } = await supabase
       .from("groups")
@@ -137,6 +145,7 @@ export const groupService = {
       name?: string;
       description?: string | null;
       is_fallback?: boolean;
+      gateway_id?: string | null;
     }
   ) {
     const { data, error } = await supabase

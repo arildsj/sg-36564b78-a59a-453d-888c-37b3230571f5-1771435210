@@ -160,6 +160,13 @@ export type Database = {
             foreignKeyName: "automatic_replies_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automatic_replies_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
@@ -241,7 +248,21 @@ export type Database = {
             foreignKeyName: "bulk_campaigns_source_group_id_fkey"
             columns: ["source_group_id"]
             isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_campaigns_source_group_id_fkey"
+            columns: ["source_group_id"]
+            isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_campaigns_target_group_id_fkey"
+            columns: ["target_group_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
@@ -428,6 +449,13 @@ export type Database = {
             foreignKeyName: "contacts_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
@@ -540,6 +568,13 @@ export type Database = {
             foreignKeyName: "escalation_events_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalation_events_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
@@ -597,6 +632,13 @@ export type Database = {
             foreignKeyName: "gateways_fallback_group_id_fkey"
             columns: ["fallback_group_id"]
             isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gateways_fallback_group_id_fkey"
+            columns: ["fallback_group_id"]
+            isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
@@ -629,6 +671,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "group_memberships_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "group_memberships_group_id_fkey"
             columns: ["group_id"]
@@ -706,7 +755,21 @@ export type Database = {
             foreignKeyName: "groups_parent_group_id_fkey"
             columns: ["parent_group_id"]
             isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_parent_group_id_fkey"
+            columns: ["parent_group_id"]
+            isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
@@ -768,6 +831,13 @@ export type Database = {
             columns: ["gateway_id"]
             isOneToOne: false
             referencedRelation: "gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_threads_resolved_group_id_fkey"
+            columns: ["resolved_group_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
@@ -879,6 +949,13 @@ export type Database = {
             foreignKeyName: "messages_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
@@ -973,6 +1050,13 @@ export type Database = {
             foreignKeyName: "on_duty_status_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "on_duty_status_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
@@ -1015,6 +1099,13 @@ export type Database = {
             foreignKeyName: "opening_hours_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opening_hours_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
@@ -1049,6 +1140,13 @@ export type Database = {
           open_time?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "opening_hours_exceptions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "opening_hours_exceptions_group_id_fkey"
             columns: ["group_id"]
@@ -1128,6 +1226,13 @@ export type Database = {
             columns: ["gateway_id"]
             isOneToOne: false
             referencedRelation: "gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routing_rules_target_group_id_fkey"
+            columns: ["target_group_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
@@ -1317,6 +1422,13 @@ export type Database = {
             foreignKeyName: "whitelist_group_links_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whitelist_group_links_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
@@ -1366,7 +1478,56 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      group_admin_view: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          direct_gateway_id: string | null
+          effective_gateway_id: string | null
+          gateway_inherited: boolean | null
+          gateway_name: string | null
+          gateway_phone: string | null
+          id: string | null
+          kind: string | null
+          member_count: number | null
+          name: string | null
+          on_duty_count: number | null
+          parent_id: string | null
+          parent_name: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_gateway_id_fkey"
+            columns: ["direct_gateway_id"]
+            isOneToOne: false
+            referencedRelation: "gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       cleanup_old_audit_logs: { Args: never; Returns: undefined }
@@ -1392,6 +1553,7 @@ export type Database = {
           user_name: string
         }[]
       }
+      get_group_gateway: { Args: { p_group_id: string }; Returns: string }
       get_tenant_audit_activity: {
         Args: { p_limit?: number; p_tenant_id: string }
         Returns: {

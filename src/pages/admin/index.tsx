@@ -40,7 +40,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { GroupHierarchy } from "@/components/GroupHierarchy";
 import { groupService } from "@/services/groupService";
 import { userService } from "@/services/userService";
 import { gatewayService } from "@/services/gatewayService";
@@ -94,6 +93,9 @@ interface GroupNode {
   children?: GroupNode[];
   kind?: "structural" | "operational";
   description?: string | null;
+  gateway_id?: string | null;
+  gateway_name?: string | null;
+  is_gateway_inherited?: boolean;
 }
 
 interface Group {
@@ -104,6 +106,7 @@ interface Group {
   total_members: number;
   kind: "structural" | "operational";
   description: string | null;
+  gateway_id?: string | null;
 }
 
 type User = Database["public"]["Tables"]["users"]["Row"] & {
@@ -156,7 +159,6 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"groups" | "users" | "gateways">("groups");
   const [loading, setLoading] = useState(true);
   
-  // Data states
   const [groups, setGroups] = useState<GroupNode[]>([]);
   const [allGroups, setAllGroups] = useState<GroupNode[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -167,17 +169,15 @@ export default function AdminPage() {
   const [realUser, setRealUser] = useState<User | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   
-  // UI states
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [creating, setCreating] = useState(false);
   
-  // Modal states
-  const [showCreateDialog, setShowCreateDialog] = useState(false); // For creating new groups
-  const [showGroupModal, setShowGroupModal] = useState(false); // Helper for editing (can be removed if duplicates showEditGroupDialog)
-  const [showEditGroupDialog, setShowEditGroupDialog] = useState(false); // For editing existing groups
-  const [showGroupDetails, setShowGroupDetails] = useState(false); // For viewing group details (Sheet)
-  const [showMembersModal, setShowMembersModal] = useState(false); // For managing members
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showEditGroupDialog, setShowEditGroupDialog] = useState(false);
+  const [showGroupDetails, setShowGroupDetails] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
   
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
   const [showEditUserDialog, setShowEditUserDialog] = useState(false);
@@ -185,21 +185,19 @@ export default function AdminPage() {
   const [showCreateRoutingRuleDialog, setShowCreateRoutingRuleDialog] = useState(false);
   const [showAuditDialog, setShowAuditDialog] = useState(false);
 
-  // Selection states
-  const [editingGroup, setEditingGroup] = useState<Group | null>(null); // For the group being edited
-  const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null); // For the group being viewed
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null);
   const [editUser, setEditUser] = useState<User | null>(null);
   
-  // Detail data states
   const [groupMembers, setGroupMembers] = useState<User[]>([]);
   const [groupContacts, setGroupContacts] = useState<Contact[]>([]);
 
-  // Form states
   const [newGroup, setNewGroup] = useState({
     name: "",
     kind: "operational" as "structural" | "operational",
     parent_id: null as string | null,
     description: "",
+    gateway_id: null as string | null,
   });
 
   const [newUser, setNewUser] = useState({
@@ -247,7 +245,7 @@ export default function AdminPage() {
       ]);
 
       setGroups(groupsData as GroupNode[]);
-      setAllGroups(groupsData as GroupNode[]); // Keep a copy for dropdowns
+      setAllGroups(groupsData as GroupNode[]);
       setUsers(usersData as User[]);
       setGateways(gatewaysData as Gateway[]);
       setRoutingRules(routingRulesData as RoutingRule[]);
@@ -340,6 +338,7 @@ export default function AdminPage() {
         parent_id: newGroup.parent_id,
         description: newGroup.description || null,
         tenant_id: currentUser.tenant_id,
+        gateway_id: newGroup.gateway_id,
       });
 
       setNewGroup({
@@ -347,6 +346,7 @@ export default function AdminPage() {
         kind: "operational",
         parent_id: null,
         description: "",
+        gateway_id: null,
       });
       setShowCreateDialog(false);
       await loadData();
@@ -360,7 +360,6 @@ export default function AdminPage() {
   };
 
   const handleEditGroup = (group: GroupNode) => {
-    // Convert GroupNode to Group for editing
     const groupForEdit: Group = {
       id: group.id,
       name: group.name,
@@ -368,7 +367,8 @@ export default function AdminPage() {
       on_duty_count: group.on_duty_count,
       total_members: group.total_members || 0,
       kind: group.kind || "operational",
-      description: group.description || null
+      description: group.description || null,
+      gateway_id: group.gateway_id || null
     };
     setEditingGroup(groupForEdit);
     setShowGroupDetails(false);
@@ -390,6 +390,7 @@ export default function AdminPage() {
         name: editingGroup.name,
         description: editingGroup.description || null,
         is_fallback: (editingGroup as any).is_fallback || false,
+        gateway_id: editingGroup.gateway_id,
       });
 
       setEditingGroup(null);
@@ -442,7 +443,6 @@ export default function AdminPage() {
   };
 
   const handleOpenEditUser = (user: User) => {
-    // Ensure we have group_ids initialized
     const userToEdit = {
       ...user,
       group_ids: user.group_ids || []
@@ -650,12 +650,11 @@ export default function AdminPage() {
     }
   };
 
-  // Helper function to render group hierarchy with visual tree structure
   const renderGroupHierarchy = () => {
     if (groups.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+          <TableCell colSpan={6} className="text-center text-gray-500 py-8">
             {t("admin.no_groups")}
           </TableCell>
         </TableRow>
@@ -664,7 +663,6 @@ export default function AdminPage() {
 
     const rows: JSX.Element[] = [];
     
-    // Build tree structure - FIXED: use parent_id instead of parent_group_id
     const buildTree = (parentId: string | null, depth: number, path: boolean[] = []) => {
       const children = groups
         .filter(g => (g.parent_id || g.parent_group_id) === parentId)
@@ -674,13 +672,12 @@ export default function AdminPage() {
         const isLast = index === children.length - 1;
         const hasChildren = groups.some(g => (g.parent_id || g.parent_group_id) === group.id);
         
-        // Build visual tree characters
         let treeChars = "";
         for (let i = 0; i < depth; i++) {
           if (path[i]) {
-            treeChars += "│  "; // Vertical line for parent levels
+            treeChars += "│  ";
           } else {
-            treeChars += "   "; // Empty space
+            treeChars += "   ";
           }
         }
         
@@ -688,13 +685,11 @@ export default function AdminPage() {
           treeChars += isLast ? "└─ " : "├─ ";
         }
 
-        // Count users in this group
         const groupUsers = users.filter(u => 
           u.user_groups?.some(ug => ug.groups?.id === group.id)
         );
         const onDutyCount = groupUsers.filter(u => u.on_duty).length;
         
-        // Get parent group name
         const parentGroup = groups.find(g => g.id === (group.parent_id || group.parent_group_id));
 
         rows.push(
@@ -711,6 +706,19 @@ export default function AdminPage() {
                   </span>
                 )}
               </div>
+            </TableCell>
+            <TableCell>
+              {group.gateway_name ? (
+                <div className="flex items-center gap-2">
+                  <Radio className="h-3 w-3 text-green-600" />
+                  <span className="text-sm font-medium">{group.gateway_name}</span>
+                  {group.is_gateway_inherited && (
+                    <Badge variant="outline" className="text-xs">Arvet</Badge>
+                  )}
+                </div>
+              ) : (
+                <span className="text-sm text-gray-400">Ingen gateway</span>
+              )}
             </TableCell>
             <TableCell className="text-center">
               <span className="font-semibold text-green-600 dark:text-green-400">
@@ -752,22 +760,19 @@ export default function AdminPage() {
           </TableRow>
         );
 
-        // Recursively render children with updated path
         if (hasChildren) {
           const newPath = [...path];
-          newPath[depth] = !isLast; // true if not last (needs vertical line)
+          newPath[depth] = !isLast;
           buildTree(group.id, depth + 1, newPath);
         }
       });
     };
 
-    // Start with root groups (no parent)
     buildTree(null, 0);
     
     return rows;
   };
 
-  // Group management
   return (
     <>
       <Head>
@@ -843,6 +848,7 @@ export default function AdminPage() {
                     kind: "operational",
                     parent_id: null,
                     description: "",
+                    gateway_id: null,
                   });
                   setShowCreateDialog(true);
                 }}
@@ -850,17 +856,6 @@ export default function AdminPage() {
               >
                 <Plus className="w-4 h-4 mr-2" />
                 {t("admin.create_group")}
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowGroupModal(true);
-                  setEditingGroup(null);
-                }}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {t("admin.new_group")}
               </Button>
             </div>
           </div>
@@ -908,14 +903,6 @@ export default function AdminPage() {
             </div>
 
             <TabsContent value="groups" className="space-y-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">{t("admin.groups")}</h2>
-                <Button onClick={() => setShowCreateDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t("admin.new_group")}
-                </Button>
-              </div>
-
               {loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -925,17 +912,18 @@ export default function AdminPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[40%]">{t("admin.group_name")}</TableHead>
-                        <TableHead className="text-center w-[15%]">{t("admin.on_duty")}</TableHead>
-                        <TableHead className="text-center w-[15%]">{t("admin.total")}</TableHead>
-                        <TableHead className="w-[20%]">{t("admin.parent")}</TableHead>
-                        <TableHead className="text-right w-[10%]">{t("admin.actions")}</TableHead>
+                        <TableHead className="w-[30%]">{t("admin.group_name")}</TableHead>
+                        <TableHead className="w-[20%]">Gateway</TableHead>
+                        <TableHead className="text-center w-[10%]">{t("admin.on_duty")}</TableHead>
+                        <TableHead className="text-center w-[10%]">{t("admin.total")}</TableHead>
+                        <TableHead className="w-[15%]">{t("admin.parent")}</TableHead>
+                        <TableHead className="text-right w-[15%]">{t("admin.actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {groups.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                          <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                             {t("common.loading")}
                           </TableCell>
                         </TableRow>
@@ -971,61 +959,59 @@ export default function AdminPage() {
                 </Button>
               </div>
 
-              {activeTab === "users" && (
-                <div className="space-y-6">
-                  <div className="border rounded-lg overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gray-50 dark:bg-gray-800">
-                          <TableHead className="w-[40%]">{t("admin.group_name")}</TableHead>
-                          <TableHead className="text-center w-[15%]">{t("admin.on_duty")}</TableHead>
-                          <TableHead className="text-center w-[15%]">{t("admin.total")}</TableHead>
-                          <TableHead className="w-[20%]">{t("admin.parent")}</TableHead>
-                          <TableHead className="text-right w-[10%]">{t("admin.actions")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {loading ? (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                              {t("common.loading")}
-                            </TableCell>
-                          </TableRow>
-                        ) : users.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell>{user.name || "-"}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>{(user as any).phone_number || "-"}</TableCell>
-                            <TableCell>
-                              {user.user_groups?.map((ug) => ug.groups?.name).filter(Boolean).join(", ") || "-"}
-                            </TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded text-xs ${user.on_duty ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
-                                {user.on_duty ? t("common.yes") : t("common.no")}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={getRoleBadgeVariant(user.role)}>
-                                {getRoleLabel(user.role)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2 justify-end">
-                                <Button variant="outline" size="sm" onClick={() => handleOpenEditUser(user)}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={() => handleDeleteUser(user.id)}>
-                                  <Trash2 className="h-4 w-4 text-red-600" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              )}
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50 dark:bg-gray-800">
+                      <TableHead>Navn</TableHead>
+                      <TableHead>E-post</TableHead>
+                      <TableHead>Telefon</TableHead>
+                      <TableHead>Grupper</TableHead>
+                      <TableHead>På vakt</TableHead>
+                      <TableHead>Rolle</TableHead>
+                      <TableHead className="text-right">Handlinger</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                          {t("common.loading")}
+                        </TableCell>
+                      </TableRow>
+                    ) : users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.name || "-"}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{(user as any).phone_number || "-"}</TableCell>
+                        <TableCell>
+                          {user.user_groups?.map((ug) => ug.groups?.name).filter(Boolean).join(", ") || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded text-xs ${user.on_duty ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
+                            {user.on_duty ? t("common.yes") : t("common.no")}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getRoleBadgeVariant(user.role)}>
+                            {getRoleLabel(user.role)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2 justify-end">
+                            <Button variant="outline" size="sm" onClick={() => handleOpenEditUser(user)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteUser(user.id)}>
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </TabsContent>
 
             <TabsContent value="gateways" className="space-y-4">
@@ -1117,210 +1103,6 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-
-            <TabsContent value="routing" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Gateway-til-gruppe routing</CardTitle>
-                  <CardDescription>
-                    Konfigurer hvilke grupper som er tilknyttet hver gateway. Når meldinger kommer inn til en gateway, rutes de automatisk til riktig gruppe basert på disse reglene.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="text-center py-8 text-muted-foreground">Laster routing rules...</div>
-                  ) : routingRules.length === 0 ? (
-                    <div className="text-center py-8">
-                      <GitBranch className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground mb-4">Ingen routing rules konfigurert ennå</p>
-                      <Button variant="outline" onClick={() => setShowCreateRoutingRuleDialog(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Opprett første routing rule
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex justify-end mb-4">
-                        <Button onClick={() => setShowCreateRoutingRuleDialog(true)} size="sm">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Ny routing rule
-                        </Button>
-                      </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Gateway</TableHead>
-                            <TableHead>Målgruppe</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Mønster</TableHead>
-                            <TableHead>Prioritet</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Handlinger</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {routingRules.map((rule) => (
-                            <TableRow key={rule.id} className="hover:bg-accent">
-                              <TableCell className="font-medium">
-                                {rule.gateway?.name || "—"}
-                              </TableCell>
-                              <TableCell>
-                                {rule.target_group?.name || "—"}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">
-                                  {rule.rule_type === "prefix" ? "Prefiks" : 
-                                   rule.rule_type === "keyword" ? "Nøkkelord" : "Fallback"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="font-mono text-sm">
-                                {rule.pattern || "—"}
-                              </TableCell>
-                              <TableCell>{rule.priority}</TableCell>
-                              <TableCell>
-                                <Switch
-                                  checked={rule.is_active}
-                                  onCheckedChange={(checked) => handleToggleRoutingRule(rule.id, checked)}
-                                />
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteRoutingRule(rule.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="audit" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Revisjonslogg (Audit Log)</CardTitle>
-                  <CardDescription>
-                    Oversikt over sikkerhetshendelser og endringer i systemet. Loggen oppfyller krav til NIS2 og GDPR.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tidspunkt</TableHead>
-                          <TableHead>Bruker</TableHead>
-                          <TableHead>Handling</TableHead>
-                          <TableHead>Ressurs</TableHead>
-                          <TableHead>Detaljer</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {auditLogs.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                              Ingen loggføringer funnet eller manglende tilgang.
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          auditLogs.map((log) => (
-                            <TableRow key={log.id}>
-                              <TableCell className="whitespace-nowrap font-mono text-xs">
-                                {new Date(log.created_at).toLocaleString()}
-                              </TableCell>
-                              <TableCell>{log.user_email}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="font-mono text-xs">
-                                  {log.action}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                <span className="font-semibold">{log.entity_type}</span>
-                                {log.entity_id && <span className="text-xs text-muted-foreground block truncate max-w-[100px]">{log.entity_id}</span>}
-                              </TableCell>
-                              <TableCell className="text-xs font-mono text-muted-foreground max-w-[300px] truncate">
-                                {JSON.stringify(log.changes)}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="roles" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Rollestyring</CardTitle>
-                  <CardDescription>
-                    Oversikt over roller og tilgangsnivåer i systemet.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg">Tenant-administrator</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Full tilgang til alle funksjoner innenfor leieren (organisasjonen).
-                        </p>
-                        <ul className="text-sm text-muted-foreground mt-2 space-y-1 list-disc list-inside">
-                          <li>Administrere alle grupper og brukere</li>
-                          <li>Konfigurere gateways og routing-regler</li>
-                          <li>Tilgang til alle meldinger i leieren</li>
-                          <li>Se audit-logger</li>
-                        </ul>
-                      </div>
-                      <Badge variant="default">{users.filter(u => u.role === "tenant_admin").length} brukere</Badge>
-                    </div>
-                  </div>
-
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg">Gruppe-administrator</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Administrere tildelte grupper og undergrupper.
-                        </p>
-                        <ul className="text-sm text-muted-foreground mt-2 space-y-1 list-disc list-inside">
-                          <li>Administrere gruppetilhørighet</li>
-                          <li>Konfigurere åpningstider og auto-svar</li>
-                          <li>Tilgang til meldinger i tildelte grupper</li>
-                        </ul>
-                      </div>
-                      <Badge variant="secondary">{users.filter(u => u.role === "group_admin").length} brukere</Badge>
-                    </div>
-                  </div>
-
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg">Medlem</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Operativ bruker med tilgang til gruppens innboks.
-                        </p>
-                        <ul className="text-sm text-muted-foreground mt-2 space-y-1 list-disc list-inside">
-                          <li>Lese og svare på meldinger i grupper</li>
-                          <li>Administrere egen vakt-status</li>
-                          <li>Se kontakter knyttet til gruppene</li>
-                        </ul>
-                      </div>
-                      <Badge variant="outline">{users.filter(u => u.role === "member").length} brukere</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
         </div>
       </AppLayout>
@@ -1361,6 +1143,25 @@ export default function AdminPage() {
               </p>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="group-gateway">Gateway (valgfri)</Label>
+              <Select value={newGroup.gateway_id || ""} onValueChange={(value) => setNewGroup({ ...newGroup, gateway_id: value || null })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Velg gateway (arver fra parent hvis tom)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Ingen (arver fra parent)</SelectItem>
+                  {gateways.map((gw) => (
+                    <SelectItem key={gw.id} value={gw.id}>
+                      {gw.name} ({gw.phone_number})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Velg gateway for denne gruppen. Undergrupper arver gateway hvis ikke satt.
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="group-parent">Foreldregruppe (valgfri)</Label>
               <select
                 id="group-parent"
@@ -1395,6 +1196,101 @@ export default function AdminPage() {
             </Button>
             <Button onClick={handleCreateGroup} disabled={creating}>
               {creating ? "Oppretter..." : "Opprett gruppe"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditGroupDialog} onOpenChange={setShowEditGroupDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rediger gruppe</DialogTitle>
+            <DialogDescription>
+              Oppdater gruppeinformasjon og innstillinger.
+            </DialogDescription>
+          </DialogHeader>
+          {editingGroup && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-group-name">Gruppenavn *</Label>
+                <Input
+                  id="edit-group-name"
+                  placeholder="F.eks. Support, Salg, IT-avdelingen"
+                  value={editingGroup.name}
+                  onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-group-kind">Type</Label>
+                <Badge variant={editingGroup.kind === "operational" ? "default" : "secondary"}>
+                  {editingGroup.kind === "operational" ? "Operasjonell" : "Strukturell"}
+                </Badge>
+                <p className="text-xs text-muted-foreground">
+                  Type kan ikke endres etter opprettelse
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-group-gateway">Gateway</Label>
+                <Select value={editingGroup.gateway_id || ""} onValueChange={(value) => setEditingGroup({ ...editingGroup, gateway_id: value || null })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Velg gateway (arver fra parent hvis tom)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Ingen (arver fra parent)</SelectItem>
+                    {gateways.map((gw) => (
+                      <SelectItem key={gw.id} value={gw.id}>
+                        {gw.name} ({gw.phone_number})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Velg gateway for denne gruppen. Undergrupper arver gateway hvis ikke satt.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-group-description">Beskrivelse (valgfri)</Label>
+                <Textarea
+                  id="edit-group-description"
+                  placeholder="Kort beskrivelse av gruppens formål..."
+                  value={editingGroup.description || ""}
+                  onChange={(e) => setEditingGroup({ ...editingGroup, description: e.target.value })}
+                />
+              </div>
+
+              {editingGroup.kind === "operational" && (
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="edit-group-fallback" className="flex items-center gap-2">
+                        Standard innboks (Fallback)
+                        <Badge variant="outline" className="text-xs">
+                          Anbefalt
+                        </Badge>
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Meldinger som ikke matcher noen routing-regel havner her
+                      </p>
+                    </div>
+                    <Switch
+                      id="edit-group-fallback"
+                      checked={(editingGroup as any).is_fallback || false}
+                      onCheckedChange={(checked) => setEditingGroup({ ...editingGroup, is_fallback: checked } as any)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditGroupDialog(false)} disabled={creating}>
+              Avbryt
+            </Button>
+            <Button onClick={handleUpdateGroup} disabled={creating}>
+              {creating ? "Lagrer..." : "Lagre endringer"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1712,196 +1608,6 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showCreateRoutingRuleDialog} onOpenChange={setShowCreateRoutingRuleDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Opprett routing rule</DialogTitle>
-            <DialogDescription>
-              Koble en gateway til en målgruppe. Innkommende meldinger til denne gatewayen vil automatisk rutes til den valgte gruppen.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="rule-gateway">Gateway *</Label>
-              <Select value={newRoutingRule.gateway_id} onValueChange={(value) => setNewRoutingRule({ ...newRoutingRule, gateway_id: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Velg gateway" />
-                </SelectTrigger>
-                <SelectContent>
-                  {gateways.map((gw) => (
-                    <SelectItem key={gw.id} value={gw.id}>
-                      {gw.name} ({gw.phone_number})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="rule-group">Målgruppe *</Label>
-              <Select value={newRoutingRule.target_group_id} onValueChange={(value) => setNewRoutingRule({ ...newRoutingRule, target_group_id: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Velg målgruppe" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allGroups.filter(g => g.kind === 'operational').map((group) => (
-                    <SelectItem key={group.id} value={group.id}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Meldinger som kommer til gatewayen vil bli rutet til denne gruppen
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="rule-type">Regeltype *</Label>
-              <Select value={newRoutingRule.rule_type} onValueChange={(value: any) => setNewRoutingRule({ ...newRoutingRule, rule_type: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fallback">Fallback (standard routing)</SelectItem>
-                  <SelectItem value="prefix">Prefiks (basert på meldingsinnhold)</SelectItem>
-                  <SelectItem value="keyword">Nøkkelord (basert på meldingsinnhold)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {(newRoutingRule.rule_type === "prefix" || newRoutingRule.rule_type === "keyword") && (
-              <div className="space-y-2">
-                <Label htmlFor="rule-pattern">Mønster *</Label>
-                <Input
-                  id="rule-pattern"
-                  placeholder={newRoutingRule.rule_type === "prefix" ? "F.eks. SUPPORT" : "F.eks. hjelp"}
-                  value={newRoutingRule.pattern}
-                  onChange={(e) => setNewRoutingRule({ ...newRoutingRule, pattern: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {newRoutingRule.rule_type === "prefix" 
-                    ? "Meldinger som starter med dette prefikset rutes til gruppen" 
-                    : "Meldinger som inneholder dette nøkkelordet rutes til gruppen"}
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="rule-priority">Prioritet</Label>
-              <Input
-                id="rule-priority"
-                type="number"
-                min="0"
-                max="100"
-                value={newRoutingRule.priority}
-                onChange={(e) => setNewRoutingRule({ ...newRoutingRule, priority: parseInt(e.target.value) || 10 })}
-              />
-              <p className="text-xs text-muted-foreground">
-                Høyere tall = høyere prioritet (0-100). Fallback-regler bør ha lavest prioritet.
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="rule-active">Aktiver regel</Label>
-                <p className="text-xs text-muted-foreground">
-                  Kun aktive regler brukes for routing
-                </p>
-              </div>
-              <Switch
-                id="rule-active"
-                checked={newRoutingRule.is_active}
-                onCheckedChange={(checked) => setNewRoutingRule({ ...newRoutingRule, is_active: checked })}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateRoutingRuleDialog(false)} disabled={creating}>
-              Avbryt
-            </Button>
-            <Button onClick={handleCreateRoutingRule} disabled={creating}>
-              {creating ? "Oppretter..." : "Opprett regel"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showEditGroupDialog} onOpenChange={setShowEditGroupDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rediger gruppe</DialogTitle>
-            <DialogDescription>
-              Oppdater gruppeinformasjon og innstillinger.
-            </DialogDescription>
-          </DialogHeader>
-          {editingGroup && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-group-name">Gruppenavn *</Label>
-                <Input
-                  id="edit-group-name"
-                  placeholder="F.eks. Support, Salg, IT-avdelingen"
-                  value={editingGroup.name}
-                  onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-group-kind">Type</Label>
-                <Badge variant={editingGroup.kind === "operational" ? "default" : "secondary"}>
-                  {editingGroup.kind === "operational" ? "Operasjonell" : "Strukturell"}
-                </Badge>
-                <p className="text-xs text-muted-foreground">
-                  Type kan ikke endres etter opprettelse
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-group-description">Beskrivelse (valgfri)</Label>
-                <Textarea
-                  id="edit-group-description"
-                  placeholder="Kort beskrivelse av gruppens formål..."
-                  value={editingGroup.description || ""}
-                  onChange={(e) => setEditingGroup({ ...editingGroup, description: e.target.value })}
-                />
-              </div>
-
-              {editingGroup.kind === "operational" && (
-                <div className="space-y-3 pt-2 border-t">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="edit-group-fallback" className="flex items-center gap-2">
-                        Standard innboks (Fallback)
-                        <Badge variant="outline" className="text-xs">
-                          Anbefalt
-                        </Badge>
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Meldinger som ikke matcher noen routing-regel havner her
-                      </p>
-                    </div>
-                    <Switch
-                      id="edit-group-fallback"
-                      checked={(editingGroup as any).is_fallback || false}
-                      onCheckedChange={(checked) => setEditingGroup({ ...editingGroup, is_fallback: checked } as any)}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditGroupDialog(false)} disabled={creating}>
-              Avbryt
-            </Button>
-            <Button onClick={handleUpdateGroup} disabled={creating}>
-              {creating ? "Lagrer..." : "Lagre endringer"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <Sheet open={showGroupDetails} onOpenChange={setShowGroupDetails}>
         <SheetContent className="w-[600px] sm:w-[700px] overflow-y-auto">
           {selectedGroup && (
@@ -1919,6 +1625,22 @@ export default function AdminPage() {
               </SheetHeader>
 
               <div className="space-y-6 mt-6">
+                {selectedGroup.gateway_name && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Radio className="h-5 w-5 text-muted-foreground" />
+                      <h3 className="font-semibold">Gateway</h3>
+                    </div>
+                    <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <Radio className="h-4 w-4 text-green-600" />
+                      <span className="font-medium">{selectedGroup.gateway_name}</span>
+                      {selectedGroup.is_gateway_inherited && (
+                        <Badge variant="outline" className="text-xs">Arvet fra parent</Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-muted-foreground" />
