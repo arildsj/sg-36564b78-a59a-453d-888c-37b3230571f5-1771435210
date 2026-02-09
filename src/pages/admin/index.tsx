@@ -753,6 +753,8 @@ export default function AdminPage() {
                     parent_id: null,
                     description: "",
                     gateway_id: null,
+                    escalation_enabled: false,
+                    escalation_timeout_minutes: ""
                   });
                   setShowCreateDialog(true);
                 }}
