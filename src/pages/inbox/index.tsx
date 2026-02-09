@@ -778,28 +778,28 @@ export default function Inbox() {
                   <CardHeader className="border-b py-3 px-3 lg:px-4 flex-none">
                     <CardTitle className="flex items-center gap-2 text-sm lg:text-base">
                       <MessageSquare className="h-4 w-4 text-primary" />
-                      Samtaler ({filteredThreads.length})
+                      {t("inbox.conversations")} ({filteredThreads.length})
                     </CardTitle>
                   </CardHeader>
                   <ScrollArea className="flex-1">
                     <div className="p-2 lg:p-3 space-y-2">
                       {loading ? (
-                        <p className="text-muted-foreground text-center py-8 text-sm">Laster...</p>
+                        <p className="text-muted-foreground text-center py-8 text-sm">{t("inbox.loading")}</p>
                       ) : filteredThreads.length === 0 && searchQuery === "" ? (
                         <div className="text-center py-8 lg:py-12 px-4">
                           <InboxIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3 opacity-50" />
-                          <p className="text-sm">Ingen samtaler</p>
+                          <p className="text-sm">{t("inbox.no_conversations")}</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {activeTab === "fallback"
-                              ? "Ingen ukjente avsendere for øyeblikket"
+                              ? t("inbox.no_unknown_senders")
                               : activeTab === "escalated"
-                              ? "Ingen eskalerte meldinger"
-                              : "Meldinger vil vises her når de ankommer"}
+                              ? t("inbox.no_escalated")
+                              : t("inbox.messages_appear_here")}
                           </p>
                         </div>
                       ) : filteredThreads.length === 0 ? (
                         <div className="text-center py-8 lg:py-12">
-                          <p className="text-muted-foreground text-sm">Ingen samtaler funnet</p>
+                          <p className="text-muted-foreground text-sm">{t("inbox.no_conversations_found")}</p>
                         </div>
                       ) : (
                         filteredThreads.map((thread) => (
@@ -819,14 +819,14 @@ export default function Inbox() {
                                   {thread.is_bulk ? (
                                     <>
                                       <span className="font-semibold text-sm truncate text-primary">
-                                        {thread.subject_line || "Bulk Uten Emne"}
+                                        {thread.subject_line || t("inbox.bulk_no_subject")}
                                       </span>
                                       <Badge variant="secondary" className="text-[10px] h-4 px-1">
-                                        Bulk
+                                        {t("inbox.bulk")}
                                       </Badge>
                                       {thread.recipient_stats && (
                                         <span className="text-[10px] text-muted-foreground ml-auto">
-                                          {thread.recipient_stats.responded}/{thread.recipient_stats.total} svar
+                                          {thread.recipient_stats.responded}/{thread.recipient_stats.total} {t("inbox.replies")}
                                         </span>
                                       )}
                                     </>
@@ -843,7 +843,7 @@ export default function Inbox() {
                                   
                                   {thread.is_fallback && !thread.is_bulk && (
                                     <Badge variant="outline" className="text-[10px] h-4 px-1 border-yellow-500 text-yellow-600">
-                                      Ukjent
+                                      {t("inbox.unknown")}
                                     </Badge>
                                   )}
                                 </div>
@@ -878,11 +878,11 @@ export default function Inbox() {
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="flex items-center gap-2">
-                                <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">Bulk-kampanje</Badge>
+                                <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">{t("inbox.bulk_campaign")}</Badge>
                                 <span className="text-xs text-muted-foreground font-mono">ID: {selectedThread.id.slice(0, 8)}</span>
                               </div>
                               <CardTitle className="text-xl mt-2 mb-1">
-                                {selectedThread.subject_line || "Uten emne"}
+                                {selectedThread.subject_line || t("inbox.no_subject")}
                               </CardTitle>
                               <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">
                                 {selectedThread.last_message_content}
@@ -892,7 +892,7 @@ export default function Inbox() {
                                <div className="text-2xl font-bold">
                                  {selectedThread.recipient_stats?.responded || 0} / {selectedThread.recipient_stats?.total || 0}
                                </div>
-                               <div className="text-xs text-muted-foreground">har svart</div>
+                               <div className="text-xs text-muted-foreground">{t("inbox.have_replied")}</div>
                                <Button 
                                  size="sm" 
                                  variant="outline" 
@@ -900,7 +900,7 @@ export default function Inbox() {
                                  onClick={() => setSimulateDialogOpen(true)}
                                >
                                  <Users className="h-4 w-4" />
-                                 Simuler svar
+                                 {t("inbox.simulate_response")}
                                </Button>
                             </div>
                           </div>
@@ -909,13 +909,13 @@ export default function Inbox() {
                         <Tabs value={bulkTab} onValueChange={(v) => setBulkTab(v as any)}>
                           <TabsList className="mb-2">
                             <TabsTrigger value="responses">
-                              Innk. Svar ({bulkResponses.length})
+                              {t("inbox.incoming_replies")} ({bulkResponses.length})
                             </TabsTrigger>
                             <TabsTrigger value="status">
-                              Mottakerstatus & Påminnelse
+                              {t("inbox.recipient_status_reminder")}
                               {bulkReminders.length > 0 && (
                                 <Badge variant="secondary" className="ml-2 text-[10px]">
-                                  {bulkReminders.length} påminnelse{bulkReminders.length !== 1 ? "r" : ""}
+                                  {bulkReminders.length} {t("inbox.reminder")}{bulkReminders.length !== 1 ? "r" : ""}
                                 </Badge>
                               )}
                             </TabsTrigger>
@@ -927,8 +927,8 @@ export default function Inbox() {
                                  {bulkResponses.length === 0 ? (
                                    <div className="text-center py-12">
                                      <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-                                     <h3 className="text-lg font-medium text-muted-foreground">Ingen svar mottatt ennå</h3>
-                                     <p className="text-sm text-muted-foreground mt-1">Svar fra mottakere vil dukke opp her.</p>
+                                     <h3 className="text-lg font-medium text-muted-foreground">{t("inbox.no_replies_yet")}</h3>
+                                     <p className="text-sm text-muted-foreground mt-1">{t("inbox.replies_appear_here")}</p>
                                    </div>
                                  ) : (
                                    bulkResponses.map(msg => (
@@ -962,15 +962,15 @@ export default function Inbox() {
                                 <div className="flex items-center justify-between border-b pb-2">
                                   <p className="text-sm text-muted-foreground">
                                     {selectedForReminder.length > 0 
-                                      ? `${selectedForReminder.length} mottaker(e) valgt for påminnelse`
-                                      : "Velg mottakere for å sende påminnelse"}
+                                      ? `${selectedForReminder.length} ${t("inbox.recipients_selected_for_reminder")}`
+                                      : t("inbox.select_recipients_for_reminder")}
                                   </p>
                                   <Button
                                     onClick={() => setReminderDialogOpen(true)}
                                     disabled={selectedForReminder.length === 0}
                                     size="sm"
                                   >
-                                    Send påminnelse ({selectedForReminder.length})
+                                    {t("inbox.send_reminder")} ({selectedForReminder.length})
                                   </Button>
                                 </div>
                                 <div className="border rounded-md">
@@ -992,10 +992,10 @@ export default function Inbox() {
                                             className="rounded"
                                           />
                                         </TableHead>
-                                        <TableHead>NAVN</TableHead>
-                                        <TableHead>TELEFON</TableHead>
-                                        <TableHead>STATUS</TableHead>
-                                        <TableHead>HANDLING</TableHead>
+                                        <TableHead>{t("inbox.name")}</TableHead>
+                                        <TableHead>{t("inbox.phone")}</TableHead>
+                                        <TableHead>{t("inbox.status")}</TableHead>
+                                        <TableHead>{t("inbox.action")}</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -1062,11 +1062,11 @@ export default function Inbox() {
                                             <TableCell>
                                               {hasResponded ? (
                                                 <Badge className="bg-green-500 text-white">
-                                                  ✓ Svart
+                                                  ✓ {t("inbox.replied")}
                                                 </Badge>
                                               ) : (
                                                 <div className="flex items-center gap-2">
-                                                  <Badge variant="secondary">Venter</Badge>
+                                                  <Badge variant="secondary">{t("inbox.waiting")}</Badge>
                                                   {(() => {
                                                     const reminder = hasReceivedReminder(recipient.phone_number);
                                                     return reminder ? (
@@ -1077,12 +1077,12 @@ export default function Inbox() {
                                                               variant="outline" 
                                                               className="cursor-help bg-blue-50 text-blue-700 border-blue-200 gap-1"
                                                             >
-                                                              📩 Påminnelse
+                                                              📩 {t("inbox.reminder")}
                                                             </Badge>
                                                           </TooltipTrigger>
                                                           <TooltipContent>
                                                             <p className="text-xs">
-                                                              Sendt {new Date(reminder.created_at).toLocaleString("nb-NO", {
+                                                              {t("inbox.sent")} {new Date(reminder.created_at).toLocaleString("nb-NO", {
                                                                 day: "2-digit",
                                                                 month: "2-digit",
                                                                 year: "numeric",
@@ -1107,7 +1107,7 @@ export default function Inbox() {
                                                   setSimulateDialogOpen(true);
                                                 }}
                                               >
-                                                Simuler svar
+                                                {t("inbox.simulate_response")}
                                               </Button>
                                             </TableCell>
                                           </TableRow>
@@ -1140,7 +1140,7 @@ export default function Inbox() {
                                     className="h-9"
                                   >
                                     <Check className="h-4 w-4 mr-2" />
-                                    Løs
+                                    {t("inbox.resolve")}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -1149,7 +1149,7 @@ export default function Inbox() {
                                     className="h-9"
                                   >
                                     <ArrowRight className="h-4 w-4 mr-2" />
-                                    Flytt
+                                    {t("inbox.move")}
                                   </Button>
                             </div>
                           </div>
@@ -1160,12 +1160,12 @@ export default function Inbox() {
                             <div className="flex items-center justify-center h-full">
                               <div className="text-center">
                                 <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
-                                <p className="text-sm text-muted-foreground">Laster meldinger...</p>
+                                <p className="text-sm text-muted-foreground">{t("inbox.loading_messages")}</p>
                               </div>
                             </div>
                           ) : messages.length === 0 ? (
                             <div className="flex items-center justify-center h-full">
-                              <p className="text-muted-foreground text-sm">Ingen meldinger i denne tråden</p>
+                              <p className="text-muted-foreground text-sm">{t("inbox.no_messages_in_thread")}</p>
                             </div>
                           ) : (
                             <div className="space-y-4">
@@ -1181,7 +1181,7 @@ export default function Inbox() {
                                 >
                                   <div className="flex justify-between items-baseline gap-2 mb-1">
                                     <span className="text-xs font-medium opacity-80">
-                                      {message.direction === "outbound" ? "Du" : message.from_number}
+                                      {message.direction === "outbound" ? t("inbox.you") : message.from_number}
                                     </span>
                                     <span className="text-[10px] opacity-70">
                                       {formatMessageTime(message.created_at)}
@@ -1201,7 +1201,7 @@ export default function Inbox() {
                             <Textarea
                               value={newMessage}
                               onChange={(e) => setNewMessage(e.target.value)}
-                              placeholder="Skriv et svar..."
+                              placeholder={t("inbox.write_reply")}
                               className="min-h-[80px] resize-none"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -1226,9 +1226,9 @@ export default function Inbox() {
                       <div className="bg-muted/20 p-6 rounded-full mb-4">
                         <MessageSquare className="h-12 w-12 text-muted-foreground/40" />
                       </div>
-                      <h3 className="text-lg font-medium text-foreground">Velg en samtale</h3>
+                      <h3 className="text-lg font-medium text-foreground">{t("inbox.select_conversation")}</h3>
                       <p className="text-sm text-muted-foreground mt-1 max-w-xs text-center">
-                        Velg en samtale fra listen til venstre for å se meldingshistorikk og svare.
+                        {t("inbox.select_conversation_description")}
                       </p>
                     </CardContent>
                   )}
@@ -1243,27 +1243,27 @@ export default function Inbox() {
       <Dialog open={simulateDialogOpen} onOpenChange={setSimulateDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Simuler svar på bulk-utsendelse</DialogTitle>
+            <DialogTitle>{t("inbox.simulate_response_on_bulk")}</DialogTitle>
             <DialogDescription>
-              Velg en mottaker og skriv et simulert svar som om det kom fra dem.
+              {t("inbox.simulate_response_description")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Velg mottaker</label>
+              <label className="text-sm font-medium">{t("inbox.select_recipient")}</label>
               <Select value={selectedRecipientForSim} onValueChange={setSelectedRecipientForSim}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Velg hvem som skal svare..." />
+                  <SelectValue placeholder={t("inbox.select_who_responds")} />
                 </SelectTrigger>
                 <SelectContent>
                   {bulkRecipients.map((recipient) => (
                     <SelectItem key={recipient.id} value={recipient.id}>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{recipient.metadata?.name || 'Ukjent'}</span>
+                        <span className="font-medium">{recipient.metadata?.name || t("inbox.unknown")}</span>
                         <span className="text-muted-foreground text-xs">({recipient.phone_number})</span>
                         {bulkResponses.some(r => r.from_number === recipient.phone_number) && (
-                          <Badge variant="outline" className="text-[10px] ml-2">Har allerede svart</Badge>
+                          <Badge variant="outline" className="text-[10px] ml-2">{t("inbox.already_replied")}</Badge>
                         )}
                       </div>
                     </SelectItem>
@@ -1274,18 +1274,18 @@ export default function Inbox() {
 
             {selectedRecipientForSim && (
               <div className="bg-muted/30 p-3 rounded-md border">
-                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Valgt mottaker</p>
+                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">{t("inbox.selected_recipient")}</p>
                 <div className="flex justify-between items-center text-sm">
-                  <span>Avsender:</span>
-                  <span className="font-mono">{bulkRecipients.find(r => r.id === selectedRecipientForSim)?.metadata?.name || 'Ukjent'}</span>
+                  <span>{t("inbox.sender")}:</span>
+                  <span className="font-mono">{bulkRecipients.find(r => r.id === selectedRecipientForSim)?.metadata?.name || t("inbox.unknown")}</span>
                 </div>
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Simulert svarmelding</label>
+              <label className="text-sm font-medium">{t("inbox.simulated_reply_message")}</label>
               <Textarea
-                placeholder="Skriv svarmeldingen som skal simuleres..."
+                placeholder={t("inbox.write_simulated_message")}
                 value={simulatedMessage}
                 onChange={(e) => setSimulatedMessage(e.target.value)}
                 className="min-h-[100px]"
@@ -1295,13 +1295,13 @@ export default function Inbox() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setSimulateDialogOpen(false)}>
-              Avbryt
+              {t("inbox.cancel")}
             </Button>
             <Button 
               onClick={handleSimulateResponse} 
               disabled={!selectedRecipientForSim || !simulatedMessage.trim() || sendingSimulation}
             >
-              {sendingSimulation ? "Sender..." : "Send simulert svar"}
+              {sendingSimulation ? t("inbox.sending") : t("inbox.send_simulated_reply")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1311,30 +1311,30 @@ export default function Inbox() {
       <Dialog open={reclassifyDialogOpen} onOpenChange={setReclassifyDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Flytt samtale</DialogTitle>
+            <DialogTitle>{t("inbox.move_conversation")}</DialogTitle>
             <DialogDescription>
-              Flytt denne samtalen til en annen gruppe. Samtalen vil forsvinne fra denne innboksen og vises hos den valgte gruppen.
+              {t("inbox.move_conversation_description")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="bg-muted/30 p-3 rounded-md border">
-              <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">Nåværende info</p>
+              <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">{t("inbox.current_info")}</p>
               <div className="flex justify-between items-center text-sm">
-                <span>Avsender:</span>
+                <span>{t("inbox.sender")}:</span>
                 <span className="font-mono">{selectedThread?.contact_phone}</span>
               </div>
               <div className="flex justify-between items-center text-sm mt-1">
-                <span>Mottatt i:</span>
+                <span>{t("inbox.received_in")}:</span>
                 <span className="font-medium">{selectedThread?.group_name}</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Velg ny gruppe</label>
+              <label className="text-sm font-medium">{t("inbox.select_new_group")}</label>
               <Select value={reclassifyTargetGroup} onValueChange={setReclassifyTargetGroup}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Søk eller velg gruppe..." />
+                  <SelectValue placeholder={t("inbox.search_or_select_group")} />
                 </SelectTrigger>
                 <SelectContent>
                   {groups
@@ -1351,10 +1351,10 @@ export default function Inbox() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setReclassifyDialogOpen(false)}>
-              Avbryt
+              {t("inbox.cancel")}
             </Button>
             <Button onClick={handleReclassify} disabled={!reclassifyTargetGroup}>
-              Flytt samtalen
+              {t("inbox.move_conversation_action")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1364,9 +1364,9 @@ export default function Inbox() {
       <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Send påminnelse</DialogTitle>
+            <DialogTitle>{t("inbox.send_reminder")}</DialogTitle>
             <DialogDescription>
-              Skriv en tilpasset påminnelsesmelding til {selectedForReminder.length} mottaker(e)
+              {t("inbox.write_custom_reminder")} {selectedForReminder.length} {t("inbox.recipients")}
             </DialogDescription>
           </DialogHeader>
           
@@ -1378,7 +1378,7 @@ export default function Inbox() {
             <Textarea
               value={reminderMessage}
               onChange={(e) => setReminderMessage(e.target.value)}
-              placeholder="F.eks: Husk å svare på undersøkelsen innen fredag..."
+              placeholder={t("inbox.reminder_example")}
               className="min-h-[120px] resize-none"
               disabled={sending}
             />
@@ -1392,7 +1392,7 @@ export default function Inbox() {
               className="space-y-2"
             >
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Sender påminnelser...</span>
+                <span>{t("inbox.sending_reminders")}</span>
                 <span>{sendingProgress.sent} / {sendingProgress.total}</span>
               </div>
               <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
@@ -1415,7 +1415,7 @@ export default function Inbox() {
               }}
               disabled={sending}
             >
-              Avbryt
+              {t("inbox.cancel")}
             </Button>
             <Button
               onClick={handleSendReminder}
@@ -1433,14 +1433,14 @@ export default function Inbox() {
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
                   />
-                  Sender...
+                  {t("inbox.sending")}
                 </motion.div>
               ) : (
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 >
-                  Send påminnelse
+                  {t("inbox.send_reminder")}
                 </motion.span>
               )}
             </Button>
