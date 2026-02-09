@@ -94,7 +94,7 @@ type User = Database["public"]["Tables"]["users"]["Row"] & {
   on_duty?: boolean;
 };
 
-type Gateway = {
+interface Gateway {
   id: string;
   name: string;
   base_url: string;
@@ -104,9 +104,9 @@ type Gateway = {
   tenant_id: string;
   created_at: string;
   phone_number: string;
-};
+}
 
-type RoutingRule = {
+interface RoutingRule {
   id: string;
   gateway_id: string;
   target_group_id: string;
@@ -122,14 +122,14 @@ type RoutingRule = {
     id: string;
     name: string;
   };
-};
+}
 
-type Contact = {
+interface Contact {
   id: string;
   phone: string;
   name: string | null;
   groups: { id: string; name: string }[];
-};
+}
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -340,6 +340,7 @@ export default function AdminPage() {
       id: group.id,
       name: group.name,
       parent_group_id: group.parent_group_id || null,
+      parent_id: group.parent_id || null,
       total_members: group.total_members || 0,
       kind: group.kind || "operational",
       description: group.description || null,
@@ -354,7 +355,7 @@ export default function AdminPage() {
     if (!editingGroup) return;
     
     try {
-      setUpdating(true);
+      setCreating(true);
 
       const updates: {
         name?: string;
@@ -362,39 +363,38 @@ export default function AdminPage() {
         gateway_id?: string | null;
       } = {};
 
-      if (editingGroup.name !== groups.find(g => g.id === editingGroup.id)?.name) {
+      const originalGroup = groups.find(g => g.id === editingGroup.id);
+
+      if (editingGroup.name !== originalGroup?.name) {
         updates.name = editingGroup.name;
       }
-      if (editingGroup.description !== groups.find(g => g.id === editingGroup.id)?.description) {
+      if (editingGroup.description !== originalGroup?.description) {
         updates.description = editingGroup.description || null;
       }
-      if (editingGroup.gateway_id !== groups.find(g => g.id === editingGroup.id)?.gateway_id) {
+      if (editingGroup.gateway_id !== originalGroup?.gateway_id) {
         updates.gateway_id = editingGroup.gateway_id || null;
       }
 
       if (Object.keys(updates).length === 0) {
         toast({ title: "Ingen endringer å lagre" });
-        setShowEditDialog(false);
+        setShowEditGroupDialog(false);
         setEditingGroup(null);
         return;
       }
 
-      const { error } = await updateGroup(editingGroup.id, updates);
-      
-      if (error) throw error;
+      await groupService.updateGroup(editingGroup.id, updates);
 
       toast({ title: "Gruppe oppdatert" });
       
-      // CRITICAL: Close dialog and reset state BEFORE reloading
-      setShowEditDialog(false);
+      setShowEditGroupDialog(false);
       setEditingGroup(null);
       
-      await loadGroups();
+      await loadData();
     } catch (error: any) {
       console.error("Error updating group:", error);
       toast({ title: "Feil ved oppdatering", description: error.message, variant: "destructive" });
     } finally {
-      setUpdating(false);
+      setCreating(false);
     }
   };
 
@@ -425,8 +425,8 @@ export default function AdminPage() {
         group_ids: []
       });
       setShowCreateUserDialog(false);
-      await loadData();
       toast({ title: "Bruker opprettet" });
+      await loadData();
     } catch (error: any) {
       console.error("Failed to create user:", error);
       toast({ title: "Feil ved opprettelse", description: error.message, variant: "destructive" });
@@ -466,8 +466,8 @@ export default function AdminPage() {
 
       setEditUser(null);
       setShowEditUserDialog(false);
-      await loadData();
       toast({ title: "Bruker oppdatert" });
+      await loadData();
     } catch (error: any) {
       console.error("Failed to update user:", error);
       toast({ title: "Feil ved oppdatering", description: error.message, variant: "destructive" });
@@ -509,8 +509,8 @@ export default function AdminPage() {
         phone_number: "",
       });
       setShowCreateGatewayDialog(false);
-      await loadData();
       toast({ title: "Gateway opprettet" });
+      await loadData();
     } catch (error: any) {
       console.error("Failed to create gateway:", error);
       toast({ title: "Feil ved opprettelse", description: error.message, variant: "destructive" });
@@ -546,8 +546,8 @@ export default function AdminPage() {
         is_active: true,
       });
       setShowCreateRoutingRuleDialog(false);
-      await loadData();
       toast({ title: "Routing rule opprettet" });
+      await loadData();
     } catch (error: any) {
       console.error("Failed to create routing rule:", error);
       toast({ title: "Feil ved opprettelse", description: error.message, variant: "destructive" });
@@ -659,9 +659,7 @@ export default function AdminPage() {
     const buildTree = (groups: GroupNode[]): Group[] => {
       const groupMap = new Map<string, Group>();
       
-      // First pass: create nodes
       groups.forEach(group => {
-        // Map GroupNode to Group (UI)
         const uiGroup: Group = {
           ...group,
           children: []
@@ -671,17 +669,16 @@ export default function AdminPage() {
 
       const rootGroups: Group[] = [];
 
-      // Second pass: build hierarchy
       groups.forEach(group => {
         const node = groupMap.get(group.id)!;
-        // Use parent_group_id from the service/view
-        if (group.parent_group_id) {
-          const parent = groupMap.get(group.parent_group_id);
+        const parentId = group.parent_id || group.parent_group_id;
+        
+        if (parentId) {
+          const parent = groupMap.get(parentId);
           if (parent) {
             parent.children = parent.children || [];
             parent.children.push(node);
           } else {
-            // Parent not found in set (maybe filtered out?), treat as root
             rootGroups.push(node);
           }
         } else {
@@ -695,7 +692,6 @@ export default function AdminPage() {
     const renderGroup = (group: Group, level: number = 0, isLast: boolean = false, parentPrefix: string = "") => {
       const hasChildren = group.children && group.children.length > 0;
       
-      // Tree structure symbols
       const connector = isLast ? "└──" : "├──";
       const linePrefix = level > 0 ? parentPrefix + connector + " " : "";
 
@@ -704,7 +700,7 @@ export default function AdminPage() {
           <TableCell>
             <div className="flex items-center gap-2">
               {level > 0 && (
-                <span className="text-muted-foreground font-mono text-sm">
+                <span className="text-muted-foreground font-mono text-sm whitespace-pre">
                   {linePrefix}
                 </span>
               )}
@@ -1241,7 +1237,7 @@ export default function AdminPage() {
                 <Label htmlFor="edit-group-name">Gruppenavn *</Label>
                 <Input
                   id="edit-group-name"
-                  placeholder="F.eks. Support, Salg, IT-avdelingen"
+                  placeholder="Fullt navn"
                   value={editingGroup.name}
                   onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })}
                 />

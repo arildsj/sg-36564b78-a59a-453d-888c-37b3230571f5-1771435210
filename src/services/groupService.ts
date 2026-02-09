@@ -10,6 +10,7 @@ export interface GroupNode {
   effective_gateway_id?: string | null;
   gateway_name?: string | null;
   is_gateway_inherited?: boolean;
+  parent_id?: string | null;
   parent_group_id?: string | null;
   parent_name?: string | null;
   total_members?: number;
