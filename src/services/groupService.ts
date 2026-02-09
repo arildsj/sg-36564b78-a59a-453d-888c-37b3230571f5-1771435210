@@ -8,16 +8,19 @@ type GroupUpdate = Database["public"]["Tables"]["groups"]["Update"];
 export interface GroupNode {
   id: string;
   name: string;
-  on_duty_count: number;
-  parent_group_id?: string | null;
+  kind: "structural" | "operational";
   parent_id?: string | null;
-  total_members?: number;
-  children?: GroupNode[];
-  kind?: "structural" | "operational";
   description?: string | null;
   gateway_id?: string | null;
   gateway_name?: string | null;
+  gateway_phone?: string | null;
+  effective_gateway_id?: string | null;
   is_gateway_inherited?: boolean;
+  total_members?: number;
+  active_members?: number;
+  on_duty_count?: number; // Keep for backward compatibility if needed, though view provides active_members
+  children?: GroupNode[];
+  is_fallback?: boolean;
 }
 
 type GroupWithMembers = Group & {
@@ -38,7 +41,13 @@ export const groupService = {
       throw error;
     }
 
-    return (data || []) as GroupNode[];
+    // Map view data to GroupNode, ensuring numbers are numbers
+    return (data || []).map((g: any) => ({
+      ...g,
+      // Map active_members to on_duty_count for compatibility with frontend if needed
+      on_duty_count: g.active_members || 0, 
+      children: []
+    })) as GroupNode[];
   },
 
   async getGroupsHierarchy(): Promise<GroupWithMembers[]> {

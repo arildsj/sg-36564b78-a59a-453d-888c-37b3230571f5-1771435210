@@ -87,6 +87,7 @@ interface GroupNode {
   id: string;
   name: string;
   on_duty_count: number;
+  active_members?: number;
   parent_group_id?: string | null;
   parent_id?: string | null;
   total_members?: number;
@@ -96,6 +97,7 @@ interface GroupNode {
   gateway_id?: string | null;
   gateway_name?: string | null;
   is_gateway_inherited?: boolean;
+  effective_gateway_id?: string | null;
 }
 
 interface Group {

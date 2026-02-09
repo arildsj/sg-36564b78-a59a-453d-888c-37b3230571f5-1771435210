@@ -1480,27 +1480,26 @@ export type Database = {
     Views: {
       group_admin_view: {
         Row: {
+          active_members: number | null
           created_at: string | null
           description: string | null
-          direct_gateway_id: string | null
           effective_gateway_id: string | null
-          gateway_inherited: boolean | null
+          gateway_id: string | null
           gateway_name: string | null
           gateway_phone: string | null
           id: string | null
+          is_gateway_inherited: boolean | null
           kind: string | null
-          member_count: number | null
           name: string | null
-          on_duty_count: number | null
           parent_id: string | null
-          parent_name: string | null
           tenant_id: string | null
+          total_members: number | null
           updated_at: string | null
         }
         Relationships: [
           {
             foreignKeyName: "groups_gateway_id_fkey"
-            columns: ["direct_gateway_id"]
+            columns: ["gateway_id"]
             isOneToOne: false
             referencedRelation: "gateways"
             referencedColumns: ["id"]
