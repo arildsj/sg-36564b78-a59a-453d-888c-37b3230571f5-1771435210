@@ -354,28 +354,47 @@ export default function AdminPage() {
     if (!editingGroup) return;
     
     try {
-      setCreating(true);
+      setUpdating(true);
 
-      if (!editingGroup.name.trim()) {
-        toast({ title: "Mangler gruppenavn", variant: "destructive" });
+      const updates: {
+        name?: string;
+        description?: string | null;
+        gateway_id?: string | null;
+      } = {};
+
+      if (editingGroup.name !== groups.find(g => g.id === editingGroup.id)?.name) {
+        updates.name = editingGroup.name;
+      }
+      if (editingGroup.description !== groups.find(g => g.id === editingGroup.id)?.description) {
+        updates.description = editingGroup.description || null;
+      }
+      if (editingGroup.gateway_id !== groups.find(g => g.id === editingGroup.id)?.gateway_id) {
+        updates.gateway_id = editingGroup.gateway_id || null;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        toast({ title: "Ingen endringer å lagre" });
+        setShowEditDialog(false);
+        setEditingGroup(null);
         return;
       }
 
-      await groupService.updateGroup(editingGroup.id, {
-        name: editingGroup.name,
-        description: editingGroup.description || null,
-        gateway_id: editingGroup.gateway_id,
-      });
+      const { error } = await updateGroup(editingGroup.id, updates);
+      
+      if (error) throw error;
 
-      setEditingGroup(null);
-      setShowEditGroupDialog(false);
-      await loadData();
       toast({ title: "Gruppe oppdatert" });
+      
+      // CRITICAL: Close dialog and reset state BEFORE reloading
+      setShowEditDialog(false);
+      setEditingGroup(null);
+      
+      await loadGroups();
     } catch (error: any) {
-      console.error("Failed to update group:", error);
+      console.error("Error updating group:", error);
       toast({ title: "Feil ved oppdatering", description: error.message, variant: "destructive" });
     } finally {
-      setCreating(false);
+      setUpdating(false);
     }
   };
 
@@ -1096,7 +1115,20 @@ export default function AdminPage() {
         </div>
       </AppLayout>
 
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <Dialog open={showCreateDialog} onOpenChange={(open) => {
+        setShowCreateDialog(open);
+        if (!open) {
+          setNewGroup({
+            name: "",
+            kind: "operational",
+            parent_id: null,
+            description: "",
+            gateway_id: null,
+            escalation_enabled: false,
+            escalation_timeout_minutes: ""
+          });
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Opprett ny gruppe</DialogTitle>
@@ -1190,7 +1222,12 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showEditGroupDialog} onOpenChange={setShowEditGroupDialog}>
+      <Dialog open={showEditGroupDialog} onOpenChange={(open) => {
+        setShowEditGroupDialog(open);
+        if (!open) {
+          setEditingGroup(null);
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rediger gruppe</DialogTitle>
@@ -1262,7 +1299,19 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showCreateUserDialog} onOpenChange={setShowCreateUserDialog}>
+      <Dialog open={showCreateUserDialog} onOpenChange={(open) => {
+        setShowCreateUserDialog(open);
+        if (!open) {
+          setNewUser({
+            name: "",
+            email: "",
+            phone: "",
+            role: "member",
+            password: "",
+            group_ids: []
+          });
+        }
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Opprett ny bruker</DialogTitle>
@@ -1363,7 +1412,12 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showEditUserDialog} onOpenChange={setShowEditUserDialog}>
+      <Dialog open={showEditUserDialog} onOpenChange={(open) => {
+        setShowEditUserDialog(open);
+        if (!open) {
+          setEditUser(null);
+        }
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Rediger bruker</DialogTitle>
@@ -1474,7 +1528,19 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showCreateGatewayDialog} onOpenChange={setShowCreateGatewayDialog}>
+      <Dialog open={showCreateGatewayDialog} onOpenChange={(open) => {
+        setShowCreateGatewayDialog(open);
+        if (!open) {
+          setNewGateway({
+            name: "",
+            base_url: "",
+            api_key: "",
+            is_active: true,
+            is_default: false,
+            phone_number: "",
+          });
+        }
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Legg til ny gateway</DialogTitle>
