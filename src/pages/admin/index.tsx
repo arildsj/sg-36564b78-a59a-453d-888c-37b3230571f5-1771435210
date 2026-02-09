@@ -364,7 +364,6 @@ export default function AdminPage() {
       await groupService.updateGroup(editingGroup.id, {
         name: editingGroup.name,
         description: editingGroup.description || null,
-        is_fallback: (editingGroup as any).is_fallback || false,
         gateway_id: editingGroup.gateway_id,
       });
 
@@ -674,7 +673,103 @@ export default function AdminPage() {
       return rootGroups;
     };
 
-    buildTree(groups);
+    const renderGroup = (group: Group, level: number = 0, isLast: boolean = false, parentPrefix: string = "") => {
+      const hasChildren = group.children && group.children.length > 0;
+      
+      // Tree structure symbols
+      const connector = isLast ? "└──" : "├──";
+      const linePrefix = level > 0 ? parentPrefix + connector + " " : "";
+
+      rows.push(
+        <TableRow key={group.id} className="hover:bg-accent/50">
+          <TableCell>
+            <div className="flex items-center gap-2">
+              {level > 0 && (
+                <span className="text-muted-foreground font-mono text-sm">
+                  {linePrefix}
+                </span>
+              )}
+              <span className="font-medium">{group.name}</span>
+              <Badge variant={group.kind === "operational" ? "default" : "secondary"} className="text-xs">
+                {group.kind === "operational" ? "Op" : "Str"}
+              </Badge>
+            </div>
+          </TableCell>
+          <TableCell>
+            {group.gateway_name ? (
+              <div className="flex items-center gap-2">
+                <Radio className="h-4 w-4 text-green-600" />
+                <span className="text-sm">{group.gateway_name}</span>
+                {group.is_gateway_inherited && (
+                  <Badge variant="outline" className="text-xs">Arvet</Badge>
+                )}
+              </div>
+            ) : (
+              <span className="text-sm text-muted-foreground">Ingen gateway</span>
+            )}
+          </TableCell>
+          <TableCell className="text-center">
+            <span className="font-medium">{group.active_members || 0}</span>
+          </TableCell>
+          <TableCell className="text-center">
+            <span className="font-medium">{group.total_members || 0}</span>
+          </TableCell>
+          <TableCell>
+            {group.parent_name ? (
+              <span className="text-sm text-muted-foreground">{group.parent_name}</span>
+            ) : (
+              <span className="text-sm text-muted-foreground">-</span>
+            )}
+          </TableCell>
+          <TableCell>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleSelectGroup(group)}
+              >
+                Vis detaljer
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleEditGroup(group)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Rediger
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => handleDeleteGroup(group.id)}
+                    className="text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Slett
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </TableCell>
+        </TableRow>
+      );
+
+      if (hasChildren) {
+        const newPrefix = level > 0 ? parentPrefix + (isLast ? "    " : "│   ") : "";
+        group.children!.forEach((child, index) => {
+          const isLastChild = index === group.children!.length - 1;
+          renderGroup(child, level + 1, isLastChild, newPrefix);
+        });
+      }
+    };
+
+    const tree = buildTree(groups);
+    tree.forEach((group, index) => {
+      const isLast = index === tree.length - 1;
+      renderGroup(group, 0, isLast);
+    });
     
     return rows;
   };
@@ -1038,12 +1133,12 @@ export default function AdminPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="group-gateway">Gateway (valgfri)</Label>
-              <Select value={newGroup.gateway_id || ""} onValueChange={(value) => setNewGroup({ ...newGroup, gateway_id: value || null })}>
+              <Select value={newGroup.gateway_id || undefined} onValueChange={(value) => setNewGroup({ ...newGroup, gateway_id: value === "none" ? null : value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Velg gateway (arver fra parent hvis tom)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Ingen (arver fra parent)</SelectItem>
+                  <SelectItem value="none">Ingen (arver fra parent)</SelectItem>
                   {gateways.map((gw) => (
                     <SelectItem key={gw.id} value={gw.id}>
                       {gw.name} ({gw.phone_number})
@@ -1127,12 +1222,12 @@ export default function AdminPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="edit-group-gateway">Gateway</Label>
-                <Select value={editingGroup.gateway_id || ""} onValueChange={(value) => setEditingGroup({ ...editingGroup, gateway_id: value || null })}>
+                <Select value={editingGroup.gateway_id || undefined} onValueChange={(value) => setEditingGroup({ ...editingGroup, gateway_id: value || null })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Velg gateway (arver fra parent hvis tom)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Ingen (arver fra parent)</SelectItem>
+                    <SelectItem value="none">Ingen (arver fra parent)</SelectItem>
                     {gateways.map((gw) => (
                       <SelectItem key={gw.id} value={gw.id}>
                         {gw.name} ({gw.phone_number})
@@ -1154,29 +1249,6 @@ export default function AdminPage() {
                   onChange={(e) => setEditingGroup({ ...editingGroup, description: e.target.value })}
                 />
               </div>
-
-              {editingGroup.kind === "operational" && (
-                <div className="space-y-3 pt-2 border-t">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="edit-group-fallback" className="flex items-center gap-2">
-                        Standard innboks (Fallback)
-                        <Badge variant="outline" className="text-xs">
-                          Anbefalt
-                        </Badge>
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Meldinger som ikke matcher noen routing-regel havner her
-                      </p>
-                    </div>
-                    <Switch
-                      id="edit-group-fallback"
-                      checked={(editingGroup as any).is_fallback || false}
-                      onCheckedChange={(checked) => setEditingGroup({ ...editingGroup, is_fallback: checked } as any)}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           )}
           <DialogFooter>
