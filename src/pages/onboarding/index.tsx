@@ -1,12 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, CheckCircle2 } from "lucide-react";
+import { Building2, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import confetti from "canvas-confetti";
 
 type OnboardingStep = "register" | "complete";
 
@@ -15,6 +16,7 @@ export default function OnboardingPage() {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("register");
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -29,6 +31,58 @@ export default function OnboardingPage() {
     { id: "register", label: "Registrering", icon: <Building2 className="h-5 w-5" /> },
     { id: "complete", label: "Fullført", icon: <CheckCircle2 className="h-5 w-5" /> },
   ];
+
+  // Confetti animation
+  const fireConfetti = () => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+    const randomInRange = (min: number, max: number) => {
+      return Math.random() * (max - min) + min;
+    };
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+      });
+    }, 250);
+  };
+
+  // Simulate progress during registration
+  useEffect(() => {
+    if (loading) {
+      setProgress(0);
+      const interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 95) {
+            clearInterval(interval);
+            return 95;
+          }
+          return prev + 5;
+        });
+      }, 150);
+
+      return () => clearInterval(interval);
+    } else {
+      setProgress(0);
+    }
+  }, [loading]);
 
   const handleRegister = async () => {
     try {
@@ -88,11 +142,18 @@ export default function OnboardingPage() {
         return;
       }
 
-      // Success - show completion step
+      // Complete progress
+      setProgress(100);
+
+      // Small delay for visual effect
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Success - fire confetti and show completion step
+      fireConfetti();
       setCurrentStep("complete");
       
       toast({ 
-        title: "Konto opprettet!", 
+        title: "🎉 Konto opprettet!", 
         description: "Din organisasjon og administrator-konto er nå klar", 
         duration: 5000 
       });
@@ -115,10 +176,12 @@ export default function OnboardingPage() {
         <title>Onboarding - SeMSe 2.0</title>
       </Head>
 
-      <div className="min-h-screen bg-background p-6">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-6">
         <div className="max-w-2xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Velkommen til SeMSe 2.0</h1>
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold text-foreground mb-2 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+              Velkommen til SeMSe 2.0
+            </h1>
             <p className="text-muted-foreground mt-2">
               Opprett din organisasjon og kom i gang med SMS-håndtering
             </p>
@@ -128,18 +191,18 @@ export default function OnboardingPage() {
             {steps.map((step, idx) => (
               <div key={step.id} className="flex items-center">
                 <div
-                  className={`flex flex-col items-center ${
+                  className={`flex flex-col items-center transition-all duration-500 ${
                     currentStep === step.id
-                      ? "text-primary"
+                      ? "text-primary scale-110"
                       : steps.findIndex((s) => s.id === currentStep) > idx
                       ? "text-primary"
                       : "text-muted-foreground"
                   }`}
                 >
                   <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center border-2 ${
+                    className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
                       currentStep === step.id
-                        ? "border-primary bg-primary/10"
+                        ? "border-primary bg-primary/10 shadow-lg shadow-primary/20"
                         : steps.findIndex((s) => s.id === currentStep) > idx
                         ? "border-primary bg-primary text-white"
                         : "border-muted"
@@ -151,7 +214,7 @@ export default function OnboardingPage() {
                 </div>
                 {idx < steps.length - 1 && (
                   <div
-                    className={`w-24 h-0.5 mx-2 ${
+                    className={`w-24 h-0.5 mx-2 transition-all duration-500 ${
                       steps.findIndex((s) => s.id === currentStep) > idx
                         ? "bg-primary"
                         : "bg-muted"
@@ -163,7 +226,7 @@ export default function OnboardingPage() {
           </div>
 
           {currentStep === "register" && (
-            <Card>
+            <Card className="border-2 transition-all duration-300 hover:border-primary/50">
               <CardHeader>
                 <CardTitle>Opprett konto</CardTitle>
                 <CardDescription>
@@ -171,6 +234,21 @@ export default function OnboardingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {loading && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Oppretter konto...</span>
+                      <span className="text-primary font-semibold">{progress}%</span>
+                    </div>
+                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-300 ease-out"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <h3 className="text-sm font-semibold text-foreground">Personlig informasjon</h3>
                   
@@ -181,6 +259,8 @@ export default function OnboardingPage() {
                       placeholder="Ola Nordmann"
                       value={formData.full_name}
                       onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                      disabled={loading}
+                      className="transition-all focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
 
@@ -192,6 +272,8 @@ export default function OnboardingPage() {
                       placeholder="ola@minskole.no"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      disabled={loading}
+                      className="transition-all focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
 
@@ -202,6 +284,8 @@ export default function OnboardingPage() {
                       placeholder="+4791234567"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      disabled={loading}
+                      className="transition-all focus:ring-2 focus:ring-primary/20"
                     />
                     <p className="text-xs text-muted-foreground">
                       Format: +4791234567 (E.164)
@@ -216,6 +300,8 @@ export default function OnboardingPage() {
                       placeholder="Minst 6 tegn"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      disabled={loading}
+                      className="transition-all focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
 
@@ -227,6 +313,8 @@ export default function OnboardingPage() {
                       placeholder="Skriv inn passordet på nytt"
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      disabled={loading}
+                      className="transition-all focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 </div>
@@ -241,23 +329,34 @@ export default function OnboardingPage() {
                       placeholder="Min Skole"
                       value={formData.organization_name}
                       onChange={(e) => setFormData({ ...formData, organization_name: e.target.value })}
+                      disabled={loading}
+                      className="transition-all focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 </div>
 
                 <Button 
                   onClick={handleRegister} 
-                  className="w-full"
+                  className="w-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                   disabled={loading}
+                  size="lg"
                 >
-                  {loading ? "Oppretter konto..." : "Opprett konto"}
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Oppretter konto...
+                    </>
+                  ) : (
+                    "Opprett konto"
+                  )}
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
                   Har du allerede konto?{" "}
                   <button
                     onClick={() => router.push("/login")}
-                    className="text-primary hover:underline"
+                    className="text-primary hover:underline font-medium transition-all"
+                    disabled={loading}
                   >
                     Logg inn her
                   </button>
@@ -267,27 +366,55 @@ export default function OnboardingPage() {
           )}
 
           {currentStep === "complete" && (
-            <Card className="border-primary">
+            <Card className="border-2 border-primary shadow-lg shadow-primary/20 animate-in fade-in zoom-in duration-500">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CheckCircle2 className="h-6 w-6 text-primary" />
-                  Organisasjon opprettet!
+                  <div className="relative">
+                    <CheckCircle2 className="h-8 w-8 text-primary animate-in zoom-in duration-500" />
+                    <div className="absolute inset-0 h-8 w-8 text-primary animate-ping opacity-75">
+                      <CheckCircle2 className="h-8 w-8" />
+                    </div>
+                  </div>
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+                    Organisasjon opprettet!
+                  </span>
                 </CardTitle>
                 <CardDescription>
                   Din organisasjon og administrator-konto er nå klar
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg space-y-2">
-                  <h3 className="font-semibold text-sm text-green-900 dark:text-green-100">
-                    ✅ Alt er klart!
-                  </h3>
+                <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg space-y-3 animate-in slide-in-from-bottom duration-700">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+                    <h3 className="font-semibold text-base text-green-900 dark:text-green-100">
+                      Alt er klart!
+                    </h3>
+                  </div>
                   <p className="text-sm text-green-800 dark:text-green-200">
                     Du kan nå logge inn og begynne å bruke SeMSe 2.0
                   </p>
+                  <ul className="space-y-2 text-sm text-green-700 dark:text-green-300">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Organisasjon opprettet
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Administrator-konto aktivert
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Systemet er klart til bruk
+                    </li>
+                  </ul>
                 </div>
                 
-                <Button onClick={() => router.push("/login")} className="w-full">
+                <Button 
+                  onClick={() => router.push("/login")} 
+                  className="w-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                  size="lg"
+                >
                   Logg inn nå
                 </Button>
               </CardContent>
