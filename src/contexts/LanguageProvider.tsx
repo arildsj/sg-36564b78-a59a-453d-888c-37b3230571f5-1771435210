@@ -190,6 +190,32 @@ const translations: Record<string, Record<Language, string>> = {
   "sending.send_to_contacts_description": { no: "Velg individuelle kontakter fra kontaktlisten.", en: "Select individual contacts from the contact list.", de: "Wählen Sie einzelne Kontakte aus der Kontaktliste aus.", fr: "Sélectionnez des contacts individuels dans la liste de contacts.", es: "Seleccione contactos individuales de la lista de contactos.", it: "Seleziona contatti individuali dall'elenco contatti.", pl: "Wybierz indywidualne kontakty z listy kontaktów." },
   "sending.selected_contacts": { no: "kontakt(er) valgt", en: "contact(s) selected", de: "Kontakt(e) ausgewählt", fr: "contact(s) sélectionné(s)", es: "contacto(s) seleccionado(s)", it: "contatto(i) selezionato(i)", pl: "kontakt(y) wybrany(e)" },
 
+  // Settings
+  "settings.title": { no: "Innstillinger", en: "Settings", de: "Einstellungen", fr: "Paramètres", es: "Configuración", it: "Impostazioni", pl: "Ustawienia" },
+  "settings.description": { no: "Administrer systeminnstillinger og preferanser", en: "Manage system settings and preferences", de: "Systemeinstellungen und Präferenzen verwalten", fr: "Gérer les paramètres et préférences du système", es: "Gestionar configuraciones y preferencias del sistema", it: "Gestisci impostazioni e preferenze del sistema", pl: "Zarządzaj ustawieniami systemowymi i preferencjami" },
+  "settings.tabs.hours": { no: "Åpningstider", en: "Hours", de: "Öffnungszeiten", fr: "Heures", es: "Horarios", it: "Orari", pl: "Godziny" },
+  "settings.tabs.replies": { no: "Svar", en: "Replies", de: "Antworten", fr: "Réponses", es: "Respuestas", it: "Risposte", pl: "Odpowiedzi" },
+  "settings.tabs.notifications": { no: "Varsler", en: "Notifications", de: "Benachrichtigungen", fr: "Notifications", es: "Notificaciones", it: "Notifiche", pl: "Powiadomienia" },
+  "settings.tabs.routing": { no: "Ruting", en: "Routing", de: "Routing", fr: "Routage", es: "Enrutamiento", it: "Routing", pl: "Routing" },
+  "settings.hours_description": { no: "Konfigurer åpningstider for hver gruppe", en: "Configure opening hours for each group", de: "Öffnungszeiten für jede Gruppe konfigurieren", fr: "Configurer les heures d'ouverture pour chaque groupe", es: "Configurar horarios de apertura para cada grupo", it: "Configura gli orari di apertura per ogni gruppo", pl: "Skonfiguruj godziny otwarcia dla każdej grupy" },
+  "settings.select_group": { no: "Velg gruppe", en: "Select group", de: "Gruppe auswählen", fr: "Sélectionner un groupe", es: "Seleccionar grupo", it: "Seleziona gruppo", pl: "Wybierz grupę" },
+  "settings.weekly_schedule": { no: "Ukentlig timeplan", en: "Weekly schedule", de: "Wochenplan", fr: "Horaire hebdomadaire", es: "Horario semanal", it: "Programma settimanale", pl: "Harmonogram tygodniowy" },
+  "settings.from": { no: "Fra", en: "From", de: "Von", fr: "De", es: "Desde", it: "Da", pl: "Od" },
+  "settings.to": { no: "Til", en: "To", de: "Bis", fr: "À", es: "Hasta", it: "A", pl: "Do" },
+  "settings.open": { no: "Åpen", en: "Open", de: "Geöffnet", fr: "Ouvert", es: "Abierto", it: "Aperto", pl: "Otwarte" },
+  "settings.closed": { no: "Stengt", en: "Closed", de: "Geschlossen", fr: "Fermé", es: "Cerrado", it: "Chiuso", pl: "Zamknięte" },
+  "settings.save_hours": { no: "Lagre åpningstider", en: "Save hours", de: "Öffnungszeiten speichern", fr: "Enregistrer les heures", es: "Guardar horarios", it: "Salva orari", pl: "Zapisz godziny" },
+  "settings.hours_saved": { no: "Åpningstider lagret", en: "Hours saved", de: "Öffnungszeiten gespeichert", fr: "Heures enregistrées", es: "Horarios guardados", it: "Orari salvati", pl: "Godziny zapisane" },
+  
+  // Days of week
+  "days.monday": { no: "Mandag", en: "Monday", de: "Montag", fr: "Lundi", es: "Lunes", it: "Lunedì", pl: "Poniedziałek" },
+  "days.tuesday": { no: "Tirsdag", en: "Tuesday", de: "Dienstag", fr: "Mardi", es: "Martes", it: "Martedì", pl: "Wtorek" },
+  "days.wednesday": { no: "Onsdag", en: "Wednesday", de: "Mittwoch", fr: "Mercredi", es: "Miércoles", it: "Mercoledì", pl: "Środa" },
+  "days.thursday": { no: "Torsdag", en: "Thursday", de: "Donnerstag", fr: "Jeudi", es: "Jueves", it: "Giovedì", pl: "Czwartek" },
+  "days.friday": { no: "Fredag", en: "Friday", de: "Freitag", fr: "Vendredi", es: "Viernes", it: "Venerdì", pl: "Piątek" },
+  "days.saturday": { no: "Lørdag", en: "Saturday", de: "Samstag", fr: "Samedi", es: "Sábado", it: "Sabato", pl: "Sobota" },
+  "days.sunday": { no: "Søndag", en: "Sunday", de: "Sonntag", fr: "Dimanche", es: "Domingo", it: "Domenica", pl: "Niedziela" },
+
   // Login
   "login.description": { no: "Logg inn for å få tilgang til SeMSe", en: "Log in to access SeMSe", de: "Melden Sie sich an, um auf SeMSe zuzugreifen", fr: "Connectez-vous pour accéder à SeMSe", es: "Inicie sesión para acceder a SeMSe", it: "Accedi per accedere a SeMSe", pl: "Zaloguj się, aby uzyskać dostęp do SeMSe" },
   "login.email_placeholder": { no: "din@epost.no", en: "your@email.com", de: "ihre@email.de", fr: "votre@email.fr", es: "tu@email.es", it: "tuo@email.it", pl: "twoj@email.pl" },
