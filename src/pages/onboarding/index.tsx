@@ -5,18 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
-import { Building2, Mail, CheckCircle2 } from "lucide-react";
+import { Building2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type OnboardingStep = "register" | "verify" | "complete";
+type OnboardingStep = "register" | "complete";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("register");
   const [loading, setLoading] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState("");
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -29,7 +27,6 @@ export default function OnboardingPage() {
 
   const steps: { id: OnboardingStep; label: string; icon: React.ReactNode }[] = [
     { id: "register", label: "Registrering", icon: <Building2 className="h-5 w-5" /> },
-    { id: "verify", label: "Bekreft e-post", icon: <Mail className="h-5 w-5" /> },
     { id: "complete", label: "Fullført", icon: <CheckCircle2 className="h-5 w-5" /> },
   ];
 
@@ -64,45 +61,39 @@ export default function OnboardingPage() {
         return;
       }
 
-      // Sign up with Supabase Auth directly
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.full_name,
-            phone: formData.phone,
-            organization_name: formData.organization_name
-          }
-        }
+      // Call the onboard API endpoint
+      const response = await fetch("/api/onboard", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          full_name: formData.full_name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          organization_name: formData.organization_name
+        }),
       });
 
-      if (error) {
-        console.error("Signup error:", error);
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Onboard API error:", data);
         toast({ 
           title: "Registreringsfeil", 
-          description: error.message || "Kunne ikke opprette konto", 
+          description: data.message || "Kunne ikke opprette konto", 
           variant: "destructive" 
         });
         return;
       }
 
-      if (!data.user) {
-        toast({ 
-          title: "Registreringsfeil", 
-          description: "Kunne ikke opprette bruker", 
-          variant: "destructive" 
-        });
-        return;
-      }
-
-      // Success - show verification step
-      setRegisteredEmail(formData.email);
-      setCurrentStep("verify");
+      // Success - show completion step
+      setCurrentStep("complete");
       
       toast({ 
         title: "Konto opprettet!", 
-        description: "Sjekk e-posten din for å bekrefte kontoen", 
+        description: "Din organisasjon og administrator-konto er nå klar", 
         duration: 5000 
       });
 
@@ -113,34 +104,6 @@ export default function OnboardingPage() {
         description: "En uventet feil oppstod", 
         variant: "destructive" 
       });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendVerification = async () => {
-    try {
-      setLoading(true);
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: registeredEmail
-      });
-      
-      if (error) {
-        toast({ 
-          title: "Feil", 
-          description: "Kunne ikke sende ny bekreftelse", 
-          variant: "destructive" 
-        });
-        return;
-      }
-
-      toast({ 
-        title: "E-post sendt", 
-        description: "Sjekk innboksen din for bekreftelses-lenke" 
-      });
-    } catch (error) {
-      console.error("Resend error:", error);
     } finally {
       setLoading(false);
     }
@@ -303,72 +266,21 @@ export default function OnboardingPage() {
             </Card>
           )}
 
-          {currentStep === "verify" && (
-            <Card className="border-blue-500">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-6 w-6 text-blue-500" />
-                  Bekreft e-postadressen din
-                </CardTitle>
-                <CardDescription>
-                  Vi har sendt en bekreftelses-lenke til {registeredEmail}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg space-y-2">
-                  <h3 className="font-semibold text-sm text-blue-900 dark:text-blue-100">
-                    📧 Sjekk innboksen din
-                  </h3>
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Klikk på lenken i e-posten for å bekrefte kontoen din. Deretter kan du logge inn.
-                  </p>
-                </div>
-                
-                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg space-y-2">
-                  <h3 className="font-semibold text-sm text-yellow-900 dark:text-yellow-100">
-                    ⏳ Finner du ikke e-posten?
-                  </h3>
-                  <ul className="space-y-1 text-sm list-disc list-inside text-yellow-800 dark:text-yellow-200">
-                    <li>Sjekk søppelpost-mappen</li>
-                    <li>Vent 1-2 minutter (e-post kan forsinkes)</li>
-                    <li>Klikk "Send ny e-post" under</li>
-                  </ul>
-                </div>
-
-                <Button 
-                  onClick={handleResendVerification} 
-                  variant="outline" 
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {loading ? "Sender..." : "Send ny bekreftelses-e-post"}
-                </Button>
-
-                <Button 
-                  onClick={() => router.push("/login")} 
-                  className="w-full"
-                >
-                  Gå til innlogging
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
           {currentStep === "complete" && (
             <Card className="border-primary">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle2 className="h-6 w-6 text-primary" />
-                  E-post bekreftet!
+                  Organisasjon opprettet!
                 </CardTitle>
                 <CardDescription>
-                  Din konto er nå aktiv. Du kan logge inn.
+                  Din organisasjon og administrator-konto er nå klar
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg space-y-2">
                   <h3 className="font-semibold text-sm text-green-900 dark:text-green-100">
-                    ✅ Kontoen din er klar!
+                    ✅ Alt er klart!
                   </h3>
                   <p className="text-sm text-green-800 dark:text-green-200">
                     Du kan nå logge inn og begynne å bruke SeMSe 2.0
