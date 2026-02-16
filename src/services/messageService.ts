@@ -150,6 +150,17 @@ export const messageService = {
     const { data: authData } = await supabase.auth.getUser();
     if (!authData.user) throw new Error("Not authenticated");
 
+    const { data: profile } = await db
+      .from("users")
+      .select("tenant_id")
+      .eq("auth_user_id", authData.user.id)
+      .maybeSingle();
+
+    if (!profile) {
+      console.warn("getThreadsByGroup: Profile not found, returning empty array");
+      return [];
+    }
+
     // First, get all threads for the group
     const { data: threads, error: threadsError } = await db
       .from("message_threads")
@@ -196,7 +207,10 @@ export const messageService = {
       .eq("auth_user_id", user.user.id)
       .maybeSingle();
 
-    if (!profile) throw new Error("Profile not found");
+    if (!profile) {
+      console.warn("getInboxThreads: Profile not found, returning empty array");
+      return [];
+    }
 
     // 1. Fetch standard threads
     const { data: threads, error: threadsError } = await db
@@ -209,8 +223,6 @@ export const messageService = {
     if (threadsError) throw threadsError;
 
     // 2. Fetch active Bulk Campaigns
-    // We consider a campaign "active" or visible in inbox if it was created recently (e.g. 30 days)
-    // or if it has recent activity. For now, let's fetch all non-archived ones.
     const { data: campaigns, error: campaignsError } = await db
       .from("bulk_campaigns")
       .select(`
@@ -219,7 +231,7 @@ export const messageService = {
         bulk_recipients(count)
       `)
       .eq("tenant_id", profile.tenant_id)
-      .neq("status", "archived") // Assuming we might have archived status later
+      .neq("status", "archived")
       .order("created_at", { ascending: false });
 
     if (campaignsError) throw campaignsError;
@@ -242,7 +254,6 @@ export const messageService = {
     });
 
     // 4. Map threads
-    // Get messages for threads to calculate unread/last content
     const threadIds = (threads || []).map((t: any) => t.id);
     const { data: threadMessages } = await db
       .from("messages")
@@ -254,10 +265,7 @@ export const messageService = {
 
     // 5. Map campaigns to thread structure
     const mappedCampaigns: ExtendedMessageThread[] = (campaigns || []).map((c: any) => {
-      // Calculate stats
       const totalRecipients = c.bulk_recipients?.[0]?.count || 0;
-      // Note: This message count is total messages linked to campaign (inbound responses)
-      // We might want to refine this to distinct responders, but simple count is okay for now
       const responseCount = responseCounts.get(c.id) || 0;
 
       return {
@@ -265,22 +273,18 @@ export const messageService = {
         is_bulk: true,
         subject_line: c.subject_line,
         bulk_code: c.bulk_code,
-        
-        // Map to required MessageThread fields
         tenant_id: c.tenant_id,
         created_at: c.created_at,
         updated_at: c.created_at,
-        contact_phone: c.name, // Display name in list
-        last_message_at: c.created_at, // Could update this if we check latest response time
+        contact_phone: c.name,
+        last_message_at: c.created_at,
         last_message_content: c.message_template,
         group_name: c.groups?.name || "Ukjent gruppe",
         resolved_group_id: c.source_group_id,
-        is_resolved: c.status === 'completed', // Or use explicit resolved flag
+        is_resolved: c.status === 'completed',
         resolved_at: null,
         gateway_id: null,
-        
-        // Stats
-        unread_count: 0, // TODO: track unread responses
+        unread_count: 0,
         recipient_stats: {
           total: totalRecipients,
           responded: responseCount,
@@ -311,9 +315,11 @@ export const messageService = {
       .eq("auth_user_id", user.user.id)
       .maybeSingle();
 
-    if (!profile) throw new Error("Profile not found");
+    if (!profile) {
+      console.warn("getAllThreads: Profile not found, returning empty array");
+      return [];
+    }
 
-    // RLS policies automatically filter threads to only those in groups the user is a member of
     const { data: threads, error } = await db
       .from("message_threads")
       .select("*, groups(name)")
@@ -328,7 +334,6 @@ export const messageService = {
 
     if (!threads || threads.length === 0) return [];
 
-    // Get messages for all threads
     const threadIds = threads.map((t: any) => t.id);
     
     const { data: messages } = await db
@@ -353,7 +358,10 @@ export const messageService = {
       .eq("auth_user_id", user.user.id)
       .maybeSingle();
 
-    if (!profile) throw new Error("Profile not found");
+    if (!profile) {
+      console.warn("getFallbackThreads: Profile not found, returning empty array");
+      return [];
+    }
 
     const { data, error } = await db
       .from("message_threads")
@@ -372,7 +380,6 @@ export const messageService = {
 
     if (!data || data.length === 0) return [];
 
-    // Get messages for all threads and filter for fallback
     const threadIds = data.map((t: any) => t.id);
     
     const { data: messages } = await db
@@ -382,7 +389,6 @@ export const messageService = {
       .eq("is_fallback", true)
       .order("created_at", { ascending: true });
 
-    // Only include threads that have fallback messages
     const threadsWithFallback = data.filter((t: any) => 
       messages?.some((m: any) => m.thread_id === t.id)
     );
@@ -406,7 +412,10 @@ export const messageService = {
       .eq("auth_user_id", user.user.id)
       .maybeSingle();
 
-    if (!profile) throw new Error("Profile not found");
+    if (!profile) {
+      console.warn("getEscalatedThreads: Profile not found, returning empty array");
+      return [];
+    }
 
     const thresholdTime = new Date();
     thresholdTime.setMinutes(thresholdTime.getMinutes() - thresholdMinutes);
@@ -672,7 +681,10 @@ export const messageService = {
       .eq("auth_user_id", user.user.id)
       .maybeSingle();
 
-    if (!profile) throw new Error("User profile not found");
+    if (!profile) {
+      console.warn("acknowledgeMessage: Profile not found, cannot acknowledge");
+      return;
+    }
 
     const { error } = await db
       .from("messages")
@@ -698,7 +710,10 @@ export const messageService = {
       .eq("auth_user_id", user.user.id)
       .maybeSingle();
 
-    if (!profile) throw new Error("User profile not found");
+    if (!profile) {
+      console.warn("acknowledgeThread: Profile not found, cannot acknowledge");
+      return;
+    }
 
     const { error } = await db
       .from("messages")
@@ -756,7 +771,10 @@ export const messageService = {
       .eq("auth_user_id", authData.user.id)
       .maybeSingle();
 
-    if (!profile) throw new Error("Profile not found");
+    if (!profile) {
+      console.warn("getUnacknowledgedMessages: Profile not found, returning empty array");
+      return [];
+    }
 
     const { data, error } = await db
       .from("messages")
