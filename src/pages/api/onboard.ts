@@ -32,7 +32,7 @@ export default async function handler(
   // Debug: Check environment variables
   console.log("=== ONBOARD API DEBUG ===");
   console.log("NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "✅ Set" : "❌ Missing");
-  console.log("SUPABASE_SERVICE_ROLE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "✅ Set" : "❌ Missing");
+  console.log("SUPABASE_SERVICE_ROLE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "✅ Set (length: " + process.env.SUPABASE_SERVICE_ROLE_KEY.length + ")" : "❌ Missing");
   
   // Verify environment variables exist
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -49,6 +49,8 @@ export default async function handler(
 
   try {
     const { full_name, email, phone, password, organization_name }: OnboardRequest = req.body;
+
+    console.log("📝 Request body:", { full_name, email, phone: phone.substring(0, 5) + "***", organization_name });
 
     // Validate required fields
     if (!full_name || !email || !phone || !password || !organization_name) {
@@ -102,7 +104,7 @@ export default async function handler(
     console.log("✅ Supabase Admin Client created");
 
     // STEP 1: Create Supabase Auth user
-    console.log("Creating auth user...");
+    console.log("Creating auth user with email:", email);
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -112,8 +114,13 @@ export default async function handler(
       }
     });
 
+    // Log detailed error information
     if (authError) {
-      console.error("❌ Auth user creation error:", authError);
+      console.error("❌ Auth user creation error:");
+      console.error("  - Message:", authError.message);
+      console.error("  - Status:", authError.status);
+      console.error("  - Code:", authError.code);
+      console.error("  - Full error:", JSON.stringify(authError, null, 2));
       
       // Check if error is due to duplicate email
       if (authError.message?.includes("already registered") || authError.message?.includes("already exists")) {
@@ -123,14 +130,16 @@ export default async function handler(
         });
       }
       
+      // Return detailed error for debugging
       return res.status(500).json({
         success: false,
-        message: "Kunne ikke opprette bruker i autentiseringssystem",
+        message: `Kunne ikke opprette bruker: ${authError.message}`,
         debug: { 
           authError: {
             message: authError.message,
             status: authError.status,
-            code: authError.code
+            code: authError.code,
+            name: authError.name
           }
         }
       });
@@ -148,7 +157,7 @@ export default async function handler(
     console.log("✅ Auth user created:", authUserId);
 
     // STEP 2: Create tenant
-    console.log("Creating tenant...");
+    console.log("Creating tenant with name:", organization_name);
     const { data: tenantData, error: tenantError } = await supabaseAdmin
       .from("tenants")
       .insert({
@@ -258,11 +267,13 @@ export default async function handler(
 
   } catch (error: any) {
     console.error("❌ Unexpected error:", error);
+    console.error("Stack trace:", error?.stack);
     return res.status(500).json({
       success: false,
       message: "En uventet feil oppstod",
       debug: {
         error: error?.message || "Unknown error",
+        name: error?.name,
         stack: error?.stack
       }
     });
