@@ -81,7 +81,7 @@ export const messageService = {
       .from("users")
       .select("tenant_id")
       .eq("auth_user_id", authData.user.id)
-      .single();
+      .maybeSingle();
 
     if (!userData) throw new Error("User not found");
     const tenantId = userData.tenant_id;
@@ -113,7 +113,7 @@ export const messageService = {
           .update(updates)
           .eq("id", existingThread.id)
           .select("*")
-          .single();
+          .maybeSingle();
         
         return updatedThread as MessageThread;
       }
@@ -136,9 +136,10 @@ export const messageService = {
         resolved_group_id: targetGroupId || null
       })
       .select("*")
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!newThread) throw new Error("Failed to create thread");
     return newThread as MessageThread;
   },
 
@@ -193,7 +194,7 @@ export const messageService = {
       .from("users")
       .select("tenant_id")
       .eq("auth_user_id", user.user.id)
-      .single();
+      .maybeSingle();
 
     if (!profile) throw new Error("Profile not found");
 
@@ -308,7 +309,7 @@ export const messageService = {
       .from("users")
       .select("tenant_id")
       .eq("auth_user_id", user.user.id)
-      .single();
+      .maybeSingle();
 
     if (!profile) throw new Error("Profile not found");
 
@@ -350,7 +351,7 @@ export const messageService = {
       .from("users")
       .select("tenant_id")
       .eq("auth_user_id", user.user.id)
-      .single();
+      .maybeSingle();
 
     if (!profile) throw new Error("Profile not found");
 
@@ -403,7 +404,7 @@ export const messageService = {
       .from("users")
       .select("tenant_id")
       .eq("auth_user_id", user.user.id)
-      .single();
+      .maybeSingle();
 
     if (!profile) throw new Error("Profile not found");
 
@@ -510,7 +511,7 @@ export const messageService = {
      .from("users")
      .select("id, tenant_id")
      .eq("auth_user_id", userData.user.id)
-     .single();
+     .maybeSingle();
      
     if (!userProfile) throw new Error("User profile not found");
 
@@ -564,7 +565,7 @@ export const messageService = {
       .from("groups")
       .select("id, name, gateway_id, parent_id")
       .eq("id", targetGroupId)
-      .single();
+      .maybeSingle();
 
     if (!groupData) {
       throw new Error("Group not found");
@@ -578,7 +579,7 @@ export const messageService = {
         .from("groups")
         .select("gateway_id, parent_id")
         .eq("id", groupData.parent_id)
-        .single();
+        .maybeSingle();
 
       if (parentGroup?.gateway_id) {
         gatewayId = parentGroup.gateway_id;
@@ -588,7 +589,7 @@ export const messageService = {
           .from("groups")
           .select("gateway_id")
           .eq("id", parentGroup.parent_id)
-          .single();
+          .maybeSingle();
 
         if (grandparentGroup?.gateway_id) {
           gatewayId = grandparentGroup.gateway_id;
@@ -608,7 +609,7 @@ export const messageService = {
       .from("gateways")
       .select("phone_number")
       .eq("id", gatewayId)
-      .single();
+      .maybeSingle();
 
     if (!gateway) {
       throw new Error("Gateway not found");
@@ -641,9 +642,10 @@ export const messageService = {
         group_id: targetGroupId
       })
       .select("*")
-      .single();
+      .maybeSingle();
 
     if (insertError) throw insertError;
+    if (!messageData) throw new Error("Failed to create message");
 
     // Update thread timestamp
     await db
@@ -668,7 +670,7 @@ export const messageService = {
       .from("users")
       .select("id")
       .eq("auth_user_id", user.user.id)
-      .single();
+      .maybeSingle();
 
     if (!profile) throw new Error("User profile not found");
 
@@ -694,7 +696,7 @@ export const messageService = {
       .from("users")
       .select("id")
       .eq("auth_user_id", user.user.id)
-      .single();
+      .maybeSingle();
 
     if (!profile) throw new Error("User profile not found");
 
@@ -752,7 +754,7 @@ export const messageService = {
       .from("users")
       .select("tenant_id")
       .eq("auth_user_id", authData.user.id)
-      .single();
+      .maybeSingle();
 
     if (!profile) throw new Error("Profile not found");
 
