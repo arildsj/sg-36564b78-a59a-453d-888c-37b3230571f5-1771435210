@@ -422,8 +422,8 @@ export default function AdminPage() {
         email: newUser.email,
         password: newUser.password,
         name: newUser.name,
-        role: newUser.role as any,
-        phone_number: newUser.phone || undefined,
+        role: (newUser.role === "operator" ? "member" : newUser.role) as "tenant_admin" | "group_admin" | "member",
+        phone: newUser.phone || "",
       });
 
       // Add user to selected groups
@@ -1874,7 +1874,7 @@ export default function AdminPage() {
                     checked={editGateway.status === 'active'}
                     onCheckedChange={(checked) => setEditGateway({ 
                       ...editGateway, 
-                      status: checked ? 'active' : 'inactive' 
+                      status: checked ? "active" : "inactive" 
                     })}
                   />
                 </div>
