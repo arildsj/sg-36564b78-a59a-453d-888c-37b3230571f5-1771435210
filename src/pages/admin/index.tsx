@@ -225,6 +225,8 @@ export default function AdminPage() {
       ]);
 
       console.log("Loaded groups:", groupsData);
+      console.log("Loaded current user:", currentUserData);
+      
       setGroups(groupsData as GroupNode[]);
       setAllGroups(groupsData as GroupNode[]);
       setUsers(usersData as User[]);
@@ -233,9 +235,12 @@ export default function AdminPage() {
       
       if (currentUserData) {
         setRealUser(currentUserData as User);
-        if (!isDemoMode && !currentUser) {
+        if (!isDemoMode) {
           setCurrentUser(currentUserData as User);
+          console.log("Set currentUser to:", currentUserData);
         }
+      } else {
+        console.error("No current user data loaded!");
       }
     } catch (error) {
       console.error("Failed to load data:", error);
