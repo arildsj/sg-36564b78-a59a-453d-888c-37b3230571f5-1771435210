@@ -29,26 +29,31 @@ export const userService = {
     name: string;
     email: string;
     phone: string;
-    role: "tenant_admin" | "group_admin" | "member";
+    role: string;
     group_ids: string[];
-    status?: string;
-    on_duty?: boolean;
+    status: string;
+    on_duty: boolean;
   }>) {
-    // 1. Prepare User Profile updates
+    const authUpdates: any = {};
     const profileUpdates: any = {};
+
     if (updates.name !== undefined) profileUpdates.name = updates.name;
-    if (updates.email !== undefined) profileUpdates.email = updates.email;
+    if (updates.email !== undefined) authUpdates.email = updates.email;
     if (updates.phone !== undefined) profileUpdates.phone_number = updates.phone;
     if (updates.role !== undefined) profileUpdates.role = updates.role;
     if (updates.status !== undefined) profileUpdates.status = updates.status;
     if (updates.on_duty !== undefined) profileUpdates.on_duty = updates.on_duty;
+
+    if (Object.keys(authUpdates).length > 0) {
+      const { error: authError } = await supabase.auth.admin.updateUserById(userId, authUpdates);
+      if (authError) throw new Error(`Failed to update user auth: ${authError.message}`);
+    }
 
     if (Object.keys(profileUpdates).length > 0) {
       const { error: profileError } = await supabase
         .from("users")
         .update(profileUpdates)
         .eq("id", userId);
-
       if (profileError) throw new Error(`Failed to update user profile: ${profileError.message}`);
     }
 

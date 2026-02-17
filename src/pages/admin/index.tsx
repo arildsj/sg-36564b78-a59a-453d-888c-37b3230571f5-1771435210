@@ -215,66 +215,48 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const { data: groupsData, error: groupsError } = await supabase
-        .from("groups")
-        .select(`
-          *,
-          user_groups!inner(
-            groups(id, name)
-          )
-        `)
-        .order("name");
-        
-      if (groupsError) throw groupsError;
-
-      const { data: usersData, error: usersError } = await supabase
-        .from("users")
-        .select(`
-          *,
-          user_groups (
-            groups (
-              id,
-              name
-            )
-          )
-        `)
-        .order("name");
-        
-      if (usersError) throw usersError;
-
-      const { data: gatewaysData, error: gatewaysError } = await supabase
-        .from("gateways")
-        .select("*")
-        .order("name");
-
-      if (gatewaysError) throw gatewaysError;
-
-      const { data: routingRulesData, error: routingRulesError } = await supabase
-        .from("routing_rules")
-        .select("*")
-        .order("priority");
-
-      if (routingRulesError) throw routingRulesError;
-
-      const currentUser = await userService.getCurrentUser();
       
-      // Process users to include flat groups array for display
-      const processedUsers = (usersData as any[]).map(user => ({
+      const [groupsRes, usersRes, gatewaysRes, routingRulesRes] = await Promise.all([
+        supabase.from("groups").select("*").order("name"),
+        supabase
+          .from("users")
+          .select(`
+            *,
+            user_groups(
+              groups(id, name)
+            )
+          `)
+          .order("name"),
+        supabase.from("gateways").select("*").order("name"),
+        supabase.from("routing_rules").select("*").order("priority")
+      ]);
+
+      if (groupsRes.error) throw groupsRes.error;
+      if (usersRes.error) throw usersRes.error;
+      if (gatewaysRes.error) throw gatewaysRes.error;
+      if (routingRulesRes.error) throw routingRulesRes.error;
+
+      const groupsData = groupsRes.data as GroupNode[];
+      const gatewaysData = gatewaysRes.data as Gateway[];
+      const routingRulesData = routingRulesRes.data as RoutingRule[];
+
+      const processedUsers = usersRes.data.map((user: any) => ({
         ...user,
         groups: user.user_groups?.map((ug: any) => ug.groups?.name).filter(Boolean) || [],
         group_ids: user.user_groups?.map((ug: any) => ug.groups?.id).filter(Boolean) || []
       }));
 
-      setGroups(groupsData as GroupNode[]);
-      setAllGroups(groupsData as GroupNode[]);
-      setUsers(processedUsers as User[]);
-      setGateways(gatewaysData as Gateway[]);
-      setRoutingRules(routingRulesData as RoutingRule[]);
+      setGroups(groupsData);
+      setAllGroups(groupsData);
+      setUsers(processedUsers);
+      setGateways(gatewaysData);
+      setRoutingRules(routingRulesData);
       
+      const currentUser = await userService.getCurrentUser();
       if (currentUser) {
-        setRealUser(currentUser as User);
+        setRealUser(currentUser);
         if (!isDemoMode) {
-          setCurrentUser(currentUser as User);
+          setCurrentUser(currentUser);
         }
       }
     } catch (error: any) {
@@ -1117,7 +1099,7 @@ export default function AdminPage() {
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">{user.name}</TableCell>
                           <TableCell>{user.email}</TableCell>
-                          <TableCell>{user.phone_number || user.phone || "-"}</TableCell>
+                          <TableCell>{user.phone_number || "-"}</TableCell>
                           <TableCell>
                             {user.groups && user.groups.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
@@ -1136,15 +1118,13 @@ export default function AdminPage() {
                               <Switch 
                                 checked={user.on_duty || false} 
                                 onCheckedChange={async (checked) => {
-                                  // Optimistic update
                                   setUsers(users.map(u => u.id === user.id ? { ...u, on_duty: checked } : u));
                                   try {
                                     await userService.updateUser(user.id, { on_duty: checked });
                                     toast({ title: checked ? "Satt på vakt" : "Fjernet fra vakt" });
                                   } catch (error) {
-                                    console.error("Failed to update status", error);
+                                    console.error("Failed to update on_duty status", error);
                                     toast({ title: "Kunne ikke oppdatere status", variant: "destructive" });
-                                    // Revert on error
                                     setUsers(users.map(u => u.id === user.id ? { ...u, on_duty: !checked } : u));
                                   }
                                 }}
