@@ -3,27 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
-
-// Normalize phone to E.164 format or keep alphanumeric sender ID
-function normalizeE164(phone: string): string {
-  const trimmed = phone.trim();
-  const hasLetters = /[a-zA-Z]/.test(trimmed);
-  
-  if (hasLetters) {
-    // Alphanumeric sender (e.g., "DALANEKRAFT")
-    const cleaned = trimmed.replace(/[^A-Za-z0-9]/g, "");
-    return cleaned.substring(0, 11);
-  }
-  
-  // Numeric phone number - normalize to E.164
-  let normalized = trimmed.replace(/[^\d+]/g, "");
-  if (!normalized.startsWith("+")) {
-    normalized = "+" + normalized;
-  }
-  return normalized;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -36,312 +18,213 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { from_number, to_number, content, gateway_id, received_at, campaign_id, parent_message_id } = await req.json();
+    const {
+      from_number,
+      to_number,
+      content,
+      gateway_id,
+      received_at,
+      campaign_id,
+      parent_message_id,
+      target_group_id,
+    } = await req.json();
 
     if (!from_number || !to_number || !content || !gateway_id) {
       throw new Error("Missing required fields");
     }
 
-    // Normalize phone numbers
-    const normalizedFrom = normalizeE164(from_number);
-    const normalizedTo = normalizeE164(to_number);
-
     console.log("Processing inbound message:", {
-      original_from: from_number,
-      normalized_from: normalizedFrom,
-      original_to: to_number,
-      normalized_to: normalizedTo,
+      from_number,
+      to_number,
+      content,
       gateway_id,
-      campaign_id: campaign_id || "none",
-      parent_message_id: parent_message_id || "none",
+      target_group_id,
     });
 
-    // Get gateway info
     const { data: gateway, error: gatewayError } = await supabaseClient
       .from("gateways")
-      .select("id, name, phone_number, tenant_id, fallback_group_id")
+      .select("*")
       .eq("id", gateway_id)
       .single();
 
-    if (gatewayError) throw new Error(`Gateway lookup failed: ${gatewayError.message}`);
-    if (!gateway) throw new Error("Gateway not found");
-
-    // Find or create contact
-    let contact;
-    const { data: existingContact, error: contactLookupError } = await supabaseClient
-      .from("contacts")
-      .select("id, name, phone_number, group_id, tenant_id")
-      .eq("phone_number", normalizedFrom)
-      .eq("tenant_id", gateway.tenant_id)
-      .maybeSingle();
-
-    if (contactLookupError) {
-      throw new Error(`Contact lookup failed: ${contactLookupError.message}`);
+    if (gatewayError || !gateway) {
+      throw new Error(`Gateway not found: ${gateway_id}`);
     }
+
+    let contact = null;
+    const { data: existingContact } = await supabaseClient
+      .from("contacts")
+      .select("*")
+      .eq("phone", from_number)
+      .maybeSingle();
 
     if (existingContact) {
       contact = existingContact;
     } else {
-      // Create new contact
       const { data: newContact, error: contactError } = await supabaseClient
         .from("contacts")
         .insert({
-          phone_number: normalizedFrom,
-          name: normalizedFrom,
-          tenant_id: gateway.tenant_id,
-          group_id: null,
+          phone: from_number,
+          name: from_number,
+          group_id: target_group_id || gateway.fallback_group_id,
         })
         .select()
         .single();
 
-      if (contactError) throw new Error(`Contact creation failed: ${contactError.message}`);
+      if (contactError) {
+        throw new Error(`Failed to create contact: ${contactError.message}`);
+      }
       contact = newContact;
     }
 
-    const messageTimestamp = received_at || new Date().toISOString();
-    let resolvedGroupId;
-    let thread;
-    let isBulkResponse = false;
-    let detectedCampaignId = campaign_id || null;
-    let detectedParentMessageId = parent_message_id || null;
+    let threadId = null;
+    let resolvedGroupId = target_group_id || contact.group_id;
 
-    // ============================================================================
-    // CRITICAL FIX: Find the LAST OUTBOUND message to this contact
-    // Rule: Incoming message should ALWAYS be linked to last outbound message
-    // ============================================================================
-    
-    // === STEP 3: Find last outbound message to this contact (with campaign info) ===
-    const { data: lastOutboundMessage, error: outboundError } = await supabaseClient
-      .from("messages")
-      .select(`
-        id,
-        thread_id,
-        campaign_id,
-        resolved_group_id,
-        created_at,
-        message_threads(
-          id,
-          resolved_group_id,
-          contact_phone
-        ),
-        bulk_campaigns(
-          id,
-          reply_window_hours,
-          target_group_id
-        )
-      `)
-      .eq("direction", "outbound")
-      .eq("to_number", normalizedFrom)
-      .eq("gateway_id", gateway.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    if (parent_message_id) {
+      const { data: parentMsg } = await supabaseClient
+        .from("messages")
+        .select("thread_id, target_group_id")
+        .eq("id", parent_message_id)
+        .maybeSingle();
 
-    if (outboundError) {
-      console.error("Error finding last outbound:", outboundError);
-    }
-
-    console.log("Last outbound message:", lastOutboundMessage);
-
-    // === STEP 4: Link to outbound if within reply window ===
-    // Check if message is within the campaign's reply window (default 6 hours)
-    let shouldLinkToOutbound = false;
-    let replyWindowHours = 6; // Default
-
-    if (lastOutboundMessage) {
-      // Get reply window from campaign if available
-      if (lastOutboundMessage.bulk_campaigns?.reply_window_hours) {
-        replyWindowHours = lastOutboundMessage.bulk_campaigns.reply_window_hours;
-      }
-
-      const replyWindowMs = replyWindowHours * 60 * 60 * 1000;
-      const outboundTime = new Date(lastOutboundMessage.created_at).getTime();
-      const now = Date.now();
-      const timeDiff = now - outboundTime;
-
-      shouldLinkToOutbound = timeDiff <= replyWindowMs;
-
-      console.log("Reply window check:", {
-        replyWindowHours,
-        outboundTime: new Date(outboundTime).toISOString(),
-        now: new Date(now).toISOString(),
-        diffHours: (timeDiff / (60 * 60 * 1000)).toFixed(2),
-        shouldLink: shouldLinkToOutbound
-      });
-    }
-
-    let threadId: string | null = null;
-    let recipientGroupId: string | null = null;
-    let subjectLine: string | null = null;
-
-    // === STEP 4: Link to outbound if within 6 hours ===
-    if (shouldLinkToOutbound && lastOutboundMessage) {
-      // Found last outbound message - use its thread and group
-      console.log("✅ Found last outbound message:", lastOutboundMessage.id);
-      thread = lastOutboundMessage.message_threads;
-      resolvedGroupId = lastOutboundMessage.message_threads.resolved_group_id;
-      detectedCampaignId = lastOutboundMessage.campaign_id || detectedCampaignId;
-      detectedParentMessageId = lastOutboundMessage.id;
-
-      // Check if this was a bulk campaign message
-      if (lastOutboundMessage.campaign_id) {
-        console.log("🎯 This is a BULK CAMPAIGN RESPONSE");
-        isBulkResponse = true;
-
-        // Find bulk_recipient record and update status
-        const { data: bulkRecipient, error: bulkRecipientError } = await supabaseClient
-          .from("bulk_recipients")
-          .select("id, status")
-          .eq("campaign_id", lastOutboundMessage.campaign_id)
-          .eq("phone_number", normalizedFrom)
-          .maybeSingle();
-
-        if (bulkRecipient && bulkRecipient.status === "sent") {
-          await supabaseClient
-            .from("bulk_recipients")
-            .update({
-              status: "replied",
-              responded_at: messageTimestamp,
-            })
-            .eq("id", bulkRecipient.id);
-
-          console.log(`✅ Updated bulk_recipient ${bulkRecipient.id} to 'replied'`);
+      if (parentMsg) {
+        threadId = parentMsg.thread_id;
+        if (!target_group_id) {
+          resolvedGroupId = parentMsg.target_group_id;
         }
       }
-
-      // Update thread's last_message_at
-      await supabaseClient
-        .from("message_threads")
-        .update({ 
-          last_message_at: messageTimestamp,
-        })
-        .eq("id", thread.id);
-
-    } else {
-      // No previous outbound message - create new thread with routing rules
-      console.log("ℹ️ No previous outbound message found - applying routing rules");
-
-      resolvedGroupId = contact.group_id || gateway.fallback_group_id;
-
-      // Apply routing rules
-      const { data: rules, error: rulesError } = await supabaseClient
-        .from("routing_rules")
-        .select("id, priority, rule_type, pattern, target_group_id, gateway_id")
-        .eq("tenant_id", gateway.tenant_id)
-        .or(`gateway_id.eq.${gateway.id},gateway_id.is.null`)
-        .eq("is_active", true)
-        .order("priority", { ascending: true });
-
-      if (rulesError) throw new Error(`Routing rules fetch failed: ${rulesError.message}`);
-
-      if (rules && rules.length > 0) {
-        for (const rule of rules) {
-          let matches = false;
-          const pattern = (rule.pattern || "").toLowerCase();
-          const contentLower = content.toLowerCase();
-
-          switch (rule.rule_type) {
-            case "keyword":
-              matches = contentLower.includes(pattern);
-              break;
-            case "prefix":
-              matches = contentLower.startsWith(pattern);
-              break;
-            case "fallback":
-              matches = true;
-              break;
-          }
-
-          if (matches) {
-            resolvedGroupId = rule.target_group_id;
-            console.log(`Matched rule ${rule.id}, routing to group ${resolvedGroupId}`);
-            break;
-          }
-        }
-      }
-
-      if (!resolvedGroupId) {
-        throw new Error("No target group found - no routing rules matched and no fallback group configured");
-      }
-
-      // Create new thread
-      const { data: newThread, error: threadError } = await supabaseClient
-        .from("message_threads")
-        .insert({
-          tenant_id: gateway.tenant_id,
-          gateway_id: gateway.id,
-          contact_phone: normalizedFrom,
-          resolved_group_id: resolvedGroupId,
-          last_message_at: messageTimestamp,
-          is_resolved: false,
-        })
-        .select()
-        .single();
-
-      if (threadError) {
-        throw new Error(`Thread creation failed: ${threadError.message}`);
-      }
-      thread = newThread;
     }
 
-    // Create inbound message in the correct thread
+    if (!threadId) {
+      const { data: existingThread } = await supabaseClient
+        .from("messages")
+        .select("thread_id, target_group_id")
+        .eq("contact_id", contact.id)
+        .eq("direction", "outbound")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingThread) {
+        threadId = existingThread.thread_id;
+        if (!target_group_id) {
+          resolvedGroupId = existingThread.target_group_id;
+        }
+      } else {
+        if (!target_group_id) {
+          resolvedGroupId = contact.group_id || gateway.fallback_group_id;
+
+          const { data: routingRules } = await supabaseClient
+            .from("routing_rules")
+            .select("*")
+            .eq("is_active", true)
+            .order("priority", { ascending: true });
+
+          if (routingRules && routingRules.length > 0) {
+            for (const rule of routingRules) {
+              let matches = false;
+
+              if (rule.rule_type === "keyword") {
+                const keywords = rule.conditions?.keywords || [];
+                matches = keywords.some((kw: string) =>
+                  content.toLowerCase().includes(kw.toLowerCase())
+                );
+              } else if (rule.rule_type === "sender") {
+                const numbers = rule.conditions?.phone_numbers || [];
+                matches = numbers.includes(from_number);
+              } else if (rule.rule_type === "time") {
+                const now = new Date();
+                const currentHour = now.getHours();
+                const currentDay = now.getDay();
+                const { start_hour, end_hour, days_of_week } =
+                  rule.conditions || {};
+
+                const hourMatch =
+                  start_hour !== undefined &&
+                  end_hour !== undefined &&
+                  currentHour >= start_hour &&
+                  currentHour < end_hour;
+
+                const dayMatch =
+                  !days_of_week ||
+                  days_of_week.length === 0 ||
+                  days_of_week.includes(currentDay);
+
+                matches = hourMatch && dayMatch;
+              }
+
+              if (matches) {
+                resolvedGroupId = rule.target_group_id;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!resolvedGroupId) {
+          throw new Error(
+            "No target group found - no routing rules matched and no fallback group configured"
+          );
+        }
+
+        const { data: newThread, error: threadError } = await supabaseClient
+          .from("threads")
+          .insert({
+            contact_id: contact.id,
+            target_group_id: resolvedGroupId,
+            status: "open",
+            last_message_at: received_at || new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (threadError) {
+          throw new Error(`Failed to create thread: ${threadError.message}`);
+        }
+        threadId = newThread.id;
+      }
+    }
+
     const { data: message, error: messageError } = await supabaseClient
       .from("messages")
       .insert({
-        tenant_id: gateway.tenant_id,
-        thread_id: thread.id,
-        gateway_id: gateway.id,
-        group_id: resolvedGroupId,
+        thread_id: threadId,
+        contact_id: contact.id,
         direction: "inbound",
-        content: content,
-        status: "delivered",
-        from_number: normalizedFrom,
-        to_number: normalizedTo,
-        thread_key: `${normalizedFrom}-${gateway.id}`,
-        created_at: messageTimestamp,
-        campaign_id: detectedCampaignId,
-        parent_message_id: detectedParentMessageId,
+        content,
+        status: "received",
+        gateway_id,
+        target_group_id: resolvedGroupId,
+        from_number,
+        to_number,
+        received_at: received_at || new Date().toISOString(),
+        campaign_id: campaign_id || null,
+        parent_message_id: parent_message_id || null,
       })
       .select()
       .single();
 
-    if (messageError) throw new Error(`Message creation failed: ${messageError.message}`);
+    if (messageError) {
+      throw new Error(`Failed to create message: ${messageError.message}`);
+    }
 
-    console.log("✅ Message created successfully:", {
-      message_id: message.id,
-      thread_id: thread.id,
-      group_id: resolvedGroupId,
-      is_bulk_response: isBulkResponse,
-      campaign_id: detectedCampaignId,
-      parent_message_id: detectedParentMessageId,
+    await supabaseClient
+      .from("threads")
+      .update({
+        last_message_at: message.received_at || message.created_at,
+        status: "open",
+      })
+      .eq("id", threadId);
+
+    return new Response(JSON.stringify({ success: true, message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
     });
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message_id: message.id,
-        thread_id: thread.id,
-        contact_phone: normalizedFrom,
-        resolved_group_id: resolvedGroupId,
-        is_bulk_response: isBulkResponse,
-        campaign_id: detectedCampaignId,
-        parent_message_id: detectedParentMessageId,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
   } catch (error) {
     console.error("Error processing inbound message:", error);
-    return new Response(
-      JSON.stringify({
-        error: error.message || "Unknown error occurred",
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
 });
