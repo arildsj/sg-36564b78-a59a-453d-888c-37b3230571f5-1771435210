@@ -39,7 +39,7 @@ const navItems: NavItem[] = [
   { labelKey: "nav.sending", href: "/sending", icon: Send },
   { labelKey: "nav.print_to_sms", href: "/print-to-sms", icon: Printer },
   { labelKey: "nav.simulate", href: "/simulate", icon: PlayCircle },
-  { labelKey: "nav.admin", href: "/admin", icon: Shield, adminOnly: true },
+  { labelKey: "nav.admin", href: "/admin", icon: Shield },
   { labelKey: "nav.settings", href: "/settings", icon: Settings },
 ];
 
@@ -81,12 +81,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     setSidebarOpen(false);
   };
 
-  const filteredNavItems = navItems.filter(item => {
-    if (item.adminOnly) {
-      return userRole === "tenant_admin" || userRole === "system_admin";
-    }
-    return true;
-  });
+  const filteredNavItems = navItems;
 
   if (loading) {
     return (
