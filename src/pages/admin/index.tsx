@@ -160,12 +160,14 @@ export default function AdminPage() {
   const [showCreateUserDialog, setShowCreateUserDialog] = useState(false);
   const [showEditUserDialog, setShowEditUserDialog] = useState(false);
   const [showCreateGatewayDialog, setShowCreateGatewayDialog] = useState(false);
+  const [showEditGatewayDialog, setShowEditGatewayDialog] = useState(false);
   const [showCreateRoutingRuleDialog, setShowCreateRoutingRuleDialog] = useState(false);
   const [showAuditDialog, setShowAuditDialog] = useState(false);
 
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<GroupNode | null>(null);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [editGateway, setEditGateway] = useState<Gateway | null>(null);
   
   const [groupMembers, setGroupMembers] = useState<User[]>([]);
   const [groupContacts, setGroupContacts] = useState<Contact[]>([]);
@@ -544,6 +546,52 @@ export default function AdminPage() {
       toast({ 
         title: "Feil ved opprettelse", 
         description: error.message || "Kunne ikke opprette gateway", 
+        variant: "destructive" 
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleEditGateway = (gateway: Gateway) => {
+    setEditGateway(gateway);
+    setShowEditGatewayDialog(true);
+  };
+
+  const handleUpdateGateway = async () => {
+    if (!editGateway) return;
+    
+    try {
+      setCreating(true);
+
+      if (!editGateway.name.trim() || !editGateway.base_url.trim()) {
+        toast({ title: "Mangler info", description: "Navn og URL må fylles ut", variant: "destructive" });
+        return;
+      }
+
+      if (!editGateway.phone_number.trim()) {
+        toast({ title: "Mangler info", description: "Telefonnummer må fylles ut", variant: "destructive" });
+        return;
+      }
+
+      await gatewayService.updateGateway(editGateway.id, {
+        name: editGateway.name.trim(),
+        base_url: editGateway.base_url.trim(),
+        api_key: editGateway.api_key?.trim() || null,
+        status: editGateway.status,
+        is_default: editGateway.is_default,
+        phone_number: editGateway.phone_number.trim(),
+      });
+
+      setEditGateway(null);
+      setShowEditGatewayDialog(false);
+      toast({ title: "Gateway oppdatert" });
+      await loadData();
+    } catch (error: any) {
+      console.error("Failed to update gateway:", error);
+      toast({ 
+        title: "Feil ved oppdatering", 
+        description: error.message || "Kunne ikke oppdatere gateway", 
         variant: "destructive" 
       });
     } finally {
@@ -1124,7 +1172,11 @@ export default function AdminPage() {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex gap-2 justify-end">
-                                  <Button variant="ghost" size="sm">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => handleEditGateway(gateway)}
+                                  >
                                     Rediger
                                   </Button>
                                   <Button
@@ -1669,6 +1721,119 @@ export default function AdminPage() {
             </Button>
             <Button onClick={handleCreateGateway} disabled={creating}>
               {creating ? "Legger til..." : "Legg til gateway"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditGatewayDialog} onOpenChange={(open) => {
+        setShowEditGatewayDialog(open);
+        if (!open) {
+          setEditGateway(null);
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Rediger gateway</DialogTitle>
+            <DialogDescription>
+              Oppdater gateway-konfigurasjonen.
+            </DialogDescription>
+          </DialogHeader>
+          {editGateway && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-gateway-name">Navn *</Label>
+                <Input
+                  id="edit-gateway-name"
+                  placeholder="F.eks. FairGateway Produksjon"
+                  value={editGateway.name}
+                  onChange={(e) => setEditGateway({ ...editGateway, name: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-gateway-phone">Telefonnummer *</Label>
+                <Input
+                  id="edit-gateway-phone"
+                  placeholder="+47..."
+                  value={editGateway.phone_number}
+                  onChange={(e) => setEditGateway({ ...editGateway, phone_number: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Telefonnummeret tilknyttet denne gatewayen
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-gateway-url">Base URL *</Label>
+                <Input
+                  id="edit-gateway-url"
+                  placeholder="https://gateway.example.com"
+                  value={editGateway.base_url}
+                  onChange={(e) => setEditGateway({ ...editGateway, base_url: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  URL til FairGateway API
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-gateway-api-key">API-nøkkel (valgfri)</Label>
+                <Input
+                  id="edit-gateway-api-key"
+                  type="password"
+                  placeholder="La stå tom for å beholde eksisterende"
+                  value={editGateway.api_key || ""}
+                  onChange={(e) => setEditGateway({ ...editGateway, api_key: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  API-nøkkel brukes for sikker autentisering
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="edit-gateway-active">Gateway status</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Kun aktive gateways brukes for sending
+                    </p>
+                  </div>
+                  <Switch
+                    id="edit-gateway-active"
+                    checked={editGateway.status === 'active'}
+                    onCheckedChange={(checked) => setEditGateway({ 
+                      ...editGateway, 
+                      status: checked ? 'active' : 'inactive' 
+                    })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="edit-gateway-default">Standard gateway</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Brukes når ingen spesifikk gateway er valgt
+                    </p>
+                  </div>
+                  <Switch
+                    id="edit-gateway-default"
+                    checked={editGateway.is_default}
+                    onCheckedChange={(checked) => setEditGateway({ 
+                      ...editGateway, 
+                      is_default: checked 
+                    })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditGatewayDialog(false)} disabled={creating}>
+              Avbryt
+            </Button>
+            <Button onClick={handleUpdateGateway} disabled={creating}>
+              {creating ? "Oppdaterer..." : "Lagre endringer"}
             </Button>
           </DialogFooter>
         </DialogContent>
