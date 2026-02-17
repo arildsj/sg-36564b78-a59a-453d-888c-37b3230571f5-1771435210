@@ -131,7 +131,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   // Sending
   "sending.title": { no: "Send Melding", en: "Send Message", de: "Nachricht senden", fr: "Envoyer un message", es: "Enviar mensaje", it: "Invia messaggio", pl: "Wyślij wiadomość" },
-  "sending.subtitle": { no: "Send meldinger til grupper eller individuelle kontakter", en: "Send messages to groups or individual contacts", de: "Nachrichten an Gruppen oder einzelne Kontakte senden", fr: "Envoyer des messages à des groupes ou des contacts individuels", es: "Enviar mensajes a grupos o contactos individuales", it: "Invia messaggi a gruppi o contatti individuali", pl: "Wysyłaj wiadomości do grup lub indywidualnych kontaktów" },
+  "sending.subtitle": { no: "Send meldinger til grupper eller individuelle kontakter", en: "Send messages to groups or individual contacts", de: "Nachrichten an Gruppen oder einzelne Kontakte senden", fr: "Envoyer des messages à des groupes ou des contacts individuels", es: "Enviar mensajes a grupos o contactos individuales", it: "Invia messaggi a singoli, gruppi o contatti", pl: "Wysyłaj wiadomości do osób, grup lub kontaktów" },
   "sending.compose": { no: "Skriv melding", en: "Compose message", de: "Nachricht verfassen", fr: "Rédiger un message", es: "Redactar mensaje", it: "Componi messaggio", pl: "Utwórz wiadomość" },
   "sending.to": { no: "Til", en: "To", de: "An", fr: "À", es: "Para", it: "A", pl: "Do" },
   "sending.select_recipients": { no: "Velg mottakere", en: "Select recipients", de: "Empfänger auswählen", fr: "Sélectionner des destinataires", es: "Seleccionar destinatarios", it: "Seleziona destinatari", pl: "Wybierz odbiorców" },
@@ -225,20 +225,18 @@ const translations: Record<string, Record<Language, string>> = {
   "admin.cancel": { no: "Avbryt", en: "Cancel", de: "Abbrechen", fr: "Annuler", es: "Cancelar", it: "Annulla", pl: "Anuluj" },
   "admin.save": { no: "Lagre", en: "Save", de: "Speichern", fr: "Enregistrer", es: "Guardar", it: "Salva", pl: "Zapisz" },
   "admin.create": { no: "Opprett", en: "Create", de: "Erstellen", fr: "Créer", es: "Crear", it: "Crea", pl: "Utwórz" },
-
-  // Login
-  "login.description": { no: "Logg inn for å få tilgang til SeMSe", en: "Log in to access SeMSe", de: "Melden Sie sich an, um auf SeMSe zuzugreifen", fr: "Connectez-vous pour accéder à SeMSe", es: "Inicie sesión para acceder a SeMSe", it: "Accedi per accedere a SeMSe", pl: "Zaloguj się, aby uzyskać dostęp do SeMSe" },
-  "login.email_placeholder": { no: "din@epost.no", en: "your@email.com", de: "ihre@email.de", fr: "votre@email.fr", es: "tu@email.es", it: "tuo@email.it", pl: "twoj@email.pl" },
-  "login.password_placeholder": { no: "Skriv inn passord", en: "Enter password", de: "Passwort eingeben", fr: "Entrez le mot de passe", es: "Ingrese contraseña", it: "Inserisci password", pl: "Wprowadź hasło" },
-  "login.button": { no: "Logg inn", en: "Log in", de: "Anmelden", fr: "Se connecter", es: "Iniciar sesión", it: "Accedi", pl: "Zaloguj się" },
-  "login.logging_in": { no: "Logger inn...", en: "Logging in...", de: "Anmelden...", fr: "Connexion...", es: "Iniciando sesión...", it: "Accesso...", pl: "Logowanie..." },
-  "login.no_account": { no: "Har du ikke konto? Kontakt administrator", en: "Don't have an account? Contact administrator", de: "Haben Sie kein Konto? Kontaktieren Sie den Administrator", fr: "Vous n'avez pas de compte? Contactez l'administrateur", es: "¿No tienes cuenta? Contacta al administrador", it: "Non hai un account? Contatta l'amministratore", pl: "Nie masz konta? Skontaktuj się z administratorem" },
-  "login.forgot_password": { no: "Glemt passord? Kontakt administrator", en: "Forgot password? Contact administrator", de: "Passwort vergessen? Kontaktieren Sie den Administrator", fr: "Mot de passe oublié? Contactez l'administrateur", es: "¿Olvidó su contraseña? Contacte al administrador", it: "Password dimenticata? Contatta l'amministratore", pl: "Zapomniałeś hasła? Skontaktuj się z administratorem" },
-
-  // Errors
-  "error.generic": { no: "En feil oppstod. Prøv igjen.", en: "An error occurred. Please try again.", de: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.", fr: "Une erreur s'est produite. Veuillez réessayer.", es: "Ocurrió un error. Por favor, inténtelo de nuevo.", it: "Si è verificato un errore. Riprova.", pl: "Wystąpił błąd. Spróbuj ponownie." },
-  "error.email_not_confirmed": { no: "E-posten er ikke bekreftet. Sjekk innboksen din.", en: "Email not confirmed. Check your inbox.", de: "E-Mail nicht bestätigt. Überprüfen Sie Ihren Posteingang.", fr: "E-mail non confirmé. Vérifiez votre boîte de réception.", es: "Correo electrónico no confirmado. Revise su bandeja de entrada.", it: "Email non confermata. Controlla la tua casella di posta.", pl: "E-mail nie został potwierdzony. Sprawdź swoją skrzynkę odbiorczą." },
-  "error.invalid_credentials": { no: "Ugyldig e-post eller passord", en: "Invalid email or password", de: "Ungültige E-Mail oder Passwort", fr: "E-mail ou mot de passe invalide", es: "Correo electrónico o contraseña no válidos", it: "Email o password non validi", pl: "Nieprawidłowy e-mail lub hasło" },
+  "admin.role": { no: "Rolle", en: "Role", de: "Rolle", fr: "Rôle", es: "Rol", it: "Ruolo", pl: "Rola" },
+  "admin.tenant_admin": { no: "Tenant-admin", en: "Tenant Admin", de: "Tenant-Admin", fr: "Admin tenant", es: "Admin tenant", it: "Admin tenant", pl: "Admin najemcy" },
+  "admin.group_admin": { no: "Gruppe-admin", en: "Group Admin", de: "Gruppen-Admin", fr: "Admin groupe", es: "Admin grupo", it: "Admin gruppo", pl: "Admin grupy" },
+  "admin.operator": { no: "Operatør", en: "Operator", de: "Operator", fr: "Opérateur", es: "Operador", it: "Operatore", pl: "Operator" },
+  "admin.group_membership": { no: "Gruppetilhørighet", en: "Group membership", de: "Gruppenmitgliedschaft", fr: "Appartenance au groupe", es: "Membresía del grupo", it: "Appartenenza al gruppo", pl: "Członkostwo w grupie" },
+  "admin.no_operational_groups": { no: "Ingen operasjonelle grupper tilgjengelig", en: "No operational groups available", de: "Keine operativen Gruppen verfügbar", fr: "Aucun groupe opérationnel disponible", es: "Sin grupos operativos disponibles", it: "Nessun gruppo operativo disponibile", pl: "Brak dostępnych grup operacyjnych" },
+  "admin.fill_required_fields": { no: "Vennligst fyll ut alle obligatoriske felt", en: "Please fill out all required fields", de: "Bitte füllen Sie alle Pflichtfelder aus", fr: "Veuillez remplir tous les champs obligatoires", es: "Por favor complete todos los campos obligatorios", it: "Si prega di compilare tutti i campi obbligatori", pl: "Proszę wypełnić wszystkie wymagane pola" },
+  "admin.user_created": { no: "Bruker opprettet", en: "User created", de: "Benutzer erstellt", fr: "Utilisateur créé", es: "Usuario creado", it: "Utente creato", pl: "Użytkownik utworzony" },
+  "admin.demo_mode": { no: "Demo-modus", en: "Demo mode", de: "Demo-Modus", fr: "Mode démo", es: "Modo demo", it: "Modalità demo", pl: "Tryb demo" },
+  "admin.demo_description": { no: "Du ser nå systemet som", en: "You are now viewing the system as", de: "Sie sehen das System jetzt als", fr: "Vous voyez maintenant le système en tant que", es: "Ahora está viendo el sistema como", it: "Stai ora visualizzando il sistema come", pl: "Teraz widzisz system jako" },
+  "admin.exit_demo": { no: "Avslutt demo som", en: "Exit demo as", de: "Demo beenden als", fr: "Quitter la démo en tant que", es: "Salir de la demo como", it: "Esci dalla demo come", pl: "Wyjdź z demo jako" },
+  "admin.active_user": { no: "Aktiv bruker", en: "Active user", de: "Aktiver Benutzer", fr: "Utilisateur actif", es: "Usuario activo", it: "Utente attivo", pl: "Aktywny użytkownik" },
 };
 
 export function LanguageProvider({ children }: { children: ReactNode }) {

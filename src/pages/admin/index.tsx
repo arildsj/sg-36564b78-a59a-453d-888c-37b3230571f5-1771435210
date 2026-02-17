@@ -1513,46 +1513,58 @@ export default function AdminPage() {
                 <Select
                   value={newUser.role}
                   onValueChange={(value) =>
-                    setNewUser({ ...newUser, role: value as "tenant_admin" | "group_admin" | "operator" })
+                    setNewUser({ ...newUser, role: value as typeof newUser.role })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="tenant_admin">{t("admin.tenant_admin")}</SelectItem>
-                    <SelectItem value="group_admin">{t("admin.group_admin")}</SelectItem>
-                    <SelectItem value="operator">{t("admin.operator")}</SelectItem>
+                    <SelectItem value="tenant_admin">
+                      {t("admin.tenant_admin")}
+                    </SelectItem>
+                    <SelectItem value="group_admin">
+                      {t("admin.group_admin")}
+                    </SelectItem>
+                    <SelectItem value="operator">
+                      {t("admin.operator")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="user-password">Passord *</Label>
+              <Input
+                id="user-password"
+                type="password"
+                placeholder="Skriv inn passord"
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label>{t("admin.group_membership")}</Label>
-              <div className="border rounded-lg p-4 space-y-2 max-h-48 overflow-y-auto">
-                {allGroups.filter(g => g.kind === 'operational').length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t("admin.no_operational_groups")}</p>
+              <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto">
+                {groups.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("admin.no_operational_groups")}
+                  </p>
                 ) : (
-                  allGroups
-                    .filter(g => g.kind === 'operational')
-                    .map((group) => (
-                      <label key={group.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded">
-                        <input
-                          type="checkbox"
-                          checked={newUser.groupIds.includes(group.id)}
-                          onChange={() => {
-                            const currentGroupIds = newUser.groupIds;
-                            const newGroupIds = currentGroupIds.includes(group.id)
-                              ? currentGroupIds.filter(id => id !== group.id)
-                              : [...currentGroupIds, group.id];
-                            setNewUser({ ...newUser, groupIds: newGroupIds });
-                          }}
-                          className="rounded border-gray-300"
-                        />
-                        <span className="text-sm font-medium">{group.name}</span>
-                      </label>
-                    ))
+                  groups.map((group) => (
+                    <label key={group.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded">
+                      <input
+                        type="checkbox"
+                        id={`group-${group.id}`}
+                        checked={newUser.groupIds.includes(group.id)}
+                        onChange={() => toggleUserGroupSelection(group.id)}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="text-sm font-medium">{group.name}</span>
+                    </label>
+                  ))
                 )}
               </div>
             </div>
