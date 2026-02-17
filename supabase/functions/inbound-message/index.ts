@@ -114,14 +114,15 @@ serve(async (req) => {
         if (!target_group_id) {
           resolvedGroupId = contact.group_id || gateway.fallback_group_id;
 
-          const { data: routingRules } = await supabaseClient
+          // Apply routing rules only if no target_group_id provided
+          const { data: rules, error: rulesError } = await supabaseClient
             .from("routing_rules")
             .select("*")
             .eq("is_active", true)
             .order("priority", { ascending: true });
 
-          if (routingRules && routingRules.length > 0) {
-            for (const rule of routingRules) {
+          if (rules && rules.length > 0) {
+            for (const rule of rules) {
               let matches = false;
 
               if (rule.rule_type === "keyword") {
