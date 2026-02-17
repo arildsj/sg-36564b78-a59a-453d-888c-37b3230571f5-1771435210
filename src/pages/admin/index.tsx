@@ -92,6 +92,7 @@ type User = Database["public"]["Tables"]["users"]["Row"] & {
   group_ids?: string[];
   user_groups?: { groups: { id: string; name: string } | null }[];
   on_duty?: boolean;
+  phone?: string;
 };
 
 interface Gateway {
@@ -1136,10 +1137,7 @@ export default function AdminPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => {
-                                  setEditingUser(user);
-                                  setShowDeleteDialog(true);
-                                }}
+                                onClick={() => handleDeleteUser(user.id)}
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
