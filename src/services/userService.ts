@@ -25,7 +25,7 @@ export const userService = {
     }));
   },
 
-  async updateUser(userId: string, updates: {
+  async updateUser(userId: string, updates: Partial<{
     name: string;
     email: string;
     phone: string;
@@ -33,42 +33,45 @@ export const userService = {
     group_ids: string[];
     status?: string;
     on_duty?: boolean;
-  }) {
-    // 1. Update User Profile
-    const { error: profileError } = await supabase
-      .from("users")
-      .update({
-        name: updates.name,
-        email: updates.email,
-        phone_number: updates.phone,
-        role: updates.role,
-        status: updates.status,
-        on_duty: updates.on_duty
-      })
-      .eq("id", userId);
+  }>) {
+    // 1. Prepare User Profile updates
+    const profileUpdates: any = {};
+    if (updates.name !== undefined) profileUpdates.name = updates.name;
+    if (updates.email !== undefined) profileUpdates.email = updates.email;
+    if (updates.phone !== undefined) profileUpdates.phone_number = updates.phone;
+    if (updates.role !== undefined) profileUpdates.role = updates.role;
+    if (updates.status !== undefined) profileUpdates.status = updates.status;
+    if (updates.on_duty !== undefined) profileUpdates.on_duty = updates.on_duty;
 
-    if (profileError) throw new Error(`Failed to update user profile: ${profileError.message}`);
+    if (Object.keys(profileUpdates).length > 0) {
+      const { error: profileError } = await supabase
+        .from("users")
+        .update(profileUpdates)
+        .eq("id", userId);
 
-    // 2. Update Group Memberships
-    // Simple strategy: Remove all and re-add (transaction would be better but RLS handles it per row)
-    
-    // Get existing to minimize churn if needed, but delete-insert is robust for full sync
-    const { error: deleteError } = await supabase
-      .from("group_memberships")
-      .delete()
-      .eq("user_id", userId);
+      if (profileError) throw new Error(`Failed to update user profile: ${profileError.message}`);
+    }
 
-    if (deleteError) throw new Error(`Failed to clear existing groups: ${deleteError.message}`);
-
-    if (updates.group_ids && updates.group_ids.length > 0) {
-      const { error: insertError } = await supabase
+    // 2. Update Group Memberships only if group_ids is provided
+    if (updates.group_ids !== undefined) {
+      // Get existing to minimize churn if needed, but delete-insert is robust for full sync
+      const { error: deleteError } = await supabase
         .from("group_memberships")
-        .insert(updates.group_ids.map(gid => ({
-          user_id: userId,
-          group_id: gid
-        })));
+        .delete()
+        .eq("user_id", userId);
 
-      if (insertError) throw new Error(`Failed to add new groups: ${insertError.message}`);
+      if (deleteError) throw new Error(`Failed to clear existing groups: ${deleteError.message}`);
+
+      if (updates.group_ids.length > 0) {
+        const { error: insertError } = await supabase
+          .from("group_memberships")
+          .insert(updates.group_ids.map(gid => ({
+            user_id: userId,
+            group_id: gid
+          })));
+
+        if (insertError) throw new Error(`Failed to add new groups: ${insertError.message}`);
+      }
     }
   },
 

@@ -82,6 +82,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/contexts/LanguageProvider";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Group extends GroupNode {
   children?: Group[];
@@ -91,8 +92,9 @@ type User = Database["public"]["Tables"]["users"]["Row"] & {
   groups?: string[];
   group_ids?: string[];
   user_groups?: { groups: { id: string; name: string } | null }[];
-  on_duty?: boolean;
   phone?: string;
+  phone_number?: string;
+  on_duty?: boolean;
 };
 
 interface Gateway {
@@ -213,41 +215,71 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [
-        groupsData, 
-        usersData, 
-        gatewaysData, 
-        routingRulesData,
-        currentUserData
-      ] = await Promise.all([
-        groupService.getAllGroups(),
-        userService.getAllUsers(),
-        gatewayService.getAllGateways(),
-        routingRuleService.getRoutingRules(),
-        userService.getCurrentUser()
-      ]);
+      const { data: groupsData, error: groupsError } = await supabase
+        .from("groups")
+        .select(`
+          *,
+          user_groups!inner(
+            groups(id, name)
+          )
+        `)
+        .order("name");
+        
+      if (groupsError) throw groupsError;
 
-      console.log("Loaded groups:", groupsData);
-      console.log("Loaded current user:", currentUserData);
+      const { data: usersData, error: usersError } = await supabase
+        .from("users")
+        .select(`
+          *,
+          user_groups (
+            groups (
+              id,
+              name
+            )
+          )
+        `)
+        .order("name");
+        
+      if (usersError) throw usersError;
+
+      const { data: gatewaysData, error: gatewaysError } = await supabase
+        .from("gateways")
+        .select("*")
+        .order("name");
+
+      if (gatewaysError) throw gatewaysError;
+
+      const { data: routingRulesData, error: routingRulesError } = await supabase
+        .from("routing_rules")
+        .select("*")
+        .order("priority");
+
+      if (routingRulesError) throw routingRulesError;
+
+      const currentUser = await userService.getCurrentUser();
       
+      // Process users to include flat groups array for display
+      const processedUsers = (usersData as any[]).map(user => ({
+        ...user,
+        groups: user.user_groups?.map((ug: any) => ug.groups?.name).filter(Boolean) || [],
+        group_ids: user.user_groups?.map((ug: any) => ug.groups?.id).filter(Boolean) || []
+      }));
+
       setGroups(groupsData as GroupNode[]);
       setAllGroups(groupsData as GroupNode[]);
-      setUsers(usersData as User[]);
+      setUsers(processedUsers as User[]);
       setGateways(gatewaysData as Gateway[]);
       setRoutingRules(routingRulesData as RoutingRule[]);
       
-      if (currentUserData) {
-        setRealUser(currentUserData as User);
+      if (currentUser) {
+        setRealUser(currentUser as User);
         if (!isDemoMode) {
-          setCurrentUser(currentUserData as User);
-          console.log("Set currentUser to:", currentUserData);
+          setCurrentUser(currentUser as User);
         }
-      } else {
-        console.error("No current user data loaded!");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to load data:", error);
-      toast({ title: "Feil ved lastning av data", variant: "destructive" });
+      toast({ title: "Feil ved lastning av data", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
       setLoadingUsers(false);
@@ -466,7 +498,7 @@ export default function AdminPage() {
       await userService.updateUser(editUser.id, {
         name: editUser.name,
         email: editUser.email,
-        phone: (editUser as any).phone_number || "",
+        phone: (editUser as any).phone_number || editUser.phone || "",
         role: editUser.role as any,
         group_ids: editUser.group_ids || [],
         status: editUser.status
@@ -1085,7 +1117,7 @@ export default function AdminPage() {
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">{user.name}</TableCell>
                           <TableCell>{user.email}</TableCell>
-                          <TableCell>{user.phone || "-"}</TableCell>
+                          <TableCell>{user.phone_number || user.phone || "-"}</TableCell>
                           <TableCell>
                             {user.groups && user.groups.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
@@ -1104,11 +1136,11 @@ export default function AdminPage() {
                               <Switch 
                                 checked={user.on_duty || false} 
                                 onCheckedChange={async (checked) => {
-                                  // Update local state immediately for responsiveness
+                                  // Optimistic update
                                   setUsers(users.map(u => u.id === user.id ? { ...u, on_duty: checked } : u));
                                   try {
                                     await userService.updateUser(user.id, { on_duty: checked });
-                                    toast({ title: "Status oppdatert" });
+                                    toast({ title: checked ? "Satt på vakt" : "Fjernet fra vakt" });
                                   } catch (error) {
                                     console.error("Failed to update status", error);
                                     toast({ title: "Kunne ikke oppdatere status", variant: "destructive" });
@@ -1118,12 +1150,12 @@ export default function AdminPage() {
                                 }}
                               />
                               <span className="text-sm text-muted-foreground">
-                                {user.on_duty ? t("admin.on_duty") : "Av"}
+                                {user.on_duty ? "På" : "Av"}
                               </span>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline">{user.role}</Badge>
+                            <Badge variant={getRoleBadgeVariant(user.role)}>{getRoleLabel(user.role)}</Badge>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">

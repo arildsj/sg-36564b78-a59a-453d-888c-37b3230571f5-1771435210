@@ -1358,6 +1358,7 @@ export type Database = {
           email: string | null
           id: string
           name: string
+          on_duty: boolean | null
           phone_number: string | null
           role: string
           status: string
@@ -1370,6 +1371,7 @@ export type Database = {
           email?: string | null
           id?: string
           name: string
+          on_duty?: boolean | null
           phone_number?: string | null
           role: string
           status?: string
@@ -1382,6 +1384,7 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string
+          on_duty?: boolean | null
           phone_number?: string | null
           role?: string
           status?: string
