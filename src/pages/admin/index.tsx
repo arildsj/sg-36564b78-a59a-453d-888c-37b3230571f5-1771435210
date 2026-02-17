@@ -1089,9 +1089,9 @@ export default function AdminPage() {
                           <TableCell>
                             {user.groups && user.groups.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
-                                {user.groups.map((g: any) => (
-                                  <Badge key={g.id} variant="secondary">
-                                    {g.name}
+                                {user.groups.map((g: any, i: number) => (
+                                  <Badge key={i} variant="secondary" className="text-xs">
+                                    {typeof g === 'string' ? g : g.name}
                                   </Badge>
                                 ))}
                               </div>
@@ -1100,30 +1100,30 @@ export default function AdminPage() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <Switch
-                              checked={user.on_duty || false}
-                              onCheckedChange={async (checked) => {
-                                try {
-                                  // Use any to bypass strict type check for now since on_duty might be a custom field
-                                  await userService.updateUser(user.id, { on_duty: checked } as any);
-                                  await loadData();
-                                  toast({
-                                    title: checked ? "Brukeren er nå på vakt" : "Brukeren er ikke lenger på vakt",
-                                  });
-                                } catch (error: any) {
-                                  toast({
-                                    title: "Feil ved oppdatering",
-                                    description: error.message,
-                                    variant: "destructive",
-                                  });
-                                }
-                              }}
-                            />
+                            <div className="flex items-center space-x-2">
+                              <Switch 
+                                checked={user.on_duty || false} 
+                                onCheckedChange={async (checked) => {
+                                  // Update local state immediately for responsiveness
+                                  setUsers(users.map(u => u.id === user.id ? { ...u, on_duty: checked } : u));
+                                  try {
+                                    await userService.updateUser(user.id, { on_duty: checked });
+                                    toast({ title: "Status oppdatert" });
+                                  } catch (error) {
+                                    console.error("Failed to update status", error);
+                                    toast({ title: "Kunne ikke oppdatere status", variant: "destructive" });
+                                    // Revert on error
+                                    setUsers(users.map(u => u.id === user.id ? { ...u, on_duty: !checked } : u));
+                                  }
+                                }}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                {user.on_duty ? t("admin.on_duty") : "Av"}
+                              </span>
+                            </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={user.role === "tenant_admin" ? "default" : "secondary"}>
-                              {user.role === "tenant_admin" ? "Tenant-admin" : "Bruker"}
-                            </Badge>
+                            <Badge variant="outline">{user.role}</Badge>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">

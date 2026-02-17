@@ -45,6 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 import { groupService } from "@/services/groupService";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageProvider";
+import { useRouter } from "next/router";
 
 type Group = {
   id: string;
@@ -53,6 +54,7 @@ type Group = {
 };
 
 export default function ContactsPage() {
+  const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
   const [contacts, setContacts] = useState<Contact[]>([]);

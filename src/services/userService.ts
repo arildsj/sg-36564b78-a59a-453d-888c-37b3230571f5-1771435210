@@ -32,6 +32,7 @@ export const userService = {
     role: "tenant_admin" | "group_admin" | "member";
     group_ids: string[];
     status?: string;
+    on_duty?: boolean;
   }) {
     // 1. Update User Profile
     const { error: profileError } = await supabase
@@ -41,7 +42,8 @@ export const userService = {
         email: updates.email,
         phone_number: updates.phone,
         role: updates.role,
-        status: updates.status
+        status: updates.status,
+        on_duty: updates.on_duty
       })
       .eq("id", userId);
 
