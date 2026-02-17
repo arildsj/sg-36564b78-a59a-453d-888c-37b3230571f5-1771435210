@@ -480,7 +480,10 @@ export default function AdminPage() {
     try {
       setCreating(true);
 
-      console.log("Creating gateway with data:", newGateway);
+      console.log("=== Gateway Creation Debug ===");
+      console.log("1. Current user:", currentUser);
+      console.log("2. Tenant ID:", currentUser?.tenant_id);
+      console.log("3. New gateway data:", newGateway);
 
       if (!newGateway.name.trim() || !newGateway.base_url.trim()) {
         toast({ title: "Mangler info", description: "Navn og URL må fylles ut", variant: "destructive" });
@@ -493,7 +496,8 @@ export default function AdminPage() {
       }
 
       if (!currentUser?.tenant_id) {
-        toast({ title: "Feil", description: "Mangler tenant ID", variant: "destructive" });
+        console.error("4. ERROR: Missing tenant_id. Current user:", currentUser);
+        toast({ title: "Feil", description: "Mangler tenant ID. Prøv å laste siden på nytt.", variant: "destructive" });
         return;
       }
 
@@ -507,11 +511,11 @@ export default function AdminPage() {
         tenant_id: currentUser.tenant_id,
       };
 
-      console.log("Calling gatewayService.createGateway with:", gatewayData);
+      console.log("5. Calling gatewayService.createGateway with:", gatewayData);
 
       const result = await gatewayService.createGateway(gatewayData);
 
-      console.log("Gateway created successfully:", result);
+      console.log("6. Gateway created successfully:", result);
 
       setNewGateway({
         name: "",
@@ -525,7 +529,13 @@ export default function AdminPage() {
       toast({ title: "Gateway opprettet" });
       await loadData();
     } catch (error: any) {
-      console.error("Failed to create gateway:", error);
+      console.error("7. Failed to create gateway:", error);
+      console.error("8. Error details:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
       toast({ 
         title: "Feil ved opprettelse", 
         description: error.message || "Kunne ikke opprette gateway", 
