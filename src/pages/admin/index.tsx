@@ -480,8 +480,15 @@ export default function AdminPage() {
     try {
       setCreating(true);
 
+      console.log("Creating gateway with data:", newGateway);
+
       if (!newGateway.name.trim() || !newGateway.base_url.trim()) {
         toast({ title: "Mangler info", description: "Navn og URL må fylles ut", variant: "destructive" });
+        return;
+      }
+
+      if (!newGateway.phone_number.trim()) {
+        toast({ title: "Mangler info", description: "Telefonnummer må fylles ut", variant: "destructive" });
         return;
       }
 
@@ -490,15 +497,21 @@ export default function AdminPage() {
         return;
       }
 
-      await gatewayService.createGateway({
-        name: newGateway.name,
-        base_url: newGateway.base_url,
-        api_key: newGateway.api_key || null,
+      const gatewayData = {
+        name: newGateway.name.trim(),
+        base_url: newGateway.base_url.trim(),
+        api_key: newGateway.api_key.trim() || null,
         status: newGateway.is_active ? 'active' : 'inactive',
         is_default: newGateway.is_default,
-        phone_number: newGateway.phone_number,
+        phone_number: newGateway.phone_number.trim(),
         tenant_id: currentUser.tenant_id,
-      });
+      };
+
+      console.log("Calling gatewayService.createGateway with:", gatewayData);
+
+      const result = await gatewayService.createGateway(gatewayData);
+
+      console.log("Gateway created successfully:", result);
 
       setNewGateway({
         name: "",
@@ -513,7 +526,11 @@ export default function AdminPage() {
       await loadData();
     } catch (error: any) {
       console.error("Failed to create gateway:", error);
-      toast({ title: "Feil ved opprettelse", description: error.message, variant: "destructive" });
+      toast({ 
+        title: "Feil ved opprettelse", 
+        description: error.message || "Kunne ikke opprette gateway", 
+        variant: "destructive" 
+      });
     } finally {
       setCreating(false);
     }
