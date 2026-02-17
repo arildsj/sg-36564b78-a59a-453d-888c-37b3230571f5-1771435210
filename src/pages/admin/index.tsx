@@ -90,11 +90,11 @@ interface Group extends GroupNode {
 
 type User = Database["public"]["Tables"]["users"]["Row"] & {
   groups?: string[];
-  group_ids?: string[];
-  user_groups?: { groups: { id: string; name: string } | null }[];
+  group_memberships?: { groups: { id: string; name: string } | null }[];
   phone?: string;
   phone_number?: string;
   on_duty?: boolean;
+  group_ids?: string[];
 };
 
 interface Gateway {
@@ -189,9 +189,9 @@ export default function AdminPage() {
     name: "",
     email: "",
     phone: "",
-    role: "member",
+    role: "operator" as "tenant_admin" | "group_admin" | "operator",
     password: "",
-    group_ids: [] as string[]
+    groupIds: [] as string[],
   });
 
   const [newGateway, setNewGateway] = useState({
@@ -216,52 +216,37 @@ export default function AdminPage() {
     try {
       setLoading(true);
       
-      const [groupsRes, usersRes, gatewaysRes, routingRulesRes] = await Promise.all([
+      const [groupsRes, usersRes, gatewaysRes] = await Promise.all([
         supabase.from("groups").select("*").order("name"),
         supabase
           .from("users")
           .select(`
             *,
-            user_groups(
+            group_memberships(
               groups(id, name)
             )
           `)
           .order("name"),
-        supabase.from("gateways").select("*").order("name"),
-        supabase.from("routing_rules").select("*").order("priority")
+        supabase.from("gateways").select("*").order("name")
       ]);
 
       if (groupsRes.error) throw groupsRes.error;
       if (usersRes.error) throw usersRes.error;
       if (gatewaysRes.error) throw gatewaysRes.error;
-      if (routingRulesRes.error) throw routingRulesRes.error;
 
-      const groupsData = groupsRes.data as GroupNode[];
-      const gatewaysData = gatewaysRes.data as Gateway[];
-      const routingRulesData = routingRulesRes.data as RoutingRule[];
+      setGroups(groupsRes.data || []);
+      setGateways(gatewaysRes.data || []);
 
-      const processedUsers = usersRes.data.map((user: any) => ({
+      const usersWithGroups = (usersRes.data || []).map((user: any) => ({
         ...user,
-        groups: user.user_groups?.map((ug: any) => ug.groups?.name).filter(Boolean) || [],
-        group_ids: user.user_groups?.map((ug: any) => ug.groups?.id).filter(Boolean) || []
+        groups: user.group_memberships
+          ?.map((gm: any) => gm.groups?.name)
+          .filter(Boolean) || []
       }));
 
-      setGroups(groupsData);
-      setAllGroups(groupsData);
-      setUsers(processedUsers);
-      setGateways(gatewaysData);
-      setRoutingRules(routingRulesData);
-      
-      const currentUser = await userService.getCurrentUser();
-      if (currentUser) {
-        setRealUser(currentUser);
-        if (!isDemoMode) {
-          setCurrentUser(currentUser);
-        }
-      }
+      setUsers(usersWithGroups);
     } catch (error: any) {
-      console.error("Failed to load data:", error);
-      toast({ title: "Feil ved lastning av data", description: error.message, variant: "destructive" });
+      toast({ title: "Feil ved lasting av data", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
       setLoadingUsers(false);
@@ -422,36 +407,62 @@ export default function AdminPage() {
 
   const handleCreateUser = async () => {
     try {
-      setCreating(true);
-
       if (!newUser.name || !newUser.email || !newUser.password) {
-        toast({ title: "Mangler info", description: "Navn, e-post og passord må fylles ut", variant: "destructive" });
+        toast({
+          title: t("common.error"),
+          description: t("admin.fill_required_fields"),
+          variant: "destructive",
+        });
         return;
       }
 
-      await userService.createUser({
-        name: newUser.name,
+      setCreating(true);
+
+      const user = await userService.createUser({
         email: newUser.email,
-        phone: newUser.phone,
-        role: newUser.role as any,
         password: newUser.password,
-        group_ids: newUser.group_ids
+        name: newUser.name,
+        role: newUser.role as any,
+        phone_number: newUser.phone || undefined,
       });
 
+      // Add user to selected groups
+      if (newUser.groupIds.length > 0 && user) {
+        const { error: membershipError } = await supabase
+          .from("group_memberships")
+          .insert(
+            newUser.groupIds.map((groupId) => ({
+              user_id: user.id,
+              group_id: groupId,
+            }))
+          );
+
+        if (membershipError) {
+          console.error("Failed to add group memberships:", membershipError);
+        }
+      }
+
+      toast({
+        title: t("common.success"),
+        description: t("admin.user_created"),
+      });
+
+      setShowCreateDialog(false);
       setNewUser({
         name: "",
         email: "",
         phone: "",
-        role: "member",
+        role: "operator",
         password: "",
-        group_ids: []
+        groupIds: [],
       });
-      setShowCreateUserDialog(false);
-      toast({ title: "Bruker opprettet" });
-      await loadData();
+      loadData();
     } catch (error: any) {
-      console.error("Failed to create user:", error);
-      toast({ title: "Feil ved opprettelse", description: error.message, variant: "destructive" });
+      toast({
+        title: t("common.error"),
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setCreating(false);
     }
@@ -716,9 +727,9 @@ export default function AdminPage() {
   const toggleUserGroupSelection = (groupId: string) => {
     setNewUser((prev) => ({
       ...prev,
-      group_ids: prev.group_ids.includes(groupId)
-        ? prev.group_ids.filter((id) => id !== groupId)
-        : [...prev.group_ids, groupId],
+      groupIds: prev.groupIds.includes(groupId)
+        ? prev.groupIds.filter((id) => id !== groupId)
+        : [...prev.groupIds, groupId],
     }));
   };
 
@@ -1054,9 +1065,9 @@ export default function AdminPage() {
                       name: "",
                       email: "",
                       phone: "",
-                      role: "member",
+                      role: "operator",
                       password: "",
-                      group_ids: []
+                      groupIds: []
                     });
                     setShowCreateUserDialog(true);
                   }}
@@ -1451,9 +1462,9 @@ export default function AdminPage() {
             name: "",
             email: "",
             phone: "",
-            role: "member",
+            role: "operator",
             password: "",
-            group_ids: []
+            groupIds: []
           });
         }
       }}>
@@ -1498,36 +1509,30 @@ export default function AdminPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="user-role">Rolle *</Label>
-                <select
-                  id="user-role"
-                  className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                <Label htmlFor="role">{t("admin.role")} *</Label>
+                <Select
                   value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  onValueChange={(value) =>
+                    setNewUser({ ...newUser, role: value as "tenant_admin" | "group_admin" | "operator" })
+                  }
                 >
-                  <option value="member">Medlem</option>
-                  <option value="group_admin">Gruppe-admin</option>
-                  <option value="tenant_admin">Tenant-admin</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tenant_admin">{t("admin.tenant_admin")}</SelectItem>
+                    <SelectItem value="group_admin">{t("admin.group_admin")}</SelectItem>
+                    <SelectItem value="operator">{t("admin.operator")}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="user-password">Passord *</Label>
-              <Input
-                id="user-password"
-                type="password"
-                placeholder="Minst 6 tegn"
-                value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Gruppetilhørighet</Label>
+              <Label>{t("admin.group_membership")}</Label>
               <div className="border rounded-lg p-4 space-y-2 max-h-48 overflow-y-auto">
                 {allGroups.filter(g => g.kind === 'operational').length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Ingen operasjonelle grupper tilgjengelig</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.no_operational_groups")}</p>
                 ) : (
                   allGroups
                     .filter(g => g.kind === 'operational')
@@ -1535,8 +1540,14 @@ export default function AdminPage() {
                       <label key={group.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded">
                         <input
                           type="checkbox"
-                          checked={newUser.group_ids.includes(group.id)}
-                          onChange={() => toggleUserGroupSelection(group.id)}
+                          checked={newUser.groupIds.includes(group.id)}
+                          onChange={() => {
+                            const currentGroupIds = newUser.groupIds;
+                            const newGroupIds = currentGroupIds.includes(group.id)
+                              ? currentGroupIds.filter(id => id !== group.id)
+                              : [...currentGroupIds, group.id];
+                            setNewUser({ ...newUser, groupIds: newGroupIds });
+                          }}
                           className="rounded border-gray-300"
                         />
                         <span className="text-sm font-medium">{group.name}</span>
