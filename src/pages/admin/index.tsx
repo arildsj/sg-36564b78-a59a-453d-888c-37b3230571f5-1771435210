@@ -1073,36 +1073,81 @@ export default function AdminPage() {
                           {t("common.loading")}
                         </TableCell>
                       </TableRow>
-                    ) : users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>{user.name || "-"}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{(user as any).phone_number || "-"}</TableCell>
-                        <TableCell>
-                          {user.user_groups?.map((ug) => ug.groups?.name).filter(Boolean).join(", ") || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded text-xs ${user.on_duty ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
-                            {user.on_duty ? t("common.yes") : t("common.no")}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getRoleBadgeVariant(user.role)}>
-                            {getRoleLabel(user.role)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2 justify-end">
-                            <Button variant="outline" size="sm" onClick={() => handleOpenEditUser(user)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDeleteUser(user.id)}>
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
+                    ) : users.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          Ingen brukere funnet
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>{user.phone || "-"}</TableCell>
+                          <TableCell>
+                            {user.groups && user.groups.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {user.groups.map((g: any) => (
+                                  <Badge key={g.id} variant="secondary">
+                                    {g.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Switch
+                              checked={user.on_duty || false}
+                              onCheckedChange={async (checked) => {
+                                try {
+                                  // Use any to bypass strict type check for now since on_duty might be a custom field
+                                  await userService.updateUser(user.id, { on_duty: checked } as any);
+                                  await loadData();
+                                  toast({
+                                    title: checked ? "Brukeren er nå på vakt" : "Brukeren er ikke lenger på vakt",
+                                  });
+                                } catch (error: any) {
+                                  toast({
+                                    title: "Feil ved oppdatering",
+                                    description: error.message,
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.role === "tenant_admin" ? "default" : "secondary"}>
+                              {user.role === "tenant_admin" ? "Tenant-admin" : "Bruker"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenEditUser(user)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingUser(user);
+                                  setShowDeleteDialog(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -1339,7 +1384,7 @@ export default function AdminPage() {
               
               <div className="space-y-2">
                 <Label htmlFor="edit-group-kind">Type</Label>
-                <Badge variant={editingGroup.kind === "operational" ? "default" : "secondary"}>
+                <Badge variant={editingGroup.kind === "operational" ? "default" : "secondary"} className="text-xs">
                   {editingGroup.kind === "operational" ? "Operasjonell" : "Strukturell"}
                 </Badge>
                 <p className="text-xs text-muted-foreground">
@@ -1383,7 +1428,7 @@ export default function AdminPage() {
               Avbryt
             </Button>
             <Button onClick={handleUpdateGroup} disabled={creating}>
-              {creating ? "Lagrer..." : "Lagre endringer"}
+              {creating ? "Oppdaterer..." : "Lagre endringer"}
             </Button>
           </DialogFooter>
         </DialogContent>
