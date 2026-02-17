@@ -406,6 +406,12 @@ export default function ContactsPage() {
     }
   };
 
+  const handleSearch = () => {
+    // Search is already handled by onChange and filteredContacts
+    // This function can be used for explicit search actions if needed
+    // or just removed if the button is purely decorative/submit
+  };
+
   const handleViewHistory = (contact: Contact) => {
     // Navigate to inbox with filter or show history dialog
     // For now, just a placeholder or navigate to inbox
@@ -450,111 +456,110 @@ export default function ContactsPage() {
             </Button>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("contacts.search_filter")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="mb-4">
+              <Label htmlFor="search" className="text-sm font-medium">
+                {t("contacts.search_filter")}
+              </Label>
+              <div className="flex gap-2 mt-2">
                 <Input
+                  id="search"
+                  type="text"
                   placeholder={t("contacts.search_placeholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1"
                 />
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" onClick={handleSearch}>
                   <Search className="h-4 w-4" />
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
                 {filteredContacts.length} {t("contacts.count")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-lg overflow-hidden">
-                {filteredContacts.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    {t("contacts.no_found")}
-                  </div>
-                ) : (
-                  <>
-                    {/* Desktop table view - scrollable on mobile */}
-                    <div className="rounded-md border overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>{t("contacts.name")}</TableHead>
-                            <TableHead>{t("contacts.phone")}</TableHead>
-                            <TableHead>{t("contacts.email")}</TableHead>
-                            <TableHead>{t("contacts.groups")}</TableHead>
-                            <TableHead>{t("contacts.created")}</TableHead>
-                            <TableHead className="text-right">{t("contacts.actions")}</TableHead>
+              </h3>
+            </div>
+
+            <div className="border rounded-lg overflow-hidden">
+              {filteredContacts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {t("contacts.no_found")}
+                </div>
+              ) : (
+                <>
+                  {/* Desktop table view - scrollable on mobile */}
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("contacts.name")}</TableHead>
+                          <TableHead>{t("contacts.phone")}</TableHead>
+                          <TableHead>{t("contacts.email")}</TableHead>
+                          <TableHead>{t("contacts.groups")}</TableHead>
+                          <TableHead>{t("contacts.created")}</TableHead>
+                          <TableHead className="text-right">{t("contacts.actions")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredContacts.map((contact) => (
+                          <TableRow key={contact.id}>
+                            <TableCell className="font-medium">
+                              {contact.name || "-"}
+                            </TableCell>
+                            <TableCell>{contact.phone}</TableCell>
+                            <TableCell>{contact.email || "-"}</TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {contact.groups && contact.groups.length > 0 ? (
+                                  contact.groups.map((g: any) => (
+                                    <Badge key={g.id} variant="secondary">
+                                      {g.name}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {contact.created_at ? new Date(contact.created_at).toLocaleDateString("nb-NO") : "-"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenEdit(contact)}
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleViewHistory(contact)}
+                                >
+                                  <MessageSquare className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => confirmDelete(contact)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredContacts.map((contact) => (
-                            <TableRow key={contact.id}>
-                              <TableCell className="font-medium">
-                                {contact.name || "-"}
-                              </TableCell>
-                              <TableCell>{contact.phone}</TableCell>
-                              <TableCell>{contact.email || "-"}</TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap gap-1">
-                                  {contact.groups && contact.groups.length > 0 ? (
-                                    contact.groups.map((g: any) => (
-                                      <Badge key={g.id} variant="secondary">
-                                        {g.name}
-                                      </Badge>
-                                    ))
-                                  ) : (
-                                    <span className="text-muted-foreground">-</span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {contact.created_at ? new Date(contact.created_at).toLocaleDateString("nb-NO") : "-"}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleOpenEdit(contact)}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleViewHistory(contact)}
-                                  >
-                                    <MessageSquare className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => confirmDelete(contact)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </AppLayout>
 
