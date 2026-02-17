@@ -865,8 +865,11 @@ export default function AdminPage() {
                       <SelectTrigger className="w-[280px] h-9">
                         <SelectValue>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{currentUser?.name}</span>
-                            <Badge variant={getRoleBadgeVariant(currentUser?.role || "")} className="text-xs">
+                            <div className="flex flex-col items-start">
+                              <span className="font-medium">{currentUser?.name}</span>
+                              <span className="text-xs text-muted-foreground">{currentUser?.email}</span>
+                            </div>
+                            <Badge variant={getRoleBadgeVariant(currentUser?.role || "")} className="text-xs ml-auto">
                               {getRoleLabel(currentUser?.role || "")}
                             </Badge>
                           </div>
@@ -876,8 +879,11 @@ export default function AdminPage() {
                         {users.map((user) => (
                           <SelectItem key={user.id} value={user.id}>
                             <div className="flex items-center gap-2">
-                              <span>{user.name}</span>
-                              <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
+                              <div className="flex flex-col items-start">
+                                <span className="font-medium">{user.name}</span>
+                                <span className="text-xs text-muted-foreground">{user.email}</span>
+                              </div>
+                              <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs ml-2">
                                 {getRoleLabel(user.role)}
                               </Badge>
                             </div>
