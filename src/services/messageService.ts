@@ -847,5 +847,21 @@ export const messageService = {
     }
 
     return Array.from(threadMap.values());
+  },
+
+  async getRecentMessages(limit: number) {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("direction", "inbound")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error("Error fetching recent messages:", error);
+      return [];
+    }
+
+    return data || [];
   }
 };

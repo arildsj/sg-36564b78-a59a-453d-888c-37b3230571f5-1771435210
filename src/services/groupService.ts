@@ -1,32 +1,33 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
+export type Group = {
+  id: string;
+  name: string;
+  kind: "operational" | "structural" | "administrative" | "billing";
+  parent_group_id: string | null;
+  parent_id?: string | null; // Added for UI compatibility
+  gateway_id?: string | null;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  escalation_enabled: boolean;
+  escalation_timeout_minutes: number;
+  min_on_duty_count: number;
+  active_members?: number; // From view
+  children?: Group[];
+};
+
 export interface GroupNode {
   id: string;
   name: string;
-  kind: string;
-  description?: string | null;
-  gateway_id?: string | null;
-  effective_gateway_id?: string | null;
-  gateway_name?: string | null;
-  is_gateway_inherited?: boolean;
-  parent_id?: string | null; // For UI component compatibility
-  parent_group_id?: string | null; // Database column
-  parent_name?: string | null;
-  total_members?: number;
+  kind: "operational" | "structural";
   active_members?: number;
-  tenant_id?: string;
-  created_at?: string;
-  updated_at?: string;
-  escalation_enabled?: boolean;
-  escalation_timeout_minutes?: number;
-  min_on_duty_count?: number;
+  children?: GroupNode[];
 }
 
-export type Group = GroupNode;
-
 export const groupService = {
-  async getGroups(): Promise<GroupNode[]> {
+  async getGroups(): Promise<Group[]> {
     const { data, error } = await supabase
       .from("group_admin_view")
       .select("*")
@@ -38,14 +39,14 @@ export const groupService = {
     return (data || []).map(group => ({
       ...group,
       parent_id: group.parent_group_id // Ensure compatibility
-    })) as GroupNode[];
+    })) as Group[];
   },
 
-  async getAllGroups(): Promise<GroupNode[]> {
+  async getAllGroups(): Promise<Group[]> {
     return this.getGroups();
   },
 
-  async getOperationalGroups(): Promise<GroupNode[]> {
+  async getOperationalGroups(): Promise<Group[]> {
     const { data, error } = await supabase
       .from("group_admin_view")
       .select("*")
@@ -57,7 +58,25 @@ export const groupService = {
     return (data || []).map(group => ({
       ...group,
       parent_id: group.parent_group_id
-    })) as GroupNode[];
+    })) as Group[];
+  },
+
+  async getGroupHierarchy(): Promise<GroupNode[]> {
+    const groups = await this.getGroups();
+    
+    const buildHierarchy = (parentId: string | null = null): GroupNode[] => {
+      return groups
+        .filter(g => g.parent_group_id === parentId)
+        .map(g => ({
+          id: g.id,
+          name: g.name,
+          kind: (g.kind === "operational" || g.kind === "structural") ? g.kind : "structural",
+          active_members: g.active_members,
+          children: buildHierarchy(g.id)
+        }));
+    };
+
+    return buildHierarchy(null);
   },
 
   async createGroup(group: {

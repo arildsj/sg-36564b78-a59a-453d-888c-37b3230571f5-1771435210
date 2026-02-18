@@ -465,7 +465,22 @@ export default function AdminPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <GroupHierarchy groups={groups} />
+                  <GroupHierarchy groups={(() => {
+                    const buildHierarchy = (parentId: string | null = null): any[] => {
+                      return groups
+                        .filter(g => g.parent_group_id === (parentId === "none" ? null : parentId))
+                        .map(g => ({
+                          id: g.id,
+                          name: g.name,
+                          kind: g.kind as "operational" | "structural",
+                          parent_id: g.parent_group_id,
+                          description: (g as any).description,
+                          member_count: g.active_members,
+                          children: buildHierarchy(g.id)
+                        }));
+                    };
+                    return buildHierarchy(null);
+                  })()} />
                 </CardContent>
               </Card>
 

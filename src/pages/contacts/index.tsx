@@ -62,6 +62,7 @@ export default function ContactsPage() {
   const { t } = useLanguage();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   
@@ -118,13 +119,13 @@ export default function ContactsPage() {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return;
 
-      const { data: profile } = await supabase
-        .from("users")
+      const { data: profile } = await db
+        .from("user_profiles")
         .select("role")
-        .eq("auth_user_id", user.user.id)
+        .eq("id", user.user.id)
         .single();
 
-      setIsAdmin(profile?.role === "tenant-admin");
+      setIsAdmin(profile?.role === "tenant_admin");
     } catch (error) {
       console.error("Failed to check admin status:", error);
     }

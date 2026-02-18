@@ -54,7 +54,7 @@ import {
   type MessageFilter,
   type ExtendedMessageThread
 } from "@/services/messageService";
-import { groupService, type GroupNode } from "@/services/groupService";
+import { groupService, type Group } from "@/services/groupService";
 import { bulkService, type BulkRecipient } from "@/services/bulkService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -133,7 +133,7 @@ export default function InboxPage() {
   const [sendingProgress, setSendingProgress] = useState({ sent: 0, total: 0 });
   
   // Restored missing state variables
-  const [groups, setGroups] = useState<GroupNode[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>("all");
