@@ -95,11 +95,12 @@ export default function SendingPage() {
         .filter(g => selectedGroups.includes(g.id))
         .reduce((acc, g) => acc + (g.active_members || 0), 0);
 
-      const campaign = await bulkService.createCampaign({
+      const campaign = await bulkService.createBulkCampaign({
         name: `Melding til ${selectedGroups.length} grupper`,
-        message_body: message,
+        message_template: message,
         total_recipients: totalRecipients, // This is just an estimate
-        scheduled_at: scheduleDate ? new Date(scheduleDate).toISOString() : undefined,
+        // scheduled_at: scheduleDate ? new Date(scheduleDate).toISOString() : undefined, // Schema doesn't have scheduled_at yet in types above, checking service
+        status: scheduleDate ? "scheduled" : "draft"
       });
 
       // Add groups to campaign context (if we had a table for it)

@@ -62,7 +62,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const profile = await userService.getCurrentUser();
+      const profile = await userService.getCurrentUserProfile();
       setUserRole(profile?.role || null);
     } catch (error) {
       console.error("Auth check failed:", error);

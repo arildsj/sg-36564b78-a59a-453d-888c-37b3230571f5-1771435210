@@ -139,7 +139,15 @@ export default function ContactsPage() {
       ]);
       setContacts(contactsData as Contact[]);
       setGroups(groupsData as Group[]);
-    } catch (error) {
+
+      // Fetch Users (for assignment)
+      const { data: usersData, error: usersError } = await db
+        .from("user_profiles")
+        .select("id, full_name, email");
+      
+      if (usersError) throw usersError;
+      setUsers(usersData || []);
+    } catch (error: any) {
       console.error("Failed to load contacts:", error);
     } finally {
       setLoading(false);

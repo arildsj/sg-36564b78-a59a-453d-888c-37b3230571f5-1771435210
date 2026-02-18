@@ -487,5 +487,28 @@ export const bulkService = {
     }
 
     return reminderCampaign;
+  },
+
+  /**
+   * Manually trigger a created campaign
+   */
+  async triggerCampaign(campaignId: string) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+
+    const response = await fetch("/api/bulk-campaign", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ campaign_id: campaignId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to trigger campaign");
+    }
+    return true;
   }
 };
