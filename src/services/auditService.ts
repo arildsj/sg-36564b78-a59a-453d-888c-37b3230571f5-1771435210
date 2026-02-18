@@ -62,6 +62,7 @@ export const auditService = {
 
       const { error } = await supabase.from("audit_log").insert({
         tenant_id,
+        scope: "tenant",
         actor_user_id: user.user?.id,
         action_type: entry.action,
         entity_type: entry.entity_type,

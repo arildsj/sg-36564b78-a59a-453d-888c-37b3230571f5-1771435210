@@ -23,8 +23,10 @@ export interface GroupNode {
   min_on_duty_count?: number;
 }
 
+export type Group = GroupNode;
+
 export const groupService = {
-  async getAllGroups(): Promise<GroupNode[]> {
+  async getGroups(): Promise<GroupNode[]> {
     const { data, error } = await supabase
       .from("group_admin_view")
       .select("*")
@@ -37,6 +39,10 @@ export const groupService = {
       ...group,
       parent_id: group.parent_group_id // Ensure compatibility
     })) as GroupNode[];
+  },
+
+  async getAllGroups(): Promise<GroupNode[]> {
+    return this.getGroups();
   },
 
   async getOperationalGroups(): Promise<GroupNode[]> {
@@ -70,7 +76,7 @@ export const groupService = {
       name: group.name,
       kind: group.kind,
       description: group.description,
-      parent_group_id: group.parent_id || null, // Map parent_id -> parent_group_id
+      parent_group_id: group.parent_id === "none" ? null : group.parent_id,
       gateway_id: group.gateway_id || null,
       tenant_id: group.tenant_id,
       escalation_enabled: group.escalation_enabled,
