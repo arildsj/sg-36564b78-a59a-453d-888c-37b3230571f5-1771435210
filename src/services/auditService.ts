@@ -62,11 +62,11 @@ export const auditService = {
 
       const { error } = await supabase.from("audit_log").insert({
         tenant_id,
-        user_id: user.user?.id,
-        action: entry.action,
+        actor_user_id: user.user?.id,
+        action_type: entry.action,
         entity_type: entry.entity_type,
         entity_id: entry.entity_id,
-        changes: entry.details,
+        metadata: entry.details,
       });
 
       if (error) {

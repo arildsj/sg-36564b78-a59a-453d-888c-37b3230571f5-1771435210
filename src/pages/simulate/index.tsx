@@ -26,6 +26,9 @@ import { cn, formatPhoneNumber } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { contactService } from "@/services/contactService";
 
+// CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
+const db = supabase as any;
+
 type Gateway = { id: string; name: string; phone_number: string };
 type Group = { 
   id: string; 
@@ -62,7 +65,7 @@ export default function SimulatePage() {
   const loadData = async () => {
     try {
       // 1. Fetch Gateways
-      const { data: gatewaysData } = await supabase
+      const { data: gatewaysData } = await db
         .from("gateways")
         .select("*")
         .eq("status", "active");
@@ -70,7 +73,7 @@ export default function SimulatePage() {
       if (gatewaysData) setGateways(gatewaysData);
 
       // 2. Fetch Groups
-      const { data: groupsData } = await supabase
+      const { data: groupsData } = await db
         .from("groups")
         .select("*, gateway:gateways!groups_gateway_id_fkey(*)")
         .eq("kind", "operational")
@@ -90,7 +93,7 @@ export default function SimulatePage() {
       }
 
       // 4. Fetch Messages
-      const { data: messagesData } = await supabase
+      const { data: messagesData } = await db
         .from("messages")
         .select("*")
         .order("created_at", { ascending: false })
@@ -146,7 +149,7 @@ export default function SimulatePage() {
         console.log("🔍 Checking for bulk campaign in group:", selectedGroup);
         
         // Find latest bulk campaign for this group
-        const { data: campaign, error: campaignError } = await supabase
+        const { data: campaign, error: campaignError } = await db
           .from("bulk_campaigns")
           .select("id, name")
           .eq("source_group_id", selectedGroup)
@@ -166,7 +169,7 @@ export default function SimulatePage() {
           const normalizedFrom = fromPhone.trim().replace(/[\s\-\(\)]/g, "");
           const phoneWithPlus = normalizedFrom.startsWith("+") ? normalizedFrom : `+${normalizedFrom}`;
           
-          const { data: parentMsg, error: parentError } = await supabase
+          const { data: parentMsg, error: parentError } = await db
             .from("messages")
             .select("id")
             .eq("campaign_id", campaign.id)
@@ -201,7 +204,7 @@ export default function SimulatePage() {
       });
 
       // Call inbound-message Edge Function to simulate incoming message
-      const { data, error } = await supabase.functions.invoke("inbound-message", {
+      const { data, error } = await db.functions.invoke("inbound-message", {
         body: {
           gateway_id: gatewayId,
           from_number: fromPhone.trim(),

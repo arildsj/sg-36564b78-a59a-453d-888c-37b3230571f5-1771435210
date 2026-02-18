@@ -13,7 +13,8 @@ import { Send, Users, MessageSquare, AlertCircle, CheckCircle2, User } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { messageService } from "@/services/messageService";
 import { contactService } from "@/services/contactService";
-import { bulkService } from "@/services/bulkService";
+import { bulkService, type BulkCampaign } from "@/services/bulkService";
+import { groupService, type Group } from "@/services/groupService";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -39,6 +40,9 @@ import {
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageProvider";
+
+// CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
+const db = supabase as any;
 
 type Group = { 
   id: string; 

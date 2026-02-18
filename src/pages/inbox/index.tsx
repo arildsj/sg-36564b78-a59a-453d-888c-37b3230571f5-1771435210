@@ -99,7 +99,10 @@ const formatMessageTime = (dateString: string) => {
   }).format(date);
 };
 
-export default function Inbox() {
+// CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
+const db = supabase as any;
+
+export default function InboxPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"all" | "fallback" | "escalated">("all");
@@ -163,7 +166,7 @@ export default function Inbox() {
     loadGroups();
     loadThreads();
 
-    const channel = supabase
+    const channel = db
       .channel("inbox_updates")
       .on(
         "postgres_changes",
@@ -185,7 +188,7 @@ export default function Inbox() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
   }, [activeTab, selectedGroupFilter]);
 
@@ -250,7 +253,7 @@ export default function Inbox() {
         setBulkRecipients(details.recipients);
 
         // Fetch inbound responses
-        const { data: responses } = await supabase
+        const { data: responses } = await db
           .from("messages")
           .select("*")
           .eq("campaign_id", threadId)
@@ -260,7 +263,7 @@ export default function Inbox() {
         setBulkResponses((responses as any) || []);
 
         // Fetch outbound reminders separately
-        const { data: reminders } = await supabase
+        const { data: reminders } = await db
           .from("messages")
           .select("*")
           .eq("campaign_id", threadId)
@@ -415,13 +418,13 @@ export default function Inbox() {
       }
 
       // Get current user for tenant_id
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await db.auth.getUser();
       if (!user) {
         throw new Error("Du må være logget inn");
       }
 
       // Fetch tenant_id from users table
-      const { data: userData } = await supabase
+      const { data: userData } = await db
         .from("users")
         .select("tenant_id")
         .eq("id", user.id)
@@ -434,7 +437,7 @@ export default function Inbox() {
       // selectedThread represents the campaign in this view
       const campaignId = selectedThread?.id;
       
-      const { data: campaign } = await supabase
+      const { data: campaign } = await db
         .from("bulk_campaigns")
         .select("source_group_id")
         .eq("id", campaignId)
@@ -457,7 +460,7 @@ export default function Inbox() {
       }
 
       // Fetch a valid gateway ID for the tenant
-      const { data: gateway } = await supabase
+      const { data: gateway } = await db
         .from("gateways")
         .select("id, phone_number")
         .eq("tenant_id", tenantId)
@@ -489,7 +492,7 @@ export default function Inbox() {
          // If not, we can't create a thread.
          if (!gateway) {
             // Try one more fallback: fetch ANY gateway
-            const { data: anyGateway } = await supabase.from("gateways").select("id, phone_number").limit(1).maybeSingle();
+            const { data: anyGateway } = await db.from("gateways").select("id, phone_number").limit(1).maybeSingle();
             if (anyGateway) {
                 gatewayId = anyGateway.id;
                 systemPhoneNumber = anyGateway.phone_number;
@@ -500,7 +503,7 @@ export default function Inbox() {
       }
 
       // Check if thread exists for this contact
-      const { data: existingThread } = await supabase
+      const { data: existingThread } = await db
         .from("message_threads")
         .select("id")
         .eq("tenant_id", tenantId)
@@ -513,7 +516,7 @@ export default function Inbox() {
       // Create thread if it doesn't exist
       if (!threadId) {
         // Note: Removed contact_name as it caused type errors
-        const { data: newThread, error: threadError } = await supabase
+        const { data: newThread, error: threadError } = await db
           .from("message_threads")
           .insert({
             contact_phone: phoneWithPlus,
@@ -531,7 +534,7 @@ export default function Inbox() {
       }
 
       // Create the simulated inbound message
-      const { data: newMessage, error: messageError } = await supabase
+      const { data: newMessage, error: messageError } = await db
         .from("messages")
         .insert({
           thread_key: phoneWithPlus,
@@ -552,7 +555,7 @@ export default function Inbox() {
       }
 
       // Update bulk_recipient with response info
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from("bulk_recipients")
         .update({
           responded_at: new Date().toISOString(),
@@ -596,12 +599,12 @@ export default function Inbox() {
     
     try {
       const recipientsToSend = bulkRecipients.filter(r => selectedForReminder.includes(r.id));
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await db.auth.getUser();
       
       if (!user) throw new Error("Not authenticated");
 
       // Fetch tenant_id
-      const { data: userData } = await supabase
+      const { data: userData } = await db
         .from("users")
         .select("tenant_id")
         .eq("id", user.id)
@@ -611,7 +614,7 @@ export default function Inbox() {
       if (!tenantId) throw new Error("Tenant ID not found");
 
       // Get campaign info
-      const { data: campaign } = await supabase
+      const { data: campaign } = await db
         .from("bulk_campaigns")
         .select("source_group_id")
         .eq("id", selectedThreadId)
@@ -624,7 +627,7 @@ export default function Inbox() {
       
       if (campaign.source_group_id) {
         // First try to get gateway from source group
-        const { data: group } = await supabase
+        const { data: group } = await db
           .from("groups")
           .select("gateway_id")
           .eq("id", campaign.source_group_id)
@@ -632,7 +635,7 @@ export default function Inbox() {
           
         if (group?.gateway_id) {
             gatewayId = group.gateway_id;
-            const { data: gateway } = await supabase
+            const { data: gateway } = await db
                 .from("gateways")
                 .select("phone_number")
                 .eq("id", group.gateway_id)
@@ -643,7 +646,7 @@ export default function Inbox() {
 
       if (!gatewayId) {
           // Fallback to default gateway if group has none
-           const { data: defaultGateway } = await supabase
+           const { data: defaultGateway } = await db
             .from("gateways")
             .select("id, phone_number")
             .eq("tenant_id", tenantId)
@@ -658,7 +661,7 @@ export default function Inbox() {
       
       // Fallback to ANY gateway if still missing
       if (!gatewayId) {
-           const { data: anyGateway } = await supabase
+           const { data: anyGateway } = await db
             .from("gateways")
             .select("id, phone_number")
             .eq("tenant_id", tenantId)
@@ -675,7 +678,7 @@ export default function Inbox() {
 
       const updates = recipientsToSend.map(async (recipient) => {
         // Create outbound reminder message
-        const { error: msgError } = await supabase.from("messages").insert({
+        const { error: msgError } = await db.from("messages").insert({
           tenant_id: tenantId,
           thread_key: recipient.phone_number,
           direction: "outbound",

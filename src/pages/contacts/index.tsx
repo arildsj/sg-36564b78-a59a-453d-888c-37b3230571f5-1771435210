@@ -47,6 +47,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageProvider";
 import { useRouter } from "next/router";
 
+// CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
+const db = supabase as any;
+
 type Group = {
   id: string;
   name: string;

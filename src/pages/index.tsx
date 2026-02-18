@@ -11,6 +11,23 @@ import { messageService } from "@/services/messageService";
 import { userService } from "@/services/userService";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageProvider";
+import { useRouter } from "next/router";
+import { 
+  MessageSquare, 
+  Users, 
+  Send, 
+  Shield, 
+  Activity,
+  ArrowRight,
+  Clock,
+  CheckCircle2,
+  AlertCircle
+} from "lucide-react";
+import { format } from "date-fns";
+import { nb } from "date-fns/locale";
+
+// CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
+const db = supabase as any;
 
 type DashboardStats = {
   unacknowledged: number;
@@ -59,7 +76,7 @@ export default function HomePage() {
       twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
       // Get all inbound messages from last 24 hours that have been acknowledged
-      const { data: inboundMessages, error: inboundError } = await supabase
+      const { data: inboundMessages, error: inboundError } = await db
         .from("messages")
         .select("id, thread_key, created_at, acknowledged_at")
         .eq("direction", "inbound")
@@ -81,7 +98,7 @@ export default function HomePage() {
 
       // For each inbound message, find the first outbound reply
       for (const inbound of inboundMessages) {
-        const { data: outboundReply, error: outboundError } = await supabase
+        const { data: outboundReply, error: outboundError } = await db
           .from("messages")
           .select("created_at")
           .eq("thread_key", inbound.thread_key)

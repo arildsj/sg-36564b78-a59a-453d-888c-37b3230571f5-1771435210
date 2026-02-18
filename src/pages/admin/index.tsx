@@ -20,6 +20,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Sheet,
@@ -40,13 +41,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { groupService, type GroupNode } from "@/services/groupService";
-import { userService } from "@/services/userService";
-import { gatewayService } from "@/services/gatewayService";
-import { routingRuleService } from "@/services/routingRuleService";
-import { contactService } from "@/services/contactService";
-import { auditService, type AuditLogEntry } from "@/services/auditService";
 import { 
+  Building2,
   Users, 
   Settings, 
   Search, 
@@ -83,56 +79,23 @@ import {
 import { useLanguage } from "@/contexts/LanguageProvider";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { format } from "date-fns";
+import { nb } from "date-fns/locale";
+import { RoutingRulesTab } from "@/components/settings/RoutingRulesTab";
+import { Gateway } from "@/services/gatewayService";
+import { Group } from "@/services/groupService";
+import { UserProfile } from "@/services/userService";
+import { AuditLogEntry } from "@/services/auditService";
+import { routingRuleService, type RoutingRule } from "@/services/routingRuleService";
+import { gatewayService, type Gateway } from "@/services/gatewayService";
+import { groupService, type Group } from "@/services/groupService";
+import { userService, type UserProfile } from "@/services/userService";
+import { auditService, type AuditLogEntry } from "@/services/auditService";
 
-interface Group extends GroupNode {
-  children?: Group[];
-}
-
-type User = Database["public"]["Tables"]["users"]["Row"] & {
-  groups?: string[];
-  group_memberships?: { groups: { id: string; name: string } | null }[];
-  phone?: string;
-  phone_number?: string;
-  on_duty?: boolean;
-  group_ids?: string[];
-};
-
-interface Gateway {
-  id: string;
-  name: string;
-  base_url: string;
-  api_key: string | null;
-  status: string;
-  is_default: boolean;
-  tenant_id: string;
-  created_at: string;
-  phone_number: string;
-}
-
-interface RoutingRule {
-  id: string;
-  gateway_id: string;
-  target_group_id: string;
-  priority: number;
-  rule_type: "prefix" | "keyword" | "fallback";
-  pattern: string | null;
-  is_active: boolean;
-  gateway?: {
-    id: string;
-    name: string;
-  };
-  target_group?: {
-    id: string;
-    name: string;
-  };
-}
-
-interface Contact {
-  id: string;
-  phone: string;
-  name: string | null;
-  groups: { id: string; name: string }[];
-}
+// Fix complex type issues by using any for database client
+const db = supabase as any;
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -140,9 +103,9 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"groups" | "users" | "gateways">("groups");
   const [loading, setLoading] = useState(true);
   
-  const [groups, setGroups] = useState<GroupNode[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [allGroups, setAllGroups] = useState<GroupNode[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [routingRules, setRoutingRules] = useState<RoutingRule[]>([]);
@@ -186,12 +149,12 @@ export default function AdminPage() {
   });
 
   const [newUser, setNewUser] = useState({
-    name: "",
     email: "",
-    phone: "",
-    role: "operator" as "tenant_admin" | "group_admin" | "operator",
-    password: "",
-    groupIds: [] as string[],
+    full_name: "",
+    phone_number: "",
+    role: "member",
+    group_ids: [] as string[],
+    password: "", // Only for new users
   });
 
   const [newGateway, setNewGateway] = useState({
