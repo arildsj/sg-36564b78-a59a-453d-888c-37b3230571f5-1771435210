@@ -1,15 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type User = Database["public"]["Tables"]["users"]["Row"];
-type OnDutyStatus = Database["public"]["Tables"]["on_duty_status"]["Row"];
+type UserProfile = Database["public"]["Tables"]["user_profiles"]["Row"];
+type OnDutyState = Database["public"]["Tables"]["on_duty_state"]["Row"];
 
 export const userService = {
-  async getAllUsers(): Promise<(User & { groups: string[], group_ids: string[] })[]> {
+  async getAllUsers(): Promise<(UserProfile & { groups: string[], group_ids: string[] })[]> {
     const { data, error } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("*, group_memberships(group:groups(id, name))")
-      .order("name");
+      .order("full_name");
 
     console.log("getAllUsers result:", { data, error });
 
@@ -26,23 +26,21 @@ export const userService = {
   },
 
   async updateUser(userId: string, updates: Partial<{
-    name: string;
+    full_name: string;
     email: string;
-    phone: string;
+    phone_number: string;
     role: string;
     group_ids: string[];
     status: string;
-    on_duty: boolean;
   }>) {
     const authUpdates: any = {};
     const profileUpdates: any = {};
 
-    if (updates.name !== undefined) profileUpdates.name = updates.name;
+    if (updates.full_name !== undefined) profileUpdates.full_name = updates.full_name;
     if (updates.email !== undefined) authUpdates.email = updates.email;
-    if (updates.phone !== undefined) profileUpdates.phone_number = updates.phone;
+    if (updates.phone_number !== undefined) profileUpdates.phone_number = updates.phone_number;
     if (updates.role !== undefined) profileUpdates.role = updates.role;
     if (updates.status !== undefined) profileUpdates.status = updates.status;
-    if (updates.on_duty !== undefined) profileUpdates.on_duty = updates.on_duty;
 
     if (Object.keys(authUpdates).length > 0) {
       const { error: authError } = await supabase.auth.admin.updateUserById(userId, authUpdates);
@@ -51,15 +49,14 @@ export const userService = {
 
     if (Object.keys(profileUpdates).length > 0) {
       const { error: profileError } = await supabase
-        .from("users")
+        .from("user_profiles")
         .update(profileUpdates)
         .eq("id", userId);
       if (profileError) throw new Error(`Failed to update user profile: ${profileError.message}`);
     }
 
-    // 2. Update Group Memberships only if group_ids is provided
+    // Update Group Memberships only if group_ids is provided
     if (updates.group_ids !== undefined) {
-      // Get existing to minimize churn if needed, but delete-insert is robust for full sync
       const { error: deleteError } = await supabase
         .from("group_memberships")
         .delete()
@@ -80,9 +77,9 @@ export const userService = {
     }
   },
 
-  async getUserById(id: string): Promise<User | null> {
+  async getUserById(id: string): Promise<UserProfile | null> {
     const { data, error } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("*")
       .eq("id", id)
       .single();
@@ -91,14 +88,14 @@ export const userService = {
     return data;
   },
 
-  async getCurrentUser(): Promise<User | null> {
+  async getCurrentUser(): Promise<UserProfile | null> {
     const { data: authData } = await supabase.auth.getUser();
     if (!authData.user) return null;
 
     const { data, error } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("*")
-      .eq("auth_user_id", authData.user.id)
+      .eq("id", authData.user.id)
       .maybeSingle();
 
     if (error) {
@@ -112,7 +109,7 @@ export const userService = {
    * DEMO MODE: Get impersonated user from localStorage
    * Used for presentations and demos to show different user perspectives
    */
-  getImpersonatedUser(): User | null {
+  getImpersonatedUser(): UserProfile | null {
     if (typeof window === "undefined") return null;
     const stored = localStorage.getItem("semse_demo_user");
     if (!stored) return null;
@@ -126,7 +123,7 @@ export const userService = {
   /**
    * DEMO MODE: Set user to impersonate (for demos/presentations)
    */
-  setImpersonatedUser(user: User | null): void {
+  setImpersonatedUser(user: UserProfile | null): void {
     if (typeof window === "undefined") return;
     if (user) {
       localStorage.setItem("semse_demo_user", JSON.stringify(user));
@@ -139,15 +136,15 @@ export const userService = {
    * DEMO MODE: Get current user with impersonation support
    * Returns impersonated user if set, otherwise real current user
    */
-  async getCurrentUserWithDemo(): Promise<User | null> {
+  async getCurrentUserWithDemo(): Promise<UserProfile | null> {
     const impersonated = this.getImpersonatedUser();
     if (impersonated) return impersonated;
     return this.getCurrentUser();
   },
 
-  async getOnDutyStatus(groupId: string, userId: string): Promise<OnDutyStatus | null> {
+  async getOnDutyState(groupId: string, userId: string): Promise<OnDutyState | null> {
     const { data, error } = await supabase
-      .from("on_duty_status")
+      .from("on_duty_state")
       .select("*")
       .eq("group_id", groupId)
       .eq("user_id", userId)
@@ -159,7 +156,7 @@ export const userService = {
 
   async toggleOnDuty(groupId: string, userId: string, isOnDuty: boolean): Promise<void> {
     const { error } = await supabase
-      .from("on_duty_status")
+      .from("on_duty_state")
       .upsert({
         group_id: groupId,
         user_id: userId,
@@ -171,11 +168,9 @@ export const userService = {
   },
 
   async getOnDutyUsersForGroup(groupId: string) {
-    // This requires a more complex query joining group_memberships and shifts/status
-    // Simplified for now: Get all users in group
     const { data, error } = await supabase
       .from("group_memberships")
-      .select("user:users(*)")
+      .select("user:user_profiles(*)")
       .eq("group_id", groupId);
       
     if (error) throw error;
@@ -184,9 +179,9 @@ export const userService = {
   },
 
   async createUser(userData: {
-    name: string;
+    full_name: string;
     email: string;
-    phone: string;
+    phone_number: string;
     role: "tenant_admin" | "group_admin" | "member";
     password?: string;
     group_ids?: string[];
@@ -200,7 +195,7 @@ export const userService = {
       body: {
         email: userData.email,
         password: userData.password,
-        phone: userData.phone
+        phone: userData.phone_number
       }
     });
 
@@ -211,13 +206,13 @@ export const userService = {
 
     // 3. Create User Profile
     const { data: userProfile, error: profileError } = await supabase
-      .from("users")
+      .from("user_profiles")
       .insert({
-        auth_user_id: authUserId,
+        id: authUserId,
         tenant_id: currentUser.tenant_id,
-        name: userData.name,
+        full_name: userData.full_name,
         email: userData.email,
-        phone_number: userData.phone,
+        phone_number: userData.phone_number,
         role: userData.role,
         status: "active"
       })
@@ -225,9 +220,6 @@ export const userService = {
       .single();
 
     if (profileError) {
-      // Cleanup: delete auth user if profile creation fails
-      // Note: This requires another Edge Function or manual cleanup, 
-      // but for now we just throw the error.
       throw new Error(`Failed to create user profile: ${profileError.message}`);
     }
 
@@ -244,8 +236,7 @@ export const userService = {
 
       if (membershipError) {
         console.error("Failed to add group memberships:", membershipError);
-        // We don't throw here as the user is created successfully
-        console.warn("Bruker opprettet, men feilet ved tildeling av grupper.");
+        console.warn("User created, but failed to assign groups.");
       }
     }
 
@@ -254,22 +245,19 @@ export const userService = {
 
   async deleteUser(userId: string) {
     const { error } = await supabase
-      .from('users')
+      .from('user_profiles')
       .delete()
       .eq('id', userId);
 
     if (error) throw error;
     
-    // Also delete from auth (requires admin privileges or edge function usually, 
-    // but we'll start with DB record which might trigger cascade or be enough for soft delete logic if implemented)
-    // For now, we assume DB deletion is what's requested.
     return true;
   },
 
-  async getUsersByGroup(groupId: string): Promise<User[]> {
+  async getUsersByGroup(groupId: string): Promise<UserProfile[]> {
     const { data, error } = await supabase
       .from("group_memberships")
-      .select("user:users(*)")
+      .select("user:user_profiles(*)")
       .eq("group_id", groupId);
 
     if (error) {
@@ -277,7 +265,6 @@ export const userService = {
       throw error;
     }
 
-    // Filter out any null users (shouldn't happen with inner join implicit in select, but safe to do)
-    return data.map((d) => d.user).filter((u): u is User => u !== null);
+    return data.map((d) => d.user).filter((u): u is UserProfile => u !== null);
   }
 };
