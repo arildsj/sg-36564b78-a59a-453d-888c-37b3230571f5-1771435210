@@ -20,7 +20,7 @@ export const auditService = {
       .from("audit_log")
       .select(`
         *,
-        user:users(email)
+        user:user_profiles(email)
       `)
       .order("created_at", { ascending: false })
       .limit(limit);
@@ -48,9 +48,9 @@ export const auditService = {
       let tenant_id = null;
       if (user.user) {
           const { data: profile } = await supabase
-            .from('users')
+            .from('user_profiles')
             .select('tenant_id')
-            .eq('auth_user_id', user.user.id)
+            .eq('id', user.user.id)
             .single();
           tenant_id = profile?.tenant_id;
       }

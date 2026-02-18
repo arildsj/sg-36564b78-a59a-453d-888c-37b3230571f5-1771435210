@@ -120,9 +120,9 @@ export const bulkService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("id, tenant_id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .single();
 
     if (!profile) throw new Error("User profile not found");
@@ -217,9 +217,9 @@ export const bulkService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("id, tenant_id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .single();
 
     if (!profile) throw new Error("User profile not found");
@@ -401,9 +401,9 @@ export const bulkService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("id, tenant_id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .single();
 
     if (!profile) throw new Error("User profile not found");
