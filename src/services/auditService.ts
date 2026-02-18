@@ -4,11 +4,11 @@ export type AuditLogEntry = {
   id: string;
   created_at: string;
   tenant_id: string;
-  user_id: string | null;
-  action: string;
+  actor_user_id: string | null;
+  action_type: string;
   entity_type: string;
   entity_id: string | null;
-  changes: any;
+  metadata: any;
   ip_address: string | null;
   user_agent: string | null;
   user_email?: string; // Joined field
@@ -33,7 +33,7 @@ export const auditService = {
     return (data || []).map((log: any) => ({
       ...log,
       user_email: log.user?.email || "System/Unknown"
-    }));
+    })) as AuditLogEntry[];
   },
 
   async logAction(entry: {

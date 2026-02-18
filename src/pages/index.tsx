@@ -1,16 +1,11 @@
-import React, { useEffect, useState } from "react";
-import Head from "next/head";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Inbox, Users, Clock, AlertCircle } from "lucide-react";
-import { groupService } from "@/services/groupService";
-import { messageService } from "@/services/messageService";
-import { userService } from "@/services/userService";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useLanguage } from "@/contexts/LanguageProvider";
 import { useRouter } from "next/router";
 import { 
   MessageSquare, 
@@ -50,7 +45,7 @@ type GroupStatus = {
   on_duty_count: number;
 };
 
-export default function HomePage() {
+export default function Dashboard() {
   const { t } = useLanguage();
   const [stats, setStats] = useState<DashboardStats>({
     unacknowledged: 0,
