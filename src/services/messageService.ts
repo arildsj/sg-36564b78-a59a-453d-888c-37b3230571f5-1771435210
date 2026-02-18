@@ -78,9 +78,9 @@ export const messageService = {
 
     // 1. Get current user's tenant
     const { data: userData } = await db
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id")
-      .eq("auth_user_id", authData.user.id)
+      .eq("id", authData.user.id)
       .maybeSingle();
 
     if (!userData) throw new Error("User not found");
@@ -151,9 +151,9 @@ export const messageService = {
     if (!authData.user) throw new Error("Not authenticated");
 
     const { data: profile } = await db
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id")
-      .eq("auth_user_id", authData.user.id)
+      .eq("id", authData.user.id)
       .maybeSingle();
 
     if (!profile) {
@@ -202,9 +202,9 @@ export const messageService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await db
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .maybeSingle();
 
     if (!profile) {
@@ -310,9 +310,9 @@ export const messageService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await db
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .maybeSingle();
 
     if (!profile) {
@@ -353,9 +353,9 @@ export const messageService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await db
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .maybeSingle();
 
     if (!profile) {
@@ -407,9 +407,9 @@ export const messageService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await db
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .maybeSingle();
 
     if (!profile) {
@@ -517,9 +517,9 @@ export const messageService = {
     if (!userData.user) throw new Error("User not authenticated");
     
     const { data: userProfile } = await db
-     .from("users")
+     .from("user_profiles")
      .select("id, tenant_id")
-     .eq("auth_user_id", userData.user.id)
+     .eq("id", userData.user.id)
      .maybeSingle();
      
     if (!userProfile) throw new Error("User profile not found");
@@ -676,9 +676,9 @@ export const messageService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await db
-      .from("users")
+      .from("user_profiles")
       .select("id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .maybeSingle();
 
     if (!profile) {
@@ -705,9 +705,9 @@ export const messageService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await db
-      .from("users")
+      .from("user_profiles")
       .select("id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .maybeSingle();
 
     if (!profile) {
@@ -766,9 +766,9 @@ export const messageService = {
     }
 
     const { data: profile } = await db
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id")
-      .eq("auth_user_id", authData.user.id)
+      .eq("id", authData.user.id)
       .maybeSingle();
 
     if (!profile) {

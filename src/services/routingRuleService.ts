@@ -5,8 +5,9 @@ export type RoutingRule = {
   gateway_id: string;
   target_group_id: string;
   priority: number;
-  rule_type: "prefix" | "keyword" | "fallback";
-  pattern: string | null;
+  match_type: "prefix" | "keyword" | "fallback"; // Renamed from rule_type
+  match_value: string | null; // Renamed from pattern
+  name: string; // Added field
   is_active: boolean;
   gateway?: {
     id: string;
@@ -52,17 +53,19 @@ export const routingRuleService = {
     gateway_id: string;
     target_group_id: string;
     priority: number;
-    rule_type: "prefix" | "keyword" | "fallback";
-    pattern?: string;
+    match_type: "prefix" | "keyword" | "fallback";
+    match_value?: string;
+    name: string;
     is_active?: boolean;
   }) {
     const { data: session } = await supabase.auth.getSession();
     if (!session.session?.user) throw new Error("Not authenticated");
 
+    // Get tenant_id from user_profiles, not users
     const { data: user } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id")
-      .eq("auth_user_id", session.session.user.id)
+      .eq("id", session.session.user.id)
       .single();
 
     if (!user) throw new Error("User not found");
@@ -74,8 +77,9 @@ export const routingRuleService = {
         gateway_id: rule.gateway_id,
         target_group_id: rule.target_group_id,
         priority: rule.priority,
-        rule_type: rule.rule_type,
-        pattern: rule.pattern || null,
+        match_type: rule.match_type,
+        match_value: rule.match_value || null,
+        name: rule.name,
         is_active: rule.is_active ?? true,
       })
       .select()
@@ -86,15 +90,17 @@ export const routingRuleService = {
   },
 
   async updateRoutingRule(id: string, updates: Partial<RoutingRule>) {
+    const updatePayload: any = {};
+    if (updates.target_group_id) updatePayload.target_group_id = updates.target_group_id;
+    if (updates.priority !== undefined) updatePayload.priority = updates.priority;
+    if (updates.match_type) updatePayload.match_type = updates.match_type;
+    if (updates.match_value !== undefined) updatePayload.match_value = updates.match_value;
+    if (updates.name) updatePayload.name = updates.name;
+    if (updates.is_active !== undefined) updatePayload.is_active = updates.is_active;
+
     const { data, error } = await supabase
       .from("routing_rules")
-      .update({
-        target_group_id: updates.target_group_id,
-        priority: updates.priority,
-        rule_type: updates.rule_type,
-        pattern: updates.pattern,
-        is_active: updates.is_active,
-      })
+      .update(updatePayload)
       .eq("id", id)
       .select()
       .single();
@@ -134,18 +140,18 @@ export const routingRuleService = {
     if (rules && rules.length > 0) {
       // 2. Evaluate rules
       for (const rule of rules) {
-        if (rule.rule_type === "fallback") {
+        if (rule.match_type === "fallback") {
           return rule.target_group_id;
         }
 
-        if (rule.rule_type === "prefix" && rule.pattern) {
-          if (content.toUpperCase().startsWith(rule.pattern.toUpperCase())) {
+        if (rule.match_type === "prefix" && rule.match_value) {
+          if (content.toUpperCase().startsWith(rule.match_value.toUpperCase())) {
             return rule.target_group_id;
           }
         }
 
-        if (rule.rule_type === "keyword" && rule.pattern) {
-          if (content.toUpperCase().includes(rule.pattern.toUpperCase())) {
+        if (rule.match_type === "keyword" && rule.match_value) {
+          if (content.toUpperCase().includes(rule.match_value.toUpperCase())) {
             return rule.target_group_id;
           }
         }

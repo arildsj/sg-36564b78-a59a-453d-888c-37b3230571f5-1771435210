@@ -68,9 +68,9 @@ export const contactService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .single();
 
     if (!profile) throw new Error("User profile not found");
@@ -138,15 +138,15 @@ export const contactService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id, role, group_memberships(group_id)")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .single();
 
     if (!profile) throw new Error("User profile not found");
 
     // Tenant-admin sees all contacts
-    if (profile.role === "tenant-admin") {
+    if (profile.role === "tenant_admin") { // Corrected role name from 'tenant-admin' to 'tenant_admin'
       return this.getAllContacts();
     }
 
@@ -286,9 +286,9 @@ export const contactService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .single();
 
     if (!profile) throw new Error("User profile not found");
@@ -346,9 +346,9 @@ export const contactService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .single();
 
     if (!profile) throw new Error("User profile not found");
@@ -383,15 +383,15 @@ export const contactService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id, role")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .single();
 
     if (!profile) throw new Error("User profile not found");
     
-    // Only tenant-admin can access this
-    if (profile.role !== "tenant-admin") {
+    // Only tenant_admin can access this
+    if (profile.role !== "tenant_admin") {
       throw new Error("Unauthorized: Only tenant administrators can access contact group memberships");
     }
 
@@ -450,15 +450,15 @@ export const contactService = {
     if (!user.user) throw new Error("Not authenticated");
 
     const { data: profile } = await supabase
-      .from("users")
+      .from("user_profiles")
       .select("tenant_id, role")
-      .eq("auth_user_id", user.user.id)
+      .eq("id", user.user.id)
       .single();
 
     if (!profile) throw new Error("User profile not found");
     
     // Only tenant-admin can delete
-    if (profile.role !== "tenant-admin") {
+    if (profile.role !== "tenant_admin") {
       throw new Error("Unauthorized: Only tenant administrators can perform GDPR deletions");
     }
 

@@ -10,14 +10,17 @@ export interface GroupNode {
   effective_gateway_id?: string | null;
   gateway_name?: string | null;
   is_gateway_inherited?: boolean;
-  parent_id?: string | null;
-  parent_group_id?: string | null;
+  parent_id?: string | null; // For UI component compatibility
+  parent_group_id?: string | null; // Database column
   parent_name?: string | null;
   total_members?: number;
   active_members?: number;
   tenant_id?: string;
   created_at?: string;
   updated_at?: string;
+  escalation_enabled?: boolean;
+  escalation_timeout_minutes?: number;
+  min_on_duty_count?: number;
 }
 
 export const groupService = {
@@ -28,7 +31,12 @@ export const groupService = {
       .order("name");
 
     if (error) throw error;
-    return (data || []) as GroupNode[];
+    
+    // Map database fields to UI expected fields if necessary
+    return (data || []).map(group => ({
+      ...group,
+      parent_id: group.parent_group_id // Ensure compatibility
+    })) as GroupNode[];
   },
 
   async getOperationalGroups(): Promise<GroupNode[]> {
@@ -39,7 +47,11 @@ export const groupService = {
       .order("name");
 
     if (error) throw error;
-    return (data || []) as GroupNode[];
+    
+    return (data || []).map(group => ({
+      ...group,
+      parent_id: group.parent_group_id
+    })) as GroupNode[];
   },
 
   async createGroup(group: {
@@ -51,10 +63,24 @@ export const groupService = {
     tenant_id: string;
     escalation_enabled?: boolean;
     escalation_timeout_minutes?: number;
+    min_on_duty_count?: number;
   }) {
+    // Map input fields to database columns
+    const dbPayload = {
+      name: group.name,
+      kind: group.kind,
+      description: group.description,
+      parent_group_id: group.parent_id || null, // Map parent_id -> parent_group_id
+      gateway_id: group.gateway_id || null,
+      tenant_id: group.tenant_id,
+      escalation_enabled: group.escalation_enabled,
+      escalation_timeout_minutes: group.escalation_timeout_minutes,
+      min_on_duty_count: group.min_on_duty_count
+    };
+
     const { data, error } = await supabase
       .from("groups")
-      .insert([group])
+      .insert([dbPayload])
       .select()
       .single();
 
@@ -69,6 +95,7 @@ export const groupService = {
     is_fallback?: boolean;
     escalation_enabled?: boolean;
     escalation_timeout_minutes?: number;
+    min_on_duty_count?: number;
   }) {
     const { data, error } = await supabase
       .from("groups")
