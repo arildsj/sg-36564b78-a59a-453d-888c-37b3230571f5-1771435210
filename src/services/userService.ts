@@ -1,5 +1,20 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import type { Tables } from "@/integrations/supabase/types";
+
+export const getUserProfile = async (userId: string): Promise<Tables<"user_profiles"> | null> => {
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching user profile:", error);
+    return null;
+  }
+
+  return data;
+};
 
 export interface UserProfile {
   id: string;
@@ -22,7 +37,7 @@ export const userService = {
       .from("user_profiles")
       .select("*")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching user profile:", error);
