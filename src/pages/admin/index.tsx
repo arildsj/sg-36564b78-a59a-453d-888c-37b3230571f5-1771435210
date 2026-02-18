@@ -316,7 +316,7 @@ export default function AdminPage() {
         name: newGroup.name,
         kind: newGroup.kind,
         description: newGroup.description,
-        parent_group_id: newGroup.parent_id || null,
+        parent_id: newGroup.parent_id || null,
         gateway_id: newGroup.gateway_id || null,
         tenant_id: currentUser.tenant_id,
         escalation_enabled: newGroup.escalation_enabled,

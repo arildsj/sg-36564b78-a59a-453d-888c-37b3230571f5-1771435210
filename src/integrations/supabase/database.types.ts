@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -17,42 +17,49 @@ export type Database = {
     Tables: {
       audit_log: {
         Row: {
-          action: string
-          changes: Json | null
-          created_at: string | null
+          action_type: string
+          actor_user_id: string | null
+          created_at: string
           entity_id: string | null
           entity_type: string
           id: string
-          ip_address: unknown
+          metadata: Json | null
+          scope: string
+          scope_id: string | null
           tenant_id: string
-          user_agent: string | null
-          user_id: string | null
         }
         Insert: {
-          action: string
-          changes?: Json | null
-          created_at?: string | null
+          action_type: string
+          actor_user_id?: string | null
+          created_at?: string
           entity_id?: string | null
           entity_type: string
           id?: string
-          ip_address?: unknown
+          metadata?: Json | null
+          scope: string
+          scope_id?: string | null
           tenant_id: string
-          user_agent?: string | null
-          user_id?: string | null
         }
         Update: {
-          action?: string
-          changes?: Json | null
-          created_at?: string | null
+          action_type?: string
+          actor_user_id?: string | null
+          created_at?: string
           entity_id?: string | null
           entity_type?: string
           id?: string
-          ip_address?: unknown
+          metadata?: Json | null
+          scope?: string
+          scope_id?: string | null
           tenant_id?: string
-          user_agent?: string | null
-          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "audit_log_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "audit_log_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -60,214 +67,152 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "audit_log_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
         ]
       }
-      auto_reply_log: {
+      auto_replies: {
         Row: {
-          auto_reply_id: string | null
-          created_at: string | null
+          created_at: string
+          deleted_at: string | null
+          group_id: string | null
           id: string
-          reason: string | null
-          sent_message_id: string | null
-          triggering_message_id: string
-          was_sent: boolean
+          is_active: boolean
+          reply_template: string
+          tenant_id: string
+          trigger_type: string
+          trigger_value: string | null
+          updated_at: string
         }
         Insert: {
-          auto_reply_id?: string | null
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          group_id?: string | null
           id?: string
-          reason?: string | null
-          sent_message_id?: string | null
-          triggering_message_id: string
-          was_sent: boolean
+          is_active?: boolean
+          reply_template: string
+          tenant_id: string
+          trigger_type: string
+          trigger_value?: string | null
+          updated_at?: string
         }
         Update: {
-          auto_reply_id?: string | null
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          group_id?: string | null
           id?: string
-          reason?: string | null
-          sent_message_id?: string | null
-          triggering_message_id?: string
-          was_sent?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "auto_reply_log_auto_reply_id_fkey"
-            columns: ["auto_reply_id"]
-            isOneToOne: false
-            referencedRelation: "automatic_replies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "auto_reply_log_sent_message_id_fkey"
-            columns: ["sent_message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "auto_reply_log_triggering_message_id_fkey"
-            columns: ["triggering_message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      automatic_replies: {
-        Row: {
-          cooldown_minutes: number | null
-          created_at: string | null
-          group_id: string
-          id: string
-          is_active: boolean | null
-          message_template: string
-          trigger_pattern: string | null
-          trigger_type: string
-          updated_at: string | null
-        }
-        Insert: {
-          cooldown_minutes?: number | null
-          created_at?: string | null
-          group_id: string
-          id?: string
-          is_active?: boolean | null
-          message_template: string
-          trigger_pattern?: string | null
-          trigger_type: string
-          updated_at?: string | null
-        }
-        Update: {
-          cooldown_minutes?: number | null
-          created_at?: string | null
-          group_id?: string
-          id?: string
-          is_active?: boolean | null
-          message_template?: string
-          trigger_pattern?: string | null
+          is_active?: boolean
+          reply_template?: string
+          tenant_id?: string
           trigger_type?: string
-          updated_at?: string | null
+          trigger_value?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "automatic_replies_group_id_fkey"
+            foreignKeyName: "auto_replies_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "automatic_replies_group_id_fkey"
+            foreignKeyName: "auto_replies_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auto_replies_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
       }
       bulk_campaigns: {
         Row: {
-          bulk_code: string | null
           completed_at: string | null
-          created_at: string | null
+          created_at: string
           created_by_user_id: string
-          expires_at: string | null
-          failed_count: number | null
+          deleted_at: string | null
+          failed_count: number
+          gateway_id: string
+          group_id: string
           id: string
           message_template: string
           name: string
-          reply_window_hours: number
           scheduled_at: string | null
-          sent_count: number | null
-          source_group_id: string | null
+          sent_count: number
+          started_at: string | null
           status: string
-          subject_line: string | null
-          target_group_id: string | null
           tenant_id: string
-          total_recipients: number | null
-          updated_at: string | null
+          total_recipients: number
+          updated_at: string
         }
         Insert: {
-          bulk_code?: string | null
           completed_at?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by_user_id: string
-          expires_at?: string | null
-          failed_count?: number | null
+          deleted_at?: string | null
+          failed_count?: number
+          gateway_id: string
+          group_id: string
           id?: string
           message_template: string
           name: string
-          reply_window_hours?: number
           scheduled_at?: string | null
-          sent_count?: number | null
-          source_group_id?: string | null
+          sent_count?: number
+          started_at?: string | null
           status?: string
-          subject_line?: string | null
-          target_group_id?: string | null
           tenant_id: string
-          total_recipients?: number | null
-          updated_at?: string | null
+          total_recipients?: number
+          updated_at?: string
         }
         Update: {
-          bulk_code?: string | null
           completed_at?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by_user_id?: string
-          expires_at?: string | null
-          failed_count?: number | null
+          deleted_at?: string | null
+          failed_count?: number
+          gateway_id?: string
+          group_id?: string
           id?: string
           message_template?: string
           name?: string
-          reply_window_hours?: number
           scheduled_at?: string | null
-          sent_count?: number | null
-          source_group_id?: string | null
+          sent_count?: number
+          started_at?: string | null
           status?: string
-          subject_line?: string | null
-          target_group_id?: string | null
           tenant_id?: string
-          total_recipients?: number | null
-          updated_at?: string | null
+          total_recipients?: number
+          updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "bulk_campaigns_created_by_user_id_fkey"
             columns: ["created_by_user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "bulk_campaigns_source_group_id_fkey"
-            columns: ["source_group_id"]
+            foreignKeyName: "bulk_campaigns_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: false
+            referencedRelation: "gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_campaigns_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "bulk_campaigns_source_group_id_fkey"
-            columns: ["source_group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bulk_campaigns_target_group_id_fkey"
-            columns: ["target_group_id"]
-            isOneToOne: false
-            referencedRelation: "group_admin_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bulk_campaigns_target_group_id_fkey"
-            columns: ["target_group_id"]
+            foreignKeyName: "bulk_campaigns_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
@@ -284,45 +229,45 @@ export type Database = {
       bulk_recipients: {
         Row: {
           campaign_id: string
-          created_at: string | null
+          contact_id: string
+          created_at: string
+          delivered_at: string | null
           error_message: string | null
+          failed_at: string | null
           id: string
-          metadata: Json | null
+          message_id: string | null
           phone_number: string
-          responded_at: string | null
-          response_message_id: string | null
           sent_at: string | null
-          sent_message_id: string | null
-          sent_thread_id: string | null
           status: string
+          updated_at: string
         }
         Insert: {
           campaign_id: string
-          created_at?: string | null
+          contact_id: string
+          created_at?: string
+          delivered_at?: string | null
           error_message?: string | null
+          failed_at?: string | null
           id?: string
-          metadata?: Json | null
+          message_id?: string | null
           phone_number: string
-          responded_at?: string | null
-          response_message_id?: string | null
           sent_at?: string | null
-          sent_message_id?: string | null
-          sent_thread_id?: string | null
           status?: string
+          updated_at?: string
         }
         Update: {
           campaign_id?: string
-          created_at?: string | null
+          contact_id?: string
+          created_at?: string
+          delivered_at?: string | null
           error_message?: string | null
+          failed_at?: string | null
           id?: string
-          metadata?: Json | null
+          message_id?: string | null
           phone_number?: string
-          responded_at?: string | null
-          response_message_id?: string | null
           sent_at?: string | null
-          sent_message_id?: string | null
-          sent_thread_id?: string | null
           status?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -333,132 +278,97 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "bulk_recipients_response_message_id_fkey"
-            columns: ["response_message_id"]
+            foreignKeyName: "bulk_recipients_contact_id_fkey"
+            columns: ["contact_id"]
             isOneToOne: false
-            referencedRelation: "messages"
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "bulk_recipients_sent_message_id_fkey"
-            columns: ["sent_message_id"]
+            foreignKeyName: "bulk_recipients_message_id_fkey"
+            columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bulk_recipients_sent_thread_id_fkey"
-            columns: ["sent_thread_id"]
-            isOneToOne: false
-            referencedRelation: "message_threads"
             referencedColumns: ["id"]
           },
         ]
       }
-      contact_relationships: {
+      contact_phones: {
         Row: {
-          created_at: string | null
+          contact_id: string
+          created_at: string
+          deleted_at: string | null
           id: string
-          priority: number | null
-          related_contact_id: string
-          relationship_type: string
-          subject_contact_id: string
-          tenant_id: string
+          is_primary: boolean
+          phone_number: string
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          contact_id: string
+          created_at?: string
+          deleted_at?: string | null
           id?: string
-          priority?: number | null
-          related_contact_id: string
-          relationship_type: string
-          subject_contact_id: string
-          tenant_id: string
+          is_primary?: boolean
+          phone_number: string
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          contact_id?: string
+          created_at?: string
+          deleted_at?: string | null
           id?: string
-          priority?: number | null
-          related_contact_id?: string
-          relationship_type?: string
-          subject_contact_id?: string
-          tenant_id?: string
+          is_primary?: boolean
+          phone_number?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "contact_relationships_related_contact_id_fkey"
-            columns: ["related_contact_id"]
+            foreignKeyName: "contact_phones_contact_id_fkey"
+            columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_relationships_subject_contact_id_fkey"
-            columns: ["subject_contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_relationships_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
       }
       contacts: {
         Row: {
-          created_at: string | null
+          created_at: string
+          deleted_at: string | null
           email: string | null
-          external_id: string | null
-          group_id: string | null
+          first_name: string | null
           id: string
+          last_name: string | null
           metadata: Json | null
-          name: string
-          phone_number: string | null
+          notes: string | null
           tenant_id: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           email?: string | null
-          external_id?: string | null
-          group_id?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           metadata?: Json | null
-          name: string
-          phone_number?: string | null
+          notes?: string | null
           tenant_id: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           email?: string | null
-          external_id?: string | null
-          group_id?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           metadata?: Json | null
-          name?: string
-          phone_number?: string | null
+          notes?: string | null
           tenant_id?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "contacts_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "group_admin_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contacts_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "contacts_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -468,112 +378,96 @@ export type Database = {
           },
         ]
       }
-      csv_import_jobs: {
+      delivery_status_events: {
         Row: {
-          created_at: string | null
-          created_by_user_id: string
-          error_count: number | null
-          error_details: Json | null
+          created_at: string
+          event_type: string
+          external_id: string
+          gateway_id: string | null
           id: string
-          import_type: string
-          processed_rows: number | null
+          message_id: string | null
+          processed: boolean
+          raw_payload: Json
           status: string
-          success_count: number | null
-          tenant_id: string
-          total_rows: number | null
-          updated_at: string | null
         }
         Insert: {
-          created_at?: string | null
-          created_by_user_id: string
-          error_count?: number | null
-          error_details?: Json | null
+          created_at?: string
+          event_type: string
+          external_id: string
+          gateway_id?: string | null
           id?: string
-          import_type: string
-          processed_rows?: number | null
-          status?: string
-          success_count?: number | null
-          tenant_id: string
-          total_rows?: number | null
-          updated_at?: string | null
+          message_id?: string | null
+          processed?: boolean
+          raw_payload: Json
+          status: string
         }
         Update: {
-          created_at?: string | null
-          created_by_user_id?: string
-          error_count?: number | null
-          error_details?: Json | null
+          created_at?: string
+          event_type?: string
+          external_id?: string
+          gateway_id?: string | null
           id?: string
-          import_type?: string
-          processed_rows?: number | null
+          message_id?: string | null
+          processed?: boolean
+          raw_payload?: Json
           status?: string
-          success_count?: number | null
-          tenant_id?: string
-          total_rows?: number | null
-          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "csv_import_jobs_created_by_user_id_fkey"
-            columns: ["created_by_user_id"]
+            foreignKeyName: "delivery_status_events_gateway_id_fkey"
+            columns: ["gateway_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "gateways"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "csv_import_jobs_tenant_id_fkey"
-            columns: ["tenant_id"]
+            foreignKeyName: "delivery_status_events_message_id_fkey"
+            columns: ["message_id"]
             isOneToOne: false
-            referencedRelation: "tenants"
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]
       }
       escalation_events: {
         Row: {
-          created_at: string | null
-          escalated_to_user_id: string | null
-          escalation_type: string
-          group_id: string
+          created_at: string
+          escalated_to_group_id: string | null
+          escalated_to_user_ids: string[] | null
+          escalation_level: number
           id: string
           message_id: string
-          resolved_at: string | null
+          reason: string
         }
         Insert: {
-          created_at?: string | null
-          escalated_to_user_id?: string | null
-          escalation_type: string
-          group_id: string
+          created_at?: string
+          escalated_to_group_id?: string | null
+          escalated_to_user_ids?: string[] | null
+          escalation_level: number
           id?: string
           message_id: string
-          resolved_at?: string | null
+          reason: string
         }
         Update: {
-          created_at?: string | null
-          escalated_to_user_id?: string | null
-          escalation_type?: string
-          group_id?: string
+          created_at?: string
+          escalated_to_group_id?: string | null
+          escalated_to_user_ids?: string[] | null
+          escalation_level?: number
           id?: string
           message_id?: string
-          resolved_at?: string | null
+          reason?: string
         }
         Relationships: [
           {
-            foreignKeyName: "escalation_events_escalated_to_user_id_fkey"
-            columns: ["escalated_to_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "escalation_events_group_id_fkey"
-            columns: ["group_id"]
+            foreignKeyName: "escalation_events_escalated_to_group_id_fkey"
+            columns: ["escalated_to_group_id"]
             isOneToOne: false
             referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "escalation_events_group_id_fkey"
-            columns: ["group_id"]
+            foreignKeyName: "escalation_events_escalated_to_group_id_fkey"
+            columns: ["escalated_to_group_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
@@ -587,61 +481,90 @@ export type Database = {
           },
         ]
       }
-      gateways: {
+      gateway_fallback_inboxes: {
         Row: {
-          api_key: string | null
-          base_url: string | null
-          created_at: string | null
-          fallback_group_id: string | null
+          created_at: string
+          gateway_id: string
+          group_id: string
           id: string
-          is_default: boolean | null
-          name: string
-          phone_number: string
-          status: string
-          tenant_id: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          api_key?: string | null
-          base_url?: string | null
-          created_at?: string | null
-          fallback_group_id?: string | null
+          created_at?: string
+          gateway_id: string
+          group_id: string
           id?: string
-          is_default?: boolean | null
-          name: string
-          phone_number: string
-          status?: string
-          tenant_id: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          api_key?: string | null
-          base_url?: string | null
-          created_at?: string | null
-          fallback_group_id?: string | null
+          created_at?: string
+          gateway_id?: string
+          group_id?: string
           id?: string
-          is_default?: boolean | null
-          name?: string
-          phone_number?: string
-          status?: string
-          tenant_id?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "gateways_fallback_group_id_fkey"
-            columns: ["fallback_group_id"]
+            foreignKeyName: "gateway_fallback_inboxes_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: true
+            referencedRelation: "gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gateway_fallback_inboxes_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "gateways_fallback_group_id_fkey"
-            columns: ["fallback_group_id"]
+            foreignKeyName: "gateway_fallback_inboxes_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      gateways: {
+        Row: {
+          api_key_encrypted: string
+          config: Json | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          name: string
+          phone_number: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          api_key_encrypted: string
+          config?: Json | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name: string
+          phone_number: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          api_key_encrypted?: string
+          config?: Json | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          phone_number?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
           {
             foreignKeyName: "gateways_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -651,23 +574,81 @@ export type Database = {
           },
         ]
       }
-      group_memberships: {
+      group_contacts: {
         Row: {
+          contact_id: string
+          created_at: string
+          deleted_at: string | null
           group_id: string
           id: string
-          joined_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          deleted_at?: string | null
+          group_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          group_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_contacts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_contacts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_contacts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_memberships: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          group_id: string
+          id: string
+          is_admin: boolean
+          updated_at: string
           user_id: string
         }
         Insert: {
+          created_at?: string
+          deleted_at?: string | null
           group_id: string
           id?: string
-          joined_at?: string | null
+          is_admin?: boolean
+          updated_at?: string
           user_id: string
         }
         Update: {
+          created_at?: string
+          deleted_at?: string | null
           group_id?: string
           id?: string
-          joined_at?: string | null
+          is_admin?: boolean
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -689,69 +670,62 @@ export type Database = {
             foreignKeyName: "group_memberships_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
       }
       groups: {
         Row: {
-          created_at: string | null
+          created_at: string
+          deleted_at: string | null
+          depth: number
           description: string | null
-          escalation_enabled: boolean | null
-          escalation_timeout_minutes: number | null
-          gateway_id: string | null
+          escalation_enabled: boolean
+          escalation_timeout_minutes: number
           id: string
-          is_fallback: boolean | null
           kind: string
+          min_on_duty_count: number
           name: string
           parent_group_id: string | null
-          parent_id: string | null
+          path: string[] | null
           tenant_id: string
-          timezone: string | null
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          depth?: number
           description?: string | null
-          escalation_enabled?: boolean | null
-          escalation_timeout_minutes?: number | null
-          gateway_id?: string | null
+          escalation_enabled?: boolean
+          escalation_timeout_minutes?: number
           id?: string
-          is_fallback?: boolean | null
           kind: string
+          min_on_duty_count?: number
           name: string
           parent_group_id?: string | null
-          parent_id?: string | null
+          path?: string[] | null
           tenant_id: string
-          timezone?: string | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          depth?: number
           description?: string | null
-          escalation_enabled?: boolean | null
-          escalation_timeout_minutes?: number | null
-          gateway_id?: string | null
+          escalation_enabled?: boolean
+          escalation_timeout_minutes?: number
           id?: string
-          is_fallback?: boolean | null
           kind?: string
+          min_on_duty_count?: number
           name?: string
           parent_group_id?: string | null
-          parent_id?: string | null
+          path?: string[] | null
           tenant_id?: string
-          timezone?: string | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "groups_gateway_id_fkey"
-            columns: ["gateway_id"]
-            isOneToOne: false
-            referencedRelation: "gateways"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "groups_parent_group_id_fkey"
             columns: ["parent_group_id"]
             isOneToOne: false
@@ -761,20 +735,6 @@ export type Database = {
           {
             foreignKeyName: "groups_parent_group_id_fkey"
             columns: ["parent_group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "groups_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "group_admin_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "groups_parent_id_fkey"
-            columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
@@ -788,40 +748,126 @@ export type Database = {
           },
         ]
       }
+      import_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by_user_id: string
+          error_count: number
+          errors: Json | null
+          file_path: string | null
+          group_id: string | null
+          id: string
+          import_type: string
+          processed_rows: number
+          started_at: string | null
+          status: string
+          success_count: number
+          tenant_id: string
+          total_rows: number | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by_user_id: string
+          error_count?: number
+          errors?: Json | null
+          file_path?: string | null
+          group_id?: string | null
+          id?: string
+          import_type: string
+          processed_rows?: number
+          started_at?: string | null
+          status?: string
+          success_count?: number
+          tenant_id: string
+          total_rows?: number | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          error_count?: number
+          errors?: Json | null
+          file_path?: string | null
+          group_id?: string | null
+          id?: string
+          import_type?: string
+          processed_rows?: number
+          started_at?: string | null
+          status?: string
+          success_count?: number
+          tenant_id?: string
+          total_rows?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_jobs_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_jobs_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_jobs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_threads: {
         Row: {
-          contact_phone: string
           created_at: string
+          deleted_at: string | null
+          external_number: string
           gateway_id: string
+          group_id: string
           id: string
-          is_resolved: boolean
+          last_auto_reply_at: string | null
           last_message_at: string
-          resolved_at: string | null
-          resolved_group_id: string
           tenant_id: string
           updated_at: string
         }
         Insert: {
-          contact_phone: string
           created_at?: string
+          deleted_at?: string | null
+          external_number: string
           gateway_id: string
+          group_id: string
           id?: string
-          is_resolved?: boolean
+          last_auto_reply_at?: string | null
           last_message_at?: string
-          resolved_at?: string | null
-          resolved_group_id: string
           tenant_id: string
           updated_at?: string
         }
         Update: {
-          contact_phone?: string
           created_at?: string
+          deleted_at?: string | null
+          external_number?: string
           gateway_id?: string
+          group_id?: string
           id?: string
-          is_resolved?: boolean
+          last_auto_reply_at?: string | null
           last_message_at?: string
-          resolved_at?: string | null
-          resolved_group_id?: string
           tenant_id?: string
           updated_at?: string
         }
@@ -834,15 +880,15 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "message_threads_resolved_group_id_fkey"
-            columns: ["resolved_group_id"]
+            foreignKeyName: "message_threads_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "message_threads_resolved_group_id_fkey"
-            columns: ["resolved_group_id"]
+            foreignKeyName: "message_threads_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
@@ -860,82 +906,93 @@ export type Database = {
         Row: {
           acknowledged_at: string | null
           acknowledged_by_user_id: string | null
-          campaign_id: string | null
-          content: string
-          created_at: string | null
+          content: string | null
+          created_at: string
+          deleted_at: string | null
+          delivered_at: string | null
           direction: string
-          external_message_id: string | null
+          error_message: string | null
+          escalated_at: string | null
+          escalation_level: number
+          external_id: string | null
+          failed_at: string | null
           from_number: string
-          gateway_id: string | null
-          group_id: string | null
+          gateway_id: string
           id: string
-          is_fallback: boolean
-          media_urls: string[] | null
-          parent_message_id: string | null
-          status: string | null
+          idempotency_key: string | null
+          mms_media_urls: string[] | null
+          received_at: string | null
+          resolved_group_id: string
+          sent_at: string | null
+          sent_by_user_id: string | null
+          status: string
           tenant_id: string
-          thread_id: string | null
-          thread_key: string
+          thread_id: string
           to_number: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
           acknowledged_at?: string | null
           acknowledged_by_user_id?: string | null
-          campaign_id?: string | null
-          content: string
-          created_at?: string | null
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          delivered_at?: string | null
           direction: string
-          external_message_id?: string | null
+          error_message?: string | null
+          escalated_at?: string | null
+          escalation_level?: number
+          external_id?: string | null
+          failed_at?: string | null
           from_number: string
-          gateway_id?: string | null
-          group_id?: string | null
+          gateway_id: string
           id?: string
-          is_fallback?: boolean
-          media_urls?: string[] | null
-          parent_message_id?: string | null
-          status?: string | null
+          idempotency_key?: string | null
+          mms_media_urls?: string[] | null
+          received_at?: string | null
+          resolved_group_id: string
+          sent_at?: string | null
+          sent_by_user_id?: string | null
+          status?: string
           tenant_id: string
-          thread_id?: string | null
-          thread_key: string
+          thread_id: string
           to_number: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
           acknowledged_at?: string | null
           acknowledged_by_user_id?: string | null
-          campaign_id?: string | null
-          content?: string
-          created_at?: string | null
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          delivered_at?: string | null
           direction?: string
-          external_message_id?: string | null
+          error_message?: string | null
+          escalated_at?: string | null
+          escalation_level?: number
+          external_id?: string | null
+          failed_at?: string | null
           from_number?: string
-          gateway_id?: string | null
-          group_id?: string | null
+          gateway_id?: string
           id?: string
-          is_fallback?: boolean
-          media_urls?: string[] | null
-          parent_message_id?: string | null
-          status?: string | null
+          idempotency_key?: string | null
+          mms_media_urls?: string[] | null
+          received_at?: string | null
+          resolved_group_id?: string
+          sent_at?: string | null
+          sent_by_user_id?: string | null
+          status?: string
           tenant_id?: string
-          thread_id?: string | null
-          thread_key?: string
+          thread_id?: string
           to_number?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "messages_acknowledged_by_user_id_fkey"
             columns: ["acknowledged_by_user_id"]
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "bulk_campaigns"
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -946,24 +1003,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "messages_group_id_fkey"
-            columns: ["group_id"]
+            foreignKeyName: "messages_resolved_group_id_fkey"
+            columns: ["resolved_group_id"]
             isOneToOne: false
             referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "messages_group_id_fkey"
-            columns: ["group_id"]
+            foreignKeyName: "messages_resolved_group_id_fkey"
+            columns: ["resolved_group_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "messages_parent_message_id_fkey"
-            columns: ["parent_message_id"]
+            foreignKeyName: "messages_sent_by_user_id_fkey"
+            columns: ["sent_by_user_id"]
             isOneToOne: false
-            referencedRelation: "messages"
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -984,115 +1041,251 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
-          created_at: string | null
-          email_enabled: boolean | null
+          created_at: string
+          group_id: string | null
           id: string
-          only_when_on_duty: boolean | null
-          push_enabled: boolean | null
-          sms_enabled: boolean | null
-          updated_at: string | null
+          is_enabled: boolean
+          notification_type: string
+          updated_at: string
           user_id: string
         }
         Insert: {
-          created_at?: string | null
-          email_enabled?: boolean | null
+          created_at?: string
+          group_id?: string | null
           id?: string
-          only_when_on_duty?: boolean | null
-          push_enabled?: boolean | null
-          sms_enabled?: boolean | null
-          updated_at?: string | null
+          is_enabled?: boolean
+          notification_type: string
+          updated_at?: string
           user_id: string
         }
         Update: {
-          created_at?: string | null
-          email_enabled?: boolean | null
+          created_at?: string
+          group_id?: string | null
           id?: string
-          only_when_on_duty?: boolean | null
-          push_enabled?: boolean | null
-          sms_enabled?: boolean | null
-          updated_at?: string | null
+          is_enabled?: boolean
+          notification_type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "notification_preferences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      on_duty_status: {
-        Row: {
-          group_id: string
-          id: string
-          is_on_duty: boolean
-          last_toggled_at: string | null
-          user_id: string
-        }
-        Insert: {
-          group_id: string
-          id?: string
-          is_on_duty?: boolean
-          last_toggled_at?: string | null
-          user_id: string
-        }
-        Update: {
-          group_id?: string
-          id?: string
-          is_on_duty?: boolean
-          last_toggled_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "on_duty_status_group_id_fkey"
+            foreignKeyName: "notification_preferences_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "on_duty_status_group_id_fkey"
+            foreignKeyName: "notification_preferences_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "on_duty_status_user_id_fkey"
+            foreignKeyName: "notification_preferences_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_queue: {
+        Row: {
+          channel: string
+          content: string
+          created_at: string
+          id: string
+          max_retries: number
+          metadata: Json | null
+          next_retry_at: string | null
+          priority: string
+          recipient: string
+          retry_count: number
+          status: string
+          subject: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          content: string
+          created_at?: string
+          id?: string
+          max_retries?: number
+          metadata?: Json | null
+          next_retry_at?: string | null
+          priority?: string
+          recipient: string
+          retry_count?: number
+          status?: string
+          subject?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          content?: string
+          created_at?: string
+          id?: string
+          max_retries?: number
+          metadata?: Json | null
+          next_retry_at?: string | null
+          priority?: string
+          recipient?: string
+          retry_count?: number
+          status?: string
+          subject?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_queue_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      on_duty_state: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          is_on_duty: boolean
+          last_toggled_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          is_on_duty?: boolean
+          last_toggled_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          is_on_duty?: boolean
+          last_toggled_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "on_duty_state_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "on_duty_state_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "on_duty_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opening_hour_exceptions: {
+        Row: {
+          close_time: string | null
+          created_at: string
+          deleted_at: string | null
+          exception_date: string
+          group_id: string
+          id: string
+          is_closed: boolean
+          label: string | null
+          open_time: string | null
+          updated_at: string
+        }
+        Insert: {
+          close_time?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          exception_date: string
+          group_id: string
+          id?: string
+          is_closed?: boolean
+          label?: string | null
+          open_time?: string | null
+          updated_at?: string
+        }
+        Update: {
+          close_time?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          exception_date?: string
+          group_id?: string
+          id?: string
+          is_closed?: boolean
+          label?: string | null
+          open_time?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opening_hour_exceptions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opening_hour_exceptions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
         ]
       }
       opening_hours: {
         Row: {
-          close_time: string | null
+          close_time: string
+          created_at: string
           day_of_week: number
+          deleted_at: string | null
           group_id: string
           id: string
-          is_open: boolean | null
-          open_time: string | null
+          open_time: string
+          updated_at: string
         }
         Insert: {
-          close_time?: string | null
+          close_time: string
+          created_at?: string
           day_of_week: number
+          deleted_at?: string | null
           group_id: string
           id?: string
-          is_open?: boolean | null
-          open_time?: string | null
+          open_time: string
+          updated_at?: string
         }
         Update: {
-          close_time?: string | null
+          close_time?: string
+          created_at?: string
           day_of_week?: number
+          deleted_at?: string | null
           group_id?: string
           id?: string
-          is_open?: boolean | null
-          open_time?: string | null
+          open_time?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1110,115 +1303,49 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      opening_hours_exceptions: {
-        Row: {
-          close_time: string | null
-          description: string | null
-          exception_date: string
-          group_id: string
-          id: string
-          is_open: boolean | null
-          open_time: string | null
-        }
-        Insert: {
-          close_time?: string | null
-          description?: string | null
-          exception_date: string
-          group_id: string
-          id?: string
-          is_open?: boolean | null
-          open_time?: string | null
-        }
-        Update: {
-          close_time?: string | null
-          description?: string | null
-          exception_date?: string
-          group_id?: string
-          id?: string
-          is_open?: boolean | null
-          open_time?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "opening_hours_exceptions_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "group_admin_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "opening_hours_exceptions_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string | null
-          email: string | null
-          full_name: string | null
-          id: string
-          updated_at: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          id: string
-          updated_at?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       routing_rules: {
         Row: {
-          created_at: string | null
+          created_at: string
+          deleted_at: string | null
           gateway_id: string | null
           id: string
-          is_active: boolean | null
-          pattern: string | null
+          is_active: boolean
+          match_type: string
+          match_value: string
+          name: string
           priority: number
-          rule_type: string
           target_group_id: string
           tenant_id: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           gateway_id?: string | null
           id?: string
-          is_active?: boolean | null
-          pattern?: string | null
-          priority: number
-          rule_type: string
+          is_active?: boolean
+          match_type: string
+          match_value: string
+          name: string
+          priority?: number
           target_group_id: string
           tenant_id: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           gateway_id?: string | null
           id?: string
-          is_active?: boolean | null
-          pattern?: string | null
+          is_active?: boolean
+          match_type?: string
+          match_value?: string
+          name?: string
           priority?: number
-          rule_type?: string
           target_group_id?: string
           tenant_id?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1253,34 +1380,37 @@ export type Database = {
       }
       simulation_events: {
         Row: {
-          actual_outcome: Json | null
-          created_at: string | null
-          event_data: Json
+          content: string | null
+          created_at: string
+          delay_seconds: number
           event_type: string
           executed_at: string | null
-          expected_outcome: Json | null
+          from_number: string
           id: string
           scenario_id: string
+          to_number: string
         }
         Insert: {
-          actual_outcome?: Json | null
-          created_at?: string | null
-          event_data: Json
+          content?: string | null
+          created_at?: string
+          delay_seconds?: number
           event_type: string
           executed_at?: string | null
-          expected_outcome?: Json | null
+          from_number: string
           id?: string
           scenario_id: string
+          to_number: string
         }
         Update: {
-          actual_outcome?: Json | null
-          created_at?: string | null
-          event_data?: Json
+          content?: string | null
+          created_at?: string
+          delay_seconds?: number
           event_type?: string
           executed_at?: string | null
-          expected_outcome?: Json | null
+          from_number?: string
           id?: string
           scenario_id?: string
+          to_number?: string
         }
         Relationships: [
           {
@@ -1294,33 +1424,49 @@ export type Database = {
       }
       simulation_scenarios: {
         Row: {
-          created_at: string | null
+          config: Json
+          created_at: string
+          created_by_user_id: string
+          deleted_at: string | null
           description: string | null
           id: string
-          is_active: boolean | null
+          is_active: boolean
           name: string
           tenant_id: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          config?: Json
+          created_at?: string
+          created_by_user_id: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name: string
           tenant_id: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          config?: Json
+          created_at?: string
+          created_by_user_id?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name?: string
           tenant_id?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "simulation_scenarios_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "simulation_scenarios_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -1330,70 +1476,123 @@ export type Database = {
           },
         ]
       }
-      tenants: {
+      tenant_settings: {
         Row: {
-          created_at: string | null
+          business_hours_enabled: boolean
+          created_at: string
+          default_country_code: string
+          deleted_at: string | null
           id: string
-          name: string
-          updated_at: string | null
+          max_retry_attempts: number
+          message_retention_days: number
+          settings: Json
+          tenant_id: string
+          timezone: string
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          business_hours_enabled?: boolean
+          created_at?: string
+          default_country_code?: string
+          deleted_at?: string | null
           id?: string
-          name: string
-          updated_at?: string | null
+          max_retry_attempts?: number
+          message_retention_days?: number
+          settings?: Json
+          tenant_id: string
+          timezone?: string
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          business_hours_enabled?: boolean
+          created_at?: string
+          default_country_code?: string
+          deleted_at?: string | null
           id?: string
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      users: {
-        Row: {
-          auth_user_id: string | null
-          created_at: string | null
-          email: string | null
-          id: string
-          name: string
-          on_duty: boolean | null
-          phone_number: string | null
-          role: string
-          status: string
-          tenant_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          auth_user_id?: string | null
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          name: string
-          on_duty?: boolean | null
-          phone_number?: string | null
-          role: string
-          status?: string
-          tenant_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          auth_user_id?: string | null
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          name?: string
-          on_duty?: boolean | null
-          phone_number?: string | null
-          role?: string
-          status?: string
+          max_retry_attempts?: number
+          message_retention_days?: number
+          settings?: Json
           tenant_id?: string
-          updated_at?: string | null
+          timezone?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "users_tenant_id_fkey"
+            foreignKeyName: "tenant_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          name: string
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name: string
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          role: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          role?: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1401,42 +1600,45 @@ export type Database = {
           },
         ]
       }
-      whitelist_group_links: {
+      whitelisted_number_group_links: {
         Row: {
-          created_at: string | null
+          created_at: string
           group_id: string
           id: string
+          priority: number
           whitelisted_number_id: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           group_id: string
           id?: string
+          priority?: number
           whitelisted_number_id: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           group_id?: string
           id?: string
+          priority?: number
           whitelisted_number_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "whitelist_group_links_group_id_fkey"
+            foreignKeyName: "whitelisted_number_group_links_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "whitelist_group_links_group_id_fkey"
+            foreignKeyName: "whitelisted_number_group_links_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "whitelist_group_links_whitelisted_number_id_fkey"
+            foreignKeyName: "whitelisted_number_group_links_whitelisted_number_id_fkey"
             columns: ["whitelisted_number_id"]
             isOneToOne: false
             referencedRelation: "whitelisted_numbers"
@@ -1446,28 +1648,31 @@ export type Database = {
       }
       whitelisted_numbers: {
         Row: {
-          created_at: string | null
-          description: string | null
+          created_at: string
+          deleted_at: string | null
           id: string
+          label: string | null
           phone_number: string
           tenant_id: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
-          description?: string | null
+          created_at?: string
+          deleted_at?: string | null
           id?: string
+          label?: string | null
           phone_number: string
           tenant_id: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
-          description?: string | null
+          created_at?: string
+          deleted_at?: string | null
           id?: string
+          label?: string | null
           phone_number?: string
           tenant_id?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1483,39 +1688,31 @@ export type Database = {
     Views: {
       group_admin_view: {
         Row: {
-          active_members: number | null
+          admins: Json | null
           created_at: string | null
-          description: string | null
-          effective_gateway_id: string | null
-          gateway_id: string | null
-          gateway_name: string | null
+          depth: number | null
+          escalation_enabled: boolean | null
+          escalation_timeout_minutes: number | null
           id: string | null
-          is_gateway_inherited: boolean | null
           kind: string | null
+          member_count: number | null
+          min_on_duty_count: number | null
           name: string | null
           parent_group_id: string | null
-          parent_name: string | null
+          path: string[] | null
           tenant_id: string | null
-          total_members: number | null
           updated_at: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "groups_gateway_id_fkey"
-            columns: ["gateway_id"]
-            isOneToOne: false
-            referencedRelation: "gateways"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "groups_parent_id_fkey"
+            foreignKeyName: "groups_parent_group_id_fkey"
             columns: ["parent_group_id"]
             isOneToOne: false
             referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "groups_parent_id_fkey"
+            foreignKeyName: "groups_parent_group_id_fkey"
             columns: ["parent_group_id"]
             isOneToOne: false
             referencedRelation: "groups"
@@ -1532,14 +1729,12 @@ export type Database = {
       }
     }
     Functions: {
-      cleanup_old_audit_logs: { Args: never; Returns: undefined }
-      current_user_id: { Args: never; Returns: string }
-      find_or_create_thread: {
+      export_contact_data: { Args: { p_phone_number: string }; Returns: Json }
+      find_or_create_contact: {
         Args: {
-          p_contact_phone: string
-          p_gateway_id: string
-          p_is_fallback?: boolean
-          p_resolved_group_id: string
+          p_first_name?: string
+          p_last_name?: string
+          p_phone_number: string
           p_tenant_id: string
         }
         Returns: string
@@ -1547,30 +1742,80 @@ export type Database = {
       get_entity_audit_trail: {
         Args: { p_entity_id: string; p_entity_type: string; p_limit?: number }
         Returns: {
-          action: string
-          changes: Json
+          action_type: string
+          actor_email: string
+          actor_user_id: string
           created_at: string
           id: string
-          user_email: string
-          user_name: string
+          metadata: Json
+          scope: string
         }[]
       }
-      get_group_gateway: { Args: { p_group_id: string }; Returns: string }
-      get_tenant_audit_activity: {
-        Args: { p_limit?: number; p_tenant_id: string }
+      get_on_duty_users: {
+        Args: { p_group_id: string }
         Returns: {
-          action: string
-          changes: Json
-          created_at: string
-          entity_id: string
-          entity_type: string
-          id: string
-          user_name: string
+          email: string
+          full_name: string
+          user_id: string
         }[]
       }
-      is_group_admin_for: { Args: { group_uuid: string }; Returns: boolean }
+      get_or_create_thread: {
+        Args: {
+          p_external_number: string
+          p_gateway_id: string
+          p_group_id: string
+          p_tenant_id: string
+        }
+        Returns: string
+      }
+      get_user_accessible_groups: {
+        Args: { p_user_id: string }
+        Returns: {
+          depth: number
+          group_id: string
+          group_kind: string
+          group_name: string
+          is_member: boolean
+        }[]
+      }
+      hard_delete_tenant_data: {
+        Args: { p_tenant_id: string }
+        Returns: undefined
+      }
+      is_group_admin: { Args: { p_group_id: string }; Returns: boolean }
+      is_group_admin_of_subtree: {
+        Args: { p_target_group_id: string }
+        Returns: boolean
+      }
+      is_number_whitelisted: {
+        Args: {
+          p_group_id?: string
+          p_phone_number: string
+          p_tenant_id: string
+        }
+        Returns: boolean
+      }
       is_tenant_admin: { Args: never; Returns: boolean }
+      log_audit_event: {
+        Args: {
+          p_action_type: string
+          p_actor_user_id: string
+          p_entity_id: string
+          p_entity_type: string
+          p_metadata?: Json
+          p_scope: string
+          p_scope_id?: string
+          p_tenant_id: string
+        }
+        Returns: string
+      }
+      soft_delete_entity: {
+        Args: { p_entity_id: string; p_table_name: string }
+        Returns: boolean
+      }
+      user_group_ids: { Args: never; Returns: string[] }
       user_tenant_id: { Args: never; Returns: string }
+      validate_e164_phone: { Args: { p_phone: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
