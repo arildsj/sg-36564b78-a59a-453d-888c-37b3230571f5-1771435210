@@ -46,27 +46,15 @@ export const groupService = {
     name: string;
     kind: string;
     description?: string | null;
-    parent_group_id?: string | null;
+    parent_id?: string | null;
     gateway_id?: string | null;
     tenant_id: string;
     escalation_enabled?: boolean;
     escalation_timeout_minutes?: number;
   }) {
-    // Map frontend camelCase to DB snake_case
-    const dbGroup = {
-      name: group.name,
-      kind: group.kind,
-      description: group.description,
-      parent_id: group.parent_group_id, // Map parent_group_id to parent_id
-      gateway_id: group.gateway_id,
-      tenant_id: group.tenant_id,
-      escalation_enabled: group.escalation_enabled,
-      escalation_timeout_minutes: group.escalation_timeout_minutes
-    };
-
     const { data, error } = await supabase
       .from("groups")
-      .insert([dbGroup])
+      .insert([group])
       .select()
       .single();
 
