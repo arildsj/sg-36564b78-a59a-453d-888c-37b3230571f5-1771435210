@@ -54,6 +54,8 @@ export default function OnboardingPage() {
         return;
       }
 
+      console.log("🚀 Starting signup process...");
+
       // Sign up with Supabase Auth directly
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -68,7 +70,7 @@ export default function OnboardingPage() {
       });
 
       if (error) {
-        console.error("Signup error:", error);
+        console.error("❌ Signup error:", error);
         toast({ 
           title: "Registreringsfeil", 
           description: error.message || "Kunne ikke opprette konto", 
@@ -78,6 +80,7 @@ export default function OnboardingPage() {
       }
 
       if (!data.user) {
+        console.error("❌ No user returned from signup");
         toast({ 
           title: "Registreringsfeil", 
           description: "Kunne ikke opprette bruker", 
@@ -86,30 +89,55 @@ export default function OnboardingPage() {
         return;
       }
 
+      console.log("✅ Auth user created:", data.user.id);
+      console.log("📤 Calling onboard API...");
+
+      const onboardPayload = {
+        user_id: data.user.id,
+        email: formData.email,
+        full_name: formData.full_name,
+        phone: formData.phone,
+        organization_name: formData.organization_name
+      };
+
+      console.log("📦 Onboard payload:", onboardPayload);
+
       // Call onboard API to create tenant and user_profile
       const onboardResponse = await fetch('/api/onboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: data.user.id,
-          email: formData.email,
-          full_name: formData.full_name,
-          phone: formData.phone,
-          organization_name: formData.organization_name
-        })
+        body: JSON.stringify(onboardPayload)
       });
 
       const onboardData = await onboardResponse.json();
 
+      console.log("📥 Onboard API response:", {
+        status: onboardResponse.status,
+        ok: onboardResponse.ok,
+        data: onboardData
+      });
+
       if (!onboardResponse.ok) {
-        console.error("Onboard API error:", onboardData);
+        console.error("❌ Onboard API error:", onboardData);
+        
+        // Show detailed error message including debug info
+        let errorMessage = onboardData.message || "Kunne ikke fullføre registrering";
+        
+        if (onboardData.debug) {
+          console.error("🔍 Debug info:", onboardData.debug);
+          errorMessage += "\n\nDebug: " + JSON.stringify(onboardData.debug, null, 2);
+        }
+
         toast({ 
           title: "Feil ved opprettelse", 
-          description: onboardData.error || "Kunne ikke fullføre registrering", 
-          variant: "destructive" 
+          description: errorMessage, 
+          variant: "destructive",
+          duration: 10000 // Show longer for debug info
         });
         return;
       }
+
+      console.log("✅ Onboarding successful!");
 
       // Success - since email confirmation is disabled, log user in immediately
       toast({ 
@@ -124,7 +152,7 @@ export default function OnboardingPage() {
       }, 2000);
 
     } catch (error) {
-      console.error("Registration error:", error);
+      console.error("❌ Registration error:", error);
       toast({ 
         title: "Kritisk feil", 
         description: "En uventet feil oppstod", 
