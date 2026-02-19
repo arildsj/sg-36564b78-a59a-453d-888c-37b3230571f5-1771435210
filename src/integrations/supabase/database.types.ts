@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -1691,9 +1691,10 @@ export type Database = {
     Views: {
       group_admin_view: {
         Row: {
-          admins: Json | null
           created_at: string | null
+          deleted_at: string | null
           depth: number | null
+          description: string | null
           escalation_enabled: boolean | null
           escalation_timeout_minutes: number | null
           id: string | null
@@ -1702,9 +1703,46 @@ export type Database = {
           min_on_duty_count: number | null
           name: string | null
           parent_group_id: string | null
+          parent_name: string | null
           path: string[] | null
           tenant_id: string | null
           updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          depth?: number | null
+          description?: string | null
+          escalation_enabled?: boolean | null
+          escalation_timeout_minutes?: number | null
+          id?: string | null
+          kind?: string | null
+          member_count?: never
+          min_on_duty_count?: number | null
+          name?: string | null
+          parent_group_id?: string | null
+          parent_name?: never
+          path?: string[] | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          depth?: number | null
+          description?: string | null
+          escalation_enabled?: boolean | null
+          escalation_timeout_minutes?: number | null
+          id?: string | null
+          kind?: string | null
+          member_count?: never
+          min_on_duty_count?: number | null
+          name?: string | null
+          parent_group_id?: string | null
+          parent_name?: never
+          path?: string[] | null
+          tenant_id?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
