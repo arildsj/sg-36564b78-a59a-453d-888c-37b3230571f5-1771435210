@@ -63,7 +63,7 @@ export async function getUserGroupIds(): Promise<string[]> {
   if (!user) return [];
 
   const { data, error } = await supabase
-    .from("user_group_assignments")
+    .from("group_memberships")
     .select("group_id")
     .eq("user_id", user.id);
 
@@ -72,7 +72,7 @@ export async function getUserGroupIds(): Promise<string[]> {
     return [];
   }
 
-  return data.map(assignment => assignment.group_id);
+  return data.map((membership: any) => membership.group_id);
 }
 
 /**
@@ -206,7 +206,7 @@ export async function canUserViewContact(contactId: string): Promise<boolean> {
   if (!profile) return false;
 
   const { data: contact, error } = await supabase
-    .from("contacts")
+    .from("whitelisted_numbers")
     .select("tenant_id")
     .eq("id", contactId)
     .maybeSingle();
@@ -348,7 +348,7 @@ export async function getContactsQuery() {
   if (!tenantId) throw new Error("User has no tenant");
 
   return supabase
-    .from("contacts")
+    .from("whitelisted_numbers")
     .select("*")
     .eq("tenant_id", tenantId);
 }
