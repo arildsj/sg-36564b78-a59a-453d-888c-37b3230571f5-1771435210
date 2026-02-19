@@ -157,7 +157,7 @@ export default async function handler(
         id: user_id,
         tenant_id: tenantId,
         email,
-        name: full_name,
+        full_name: full_name,
         phone_number: phone,
         role: "tenant_admin",
         status: "active"

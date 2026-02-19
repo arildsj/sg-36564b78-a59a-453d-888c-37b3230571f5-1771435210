@@ -1563,6 +1563,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          phone_number: string | null
           role: string
           status: string
           tenant_id: string
@@ -1574,6 +1575,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          phone_number?: string | null
           role?: string
           status?: string
           tenant_id: string
@@ -1585,6 +1587,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          phone_number?: string | null
           role?: string
           status?: string
           tenant_id?: string
