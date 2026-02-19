@@ -120,19 +120,54 @@ export default function OnboardingPage() {
       if (!onboardResponse.ok) {
         console.error("❌ Onboard API error:", onboardData);
         
+        // Log full error details to console
+        if (onboardData.debug) {
+          console.error("🔍 Debug info:", JSON.stringify(onboardData.debug, null, 2));
+        }
+
         // Show detailed error message including debug info
         let errorMessage = onboardData.message || "Kunne ikke fullføre registrering";
         
+        // If there's debug info, show it in a more readable format
         if (onboardData.debug) {
-          console.error("🔍 Debug info:", onboardData.debug);
-          errorMessage += "\n\nDebug: " + JSON.stringify(onboardData.debug, null, 2);
+          const debugInfo = onboardData.debug;
+          
+          // Check for tenant error
+          if (debugInfo.tenantError) {
+            console.error("🔴 Tenant Error:", debugInfo.tenantError);
+            errorMessage += `\n\nTenant feil: ${debugInfo.tenantError.message}`;
+            if (debugInfo.tenantError.code) {
+              errorMessage += ` (${debugInfo.tenantError.code})`;
+            }
+          }
+          
+          // Check for user error
+          if (debugInfo.userError) {
+            console.error("🔴 User Error:", debugInfo.userError);
+            errorMessage += `\n\nBruker feil: ${debugInfo.userError.message}`;
+            if (debugInfo.userError.code) {
+              errorMessage += ` (${debugInfo.userError.code})`;
+            }
+          }
+
+          // Check for environment variable issues
+          if (debugInfo.hasUrl === false || debugInfo.hasKey === false) {
+            console.error("🔴 Environment variables missing!");
+            errorMessage += "\n\n⚠️ Server configuration problem: Missing environment variables";
+          }
+
+          // Generic error info
+          if (debugInfo.error) {
+            console.error("🔴 Generic Error:", debugInfo.error);
+            errorMessage += `\n\nFeil: ${debugInfo.error}`;
+          }
         }
 
         toast({ 
           title: "Feil ved opprettelse", 
           description: errorMessage, 
           variant: "destructive",
-          duration: 10000 // Show longer for debug info
+          duration: 10000
         });
         return;
       }
@@ -151,11 +186,12 @@ export default function OnboardingPage() {
         router.push('/');
       }, 2000);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ Registration error:", error);
+      console.error("Error stack:", error?.stack);
       toast({ 
         title: "Kritisk feil", 
-        description: "En uventet feil oppstod", 
+        description: `En uventet feil oppstod: ${error.message || "Ukjent feil"}`, 
         variant: "destructive" 
       });
     } finally {
