@@ -2,10 +2,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
 
 interface OnboardRequest {
+  user_id: string;
   full_name: string;
   email: string;
   phone: string;
-  password: string;
   organization_name: string;
 }
 
@@ -48,12 +48,12 @@ export default async function handler(
   }
 
   try {
-    const { full_name, email, phone, password, organization_name }: OnboardRequest = req.body;
+    const { user_id, full_name, email, phone, organization_name }: OnboardRequest = req.body;
 
-    console.log("📝 Request body:", { full_name, email, phone: phone.substring(0, 5) + "***", organization_name });
+    console.log("📝 Request body:", { user_id, full_name, email, phone: phone.substring(0, 5) + "***", organization_name });
 
     // Validate required fields
-    if (!full_name || !email || !phone || !password || !organization_name) {
+    if (!user_id || !full_name || !email || !phone || !organization_name) {
       return res.status(400).json({
         success: false,
         message: "Alle felt må fylles ut"
@@ -78,14 +78,6 @@ export default async function handler(
       });
     }
 
-    // Validate password length
-    if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Passord må være minst 6 tegn"
-      });
-    }
-
     console.log("✅ All validation passed");
     console.log("Creating Supabase Admin Client...");
 
@@ -103,60 +95,10 @@ export default async function handler(
 
     console.log("✅ Supabase Admin Client created");
 
-    // STEP 1: Create Supabase Auth user
-    console.log("Creating auth user with email:", email);
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        full_name
-      }
-    });
+    // Auth user already exists, use the provided user_id
+    console.log("Using existing auth user:", user_id);
 
-    // Log detailed error information
-    if (authError) {
-      console.error("❌ Auth user creation error:");
-      console.error("  - Message:", authError.message);
-      console.error("  - Status:", authError.status);
-      console.error("  - Code:", authError.code);
-      console.error("  - Full error:", JSON.stringify(authError, null, 2));
-      
-      // Check if error is due to duplicate email
-      if (authError.message?.includes("already registered") || authError.message?.includes("already exists")) {
-        return res.status(409).json({
-          success: false,
-          message: "E-postadressen er allerede registrert"
-        });
-      }
-      
-      // Return detailed error for debugging
-      return res.status(500).json({
-        success: false,
-        message: `Kunne ikke opprette bruker: ${authError.message}`,
-        debug: { 
-          authError: {
-            message: authError.message,
-            status: authError.status,
-            code: authError.code,
-            name: authError.name
-          }
-        }
-      });
-    }
-
-    if (!authData.user) {
-      console.error("❌ No user returned from createUser");
-      return res.status(500).json({
-        success: false,
-        message: "Kunne ikke opprette bruker (ingen brukerdata returnert)"
-      });
-    }
-
-    const authUserId = authData.user.id;
-    console.log("✅ Auth user created:", authUserId);
-
-    // STEP 2: Create tenant
+    // STEP 1: Create tenant
     console.log("Creating tenant with name:", organization_name);
     const { data: tenantData, error: tenantError } = await supabaseAdmin
       .from("tenants")
@@ -172,7 +114,7 @@ export default async function handler(
       
       // Rollback: Delete auth user
       console.log("Rolling back: Deleting auth user...");
-      await supabaseAdmin.auth.admin.deleteUser(authUserId);
+      await supabaseAdmin.auth.admin.deleteUser(user_id);
       
       // Check if error is due to duplicate organization name
       if (tenantError.code === "23505" || tenantError.message?.includes("unique")) {
@@ -197,7 +139,7 @@ export default async function handler(
 
     if (!tenantData) {
       console.error("❌ No tenant data returned");
-      await supabaseAdmin.auth.admin.deleteUser(authUserId);
+      await supabaseAdmin.auth.admin.deleteUser(user_id);
       return res.status(500).json({
         success: false,
         message: "Kunne ikke opprette organisasjon (ingen data returnert)"
@@ -207,12 +149,12 @@ export default async function handler(
     const tenantId = tenantData.id;
     console.log("✅ Tenant created:", tenantId);
 
-    // STEP 3: Create user in users table
+    // STEP 2: Create user in users table (use user_profiles now)
     console.log("Creating user profile...");
     const { data: userData, error: userError } = await supabaseAdmin
-      .from("users")
+      .from("user_profiles")
       .insert({
-        id: authUserId,
+        id: user_id,
         tenant_id: tenantId,
         email,
         name: full_name,
@@ -229,7 +171,7 @@ export default async function handler(
       // Rollback: Delete tenant and auth user
       console.log("Rolling back: Deleting tenant and auth user...");
       await supabaseAdmin.from("tenants").delete().eq("id", tenantId);
-      await supabaseAdmin.auth.admin.deleteUser(authUserId);
+      await supabaseAdmin.auth.admin.deleteUser(user_id);
       
       return res.status(500).json({
         success: false,
@@ -247,7 +189,7 @@ export default async function handler(
     if (!userData) {
       console.error("❌ No user data returned");
       await supabaseAdmin.from("tenants").delete().eq("id", tenantId);
-      await supabaseAdmin.auth.admin.deleteUser(authUserId);
+      await supabaseAdmin.auth.admin.deleteUser(user_id);
       return res.status(500).json({
         success: false,
         message: "Kunne ikke opprette brukerprofil (ingen data returnert)"
@@ -262,7 +204,7 @@ export default async function handler(
       success: true,
       message: "Organisasjon og administrator opprettet",
       tenant_id: tenantId,
-      user_id: authUserId
+      user_id: user_id
     });
 
   } catch (error: any) {
