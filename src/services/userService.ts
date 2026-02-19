@@ -30,21 +30,37 @@ export interface UserProfile {
 
 export const userService = {
   async getCurrentUserProfile(): Promise<UserProfile | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    try {
+      // Get current session to get the access token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
 
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
+      // Call API route with auth token (uses service role internally)
+      const response = await fetch("/api/user-profile", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`,
+          "Content-Type": "application/json"
+        }
+      });
 
-    if (error) {
+      if (!response.ok) {
+        console.error("Failed to fetch user profile:", response.statusText);
+        return null;
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        console.error("Error fetching user profile:", result.error);
+        return null;
+      }
+
+      return result.data as UserProfile;
+    } catch (error) {
       console.error("Error fetching user profile:", error);
       return null;
     }
-
-    return data as UserProfile;
   },
 
   async getGroupMembers(groupId: string): Promise<UserProfile[]> {

@@ -1799,6 +1799,7 @@ export type Database = {
         Returns: boolean
       }
       is_tenant_admin: { Args: never; Returns: boolean }
+      is_tenant_admin_safe: { Args: never; Returns: boolean }
       log_audit_event: {
         Args: {
           p_action_type: string
