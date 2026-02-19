@@ -6,13 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, CheckCircle2 } from "lucide-react";
+import { Building2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface ValidationErrors {
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
+  confirmPassword?: string;
+  organization_name?: string;
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<ValidationErrors>({});
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -23,48 +33,91 @@ export default function OnboardingPage() {
     organization_name: ""
   });
 
+  // Validation functions
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: ValidationErrors = {};
+
+    // Full name validation
+    if (!formData.full_name.trim()) {
+      newErrors.full_name = "Fullt navn er påkrevd";
+    } else if (formData.full_name.trim().length < 2) {
+      newErrors.full_name = "Navnet må være minst 2 tegn";
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = "E-post er påkrevd";
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = "Ugyldig e-postformat (f.eks. ola@eksempel.no)";
+    }
+
+    // Phone validation
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Telefonnummer er påkrevd";
+    } else if (!validatePhone(formData.phone)) {
+      newErrors.phone = "Telefonnummer må være i E.164-format (f.eks. +4791234567)";
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = "Passord er påkrevd";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Passordet må være minst 6 tegn";
+    }
+
+    // Confirm password validation
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = "Bekreft passord er påkrevd";
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passordene matcher ikke";
+    }
+
+    // Organization name validation
+    if (!formData.organization_name.trim()) {
+      newErrors.organization_name = "Organisasjonsnavn er påkrevd";
+    } else if (formData.organization_name.trim().length < 2) {
+      newErrors.organization_name = "Organisasjonsnavnet må være minst 2 tegn";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleRegister = async () => {
     try {
-      setLoading(true);
-
-      // Frontend validation
-      if (!formData.full_name || !formData.email || !formData.phone || !formData.password || !formData.organization_name) {
-        toast({ title: "Mangler info", description: "Alle felt må fylles ut", variant: "destructive" });
-        return;
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        toast({ title: "Feil", description: "Passordene matcher ikke", variant: "destructive" });
-        return;
-      }
-
-      if (formData.password.length < 6) {
-        toast({ title: "Svakt passord", description: "Passordet må være minst 6 tegn", variant: "destructive" });
-        return;
-      }
-
-      // Validate phone format (E.164)
-      const phoneRegex = /^\+[1-9]\d{1,14}$/;
-      if (!phoneRegex.test(formData.phone)) {
+      // Validate form before proceeding
+      if (!validateForm()) {
         toast({ 
-          title: "Ugyldig telefonnummer", 
-          description: "Telefonnummer må være i E.164-format (f.eks. +4791234567)", 
+          title: "Valideringsfeil", 
+          description: "Vennligst rett opp feilene i skjemaet", 
           variant: "destructive" 
         });
         return;
       }
 
+      setLoading(true);
+
       console.log("🚀 Starting signup process...");
 
       // Sign up with Supabase Auth directly
       const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password,
         options: {
           data: {
-            full_name: formData.full_name,
-            phone: formData.phone,
-            organization_name: formData.organization_name
+            full_name: formData.full_name.trim(),
+            phone: formData.phone.trim(),
+            organization_name: formData.organization_name.trim()
           }
         }
       });
@@ -94,10 +147,10 @@ export default function OnboardingPage() {
 
       const onboardPayload = {
         user_id: data.user.id,
-        email: formData.email,
-        full_name: formData.full_name,
-        phone: formData.phone,
-        organization_name: formData.organization_name
+        email: formData.email.trim(),
+        full_name: formData.full_name.trim(),
+        phone: formData.phone.trim(),
+        organization_name: formData.organization_name.trim()
       };
 
       console.log("📦 Onboard payload:", onboardPayload);
@@ -199,6 +252,67 @@ export default function OnboardingPage() {
     }
   };
 
+  // Real-time validation on blur
+  const handleBlur = (field: keyof ValidationErrors) => {
+    const newErrors = { ...errors };
+
+    switch (field) {
+      case 'email':
+        if (!formData.email.trim()) {
+          newErrors.email = "E-post er påkrevd";
+        } else if (!validateEmail(formData.email)) {
+          newErrors.email = "Ugyldig e-postformat";
+        } else {
+          delete newErrors.email;
+        }
+        break;
+
+      case 'phone':
+        if (!formData.phone.trim()) {
+          newErrors.phone = "Telefonnummer er påkrevd";
+        } else if (!validatePhone(formData.phone)) {
+          newErrors.phone = "Ugyldig telefonnummer (bruk E.164-format)";
+        } else {
+          delete newErrors.phone;
+        }
+        break;
+
+      case 'password':
+        if (!formData.password) {
+          newErrors.password = "Passord er påkrevd";
+        } else if (formData.password.length < 6) {
+          newErrors.password = "Passordet må være minst 6 tegn";
+        } else {
+          delete newErrors.password;
+        }
+        break;
+
+      case 'confirmPassword':
+        if (!formData.confirmPassword) {
+          newErrors.confirmPassword = "Bekreft passord er påkrevd";
+        } else if (formData.password !== formData.confirmPassword) {
+          newErrors.confirmPassword = "Passordene matcher ikke";
+        } else {
+          delete newErrors.confirmPassword;
+        }
+        break;
+    }
+
+    setErrors(newErrors);
+  };
+
+  const isFormValid = () => {
+    return formData.full_name.trim() &&
+           formData.email.trim() &&
+           validateEmail(formData.email) &&
+           formData.phone.trim() &&
+           validatePhone(formData.phone) &&
+           formData.password.length >= 6 &&
+           formData.password === formData.confirmPassword &&
+           formData.organization_name.trim() &&
+           Object.keys(errors).length === 0;
+  };
+
   return (
     <>
       <Head>
@@ -235,7 +349,14 @@ export default function OnboardingPage() {
                     placeholder="Ola Nordmann"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    className={errors.full_name ? "border-red-500" : ""}
                   />
+                  {errors.full_name && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.full_name}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -246,7 +367,18 @@ export default function OnboardingPage() {
                     placeholder="ola@minskole.no"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onBlur={() => handleBlur('email')}
+                    className={errors.email ? "border-red-500" : ""}
                   />
+                  {errors.email && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.email}
+                    </p>
+                  )}
+                  {!errors.email && formData.email && (
+                    <p className="text-xs text-green-600">✓ Gyldig e-postformat</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -256,7 +388,18 @@ export default function OnboardingPage() {
                     placeholder="+4791234567"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onBlur={() => handleBlur('phone')}
+                    className={errors.phone ? "border-red-500" : ""}
                   />
+                  {errors.phone && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.phone}
+                    </p>
+                  )}
+                  {!errors.phone && formData.phone && validatePhone(formData.phone) && (
+                    <p className="text-xs text-green-600">✓ Gyldig telefonnummer</p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     Format: +4791234567 (E.164)
                   </p>
@@ -270,7 +413,18 @@ export default function OnboardingPage() {
                     placeholder="Minst 6 tegn"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onBlur={() => handleBlur('password')}
+                    className={errors.password ? "border-red-500" : ""}
                   />
+                  {errors.password && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.password}
+                    </p>
+                  )}
+                  {!errors.password && formData.password.length >= 6 && (
+                    <p className="text-xs text-green-600">✓ Passord er sterkt nok</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -281,7 +435,18 @@ export default function OnboardingPage() {
                     placeholder="Skriv inn passordet på nytt"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    onBlur={() => handleBlur('confirmPassword')}
+                    className={errors.confirmPassword ? "border-red-500" : ""}
                   />
+                  {errors.confirmPassword && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.confirmPassword}
+                    </p>
+                  )}
+                  {!errors.confirmPassword && formData.confirmPassword && formData.password === formData.confirmPassword && (
+                    <p className="text-xs text-green-600">✓ Passordene matcher</p>
+                  )}
                 </div>
               </div>
 
@@ -295,14 +460,21 @@ export default function OnboardingPage() {
                     placeholder="Min Skole"
                     value={formData.organization_name}
                     onChange={(e) => setFormData({ ...formData, organization_name: e.target.value })}
+                    className={errors.organization_name ? "border-red-500" : ""}
                   />
+                  {errors.organization_name && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {errors.organization_name}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <Button 
                 onClick={handleRegister} 
                 className="w-full"
-                disabled={loading}
+                disabled={loading || !isFormValid()}
               >
                 {loading ? "Oppretter konto..." : "Opprett konto"}
               </Button>
