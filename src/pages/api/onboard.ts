@@ -17,6 +17,19 @@ interface OnboardResponse {
   debug?: any;
 }
 
+/**
+ * Generate URL-safe slug from organization name
+ */
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<OnboardResponse>
@@ -100,10 +113,14 @@ export default async function handler(
 
     // STEP 1: Create tenant
     console.log("Creating tenant with name:", organization_name);
+    const tenantSlug = generateSlug(organization_name);
+    console.log("Generated slug:", tenantSlug);
+    
     const { data: tenantData, error: tenantError } = await supabaseAdmin
       .from("tenants")
       .insert({
         name: organization_name,
+        slug: tenantSlug,
         status: "active"
       })
       .select()
