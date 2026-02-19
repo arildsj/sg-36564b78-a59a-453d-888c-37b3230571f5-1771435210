@@ -142,7 +142,7 @@ export async function canUserViewMessage(messageId: string): Promise<boolean> {
   // Get message details
   const { data: message, error } = await supabase
     .from("messages")
-    .select("tenant_id, group_id")
+    .select("tenant_id, resolved_group_id")
     .eq("id", messageId)
     .maybeSingle();
 
@@ -155,8 +155,8 @@ export async function canUserViewMessage(messageId: string): Promise<boolean> {
   if (profile.role === "admin") return true;
 
   // Check group membership
-  if (message.group_id) {
-    return await isUserInGroup(message.group_id);
+  if (message.resolved_group_id) {
+    return await isUserInGroup(message.resolved_group_id);
   }
 
   return false;
