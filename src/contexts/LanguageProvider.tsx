@@ -54,6 +54,22 @@ const translations: Record<string, Record<Language, string>> = {
   "home.title": { no: "Velkommen til SeMSe 2.0", en: "Welcome to SeMSe 2.0", de: "Willkommen bei SeMSe 2.0", fr: "Bienvenue sur SeMSe 2.0", es: "Bienvenido a SeMSe 2.0", it: "Benvenuto in SeMSe 2.0", pl: "Witamy w SeMSe 2.0" },
   "home.subtitle": { no: "Smart meldingshåndtering for skoler", en: "Smart messaging for schools", de: "Intelligentes Messaging für Schulen", fr: "Messagerie intelligente pour les écoles", es: "Mensajería inteligente para escuelas", it: "Messaggistica intelligente per le scuole", pl: "Inteligentna komunikacja dla szkół" },
 
+  // Login - FIXED translations
+  "login.description": { no: "Logg inn på SeMSe", en: "Sign in to SeMSe", de: "Bei SeMSe anmelden", fr: "Se connecter à SeMSe", es: "Iniciar sesión en SeMSe", it: "Accedi a SeMSe", pl: "Zaloguj się do SeMSe" },
+  "login.email": { no: "E-post", en: "Email", de: "E-Mail", fr: "E-mail", es: "Correo electrónico", it: "Email", pl: "E-mail" },
+  "login.email_placeholder": { no: "din.epost@eksempel.no", en: "your.email@example.com", de: "ihre.email@beispiel.de", fr: "votre.email@exemple.fr", es: "tu.correo@ejemplo.es", it: "tua.email@esempio.it", pl: "twoj.email@przyklad.pl" },
+  "login.password": { no: "Passord", en: "Password", de: "Passwort", fr: "Mot de passe", es: "Contraseña", it: "Password", pl: "Hasło" },
+  "login.password_placeholder": { no: "Skriv inn passord", en: "Enter password", de: "Passwort eingeben", fr: "Entrez le mot de passe", es: "Ingrese contraseña", it: "Inserisci password", pl: "Wprowadź hasło" },
+  "login.button": { no: "Logg inn", en: "Sign in", de: "Anmelden", fr: "Se connecter", es: "Iniciar sesión", it: "Accedi", pl: "Zaloguj się" },
+  "login.logging_in": { no: "Logger inn...", en: "Signing in...", de: "Anmelden...", fr: "Connexion...", es: "Iniciando sesión...", it: "Accesso...", pl: "Logowanie..." },
+  "login.no_account": { no: "Har du ikke konto? Registrer deg her", en: "Don't have an account? Sign up here", de: "Haben Sie kein Konto? Hier registrieren", fr: "Vous n'avez pas de compte ? Inscrivez-vous ici", es: "¿No tienes cuenta? Regístrate aquí", it: "Non hai un account? Registrati qui", pl: "Nie masz konta? Zarejestruj się tutaj" },
+  "login.forgot_password": { no: "Glemt passord?", en: "Forgot password?", de: "Passwort vergessen?", fr: "Mot de passe oublié ?", es: "¿Olvidaste tu contraseña?", it: "Password dimenticata?", pl: "Zapomniałeś hasła?" },
+  
+  // Error messages
+  "error.email_not_confirmed": { no: "E-post er ikke bekreftet. Sjekk innboksen din.", en: "Email not confirmed. Check your inbox.", de: "E-Mail nicht bestätigt. Überprüfen Sie Ihren Posteingang.", fr: "E-mail non confirmé. Vérifiez votre boîte de réception.", es: "Correo no confirmado. Revisa tu bandeja de entrada.", it: "Email non confermata. Controlla la tua casella di posta.", pl: "E-mail nie został potwierdzony. Sprawdź swoją skrzynkę odbiorczą." },
+  "error.invalid_credentials": { no: "Ugyldig e-post eller passord", en: "Invalid email or password", de: "Ungültige E-Mail oder Passwort", fr: "E-mail ou mot de passe invalide", es: "Correo o contraseña inválidos", it: "Email o password non validi", pl: "Nieprawidłowy e-mail lub hasło" },
+  "error.generic": { no: "En feil oppstod. Prøv igjen.", en: "An error occurred. Please try again.", de: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.", fr: "Une erreur s'est produite. Veuillez réessayer.", es: "Ocurrió un error. Por favor, inténtelo de nuevo.", it: "Si è verificato un errore. Riprova.", pl: "Wystąpił błąd. Spróbuj ponownie." },
+
   // Inbox
   "inbox.title": { no: "Samtaler", en: "Conversations", de: "Unterhaltungen", fr: "Conversations", es: "Conversaciones", it: "Conversazioni", pl: "Rozmowy" },
   "inbox.subtitle": { no: "Håndter meldinger fra dine grupper.", en: "Manage messages from your groups.", de: "Verwalten Sie Nachrichten von Ihren Gruppen.", fr: "Gérez les messages de vos groupes.", es: "Gestione los mensajes de sus grupos.", it: "Gestisci i messaggi dai tuoi gruppi.", pl: "Zarządzaj wiadomościami ze swoich grup." },
@@ -239,26 +255,24 @@ const translations: Record<string, Record<Language, string>> = {
   "admin.active_user": { no: "Aktiv bruker", en: "Active user", de: "Aktiver Benutzer", fr: "Utilisateur actif", es: "Usuario activo", it: "Utente attivo", pl: "Aktywny użytkownik" },
 };
 
+// Default language for SSR and initial client render
+const DEFAULT_LANGUAGE: Language = "no";
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>("no");
+  const [language, setLanguage] = useState<Language>(DEFAULT_LANGUAGE);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     const savedLang = localStorage.getItem("language") as Language;
-    if (savedLang) {
+    if (savedLang && savedLang !== DEFAULT_LANGUAGE) {
       setLanguage(savedLang);
     }
   }, []);
 
   const t = (key: string) => {
-    // CRITICAL: Always return key on server AND before client mount
-    // This prevents hydration mismatches
-    if (typeof window === "undefined" || !mounted) {
-      return key;
-    }
-    
-    // Only translate after component has mounted on client
+    // Return translated text immediately - no SSR/mounted check needed
+    // Default language handles SSR case
     if (translations[key] && translations[key][language]) {
       return translations[key][language];
     }
@@ -267,7 +281,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
-    localStorage.setItem("language", lang);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("language", lang);
+    }
   };
 
   return (
