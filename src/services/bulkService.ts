@@ -158,7 +158,7 @@ export const bulkService = {
       .from("whitelist_group_links")
       .select(`
         whitelisted_number:whitelisted_numbers(
-          phone_number,
+          identifier,
           description
         )
       `)
@@ -171,7 +171,7 @@ export const bulkService = {
       .filter(Boolean)
       .map((c: any) => ({
         campaign_id: campaign.id,
-        phone_number: c.phone_number,
+        phone_number: c.identifier,
         metadata: { name: c.description },
         status: "pending"
       }));
@@ -255,7 +255,7 @@ export const bulkService = {
       .from("whitelist_group_links")
       .select(`
         whitelisted_number:whitelisted_numbers(
-          phone_number,
+          identifier,
           description
         )
       `)
@@ -266,10 +266,10 @@ export const bulkService = {
     const recipients = (contacts || [])
       .map((link: any) => link.whitelisted_number)
       .filter(Boolean)
-      .filter((c: any) => targetPhoneNumbers.includes(c.phone_number))
+      .filter((c: any) => targetPhoneNumbers.includes(c.identifier))
       .map((c: any) => ({
         campaign_id: campaign.id,
-        phone_number: c.phone_number,
+        phone_number: c.identifier,
         metadata: { name: c.description },
         status: "pending"
       }));

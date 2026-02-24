@@ -49,7 +49,7 @@ export const contactService = {
 
       return {
         id: contact.id,
-        phone: contact.phone_number,
+        phone: contact.identifier,
         name: contact.description || "Ukjent navn",
         email: null,
         is_whitelisted: true,
@@ -82,7 +82,7 @@ export const contactService = {
     const { data: newContact, error } = await db
       .from("whitelisted_numbers")
       .insert({
-        phone_number: contact.phone,
+        identifier: contact.phone,
         description: contact.name,
         tenant_id: profile.tenant_id
       })
@@ -120,14 +120,14 @@ export const contactService = {
           )
         )
       `)
-      .or(`phone_number.ilike.%${query}%,description.ilike.%${query}%`)
+      .or(`identifier.ilike.%${query}%,description.ilike.%${query}%`)
       .limit(20);
       
     if (error) throw error;
     
     return (data || []).map((c: any) => ({
       id: c.id,
-      phone: c.phone_number,
+      phone: c.identifier,
       name: c.description || "Ukjent navn",
       email: null,
       is_whitelisted: true,
@@ -165,7 +165,7 @@ export const contactService = {
       .select(`
         whitelisted_number:whitelisted_numbers (
           id,
-          phone_number,
+          identifier,
           description,
           created_at
         )
@@ -181,7 +181,7 @@ export const contactService = {
       if (contact && !contactMap.has(contact.id)) {
         contactMap.set(contact.id, {
           id: contact.id,
-          phone: contact.phone_number,
+          phone: contact.identifier,
           name: contact.description || "Ukjent navn",
           email: null,
           is_whitelisted: true,
@@ -205,7 +205,7 @@ export const contactService = {
     const { error: updateError } = await db
       .from("whitelisted_numbers")
       .update({
-        phone_number: contact.phone,
+        identifier: contact.phone,
         description: contact.name,
       })
       .eq("id", id);
@@ -261,7 +261,7 @@ export const contactService = {
       .filter((contact: any) => !!contact)
       .map((contact: any) => ({
         id: contact.id,
-        phone: contact.phone_number,
+        phone: contact.identifier,
         name: contact.description || "Ukjent navn",
         email: null,
         is_whitelisted: true,
@@ -336,7 +336,7 @@ export const contactService = {
       .select(`
         id,
         relationship_type,
-        related:contacts!related_contact_id(id, name, phone_number)
+        related:contacts!related_contact_id(id, name, identifier)
       `)
       .eq("subject_contact_id", contactId);
 
@@ -434,7 +434,7 @@ export const contactService = {
       entity_type: "whitelisted_number",
       entity_id: contactId,
       details: {
-        contact_phone: contact.phone_number,
+        contact_phone: contact.identifier,
         contact_name: contact.description,
         accessed_by: user.user.id,
         reason: "GDPR data access request"
@@ -444,7 +444,7 @@ export const contactService = {
     return {
       contact: {
         id: contact.id,
-        phone: contact.phone_number,
+        phone: contact.identifier,
         name: contact.description,
       },
       groups: memberships?.map((m: any) => m.group).filter(Boolean) || []
@@ -505,7 +505,7 @@ export const contactService = {
       entity_type: "whitelisted_number",
       entity_id: contactId,
       details: {
-        contact_phone: contact.phone_number,
+        contact_phone: contact.identifier,
         contact_name: contact.description,
         deleted_by: user.user.id,
         reason: reason,
@@ -517,7 +517,7 @@ export const contactService = {
     return {
       success: true,
       contact: {
-        phone: contact.phone_number,
+        phone: contact.identifier,
         name: contact.description
       },
       groups_removed: groupNames.length
