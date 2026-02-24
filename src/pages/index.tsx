@@ -90,7 +90,7 @@ export default function Dashboard() {
       
       // Total contacts
       const { count: contactsCount } = await db
-        .from("whitelisted_numbers")
+        .from("contacts")
         .select("*", { count: "exact", head: true });
 
       setStats({
