@@ -4,7 +4,6 @@ import Link from "next/link";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,12 +16,10 @@ import {
   Activity,
   ArrowRight,
   Clock,
-  CheckCircle2,
   AlertCircle,
   Inbox
 } from "lucide-react";
 import { format } from "date-fns";
-import { nb } from "date-fns/locale";
 import { useLanguage } from "@/contexts/LanguageProvider";
 import { messageService } from "@/services/messageService";
 import { groupService } from "@/services/groupService";
@@ -47,7 +44,7 @@ export default function Dashboard() {
   const [activeIncidents, setActiveIncidents] = useState<any[]>([]);
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  // Check authentication on mount
+  // 1. Auth check effect
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -60,38 +57,22 @@ export default function Dashboard() {
       
       console.log("Session found:", session.user.id);
       setAuthChecked(true);
-      setLoading(false);
     };
 
     checkAuth();
   }, [router]);
 
-  // Don't render dashboard until auth is checked
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Laster...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // 2. Data fetch effect (only runs when auth is checked)
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (authChecked) {
+      fetchDashboardData();
+    }
+  }, [authChecked]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        // Redirect handled by AppLayout usually, but safe to check
-        return;
-      }
-
       // Get user profile
       const profile = await userService.getCurrentUserProfile();
       setUserRole(profile?.role || null);
@@ -102,7 +83,7 @@ export default function Dashboard() {
         .from("messages")
         .select("*", { count: "exact", head: true })
         .eq("direction", "inbound")
-        .eq("status", "received"); // Assuming 'received' means unread/new
+        .eq("status", "received");
 
       // Active groups
       const groups = await groupService.getOperationalGroups();
@@ -116,14 +97,14 @@ export default function Dashboard() {
         unreadMessages: unreadCount || 0,
         activeGroups: groups.length,
         totalContacts: contactsCount || 0,
-        recentAlerts: 0 // Placeholder
+        recentAlerts: 0
       });
 
       // 2. Recent Messages
       const messages = await messageService.getRecentMessages(5);
       setRecentMessages(messages);
 
-      // 3. Active Incidents (mock for now, or fetch from groups with active escalation)
+      // 3. Active Incidents
       const incidents = groups.filter(g => g.escalation_enabled && (g.active_members || 0) < (g.min_on_duty_count || 1));
       setActiveIncidents(incidents);
 
@@ -134,6 +115,19 @@ export default function Dashboard() {
     }
   };
 
+  // 3. Loading / Auth checking state render
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Sjekker tilgang...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 4. Main dashboard render (loading data)
   if (loading) {
     return (
       <AppLayout>
@@ -151,6 +145,7 @@ export default function Dashboard() {
     );
   }
 
+  // 5. Main dashboard render (data loaded)
   return (
     <AppLayout>
       <Head>
