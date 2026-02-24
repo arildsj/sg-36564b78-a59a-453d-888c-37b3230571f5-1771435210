@@ -18,7 +18,7 @@ export type Gateway = {
 export const gatewayService = {
   async getGateways(): Promise<Gateway[]> {
     const { data, error } = await db
-      .from("gateways")
+      .from("sms_gateways")
       .select("*")
       .order("created_at", { ascending: false });
 
@@ -48,7 +48,7 @@ export const gatewayService = {
     // 2. Insert Gateway (API key will be encrypted by DB trigger or Edge Function ideally, 
     // but here we just store it - in prod use encryption)
     const { data: newGateway, error } = await db
-      .from("gateways")
+      .from("sms_gateways")
       .insert({
         tenant_id: profile.tenant_id,
         name: gateway.name,
@@ -80,7 +80,7 @@ export const gatewayService = {
     }
 
     const { error } = await db
-      .from("gateways")
+      .from("sms_gateways")
       .update(dbUpdates)
       .eq("id", id);
 
@@ -89,7 +89,7 @@ export const gatewayService = {
 
   async deleteGateway(id: string) {
     const { error } = await db
-      .from("gateways")
+      .from("sms_gateways")
       .delete()
       .eq("id", id);
 

@@ -615,7 +615,7 @@ export const messageService = {
 
     // Get gateway phone number for sending
     const { data: gateway } = await db
-      .from("gateways")
+      .from("sms_gateways")
       .select("phone_number")
       .eq("id", gatewayId)
       .maybeSingle();

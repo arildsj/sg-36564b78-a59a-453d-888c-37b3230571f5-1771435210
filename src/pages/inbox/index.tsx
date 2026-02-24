@@ -636,7 +636,7 @@ export default function InboxPage() {
         if (group?.gateway_id) {
             gatewayId = group.gateway_id;
             const { data: gateway } = await db
-                .from("gateways")
+                .from("sms_gateways")
                 .select("phone_number")
                 .eq("id", group.gateway_id)
                 .single();
@@ -647,7 +647,7 @@ export default function InboxPage() {
       if (!gatewayId) {
           // Fallback to default gateway if group has none
            const { data: defaultGateway } = await db
-            .from("gateways")
+            .from("sms_gateways")
             .select("id, phone_number")
             .eq("tenant_id", tenantId)
             .eq("is_default", true)
@@ -662,7 +662,7 @@ export default function InboxPage() {
       // Fallback to ANY gateway if still missing
       if (!gatewayId) {
            const { data: anyGateway } = await db
-            .from("gateways")
+            .from("sms_gateways")
             .select("id, phone_number")
             .eq("tenant_id", tenantId)
             .limit(1)

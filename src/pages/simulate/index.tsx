@@ -66,7 +66,7 @@ export default function SimulatePage() {
     try {
       // 1. Fetch Gateways
       const { data: gatewaysData } = await db
-        .from("gateways")
+        .from("sms_gateways")
         .select("*")
         .eq("status", "active");
       
