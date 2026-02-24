@@ -30,7 +30,7 @@ type NavItem = {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   adminOnly?: boolean;
-  rawLabel?: string; // Fallback for items not in translation yet
+  rawLabel?: string;
 };
 
 const navItems: NavItem[] = [
@@ -75,49 +75,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Fetch user profile data
-  useEffect(() => {
-    async function fetchUserProfile() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
-        // Fetch user profile
-        const { data: profileData, error: profileError } = await supabase
-          .from("user_profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-
-        if (profileError) {
-          console.error("Error fetching user profile:", profileError);
-          return;
-        }
-
-        if (profileData) {
-          setUserProfile(profileData);
-
-          // Fetch group memberships separately
-          const { data: memberships, error: membershipError } = await supabase
-            .from("group_memberships")
-            .select("group_id, groups(name)")
-            .eq("user_id", session.user.id);
-
-          if (membershipError) {
-            console.error("Error fetching group memberships:", membershipError);
-          } else if (memberships && memberships.length > 0) {
-            // Store group info if needed
-            console.log("User groups:", memberships);
-          }
-        }
-      } catch (error) {
-        console.error("Error in fetchUserProfile:", error);
-      }
-    }
-
-    fetchUserProfile();
-  }, []);
-
   const handleLogout = async () => {
     await authService.signOut();
     router.push("/login");
@@ -139,7 +96,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mobile Header */}
       <header className={cn("md:hidden flex items-center justify-between px-4 h-16 border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40")}>
         <Link href="/" className="text-2xl font-bold text-primary">
           SeMSe
@@ -155,7 +111,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </Button>
       </header>
 
-      {/* Sidebar Navigation */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transform transition-transform duration-200 ease-in-out flex flex-col",
@@ -192,7 +147,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="p-4 border-t space-y-2 flex-none">
-          {/* User Info Section */}
           <div className="px-4 py-3 bg-muted/50 rounded-lg space-y-1">
             <div className="flex items-center gap-2 text-sm">
               <User className="h-4 w-4 text-muted-foreground" />
@@ -222,7 +176,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
@@ -230,7 +183,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Main Content */}
       <main className="md:ml-64 min-h-screen">
         <div className="container mx-auto p-4 md:p-6 lg:p-8">
           {children}
