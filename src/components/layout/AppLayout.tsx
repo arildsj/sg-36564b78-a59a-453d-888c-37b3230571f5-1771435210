@@ -20,6 +20,7 @@ import {
   Megaphone,
   Printer,
   LayoutDashboard,
+  User,
 } from "lucide-react";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
@@ -48,6 +49,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,6 +66,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       const profile = await userService.getCurrentUserProfile();
       setUserRole(profile?.role || null);
+      setUserName(profile?.full_name || profile?.email || "Bruker");
     } catch (error) {
       console.error("Auth check failed:", error);
       router.push("/login");
@@ -146,6 +149,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="p-4 border-t space-y-2 flex-none">
+          {/* User Info Section */}
+          <div className="px-4 py-3 bg-muted/50 rounded-lg space-y-1">
+            <div className="flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium text-foreground">{userName}</span>
+            </div>
+            {userRole && (
+              <div className="text-xs text-muted-foreground pl-6">
+                {userRole === "super_admin" ? "Super Admin" : 
+                 userRole === "admin" ? "Administrator" : 
+                 userRole === "user" ? "Bruker" : userRole}
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-2">
             <LanguageSwitch />
             <ThemeSwitch />
