@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +32,21 @@ export default function OnboardingPage() {
     confirmPassword: "",
     organization_name: ""
   });
+
+  // CRITICAL: Clear any old sessions on mount to ensure clean onboarding
+  useEffect(() => {
+    const clearOldSession = async () => {
+      try {
+        console.log("🧹 Clearing any old sessions before onboarding...");
+        await supabase.auth.signOut();
+        console.log("✅ Old sessions cleared");
+      } catch (error) {
+        console.error("❌ Error clearing sessions:", error);
+      }
+    };
+
+    clearOldSession();
+  }, []);
 
   // Validation functions
   const validateEmail = (email: string): boolean => {
