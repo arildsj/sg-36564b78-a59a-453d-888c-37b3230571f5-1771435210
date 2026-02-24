@@ -129,7 +129,33 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    const checkAuthAndFetch = async () => {
+      try {
+        // Verify user is authenticated
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          toast({
+            title: "Ikke autentisert",
+            description: "Du må logge inn for å se admin-panelet",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Fetch all data
+        await fetchData();
+      } catch (error: any) {
+        console.error("Auth check failed:", error);
+        toast({
+          title: "Autentiseringsfeil",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    };
+
+    checkAuthAndFetch();
   }, []);
 
   const handleCreateUser = async () => {
