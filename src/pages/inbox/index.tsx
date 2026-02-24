@@ -851,7 +851,7 @@ export default function InboxPage() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                                  <Badge variant="outline" className="text-[10px] h-5 px-1 font-normal bg-muted">
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1 font-normal bg-muted">
                                     {thread.group_name}
                                   </Badge>
                                   <span className="flex items-center gap-1 ml-auto">
