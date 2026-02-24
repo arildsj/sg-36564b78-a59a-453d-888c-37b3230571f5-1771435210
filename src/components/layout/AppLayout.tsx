@@ -75,6 +75,49 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Fetch user profile data
+  useEffect(() => {
+    async function fetchUserProfile() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        // Fetch user profile
+        const { data: profileData, error: profileError } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+          return;
+        }
+
+        if (profileData) {
+          setUserProfile(profileData);
+
+          // Fetch group memberships separately
+          const { data: memberships, error: membershipError } = await supabase
+            .from("group_memberships")
+            .select("group_id, groups(name)")
+            .eq("user_id", session.user.id);
+
+          if (membershipError) {
+            console.error("Error fetching group memberships:", membershipError);
+          } else if (memberships && memberships.length > 0) {
+            // Store group info if needed
+            console.log("User groups:", memberships);
+          }
+        }
+      } catch (error) {
+        console.error("Error in fetchUserProfile:", error);
+      }
+    }
+
+    fetchUserProfile();
+  }, []);
+
   const handleLogout = async () => {
     await authService.signOut();
     router.push("/login");
