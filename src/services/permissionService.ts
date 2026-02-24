@@ -72,7 +72,7 @@ export async function getUserGroupIds(): Promise<string[]> {
     return [];
   }
 
-  return data.map((membership: any) => membership.group_id);
+  return (data || []).map((membership: any) => membership.group_id);
 }
 
 /**

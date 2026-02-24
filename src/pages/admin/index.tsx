@@ -89,7 +89,7 @@ export default function AdminPage() {
         .from("user_profiles")
         .select(`
           *,
-          group_memberships (
+          group_memberships!group_memberships_user_id_fkey (
             group_id,
             groups (name)
           )

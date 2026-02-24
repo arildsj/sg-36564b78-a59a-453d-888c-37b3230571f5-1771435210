@@ -67,7 +67,7 @@ export const userService = {
     const { data, error } = await supabase
       .from("group_memberships")
       .select(`
-        user:user_profiles(*)
+        user:user_profiles!group_memberships_user_id_fkey(*)
       `)
       .eq("group_id", groupId);
 
