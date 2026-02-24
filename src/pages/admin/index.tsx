@@ -109,8 +109,13 @@ export default function AdminPage() {
       setGroups(groupsData || []);
 
       // Fetch Gateways
-      const gatewaysData = await gatewayService.getGateways();
-      setGateways(gatewaysData);
+      const { data: gatewaysData, error: gatewaysError } = await db
+        .from("sms_gateways")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (gatewaysError) throw gatewaysError;
+      setGateways(gatewaysData || []);
 
       // Fetch Audit Logs
       const logs = await auditService.getAuditLogs(20);
@@ -236,19 +241,19 @@ export default function AdminPage() {
     }
   };
 
-  const handleCreateGateway = async () => {
+  const handleCreateGateway = async (gatewayData: any) => {
     try {
-      await gatewayService.createGateway(newGateway);
+      await gatewayService.create(gatewayData);
       toast({
         title: "Gateway opprettet",
-        description: `${newGateway.name} er lagt til`,
+        description: "Den nye gatewayen er lagt til",
       });
       fetchData();
-      setNewGateway({ name: "", phone_number: "", api_key: "", base_url: "" });
     } catch (error: any) {
+      console.error("Failed to create gateway:", error);
       toast({
         title: "Feil",
-        description: error.message,
+        description: error.message || "Kunne ikke opprette gateway",
         variant: "destructive",
       });
     }
@@ -281,16 +286,17 @@ export default function AdminPage() {
 
   const handleDeleteGateway = async (gatewayId: string) => {
     try {
-      await gatewayService.deleteGateway(gatewayId);
+      await gatewayService.delete(gatewayId);
       toast({
         title: "Gateway slettet",
-        description: "Gateway er fjernet",
+        description: "Gatewayen er fjernet",
       });
       fetchData();
     } catch (error: any) {
+      console.error("Failed to delete gateway:", error);
       toast({
         title: "Feil",
-        description: error.message,
+        description: error.message || "Kunne ikke slette gateway",
         variant: "destructive",
       });
     }
@@ -688,7 +694,7 @@ export default function AdminPage() {
                           />
                         </div>
                       </div>
-                      <Button onClick={handleCreateGateway} size="sm" className="w-full">
+                      <Button onClick={() => handleCreateGateway(newGateway)} size="sm" className="w-full">
                         <Plus className="mr-2 h-4 w-4" /> Legg til Gateway
                       </Button>
                     </div>

@@ -1,103 +1,114 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
+// CRITICAL FIX: Cast supabase client to bypass TypeScript limitations
 const db = supabase as any;
 
-export type Gateway = {
+export interface Gateway {
   id: string;
-  name: string;
-  phone_number: string;
-  status: "active" | "inactive" | "error";
   tenant_id: string;
-  config: any;
+  name: string;
+  provider: string;
+  phone_number: string;
+  api_url?: string;
+  api_key?: string;
+  username?: string;
+  password?: string;
+  status: "active" | "inactive" | "error";
+  last_test_at?: string;
   created_at: string;
   updated_at: string;
-  is_default?: boolean;
-};
+}
 
 export const gatewayService = {
-  async getGateways(): Promise<Gateway[]> {
+  async getAll(): Promise<Gateway[]> {
     const { data, error } = await db
       .from("sms_gateways")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching gateways:", error);
+      throw error;
+    }
+
     return data || [];
   },
 
-  async createGateway(gateway: {
-    name: string;
-    phone_number: string;
-    api_key: string;
-    base_url: string;
-    is_default?: boolean;
-  }) {
-    // 1. Get user for tenant_id
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error("Not authenticated");
-
-    const { data: profile } = await db
-      .from("user_profiles")
-      .select("tenant_id")
-      .eq("id", user.user.id)
-      .single();
-
-    if (!profile) throw new Error("User profile not found");
-
-    // 2. Insert Gateway (API key will be encrypted by DB trigger or Edge Function ideally, 
-    // but here we just store it - in prod use encryption)
-    const { data: newGateway, error } = await db
+  async getById(id: string): Promise<Gateway | null> {
+    const { data, error } = await db
       .from("sms_gateways")
-      .insert({
-        tenant_id: profile.tenant_id,
-        name: gateway.name,
-        phone_number: gateway.phone_number,
-        api_key_encrypted: gateway.api_key, // Simplified for demo
-        config: { base_url: gateway.base_url },
-        status: "active",
-        is_default: gateway.is_default || false
-      })
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching gateway:", error);
+      throw error;
+    }
+
+    return data;
+  },
+
+  async getActive(): Promise<Gateway[]> {
+    const { data, error } = await db
+      .from("sms_gateways")
+      .select("*")
+      .eq("status", "active")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching active gateways:", error);
+      throw error;
+    }
+
+    return data || [];
+  },
+
+  async create(gateway: Omit<Gateway, "id" | "created_at" | "updated_at">): Promise<Gateway> {
+    const { data, error } = await db
+      .from("sms_gateways")
+      .insert(gateway)
       .select()
       .single();
 
-    if (error) throw error;
-    return newGateway;
+    if (error) {
+      console.error("Error creating gateway:", error);
+      throw error;
+    }
+
+    return data;
   },
 
-  async updateGateway(id: string, updates: Partial<Gateway> & { api_key?: string, base_url?: string }) {
-    const dbUpdates: any = { ...updates };
-    
-    // Map fields to DB structure
-    if (updates.api_key) {
-      dbUpdates.api_key_encrypted = updates.api_key;
-      delete dbUpdates.api_key;
-    }
-    
-    if (updates.base_url) {
-      dbUpdates.config = { ...updates.config, base_url: updates.base_url };
-      delete dbUpdates.base_url;
-    }
-
-    const { error } = await db
+  async update(id: string, gateway: Partial<Gateway>): Promise<Gateway> {
+    const { data, error } = await db
       .from("sms_gateways")
-      .update(dbUpdates)
-      .eq("id", id);
+      .update(gateway)
+      .eq("id", id)
+      .select()
+      .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error updating gateway:", error);
+      throw error;
+    }
+
+    return data;
   },
 
-  async deleteGateway(id: string) {
+  async delete(id: string): Promise<void> {
     const { error } = await db
       .from("sms_gateways")
       .delete()
       .eq("id", id);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error deleting gateway:", error);
+      throw error;
+    }
   },
 
   async testConnection(id: string): Promise<boolean> {
-    // Simulate test connection
+    // Mock test - in production this would actually test the gateway
     await new Promise(resolve => setTimeout(resolve, 1000));
     return true;
   }

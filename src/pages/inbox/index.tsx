@@ -461,7 +461,7 @@ export default function InboxPage() {
 
       // Fetch a valid gateway ID for the tenant
       const { data: gateway } = await db
-        .from("gateways")
+        .from("sms_gateways")
         .select("id, phone_number")
         .eq("tenant_id", tenantId)
         .eq("status", "active")
@@ -492,7 +492,7 @@ export default function InboxPage() {
          // If not, we can't create a thread.
          if (!gateway) {
             // Try one more fallback: fetch ANY gateway
-            const { data: anyGateway } = await db.from("gateways").select("id, phone_number").limit(1).maybeSingle();
+            const { data: anyGateway } = await db.from("sms_gateways").select("id, phone_number").limit(1).maybeSingle();
             if (anyGateway) {
                 gatewayId = anyGateway.id;
                 systemPhoneNumber = anyGateway.phone_number;
@@ -627,20 +627,14 @@ export default function InboxPage() {
       
       if (campaign.source_group_id) {
         // First try to get gateway from source group
-        const { data: group } = await db
+        const { data: groupGateway } = await db
           .from("groups")
-          .select("gateway_id")
+          .select("gateway_id, gateways!groups_gateway_id_fkey(phone_number)")
           .eq("id", campaign.source_group_id)
-          .single();
-          
-        if (group?.gateway_id) {
-            gatewayId = group.gateway_id;
-            const { data: gateway } = await db
-                .from("sms_gateways")
-                .select("phone_number")
-                .eq("id", group.gateway_id)
-                .single();
-            if (gateway) fromNumber = gateway.phone_number;
+          .maybeSingle();
+
+        if (groupGateway?.gateways) {
+          fromNumber = groupGateway.gateways.phone_number;
         }
       }
 
