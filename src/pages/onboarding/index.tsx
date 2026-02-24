@@ -227,7 +227,43 @@ export default function OnboardingPage() {
 
       console.log("✅ Onboarding successful!");
 
-      // Success - since email confirmation is disabled, log user in immediately
+      // CRITICAL: Sign in the user explicitly to establish session
+      console.log("🔐 Signing in user...");
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email.trim(),
+        password: formData.password
+      });
+
+      if (signInError) {
+        console.error("❌ Sign in error after onboarding:", signInError);
+        toast({ 
+          title: "Innloggingsfeil", 
+          description: "Konto opprettet, men kunne ikke logge inn automatisk. Vennligst logg inn manuelt.", 
+          variant: "destructive",
+          duration: 5000
+        });
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
+        return;
+      }
+
+      if (!signInData.session) {
+        console.error("❌ No session after sign in");
+        toast({ 
+          title: "Sesjonsfeil", 
+          description: "Vennligst logg inn manuelt.", 
+          variant: "destructive" 
+        });
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
+        return;
+      }
+
+      console.log("✅ User signed in successfully with session!");
+
+      // Success - user is now authenticated with valid session
       toast({ 
         title: "Konto opprettet!", 
         description: "Du sendes til dashboardet...", 

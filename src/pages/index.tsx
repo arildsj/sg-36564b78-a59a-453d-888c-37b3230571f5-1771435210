@@ -36,6 +36,7 @@ export default function Dashboard() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const [stats, setStats] = useState({
     unreadMessages: 0,
     activeGroups: 0,
@@ -45,6 +46,37 @@ export default function Dashboard() {
   const [recentMessages, setRecentMessages] = useState<any[]>([]);
   const [activeIncidents, setActiveIncidents] = useState<any[]>([]);
   const [userRole, setUserRole] = useState<string | null>(null);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log("No session found, redirecting to login");
+        router.push('/login');
+        return;
+      }
+      
+      console.log("Session found:", session.user.id);
+      setAuthChecked(true);
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, [router]);
+
+  // Don't render dashboard until auth is checked
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Laster...</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     fetchDashboardData();
