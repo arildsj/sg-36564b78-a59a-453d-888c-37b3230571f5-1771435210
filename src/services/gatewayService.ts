@@ -6,17 +6,15 @@ const db = supabase as any;
 export interface Gateway {
   id: string;
   tenant_id: string;
-  name: string; // Changed back to match DB column
-  api_key: string;
-  api_secret?: string;
-  sender_id?: string;
-  webhook_secret?: string;
+  name: string;
+  phone_number?: string;
+  api_key: string; // Mapped from api_key_encrypted in DB
   base_url: string;
   is_active: boolean;
+  status?: string;
   group_id?: string;
   created_at: string;
   updated_at: string;
-  phone_number?: string; // Add phone_number as optional since it exists in DB
 }
 
 export const gatewayService = {
@@ -31,7 +29,12 @@ export const gatewayService = {
       throw error;
     }
 
-    return data || [];
+    // Map api_key_encrypted -> api_key for UI
+    return (data || []).map((gateway: any) => ({
+      ...gateway,
+      api_key: gateway.api_key_encrypted || "",
+      is_active: gateway.status === "active"
+    }));
   },
 
   async getById(id: string): Promise<Gateway | null> {
@@ -46,14 +49,21 @@ export const gatewayService = {
       throw error;
     }
 
-    return data;
+    if (!data) return null;
+
+    // Map api_key_encrypted -> api_key for UI
+    return {
+      ...data,
+      api_key: data.api_key_encrypted || "",
+      is_active: data.status === "active"
+    };
   },
 
   async getActive(): Promise<Gateway[]> {
     const { data, error } = await db
       .from("sms_gateways")
       .select("*")
-      .eq("is_active", true)
+      .eq("status", "active")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -61,7 +71,12 @@ export const gatewayService = {
       throw error;
     }
 
-    return data || [];
+    // Map api_key_encrypted -> api_key for UI
+    return (data || []).map((gateway: any) => ({
+      ...gateway,
+      api_key: gateway.api_key_encrypted || "",
+      is_active: true
+    }));
   },
 
   async create(gateway: Omit<Gateway, "id" | "created_at" | "updated_at" | "tenant_id">): Promise<Gateway> {
@@ -77,17 +92,16 @@ export const gatewayService = {
 
     if (!profile) throw new Error("User profile not found");
 
+    // Map api_key -> api_key_encrypted for DB
     const dbGateway = {
       tenant_id: profile.tenant_id,
       name: gateway.name,
       phone_number: gateway.phone_number || "",
-      api_key: gateway.api_key,
+      api_key_encrypted: gateway.api_key, // Map to correct column name
       base_url: gateway.base_url,
-      is_active: gateway.is_active ?? true,
-      api_secret: gateway.api_secret || null,
-      sender_id: gateway.sender_id || null,
-      webhook_secret: gateway.webhook_secret || null,
-      group_id: gateway.group_id || null
+      status: gateway.is_active ? "active" : "inactive",
+      group_id: gateway.group_id || null,
+      config: {} // Empty JSONB for now
     };
 
     const { data, error } = await db
@@ -101,7 +115,12 @@ export const gatewayService = {
       throw error;
     }
 
-    return data;
+    // Map api_key_encrypted -> api_key for return value
+    return {
+      ...data,
+      api_key: data.api_key_encrypted || "",
+      is_active: data.status === "active"
+    };
   },
 
   async update(id: string, gateway: Partial<Gateway>): Promise<Gateway> {
@@ -109,12 +128,9 @@ export const gatewayService = {
 
     if (gateway.name !== undefined) updates.name = gateway.name;
     if (gateway.phone_number !== undefined) updates.phone_number = gateway.phone_number;
-    if (gateway.api_key !== undefined) updates.api_key = gateway.api_key;
+    if (gateway.api_key !== undefined) updates.api_key_encrypted = gateway.api_key; // Map to correct column
     if (gateway.base_url !== undefined) updates.base_url = gateway.base_url;
-    if (gateway.is_active !== undefined) updates.is_active = gateway.is_active;
-    if (gateway.api_secret !== undefined) updates.api_secret = gateway.api_secret;
-    if (gateway.sender_id !== undefined) updates.sender_id = gateway.sender_id;
-    if (gateway.webhook_secret !== undefined) updates.webhook_secret = gateway.webhook_secret;
+    if (gateway.is_active !== undefined) updates.status = gateway.is_active ? "active" : "inactive";
     if (gateway.group_id !== undefined) updates.group_id = gateway.group_id;
 
     const { data, error } = await db
@@ -129,7 +145,12 @@ export const gatewayService = {
       throw error;
     }
 
-    return data;
+    // Map api_key_encrypted -> api_key for return value
+    return {
+      ...data,
+      api_key: data.api_key_encrypted || "",
+      is_active: data.status === "active"
+    };
   },
 
   async delete(id: string): Promise<void> {
