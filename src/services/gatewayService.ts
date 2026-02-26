@@ -7,14 +7,10 @@ export interface Gateway {
   id: string;
   tenant_id: string;
   name: string;
-  provider: string;
   phone_number: string;
-  api_url?: string;
-  api_key?: string;
-  username?: string;
-  password?: string;
+  api_key?: string; // Mapped from api_key_encrypted
+  base_url?: string; // Mapped from config.base_url
   status: "active" | "inactive" | "error";
-  last_test_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -31,7 +27,12 @@ export const gatewayService = {
       throw error;
     }
 
-    return data || [];
+    // Transform data: extract base_url from config JSONB
+    return (data || []).map((gw: any) => ({
+      ...gw,
+      api_key: gw.api_key_encrypted,
+      base_url: gw.config?.base_url || null
+    }));
   },
 
   async getById(id: string): Promise<Gateway | null> {
@@ -46,7 +47,13 @@ export const gatewayService = {
       throw error;
     }
 
-    return data;
+    if (!data) return null;
+
+    return {
+      ...data,
+      api_key: data.api_key_encrypted,
+      base_url: data.config?.base_url || null
+    };
   },
 
   async getActive(): Promise<Gateway[]> {
@@ -61,13 +68,41 @@ export const gatewayService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []).map((gw: any) => ({
+      ...gw,
+      api_key: gw.api_key_encrypted,
+      base_url: gw.config?.base_url || null
+    }));
   },
 
   async create(gateway: Omit<Gateway, "id" | "created_at" | "updated_at">): Promise<Gateway> {
+    // Get current user and tenant_id
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const { data: profile } = await db
+      .from("user_profiles")
+      .select("tenant_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile) throw new Error("User profile not found");
+
+    // Transform data to match database schema
+    const dbGateway = {
+      tenant_id: profile.tenant_id,
+      name: gateway.name,
+      phone_number: gateway.phone_number,
+      api_key_encrypted: gateway.api_key || "",
+      status: gateway.status || "active",
+      config: {
+        base_url: gateway.base_url || ""
+      }
+    };
+
     const { data, error } = await db
       .from("sms_gateways")
-      .insert(gateway)
+      .insert(dbGateway)
       .select()
       .single();
 
@@ -76,13 +111,42 @@ export const gatewayService = {
       throw error;
     }
 
-    return data;
+    return {
+      ...data,
+      api_key: data.api_key_encrypted,
+      base_url: data.config?.base_url || null
+    };
   },
 
   async update(id: string, gateway: Partial<Gateway>): Promise<Gateway> {
+    const updates: any = {};
+
+    if (gateway.name) updates.name = gateway.name;
+    if (gateway.phone_number) updates.phone_number = gateway.phone_number;
+    if (gateway.status) updates.status = gateway.status;
+    
+    // Handle api_key update
+    if (gateway.api_key !== undefined) {
+      updates.api_key_encrypted = gateway.api_key;
+    }
+
+    // Handle base_url update - merge with existing config
+    if (gateway.base_url !== undefined) {
+      const { data: existing } = await db
+        .from("sms_gateways")
+        .select("config")
+        .eq("id", id)
+        .single();
+
+      updates.config = {
+        ...(existing?.config || {}),
+        base_url: gateway.base_url
+      };
+    }
+
     const { data, error } = await db
       .from("sms_gateways")
-      .update(gateway)
+      .update(updates)
       .eq("id", id)
       .select()
       .single();
@@ -92,7 +156,11 @@ export const gatewayService = {
       throw error;
     }
 
-    return data;
+    return {
+      ...data,
+      api_key: data.api_key_encrypted,
+      base_url: data.config?.base_url || null
+    };
   },
 
   async delete(id: string): Promise<void> {
