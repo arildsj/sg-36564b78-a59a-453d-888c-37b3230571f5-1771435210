@@ -248,7 +248,7 @@ export function RoutingRulesTab() {
               <SelectContent>
                 {gateways.map((gateway) => (
                   <SelectItem key={gateway.id} value={gateway.id}>
-                    {gateway.name} ({gateway.phone_number})
+                    {gateway.name} ({gateway.gw_phone || "Ingen telefon"})
                   </SelectItem>
                 ))}
               </SelectContent>
