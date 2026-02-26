@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -200,7 +200,7 @@ export type Database = {
             foreignKeyName: "bulk_campaigns_gateway_id_fkey"
             columns: ["gateway_id"]
             isOneToOne: false
-            referencedRelation: "gateways"
+            referencedRelation: "sms_gateways"
             referencedColumns: ["id"]
           },
           {
@@ -417,7 +417,7 @@ export type Database = {
             foreignKeyName: "delivery_status_events_gateway_id_fkey"
             columns: ["gateway_id"]
             isOneToOne: false
-            referencedRelation: "gateways"
+            referencedRelation: "sms_gateways"
             referencedColumns: ["id"]
           },
           {
@@ -508,7 +508,7 @@ export type Database = {
             foreignKeyName: "gateway_fallback_inboxes_gateway_id_fkey"
             columns: ["gateway_id"]
             isOneToOne: true
-            referencedRelation: "gateways"
+            referencedRelation: "sms_gateways"
             referencedColumns: ["id"]
           },
           {
@@ -523,53 +523,6 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gateways: {
-        Row: {
-          api_key_encrypted: string
-          config: Json | null
-          created_at: string
-          deleted_at: string | null
-          id: string
-          name: string
-          phone_number: string
-          status: string
-          tenant_id: string
-          updated_at: string
-        }
-        Insert: {
-          api_key_encrypted: string
-          config?: Json | null
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
-          name: string
-          phone_number: string
-          status?: string
-          tenant_id: string
-          updated_at?: string
-        }
-        Update: {
-          api_key_encrypted?: string
-          config?: Json | null
-          created_at?: string
-          deleted_at?: string | null
-          id?: string
-          name?: string
-          phone_number?: string
-          status?: string
-          tenant_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gateways_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -876,7 +829,7 @@ export type Database = {
             foreignKeyName: "message_threads_gateway_id_fkey"
             columns: ["gateway_id"]
             isOneToOne: false
-            referencedRelation: "gateways"
+            referencedRelation: "sms_gateways"
             referencedColumns: ["id"]
           },
           {
@@ -999,7 +952,7 @@ export type Database = {
             foreignKeyName: "messages_gateway_id_fkey"
             columns: ["gateway_id"]
             isOneToOne: false
-            referencedRelation: "gateways"
+            referencedRelation: "sms_gateways"
             referencedColumns: ["id"]
           },
           {
@@ -1352,7 +1305,7 @@ export type Database = {
             foreignKeyName: "routing_rules_gateway_id_fkey"
             columns: ["gateway_id"]
             isOneToOne: false
-            referencedRelation: "gateways"
+            referencedRelation: "sms_gateways"
             referencedColumns: ["id"]
           },
           {
@@ -1469,6 +1422,53 @@ export type Database = {
           },
           {
             foreignKeyName: "simulation_scenarios_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_gateways: {
+        Row: {
+          api_key_encrypted: string
+          config: Json | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          name: string
+          phone_number: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          api_key_encrypted: string
+          config?: Json | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name: string
+          phone_number: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          api_key_encrypted?: string
+          config?: Json | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          phone_number?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gateways_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

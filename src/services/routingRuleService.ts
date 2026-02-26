@@ -20,7 +20,11 @@ export const routingRuleService = {
   async getRules(): Promise<RoutingRule[]> {
     const { data, error } = await db
       .from("routing_rules")
-      .select("*, groups:target_group_id(name), gateways:gateway_id(name)")
+      .select(`
+        *,
+        groups(name),
+        sms_gateways(name)
+      `)
       .order("priority", { ascending: true });
 
     if (error) throw error;
