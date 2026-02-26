@@ -80,15 +80,24 @@ export const gatewayService = {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
+    console.log("🔍 Creating gateway - User:", user.user.id);
+
     const { data: profile } = await db
       .from("user_profiles")
       .select("tenant_id")
       .eq("id", user.user.id)
       .single();
 
+    console.log("🔍 User profile:", profile);
+
     if (!profile?.tenant_id) throw new Error("User has no tenant");
 
-    const { error } = await db.from("sms_gateways").insert({
+    console.log("🔍 Gateway data to insert:", {
+      ...gateway,
+      tenant_id: profile.tenant_id
+    });
+
+    const { data, error } = await db.from("sms_gateways").insert({
       name: gateway.name,
       gateway_description: gateway.gateway_description,
       api_key: gateway.api_key,
@@ -100,9 +109,14 @@ export const gatewayService = {
       base_url: gateway.base_url,
       gw_phone: gateway.gw_phone,
       tenant_id: profile.tenant_id,
-    });
+    }).select();
 
-    if (error) throw error;
+    console.log("🔍 Insert result:", { data, error });
+
+    if (error) {
+      console.error("❌ Gateway creation error:", error);
+      throw error;
+    }
   },
 
   async update(id: string, gateway: Partial<Gateway>): Promise<Gateway> {
