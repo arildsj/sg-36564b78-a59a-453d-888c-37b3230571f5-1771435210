@@ -7,9 +7,12 @@ export interface Gateway {
   id: string;
   tenant_id: string;
   name: string;
-  gw_phone?: string; // NEW: Gateway phone number
-  gateway_description?: string; // RENAMED: was gateway_name
-  api_key: string; // Mapped from api_key in DB
+  gw_phone?: string;
+  gateway_desc?: string;
+  api_key: string;
+  api_secret?: string;
+  sender_id?: string;
+  webhook_sec?: string;
   base_url: string;
   is_active: boolean;
   status?: string;
@@ -30,10 +33,9 @@ export const gatewayService = {
       throw error;
     }
 
-    // Map DB columns to UI interface
     return (data || []).map((gateway: any) => ({
       ...gateway,
-      is_active: gateway.is_active !== false // Convert to boolean
+      is_active: gateway.is_active !== false
     }));
   },
 
@@ -51,7 +53,6 @@ export const gatewayService = {
 
     if (!data) return null;
 
-    // Map DB columns to UI interface
     return {
       ...data,
       is_active: data.is_active !== false
@@ -77,7 +78,6 @@ export const gatewayService = {
   },
 
   async create(gateway: Omit<Gateway, "id" | "created_at" | "updated_at" | "tenant_id">): Promise<Gateway> {
-    // Get current user and tenant_id
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
@@ -89,13 +89,15 @@ export const gatewayService = {
 
     if (!profile) throw new Error("User profile not found");
 
-    // Map UI interface to DB columns
     const dbGateway = {
       tenant_id: profile.tenant_id,
       name: gateway.name,
       gw_phone: gateway.gw_phone || null,
-      gateway_description: gateway.gateway_description || null,
+      gateway_desc: gateway.gateway_desc || null,
       api_key: gateway.api_key || null,
+      api_secret: gateway.api_secret || null,
+      sender_id: gateway.sender_id || null,
+      webhook_sec: gateway.webhook_sec || null,
       base_url: gateway.base_url,
       is_active: gateway.is_active !== false,
       group_id: gateway.group_id || null
@@ -123,8 +125,11 @@ export const gatewayService = {
 
     if (gateway.name !== undefined) updates.name = gateway.name;
     if (gateway.gw_phone !== undefined) updates.gw_phone = gateway.gw_phone;
-    if (gateway.gateway_description !== undefined) updates.gateway_description = gateway.gateway_description;
+    if (gateway.gateway_desc !== undefined) updates.gateway_desc = gateway.gateway_desc;
     if (gateway.api_key !== undefined) updates.api_key = gateway.api_key;
+    if (gateway.api_secret !== undefined) updates.api_secret = gateway.api_secret;
+    if (gateway.sender_id !== undefined) updates.sender_id = gateway.sender_id;
+    if (gateway.webhook_sec !== undefined) updates.webhook_sec = gateway.webhook_sec;
     if (gateway.base_url !== undefined) updates.base_url = gateway.base_url;
     if (gateway.is_active !== undefined) updates.is_active = gateway.is_active;
     if (gateway.group_id !== undefined) updates.group_id = gateway.group_id;
@@ -160,7 +165,6 @@ export const gatewayService = {
   },
 
   async testConnection(id: string): Promise<boolean> {
-    // Mock test - in production this would actually test the gateway
     await new Promise(resolve => setTimeout(resolve, 1000));
     return true;
   }

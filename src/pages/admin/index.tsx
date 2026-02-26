@@ -75,7 +75,7 @@ export default function AdminPage() {
   const [newGateway, setNewGateway] = useState({
     name: "",
     gw_phone: "",
-    gateway_description: "",
+    gateway_desc: "",
     api_key: "",
     base_url: "",
   });
@@ -247,7 +247,7 @@ export default function AdminPage() {
       setNewGateway({
         name: "",
         gw_phone: "",
-        gateway_description: "",
+        gateway_desc: "",
         api_key: "",
         base_url: "",
       });
