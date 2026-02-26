@@ -14,21 +14,49 @@ export type RoutingRule = {
   is_active: boolean;
   tenant_id: string;
   created_at: string;
+  gateway_name?: string;
+  group_name?: string;
 };
 
 export const routingRuleService = {
   async getRules(): Promise<RoutingRule[]> {
-    const { data, error } = await db
+    // Step 1: Fetch routing rules WITHOUT joins (avoids schema cache issues)
+    const { data: rules, error: rulesError } = await db
       .from("routing_rules")
-      .select(`
-        *,
-        groups(name),
-        sms_gateways(name)
-      `)
+      .select("*")
       .order("priority", { ascending: true });
 
-    if (error) throw error;
-    return data || [];
+    if (rulesError) throw rulesError;
+    if (!rules || rules.length === 0) return [];
+
+    // Step 2: Extract unique gateway and group IDs
+    const gatewayIds = [...new Set(rules.map((r: any) => r.gateway_id).filter(Boolean))];
+    const groupIds = [...new Set(rules.map((r: any) => r.target_group_id).filter(Boolean))];
+
+    // Step 3: Fetch gateways and groups in parallel
+    const [gatewaysResult, groupsResult] = await Promise.all([
+      gatewayIds.length > 0
+        ? db.from("sms_gateways").select("id, name").in("id", gatewayIds)
+        : { data: [], error: null },
+      groupIds.length > 0
+        ? db.from("groups").select("id, name").in("id", groupIds)
+        : { data: [], error: null }
+    ]);
+
+    // Step 4: Create lookup maps
+    const gatewayMap = new Map(
+      (gatewaysResult.data || []).map((g: any) => [g.id, g.name])
+    );
+    const groupMap = new Map(
+      (groupsResult.data || []).map((g: any) => [g.id, g.name])
+    );
+
+    // Step 5: Enrich rules with names
+    return rules.map((rule: any) => ({
+      ...rule,
+      gateway_name: gatewayMap.get(rule.gateway_id) || "Unknown Gateway",
+      group_name: groupMap.get(rule.target_group_id) || "Unknown Group"
+    }));
   },
 
   async createRule(rule: Partial<RoutingRule>) {
