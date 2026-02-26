@@ -36,7 +36,6 @@ import { Plus, Search, Trash2, Shield, Settings, Server, Users, Activity, Router
 import { GroupHierarchy } from "@/components/GroupHierarchy";
 import { RoutingRulesTab } from "@/components/settings/RoutingRulesTab";
 import { supabase } from "@/integrations/supabase/client";
-import { routingRuleService, type RoutingRule } from "@/services/routingRuleService";
 import { gatewayService, type Gateway } from "@/services/gatewayService";
 import { groupService, type Group } from "@/services/groupService";
 import { userService, type UserProfile } from "@/services/userService";
@@ -60,7 +59,7 @@ export default function AdminPage() {
     phone_number: "",
     role: "member",
     group_ids: [] as string[],
-    password: "", // Only for new users
+    password: "",
   });
 
   const [newGroup, setNewGroup] = useState({
@@ -136,7 +135,6 @@ export default function AdminPage() {
   useEffect(() => {
     const checkAuthAndFetch = async () => {
       try {
-        // Verify user is authenticated
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
@@ -148,7 +146,6 @@ export default function AdminPage() {
           return;
         }
 
-        // Fetch all data
         await fetchData();
       } catch (error: any) {
         console.error("Auth check failed:", error);
@@ -165,7 +162,6 @@ export default function AdminPage() {
 
   const handleCreateUser = async () => {
     try {
-      // 1. Create auth user (via edge function or api)
       const { data, error } = await supabase.functions.invoke('create-user', {
         body: {
           email: newUser.email,
@@ -205,12 +201,10 @@ export default function AdminPage() {
 
   const handleCreateGroup = async () => {
     try {
-      // Get tenant_id from current user or context
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // For MVP, just use user ID as tenant placeholder or fetch actual tenant
-      const tenant_id = user.id; // This is wrong in multi-tenant, but ok for now as we don't have tenant context ready
+      const tenant_id = user.id;
 
       await groupService.createGroup({
         ...newGroup,
@@ -249,6 +243,12 @@ export default function AdminPage() {
         description: "Den nye gatewayen er lagt til",
       });
       fetchData();
+      setNewGateway({
+        name: "",
+        phone_number: "",
+        api_key: "",
+        base_url: "",
+      });
     } catch (error: any) {
       console.error("Failed to create gateway:", error);
       toast({
@@ -330,9 +330,13 @@ export default function AdminPage() {
               <Shield className="h-4 w-4" />
               Grupper & Tilgang
             </TabsTrigger>
+            <TabsTrigger value="gateways" className="flex items-center gap-2">
+              <Server className="h-4 w-4" />
+              SMS Gateways
+            </TabsTrigger>
             <TabsTrigger value="routing" className="flex items-center gap-2">
               <Router className="h-4 w-4" />
-              Ruting & Gateways
+              Rutingsregler
             </TabsTrigger>
             <TabsTrigger value="audit" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
@@ -459,7 +463,6 @@ export default function AdminPage() {
                             <Badge variant="outline">{user.role}</Badge>
                           </TableCell>
                           <TableCell>
-                            {/* Display group names if available via joins */}
                             <span className="text-sm text-muted-foreground">
                               {(user as any).group_memberships?.map((gm: any) => gm.groups?.name).join(", ") || "-"}
                             </span>
@@ -649,88 +652,112 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="routing" className="space-y-4">
-             <div className="grid gap-4 md:grid-cols-2">
-               {/* Gateways Section */}
-               <Card>
-                 <CardHeader>
-                   <CardTitle>SMS Gateways</CardTitle>
-                   <CardDescription>Konfigurer leverandører for SMS-utsendelse</CardDescription>
-                 </CardHeader>
-                 <CardContent className="space-y-4">
-                    <div className="space-y-4 border p-4 rounded-md">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Navn</Label>
-                          <Input 
-                            placeholder="Provider Name"
-                            value={newGateway.name}
-                            onChange={(e) => setNewGateway({...newGateway, name: e.target.value})}
-                          />
+          <TabsContent value="gateways" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>SMS Gateways</CardTitle>
+                <CardDescription>Konfigurer leverandører for SMS-utsendelse</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4 border p-4 rounded-md">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Navn</Label>
+                      <Input 
+                        placeholder="Provider Name"
+                        value={newGateway.name}
+                        onChange={(e) => setNewGateway({...newGateway, name: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Telefonnummer</Label>
+                      <Input 
+                        placeholder="+47..."
+                        value={newGateway.phone_number}
+                        onChange={(e) => setNewGateway({...newGateway, phone_number: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>API Key</Label>
+                      <Input 
+                        type="password"
+                        placeholder="Secret Key"
+                        value={newGateway.api_key}
+                        onChange={(e) => setNewGateway({...newGateway, api_key: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Base URL</Label>
+                      <Input 
+                        placeholder="https://api..."
+                        value={newGateway.base_url}
+                        onChange={(e) => setNewGateway({...newGateway, base_url: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <Button onClick={() => handleCreateGateway(newGateway)} size="sm" className="w-full">
+                    <Plus className="mr-2 h-4 w-4" /> Legg til Gateway
+                  </Button>
+                </div>
+
+                <div className="space-y-2 mt-4">
+                  {gateways.length === 0 ? (
+                    <div className="text-center p-8 border rounded-lg border-dashed text-muted-foreground">
+                      Ingen gateways konfigurert ennå
+                    </div>
+                  ) : (
+                    gateways.map(gw => (
+                      <div key={gw.id} className="flex items-center justify-between p-3 border rounded bg-secondary/10">
+                        <div>
+                          <div className="font-medium">{gw.name}</div>
+                          <div className="text-sm text-muted-foreground">{gw.phone_number}</div>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Telefonnummer</Label>
-                          <Input 
-                            placeholder="+47..."
-                            value={newGateway.phone_number}
-                            onChange={(e) => setNewGateway({...newGateway, phone_number: e.target.value})}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>API Key</Label>
-                          <Input 
-                            type="password"
-                            placeholder="Secret Key"
-                            value={newGateway.api_key}
-                            onChange={(e) => setNewGateway({...newGateway, api_key: e.target.value})}
-                          />
-                        </div>
-                         <div className="space-y-2">
-                          <Label>Base URL</Label>
-                          <Input 
-                            placeholder="https://api..."
-                            value={newGateway.base_url}
-                            onChange={(e) => setNewGateway({...newGateway, base_url: e.target.value})}
-                          />
+                        <div className="flex gap-2">
+                          <Badge variant={gw.status === 'active' ? 'default' : 'secondary'}>
+                            {gw.status}
+                          </Badge>
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteGateway(gw.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <Button onClick={() => handleCreateGateway(newGateway)} size="sm" className="w-full">
-                        <Plus className="mr-2 h-4 w-4" /> Legg til Gateway
-                      </Button>
-                    </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                    <div className="space-y-2 mt-4">
-                      {gateways.map(gw => (
-                        <div key={gw.id} className="flex items-center justify-between p-3 border rounded bg-secondary/10">
-                          <div>
-                            <div className="font-medium">{gw.name}</div>
-                            <div className="text-sm text-muted-foreground">{gw.phone_number}</div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Badge variant={gw.status === 'active' ? 'default' : 'secondary'}>
-                              {gw.status}
-                            </Badge>
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteGateway(gw.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                 </CardContent>
-               </Card>
-
-               {/* Routing Rules Section */}
-               <Card>
-                 <CardHeader>
-                   <CardTitle>Rutingsregler</CardTitle>
-                   <CardDescription>Styr hvordan innkommende meldinger rutes</CardDescription>
-                 </CardHeader>
-                 <CardContent>
-                   <RoutingRulesTab />
-                 </CardContent>
-               </Card>
-             </div>
+          <TabsContent value="routing" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Rutingsregler</CardTitle>
+                <CardDescription>
+                  Styr hvordan innkommende meldinger rutes til riktig gruppe
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {gateways.length === 0 ? (
+                  <div className="text-center p-8 border rounded-lg border-dashed">
+                    <Server className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="font-semibold mb-2">Ingen gateways funnet</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Du må først legge til en SMS gateway før du kan opprette rutingsregler
+                    </p>
+                    <Button variant="outline" onClick={() => {
+                      const tabsList = document.querySelector('[role="tablist"]');
+                      const gatewaysTab = tabsList?.querySelector('[value="gateways"]') as HTMLElement;
+                      gatewaysTab?.click();
+                    }}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Gå til SMS Gateways
+                    </Button>
+                  </div>
+                ) : (
+                  <RoutingRulesTab />
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="audit" className="space-y-4">

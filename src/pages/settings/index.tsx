@@ -15,8 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Clock, MessageSquare, Bell, Save, Network } from "lucide-react";
-import { RoutingRulesTab } from "@/components/settings/RoutingRulesTab";
+import { Clock, MessageSquare, Bell, Save } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageProvider";
 
 export default function SettingsPage() {
@@ -40,7 +39,7 @@ export default function SettingsPage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="hours" className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
                 {t("settings.tabs.hours")}
@@ -52,10 +51,6 @@ export default function SettingsPage() {
               <TabsTrigger value="notifications" className="flex items-center gap-2">
                 <Bell className="w-4 h-4" />
                 {t("settings.tabs.notifications")}
-              </TabsTrigger>
-              <TabsTrigger value="routing" className="flex items-center gap-2">
-                <Network className="w-4 h-4" />
-                {t("settings.tabs.routing")}
               </TabsTrigger>
             </TabsList>
 
@@ -303,11 +298,6 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            {/* Routing Rules Tab */}
-            <TabsContent value="routing" className="space-y-4">
-              <RoutingRulesTab />
             </TabsContent>
           </Tabs>
         </div>
