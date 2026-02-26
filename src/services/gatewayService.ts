@@ -6,7 +6,7 @@ const db = supabase as any;
 export interface Gateway {
   id: string;
   tenant_id: string;
-  gateway_name: string;
+  name: string; // Changed back to match DB column
   api_key: string;
   api_secret?: string;
   sender_id?: string;
@@ -16,6 +16,7 @@ export interface Gateway {
   group_id?: string;
   created_at: string;
   updated_at: string;
+  phone_number?: string; // Add phone_number as optional since it exists in DB
 }
 
 export const gatewayService = {
@@ -78,7 +79,8 @@ export const gatewayService = {
 
     const dbGateway = {
       tenant_id: profile.tenant_id,
-      gateway_name: gateway.gateway_name,
+      name: gateway.name,
+      phone_number: gateway.phone_number || "",
       api_key: gateway.api_key,
       base_url: gateway.base_url,
       is_active: gateway.is_active ?? true,
@@ -105,7 +107,8 @@ export const gatewayService = {
   async update(id: string, gateway: Partial<Gateway>): Promise<Gateway> {
     const updates: any = {};
 
-    if (gateway.gateway_name !== undefined) updates.gateway_name = gateway.gateway_name;
+    if (gateway.name !== undefined) updates.name = gateway.name;
+    if (gateway.phone_number !== undefined) updates.phone_number = gateway.phone_number;
     if (gateway.api_key !== undefined) updates.api_key = gateway.api_key;
     if (gateway.base_url !== undefined) updates.base_url = gateway.base_url;
     if (gateway.is_active !== undefined) updates.is_active = gateway.is_active;

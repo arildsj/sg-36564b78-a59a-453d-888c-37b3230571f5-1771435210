@@ -73,7 +73,8 @@ export default function AdminPage() {
   });
 
   const [newGateway, setNewGateway] = useState({
-    gateway_name: "",
+    name: "",
+    phone_number: "",
     api_key: "",
     base_url: "",
   });
@@ -243,7 +244,8 @@ export default function AdminPage() {
       });
       fetchData();
       setNewGateway({
-        gateway_name: "",
+        name: "",
+        phone_number: "",
         api_key: "",
         base_url: "",
       });
@@ -663,8 +665,16 @@ export default function AdminPage() {
                       <Label>Gateway Navn</Label>
                       <Input 
                         placeholder="Helse Gateway"
-                        value={newGateway.gateway_name}
-                        onChange={(e) => setNewGateway({...newGateway, gateway_name: e.target.value})}
+                        value={newGateway.name}
+                        onChange={(e) => setNewGateway({...newGateway, name: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Telefonnummer</Label>
+                      <Input 
+                        placeholder="+47..."
+                        value={newGateway.phone_number}
+                        onChange={(e) => setNewGateway({...newGateway, phone_number: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
@@ -675,7 +685,7 @@ export default function AdminPage() {
                         onChange={(e) => setNewGateway({...newGateway, base_url: e.target.value})}
                       />
                     </div>
-                    <div className="space-y-2 col-span-2">
+                    <div className="space-y-2">
                       <Label>API Key</Label>
                       <Input 
                         type="password"
@@ -685,7 +695,7 @@ export default function AdminPage() {
                       />
                     </div>
                   </div>
-                  <Button onClick={() => handleCreateGateway(newGateway)} size="sm" className="w-full">
+                  <Button onClick={() => handleCreateGateway(newGateway)} size="sm" className="w-full mt-4">
                     <Plus className="mr-2 h-4 w-4" /> Legg til Gateway
                   </Button>
                 </div>
@@ -699,8 +709,9 @@ export default function AdminPage() {
                     gateways.map(gw => (
                       <div key={gw.id} className="flex items-center justify-between p-3 border rounded bg-secondary/10">
                         <div>
-                          <div className="font-medium">{gw.gateway_name}</div>
+                          <div className="font-medium">{gw.name}</div>
                           <div className="text-sm text-muted-foreground">{gw.base_url}</div>
+                          <div className="text-xs text-muted-foreground">{gw.phone_number}</div>
                         </div>
                         <div className="flex gap-2">
                           <Badge variant={gw.is_active ? 'default' : 'secondary'}>
