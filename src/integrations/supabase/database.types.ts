@@ -1432,6 +1432,7 @@ export type Database = {
       sms_gateways: {
         Row: {
           api_key_encrypted: string
+          base_url: string | null
           config: Json | null
           created_at: string
           deleted_at: string | null
@@ -1444,6 +1445,7 @@ export type Database = {
         }
         Insert: {
           api_key_encrypted: string
+          base_url?: string | null
           config?: Json | null
           created_at?: string
           deleted_at?: string | null
@@ -1456,6 +1458,7 @@ export type Database = {
         }
         Update: {
           api_key_encrypted?: string
+          base_url?: string | null
           config?: Json | null
           created_at?: string
           deleted_at?: string | null

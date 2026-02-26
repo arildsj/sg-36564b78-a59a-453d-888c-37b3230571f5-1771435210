@@ -6,11 +6,14 @@ const db = supabase as any;
 export interface Gateway {
   id: string;
   tenant_id: string;
-  name: string;
-  phone_number: string;
-  api_key?: string; // Mapped from api_key_encrypted
-  base_url?: string; // Mapped from config.base_url
-  status: "active" | "inactive" | "error";
+  gateway_name: string;
+  api_key: string;
+  api_secret?: string;
+  sender_id?: string;
+  webhook_secret?: string;
+  base_url: string;
+  is_active: boolean;
+  group_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -27,12 +30,7 @@ export const gatewayService = {
       throw error;
     }
 
-    // Transform data: extract base_url from config JSONB
-    return (data || []).map((gw: any) => ({
-      ...gw,
-      api_key: gw.api_key_encrypted,
-      base_url: gw.config?.base_url || null
-    }));
+    return data || [];
   },
 
   async getById(id: string): Promise<Gateway | null> {
@@ -47,20 +45,14 @@ export const gatewayService = {
       throw error;
     }
 
-    if (!data) return null;
-
-    return {
-      ...data,
-      api_key: data.api_key_encrypted,
-      base_url: data.config?.base_url || null
-    };
+    return data;
   },
 
   async getActive(): Promise<Gateway[]> {
     const { data, error } = await db
       .from("sms_gateways")
       .select("*")
-      .eq("status", "active")
+      .eq("is_active", true)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -68,14 +60,10 @@ export const gatewayService = {
       throw error;
     }
 
-    return (data || []).map((gw: any) => ({
-      ...gw,
-      api_key: gw.api_key_encrypted,
-      base_url: gw.config?.base_url || null
-    }));
+    return data || [];
   },
 
-  async create(gateway: Omit<Gateway, "id" | "created_at" | "updated_at">): Promise<Gateway> {
+  async create(gateway: Omit<Gateway, "id" | "created_at" | "updated_at" | "tenant_id">): Promise<Gateway> {
     // Get current user and tenant_id
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
@@ -88,16 +76,16 @@ export const gatewayService = {
 
     if (!profile) throw new Error("User profile not found");
 
-    // Transform data to match database schema
     const dbGateway = {
       tenant_id: profile.tenant_id,
-      name: gateway.name,
-      phone_number: gateway.phone_number,
-      api_key_encrypted: gateway.api_key || "",
-      status: gateway.status || "active",
-      config: {
-        base_url: gateway.base_url || ""
-      }
+      gateway_name: gateway.gateway_name,
+      api_key: gateway.api_key,
+      base_url: gateway.base_url,
+      is_active: gateway.is_active ?? true,
+      api_secret: gateway.api_secret || null,
+      sender_id: gateway.sender_id || null,
+      webhook_secret: gateway.webhook_secret || null,
+      group_id: gateway.group_id || null
     };
 
     const { data, error } = await db
@@ -111,38 +99,20 @@ export const gatewayService = {
       throw error;
     }
 
-    return {
-      ...data,
-      api_key: data.api_key_encrypted,
-      base_url: data.config?.base_url || null
-    };
+    return data;
   },
 
   async update(id: string, gateway: Partial<Gateway>): Promise<Gateway> {
     const updates: any = {};
 
-    if (gateway.name) updates.name = gateway.name;
-    if (gateway.phone_number) updates.phone_number = gateway.phone_number;
-    if (gateway.status) updates.status = gateway.status;
-    
-    // Handle api_key update
-    if (gateway.api_key !== undefined) {
-      updates.api_key_encrypted = gateway.api_key;
-    }
-
-    // Handle base_url update - merge with existing config
-    if (gateway.base_url !== undefined) {
-      const { data: existing } = await db
-        .from("sms_gateways")
-        .select("config")
-        .eq("id", id)
-        .single();
-
-      updates.config = {
-        ...(existing?.config || {}),
-        base_url: gateway.base_url
-      };
-    }
+    if (gateway.gateway_name !== undefined) updates.gateway_name = gateway.gateway_name;
+    if (gateway.api_key !== undefined) updates.api_key = gateway.api_key;
+    if (gateway.base_url !== undefined) updates.base_url = gateway.base_url;
+    if (gateway.is_active !== undefined) updates.is_active = gateway.is_active;
+    if (gateway.api_secret !== undefined) updates.api_secret = gateway.api_secret;
+    if (gateway.sender_id !== undefined) updates.sender_id = gateway.sender_id;
+    if (gateway.webhook_secret !== undefined) updates.webhook_secret = gateway.webhook_secret;
+    if (gateway.group_id !== undefined) updates.group_id = gateway.group_id;
 
     const { data, error } = await db
       .from("sms_gateways")
@@ -156,11 +126,7 @@ export const gatewayService = {
       throw error;
     }
 
-    return {
-      ...data,
-      api_key: data.api_key_encrypted,
-      base_url: data.config?.base_url || null
-    };
+    return data;
   },
 
   async delete(id: string): Promise<void> {

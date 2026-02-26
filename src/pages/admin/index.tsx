@@ -73,8 +73,7 @@ export default function AdminPage() {
   });
 
   const [newGateway, setNewGateway] = useState({
-    name: "",
-    phone_number: "",
+    gateway_name: "",
     api_key: "",
     base_url: "",
   });
@@ -244,8 +243,7 @@ export default function AdminPage() {
       });
       fetchData();
       setNewGateway({
-        name: "",
-        phone_number: "",
+        gateway_name: "",
         api_key: "",
         base_url: "",
       });
@@ -662,36 +660,28 @@ export default function AdminPage() {
                 <div className="space-y-4 border p-4 rounded-md">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Navn</Label>
+                      <Label>Gateway Navn</Label>
                       <Input 
-                        placeholder="Provider Name"
-                        value={newGateway.name}
-                        onChange={(e) => setNewGateway({...newGateway, name: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Telefonnummer</Label>
-                      <Input 
-                        placeholder="+47..."
-                        value={newGateway.phone_number}
-                        onChange={(e) => setNewGateway({...newGateway, phone_number: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>API Key</Label>
-                      <Input 
-                        type="password"
-                        placeholder="Secret Key"
-                        value={newGateway.api_key}
-                        onChange={(e) => setNewGateway({...newGateway, api_key: e.target.value})}
+                        placeholder="Helse Gateway"
+                        value={newGateway.gateway_name}
+                        onChange={(e) => setNewGateway({...newGateway, gateway_name: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label>Base URL</Label>
                       <Input 
-                        placeholder="https://api..."
+                        placeholder="https://semse.iotcrafts.in/"
                         value={newGateway.base_url}
                         onChange={(e) => setNewGateway({...newGateway, base_url: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2 col-span-2">
+                      <Label>API Key</Label>
+                      <Input 
+                        type="password"
+                        placeholder="Hemmelig API-nøkkel"
+                        value={newGateway.api_key}
+                        onChange={(e) => setNewGateway({...newGateway, api_key: e.target.value})}
                       />
                     </div>
                   </div>
@@ -709,12 +699,12 @@ export default function AdminPage() {
                     gateways.map(gw => (
                       <div key={gw.id} className="flex items-center justify-between p-3 border rounded bg-secondary/10">
                         <div>
-                          <div className="font-medium">{gw.name}</div>
-                          <div className="text-sm text-muted-foreground">{gw.phone_number}</div>
+                          <div className="font-medium">{gw.gateway_name}</div>
+                          <div className="text-sm text-muted-foreground">{gw.base_url}</div>
                         </div>
                         <div className="flex gap-2">
-                          <Badge variant={gw.status === 'active' ? 'default' : 'secondary'}>
-                            {gw.status}
+                          <Badge variant={gw.is_active ? 'default' : 'secondary'}>
+                            {gw.is_active ? 'Aktiv' : 'Inaktiv'}
                           </Badge>
                           <Button variant="ghost" size="icon" onClick={() => handleDeleteGateway(gw.id)}>
                             <Trash2 className="h-4 w-4" />
