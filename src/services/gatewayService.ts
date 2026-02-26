@@ -112,12 +112,12 @@ export const gatewayService = {
 
     const insertData = {
       name: gateway.name,
-      gateway_description: gateway.gateway_description,
+      gateway_description: gateway.gateway_description || '',
       api_key: gateway.api_key || null,
       api_secret: gateway.api_secret || null,
       sender_id: gateway.sender_id || null,
       webhook_secret: gateway.webhook_secret || null,
-      is_active: gateway.is_active,
+      is_active: gateway.is_active !== false,
       group_id: gateway.group_id || null,
       base_url: gateway.base_url || null,
       gw_phone: gateway.gw_phone || null,
