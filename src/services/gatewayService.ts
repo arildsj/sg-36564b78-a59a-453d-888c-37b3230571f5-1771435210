@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// CRITICAL FIX: Cast supabase client to bypass TypeScript limitations
 const db = supabase as any;
 
 export type Gateway = {
@@ -77,46 +76,72 @@ export const gatewayService = {
   },
 
   async create(gateway: Omit<Gateway, "id" | "created_at" | "updated_at" | "tenant_id">): Promise<void> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error("Not authenticated");
+    console.log("🔍 Step 1: Getting authenticated user...");
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error("❌ Auth error:", userError);
+      throw new Error(`Authentication failed: ${userError.message}`);
+    }
+    
+    if (!user) {
+      console.error("❌ No user found in session");
+      throw new Error("Not authenticated - please log in again");
+    }
 
-    console.log("🔍 Creating gateway - User:", user.user.id);
+    console.log("✅ User authenticated:", user.id);
 
-    const { data: profile } = await db
+    console.log("🔍 Step 2: Fetching user profile...");
+    const { data: profile, error: profileError } = await db
       .from("user_profiles")
       .select("tenant_id")
-      .eq("id", user.user.id)
+      .eq("id", user.id)
       .single();
 
-    console.log("🔍 User profile:", profile);
+    if (profileError) {
+      console.error("❌ Profile fetch error:", profileError);
+      throw new Error(`Failed to fetch user profile: ${profileError.message}`);
+    }
 
-    if (!profile?.tenant_id) throw new Error("User has no tenant");
+    if (!profile?.tenant_id) {
+      console.error("❌ User profile missing tenant_id");
+      throw new Error("User profile is incomplete - missing tenant_id");
+    }
 
-    console.log("🔍 Gateway data to insert:", {
-      ...gateway,
-      tenant_id: profile.tenant_id
-    });
+    console.log("✅ User profile found, tenant_id:", profile.tenant_id);
 
-    const { data, error } = await db.from("sms_gateways").insert({
+    const insertData = {
       name: gateway.name,
       gateway_description: gateway.gateway_description,
-      api_key: gateway.api_key,
-      api_secret: gateway.api_secret,
-      sender_id: gateway.sender_id,
-      webhook_secret: gateway.webhook_secret,
+      api_key: gateway.api_key || null,
+      api_secret: gateway.api_secret || null,
+      sender_id: gateway.sender_id || null,
+      webhook_secret: gateway.webhook_secret || null,
       is_active: gateway.is_active,
-      group_id: gateway.group_id,
-      base_url: gateway.base_url,
-      gw_phone: gateway.gw_phone,
+      group_id: gateway.group_id || null,
+      base_url: gateway.base_url || null,
+      gw_phone: gateway.gw_phone || null,
       tenant_id: profile.tenant_id,
-    }).select();
+    };
 
-    console.log("🔍 Insert result:", { data, error });
+    console.log("🔍 Step 3: Inserting gateway with data:", insertData);
+
+    const { data, error } = await db
+      .from("sms_gateways")
+      .insert(insertData)
+      .select();
 
     if (error) {
-      console.error("❌ Gateway creation error:", error);
-      throw error;
+      console.error("❌ Gateway insert error:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw new Error(`Failed to create gateway: ${error.message}`);
     }
+
+    console.log("✅ Gateway created successfully:", data);
   },
 
   async update(id: string, gateway: Partial<Gateway>): Promise<Gateway> {
