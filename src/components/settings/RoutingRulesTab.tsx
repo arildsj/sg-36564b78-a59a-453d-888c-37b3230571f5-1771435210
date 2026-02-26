@@ -292,11 +292,11 @@ export function RoutingRulesTab() {
                     <div className="text-sm text-muted-foreground flex gap-4 mt-1">
                       <span className="flex items-center gap-1">
                         <MessageSquare className="h-3 w-3" />
-                        Til: {(rule as any).groups?.name || "Ukjent gruppe"}
+                        Til: {rule.group_name || "Ukjent gruppe"}
                       </span>
                       <span className="flex items-center gap-1">
                         <Globe className="h-3 w-3" />
-                        Via: {(rule as any).gateways?.name || "Ukjent gateway"}
+                        Via: {rule.gateway_name || "Ukjent gateway"}
                       </span>
                     </div>
                   </div>

@@ -74,7 +74,8 @@ export default function AdminPage() {
 
   const [newGateway, setNewGateway] = useState({
     name: "",
-    phone_number: "",
+    gw_phone: "",
+    gateway_description: "",
     api_key: "",
     base_url: "",
   });
@@ -245,7 +246,8 @@ export default function AdminPage() {
       fetchData();
       setNewGateway({
         name: "",
-        phone_number: "",
+        gw_phone: "",
+        gateway_description: "",
         api_key: "",
         base_url: "",
       });
@@ -673,8 +675,8 @@ export default function AdminPage() {
                       <Label>Telefonnummer</Label>
                       <Input 
                         placeholder="+47..."
-                        value={newGateway.phone_number}
-                        onChange={(e) => setNewGateway({...newGateway, phone_number: e.target.value})}
+                        value={newGateway.gw_phone}
+                        onChange={(e) => setNewGateway({...newGateway, gw_phone: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
@@ -711,7 +713,7 @@ export default function AdminPage() {
                         <div>
                           <div className="font-medium">{gw.name}</div>
                           <div className="text-sm text-muted-foreground">{gw.base_url}</div>
-                          <div className="text-xs text-muted-foreground">{gw.phone_number}</div>
+                          <div className="text-xs text-muted-foreground">{gw.gw_phone || "Ingen telefon"}</div>
                         </div>
                         <div className="flex gap-2">
                           <Badge variant={gw.is_active ? 'default' : 'secondary'}>

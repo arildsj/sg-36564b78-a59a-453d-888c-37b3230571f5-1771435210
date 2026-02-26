@@ -7,8 +7,9 @@ export interface Gateway {
   id: string;
   tenant_id: string;
   name: string;
-  phone_number?: string;
-  api_key: string; // Mapped from api_key_encrypted in DB
+  gw_phone?: string; // NEW: Gateway phone number
+  gateway_description?: string; // RENAMED: was gateway_name
+  api_key: string; // Mapped from api_key in DB
   base_url: string;
   is_active: boolean;
   status?: string;
@@ -29,11 +30,10 @@ export const gatewayService = {
       throw error;
     }
 
-    // Map api_key_encrypted -> api_key for UI
+    // Map DB columns to UI interface
     return (data || []).map((gateway: any) => ({
       ...gateway,
-      api_key: gateway.api_key_encrypted || "",
-      is_active: gateway.status === "active"
+      is_active: gateway.is_active !== false // Convert to boolean
     }));
   },
 
@@ -51,11 +51,10 @@ export const gatewayService = {
 
     if (!data) return null;
 
-    // Map api_key_encrypted -> api_key for UI
+    // Map DB columns to UI interface
     return {
       ...data,
-      api_key: data.api_key_encrypted || "",
-      is_active: data.status === "active"
+      is_active: data.is_active !== false
     };
   },
 
@@ -63,7 +62,7 @@ export const gatewayService = {
     const { data, error } = await db
       .from("sms_gateways")
       .select("*")
-      .eq("status", "active")
+      .eq("is_active", true)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -71,10 +70,8 @@ export const gatewayService = {
       throw error;
     }
 
-    // Map api_key_encrypted -> api_key for UI
     return (data || []).map((gateway: any) => ({
       ...gateway,
-      api_key: gateway.api_key_encrypted || "",
       is_active: true
     }));
   },
@@ -92,16 +89,16 @@ export const gatewayService = {
 
     if (!profile) throw new Error("User profile not found");
 
-    // Map api_key -> api_key_encrypted for DB
+    // Map UI interface to DB columns
     const dbGateway = {
       tenant_id: profile.tenant_id,
       name: gateway.name,
-      phone_number: gateway.phone_number || "",
-      api_key_encrypted: gateway.api_key, // Map to correct column name
+      gw_phone: gateway.gw_phone || null,
+      gateway_description: gateway.gateway_description || null,
+      api_key: gateway.api_key || null,
       base_url: gateway.base_url,
-      status: gateway.is_active ? "active" : "inactive",
-      group_id: gateway.group_id || null,
-      config: {} // Empty JSONB for now
+      is_active: gateway.is_active !== false,
+      group_id: gateway.group_id || null
     };
 
     const { data, error } = await db
@@ -115,11 +112,9 @@ export const gatewayService = {
       throw error;
     }
 
-    // Map api_key_encrypted -> api_key for return value
     return {
       ...data,
-      api_key: data.api_key_encrypted || "",
-      is_active: data.status === "active"
+      is_active: data.is_active !== false
     };
   },
 
@@ -127,10 +122,11 @@ export const gatewayService = {
     const updates: any = {};
 
     if (gateway.name !== undefined) updates.name = gateway.name;
-    if (gateway.phone_number !== undefined) updates.phone_number = gateway.phone_number;
-    if (gateway.api_key !== undefined) updates.api_key_encrypted = gateway.api_key; // Map to correct column
+    if (gateway.gw_phone !== undefined) updates.gw_phone = gateway.gw_phone;
+    if (gateway.gateway_description !== undefined) updates.gateway_description = gateway.gateway_description;
+    if (gateway.api_key !== undefined) updates.api_key = gateway.api_key;
     if (gateway.base_url !== undefined) updates.base_url = gateway.base_url;
-    if (gateway.is_active !== undefined) updates.status = gateway.is_active ? "active" : "inactive";
+    if (gateway.is_active !== undefined) updates.is_active = gateway.is_active;
     if (gateway.group_id !== undefined) updates.group_id = gateway.group_id;
 
     const { data, error } = await db
@@ -145,11 +141,9 @@ export const gatewayService = {
       throw error;
     }
 
-    // Map api_key_encrypted -> api_key for return value
     return {
       ...data,
-      api_key: data.api_key_encrypted || "",
-      is_active: data.status === "active"
+      is_active: data.is_active !== false
     };
   },
 
