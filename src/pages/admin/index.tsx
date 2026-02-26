@@ -74,10 +74,14 @@ export default function AdminPage() {
 
   const [newGateway, setNewGateway] = useState({
     name: "",
-    gw_phone: "",
-    gateway_desc: "",
+    gateway_description: "",
     api_key: "",
+    api_secret: "",
+    sender_id: "",
+    webhook_secret: "",
+    is_active: true,
     base_url: "",
+    gw_phone: "",
   });
 
   const fetchData = async () => {
@@ -246,10 +250,14 @@ export default function AdminPage() {
       fetchData();
       setNewGateway({
         name: "",
-        gw_phone: "",
-        gateway_desc: "",
+        gateway_description: "",
         api_key: "",
+        api_secret: "",
+        sender_id: "",
+        webhook_secret: "",
+        is_active: true,
         base_url: "",
+        gw_phone: "",
       });
     } catch (error: any) {
       console.error("Failed to create gateway:", error);
@@ -694,6 +702,29 @@ export default function AdminPage() {
                         placeholder="Hemmelig API-nøkkel"
                         value={newGateway.api_key}
                         onChange={(e) => setNewGateway({...newGateway, api_key: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="gateway_description">Beskrivelse</Label>
+                      <Input
+                        id="gateway_description"
+                        placeholder="F.eks. Primær SMS-gateway for Norge"
+                        value={newGateway.gateway_description}
+                        onChange={(e) =>
+                          setNewGateway({ ...newGateway, gateway_description: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="webhook_secret">Webhook Secret</Label>
+                      <Input
+                        id="webhook_secret"
+                        type="password"
+                        placeholder="Valgfritt"
+                        value={newGateway.webhook_secret}
+                        onChange={(e) =>
+                          setNewGateway({ ...newGateway, webhook_secret: e.target.value })
+                        }
                       />
                     </div>
                   </div>
