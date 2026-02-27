@@ -98,14 +98,14 @@ export const groupService = {
     let finalGatewayId = group.gateway_id;
     
     if (group.parent_id && group.parent_id !== "none") {
-      const { data: parentGroup, error: parentError } = await supabase
+      const { data: parentGroup, error: parentError } = await (supabase as any)
         .from("groups")
         .select("gateway_id")
         .eq("id", group.parent_id)
         .single();
       
       if (parentError) throw new Error("Failed to fetch parent group");
-      finalGatewayId = parentGroup.gateway_id;
+      finalGatewayId = parentGroup?.gateway_id;
     }
 
     // Valider at rotgrupper har gateway_id
