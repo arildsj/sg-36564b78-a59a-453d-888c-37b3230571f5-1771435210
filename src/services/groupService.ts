@@ -90,13 +90,36 @@ export const groupService = {
     escalation_timeout_minutes?: number;
     min_on_duty_count?: number;
   }) {
+    // Hent brukerens ID
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    // Hvis det er en undergruppe, arv gateway_id fra forelder
+    let finalGatewayId = group.gateway_id;
+    
+    if (group.parent_id && group.parent_id !== "none") {
+      const { data: parentGroup, error: parentError } = await supabase
+        .from("groups")
+        .select("gateway_id")
+        .eq("id", group.parent_id)
+        .single();
+      
+      if (parentError) throw new Error("Failed to fetch parent group");
+      finalGatewayId = parentGroup.gateway_id;
+    }
+
+    // Valider at rotgrupper har gateway_id
+    if ((!group.parent_id || group.parent_id === "none") && !finalGatewayId) {
+      throw new Error("Root groups must have a gateway assigned");
+    }
+
     // Map input fields to database columns
     const dbPayload = {
       name: group.name,
       kind: group.kind,
       description: group.description,
       parent_group_id: group.parent_id === "none" ? null : group.parent_id,
-      gateway_id: group.gateway_id || null,
+      gateway_id: finalGatewayId,
       tenant_id: group.tenant_id,
       escalation_enabled: group.escalation_enabled,
       escalation_timeout_minutes: group.escalation_timeout_minutes,
@@ -110,6 +133,21 @@ export const groupService = {
       .single();
 
     if (error) throw error;
+
+    // Automatisk legg til oppretteren som group_admin
+    const { error: membershipError } = await supabase
+      .from("group_memberships")
+      .insert({
+        group_id: data.id,
+        user_id: user.id,
+        role: "group_admin"
+      });
+
+    if (membershipError) {
+      console.error("Failed to add creator as group admin:", membershipError);
+      // Ikke throw error her - gruppen er allerede opprettet
+    }
+
     return data;
   },
 
