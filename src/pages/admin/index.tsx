@@ -52,6 +52,7 @@ export default function AdminPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [userRole, setUserRole] = useState<string>("member");
 
   const [newUser, setNewUser] = useState({
     email: "",
@@ -67,6 +68,7 @@ export default function AdminPage() {
     description: "",
     kind: "operational",
     parent_id: "none",
+    gateway_id: "",
     escalation_enabled: false,
     escalation_timeout_minutes: 30,
     min_on_duty_count: 1,
@@ -87,6 +89,20 @@ export default function AdminPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
+
+      // Fetch current user's role
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await db
+          .from("user_profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        
+        if (profile) {
+          setUserRole(profile.role);
+        }
+      }
 
       // Fetch Users
       const { data: usersData, error: usersError } = await db
@@ -209,12 +225,31 @@ export default function AdminPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Validate: Rotgrupper må ha gateway_id
+      if (newGroup.parent_id === "none" && !newGroup.gateway_id) {
+        toast({
+          title: "Gateway mangler",
+          description: "Du må velge en gateway for rotgrupper",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const tenant_id = user.id;
 
-      await groupService.createGroup({
-        ...newGroup,
-        tenant_id
-      });
+      const groupData = {
+        name: newGroup.name,
+        description: newGroup.description,
+        kind: newGroup.kind,
+        parent_id: newGroup.parent_id === "none" ? null : newGroup.parent_id,
+        gateway_id: newGroup.parent_id === "none" ? newGroup.gateway_id : null,
+        tenant_id,
+        escalation_enabled: newGroup.escalation_enabled,
+        escalation_timeout_minutes: newGroup.escalation_timeout_minutes,
+        min_on_duty_count: newGroup.min_on_duty_count,
+      };
+
+      await groupService.createGroup(groupData);
 
       toast({
         title: "Gruppe opprettet",
@@ -227,6 +262,7 @@ export default function AdminPage() {
         description: "",
         kind: "operational",
         parent_id: "none",
+        gateway_id: "",
         escalation_enabled: false,
         escalation_timeout_minutes: 30,
         min_on_duty_count: 1,
@@ -567,7 +603,7 @@ export default function AdminPage() {
                     <Select
                       value={newGroup.parent_id}
                       onValueChange={(value) =>
-                        setNewGroup({ ...newGroup, parent_id: value })
+                        setNewGroup({ ...newGroup, parent_id: value, gateway_id: value === "none" ? newGroup.gateway_id : "" })
                       }
                     >
                       <SelectTrigger>
@@ -583,6 +619,33 @@ export default function AdminPage() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Gateway dropdown - kun for tenant_admin og rotgrupper */}
+                  {userRole === "tenant_admin" && newGroup.parent_id === "none" && (
+                    <div className="space-y-2">
+                      <Label>Gateway <span className="text-destructive">*</span></Label>
+                      <Select
+                        value={newGroup.gateway_id}
+                        onValueChange={(value) =>
+                          setNewGroup({ ...newGroup, gateway_id: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Velg gateway..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {gateways.filter(gw => gw.is_active).map((gw) => (
+                            <SelectItem key={gw.id} value={gw.id}>
+                              {gw.name} ({gw.gw_phone || "Ingen telefon"})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Rotgrupper må ha en gateway tilknyttet
+                      </p>
+                    </div>
+                  )}
                   
                   <div className="flex items-center space-x-2 pt-2">
                     <Switch
@@ -607,7 +670,14 @@ export default function AdminPage() {
                     </div>
                   )}
 
-                  <Button onClick={handleCreateGroup} className="w-full">
+                  <Button 
+                    onClick={handleCreateGroup} 
+                    className="w-full"
+                    disabled={
+                      !newGroup.name || 
+                      (newGroup.parent_id === "none" && userRole === "tenant_admin" && !newGroup.gateway_id)
+                    }
+                  >
                     <Plus className="mr-2 h-4 w-4" />
                     Opprett Gruppe
                   </Button>
