@@ -268,9 +268,10 @@ export default function AdminPage() {
         min_on_duty_count: 1,
       });
     } catch (error: any) {
+      console.error("Failed to create group:", error);
       toast({
         title: "Feil",
-        description: error.message,
+        description: error.message || "Kunne ikke opprette gruppe",
         variant: "destructive",
       });
     }
