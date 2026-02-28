@@ -100,15 +100,37 @@ export const groupService = {
     escalation_timeout_minutes?: number;
     min_on_duty_count?: number;
   }) {
-    // Hent brukerens ID
+    // Hent brukerens ID og profil
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
+
+    // Hent brukerens profil for å verifisere tenant_id og rolle
+    const { data: userProfile, error: profileError } = await supabase
+      .from("user_profiles")
+      .select("tenant_id, role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !userProfile) {
+      console.error("Failed to fetch user profile:", profileError);
+      throw new Error("Failed to verify user permissions");
+    }
+
+    // Verifiser at tenant_id matcher brukerens tenant
+    if (userProfile.tenant_id !== group.tenant_id) {
+      throw new Error("Tenant ID mismatch");
+    }
+
+    // Verifiser at brukeren har admin-rettigheter
+    if (!["tenant_admin", "group_admin"].includes(userProfile.role)) {
+      throw new Error("Insufficient permissions");
+    }
 
     // Hvis det er en undergruppe, arv gateway_id fra forelder
     let finalGatewayId = group.gateway_id;
     
     if (group.parent_id && group.parent_id !== "none") {
-      const { data: parentGroup, error: parentError } = await (supabase as any)
+      const { data: parentGroup, error: parentError } = await supabase
         .from("groups")
         .select("gateway_id")
         .eq("id", group.parent_id)
@@ -126,8 +148,7 @@ export const groupService = {
       throw new Error("Root groups must have a gateway assigned");
     }
 
-    // Map input fields to database columns
-    // BRUKER parent_id SOM ER FASIT FRA CSV
+    // Map input fields to database columns (CSV fasit: parent_id, ikke parent_group_id)
     const dbPayload = {
       name: group.name,
       kind: group.kind,
@@ -140,13 +161,19 @@ export const groupService = {
       min_on_duty_count: group.min_on_duty_count
     };
 
+    console.log("Creating group with payload:", dbPayload);
+    console.log("User profile:", { tenant_id: userProfile.tenant_id, role: userProfile.role });
+
     const { data, error } = await supabase
       .from("groups")
       .insert([dbPayload])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Database error:", error);
+      throw error;
+    }
 
     // Automatisk legg til oppretteren som group_admin
     const { error: membershipError } = await supabase
@@ -159,7 +186,6 @@ export const groupService = {
 
     if (membershipError) {
       console.error("Failed to add creator as group admin:", membershipError);
-      // Ikke throw error her - gruppen er allerede opprettet
     }
 
     return data;
