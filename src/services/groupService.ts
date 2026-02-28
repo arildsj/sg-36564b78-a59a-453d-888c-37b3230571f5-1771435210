@@ -130,9 +130,11 @@ export const groupService = {
     let finalGatewayId = group.gateway_id;
     
     if (group.parent_id && group.parent_id !== "none") {
-      const { data: parentGroup, error: parentError } = await supabase
+      // Vi bruker select("*") og caster til any fordi database.types.ts mangler gateway_id
+      // selv om CSV-fasiten sier den finnes.
+      const { data: parentGroupRaw, error: parentError } = await supabase
         .from("groups")
-        .select("gateway_id")
+        .select("*")
         .eq("id", group.parent_id)
         .single();
       
@@ -140,6 +142,8 @@ export const groupService = {
         console.error("Failed to fetch parent group:", parentError);
         throw new Error("Failed to fetch parent group");
       }
+      
+      const parentGroup = parentGroupRaw as any;
       finalGatewayId = parentGroup?.gateway_id;
     }
 
@@ -164,9 +168,10 @@ export const groupService = {
     console.log("Creating group with payload:", dbPayload);
     console.log("User profile:", { tenant_id: userProfile.tenant_id, role: userProfile.role });
 
+    // Vi bruker any-casting her fordi TypeScript-definisjonene henger etter CSV-fasiten
     const { data, error } = await supabase
       .from("groups")
-      .insert([dbPayload])
+      .insert([dbPayload as any])
       .select()
       .single();
 
