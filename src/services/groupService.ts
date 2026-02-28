@@ -6,7 +6,6 @@ export type Group = {
   name: string;
   kind: "operational" | "structural" | "administrative" | "billing";
   parent_id: string | null;
-  parent_id?: string | null; // Added for UI compatibility
   gateway_id?: string | null;
   tenant_id: string;
   created_at: string;
@@ -35,10 +34,11 @@ export const groupService = {
 
     if (error) throw error;
     
-    // Map database fields to UI expected fields if necessary
+    // Map database fields to UI expected fields
+    // Vi sjekker både parent_id og parent_group_id for sikkerhets skyld hvis viewet bruker gammelt navn
     return (data || []).map(group => ({
       ...group,
-      parent_id: group.parent_group_id // Ensure compatibility
+      parent_id: group.parent_id || group.parent_group_id
     })) as Group[];
   },
 
@@ -57,7 +57,7 @@ export const groupService = {
     
     return (data || []).map(group => ({
       ...group,
-      parent_id: group.parent_group_id
+      parent_id: group.parent_id || group.parent_group_id
     })) as Group[];
   },
 
@@ -66,7 +66,7 @@ export const groupService = {
     
     const buildHierarchy = (parentId: string | null = null): GroupNode[] => {
       return groups
-        .filter(g => g.parent_group_id === parentId)
+        .filter(g => g.parent_id === parentId)
         .map(g => ({
           id: g.id,
           name: g.name,
@@ -118,7 +118,7 @@ export const groupService = {
       name: group.name,
       kind: group.kind,
       description: group.description,
-      parent_group_id: group.parent_id === "none" ? null : group.parent_id,
+      parent_id: group.parent_id === "none" ? null : group.parent_id,
       gateway_id: finalGatewayId,
       tenant_id: group.tenant_id,
       escalation_enabled: group.escalation_enabled,
