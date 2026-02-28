@@ -116,10 +116,8 @@ export const groupService = {
       throw new Error("Failed to verify user permissions");
     }
 
-    // Verifiser at tenant_id matcher brukerens tenant
-    if (userProfile.tenant_id !== group.tenant_id) {
-      throw new Error("Tenant ID mismatch");
-    }
+    // Bruk ALLTID brukerens tenant_id (ignorer input fra UI)
+    const validatedTenantId = userProfile.tenant_id;
 
     // Verifiser at brukeren har admin-rettigheter
     if (!["tenant_admin", "group_admin"].includes(userProfile.role)) {
@@ -159,7 +157,7 @@ export const groupService = {
       description: group.description,
       parent_id: group.parent_id === "none" ? null : group.parent_id,
       gateway_id: finalGatewayId,
-      tenant_id: group.tenant_id,
+      tenant_id: validatedTenantId, // Bruk validert tenant_id fra brukerens profil
       escalation_enabled: group.escalation_enabled,
       escalation_timeout_minutes: group.escalation_timeout_minutes,
       min_on_duty_count: group.min_on_duty_count
