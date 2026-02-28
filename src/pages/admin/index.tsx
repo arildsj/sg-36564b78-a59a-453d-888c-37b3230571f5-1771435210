@@ -549,12 +549,12 @@ export default function AdminPage() {
                   <GroupHierarchy groups={(() => {
                     const buildHierarchy = (parentId: string | null = null): any[] => {
                       return groups
-                        .filter(g => g.parent_group_id === (parentId === "none" ? null : parentId))
+                        .filter(g => g.parent_id === (parentId === "none" ? null : parentId))
                         .map(g => ({
                           id: g.id,
                           name: g.name,
                           kind: g.kind as "operational" | "structural",
-                          parent_id: g.parent_group_id,
+                          parent_id: g.parent_id,
                           description: (g as any).description,
                           member_count: g.active_members,
                           children: buildHierarchy(g.id)

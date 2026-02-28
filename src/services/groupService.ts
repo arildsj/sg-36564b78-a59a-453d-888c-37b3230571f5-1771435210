@@ -5,7 +5,7 @@ export type Group = {
   id: string;
   name: string;
   kind: "operational" | "structural" | "administrative" | "billing";
-  parent_group_id: string | null;
+  parent_id: string | null;
   parent_id?: string | null; // Added for UI compatibility
   gateway_id?: string | null;
   tenant_id: string;
