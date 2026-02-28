@@ -35,11 +35,17 @@ export const groupService = {
     if (error) throw error;
     
     // Map database fields to UI expected fields
-    // Vi sjekker både parent_id og parent_group_id for sikkerhets skyld hvis viewet bruker gammelt navn
-    return (data || []).map(group => ({
-      ...group,
-      parent_id: group.parent_id || group.parent_group_id
-    })) as Group[];
+    // Vi caster til any for å håndtere både parent_id (fasit) og parent_group_id (gamle typer)
+    return (data || []).map(group => {
+      const g = group as any;
+      return {
+        ...group,
+        // Prioriter parent_id hvis den finnes, ellers fallback til parent_group_id
+        parent_id: g.parent_id || g.parent_group_id,
+        // Sikre at gateway_id kommer med hvis den finnes i viewet
+        gateway_id: g.gateway_id
+      };
+    }) as Group[];
   },
 
   async getAllGroups(): Promise<Group[]> {
@@ -55,10 +61,14 @@ export const groupService = {
 
     if (error) throw error;
     
-    return (data || []).map(group => ({
-      ...group,
-      parent_id: group.parent_id || group.parent_group_id
-    })) as Group[];
+    return (data || []).map(group => {
+      const g = group as any;
+      return {
+        ...group,
+        parent_id: g.parent_id || g.parent_group_id,
+        gateway_id: g.gateway_id
+      };
+    }) as Group[];
   },
 
   async getGroupHierarchy(): Promise<GroupNode[]> {
@@ -104,7 +114,10 @@ export const groupService = {
         .eq("id", group.parent_id)
         .single();
       
-      if (parentError) throw new Error("Failed to fetch parent group");
+      if (parentError) {
+        console.error("Failed to fetch parent group:", parentError);
+        throw new Error("Failed to fetch parent group");
+      }
       finalGatewayId = parentGroup?.gateway_id;
     }
 
@@ -114,6 +127,7 @@ export const groupService = {
     }
 
     // Map input fields to database columns
+    // BRUKER parent_id SOM ER FASIT FRA CSV
     const dbPayload = {
       name: group.name,
       kind: group.kind,
