@@ -249,6 +249,8 @@ export default function AdminPage() {
         min_on_duty_count: newGroup.min_on_duty_count,
       };
 
+      console.log("Creating group with data:", groupData);
+
       await groupService.createGroup(groupData);
 
       toast({
