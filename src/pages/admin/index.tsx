@@ -595,6 +595,37 @@ export default function AdminPage() {
                           </SelectContent>
                         </Select>
                       </div>
+                      <div className="grid gap-2">
+                        <Label>Grupper</Label>
+                        <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto">
+                          {groups.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Ingen grupper tilgjengelig</p>
+                          ) : (
+                            groups.map((group) => (
+                              <div key={group.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`new-user-group-${group.id}`}
+                                  checked={newUser.group_ids.includes(group.id)}
+                                  onCheckedChange={(checked) => {
+                                    setNewUser({
+                                      ...newUser,
+                                      group_ids: checked
+                                        ? [...newUser.group_ids, group.id]
+                                        : newUser.group_ids.filter((id) => id !== group.id),
+                                    });
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`new-user-group-${group.id}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {group.name}
+                                </Label>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <DialogFooter>
                       <Button onClick={handleCreateUser}>Opprett bruker</Button>

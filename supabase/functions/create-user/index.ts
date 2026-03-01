@@ -7,7 +7,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -17,65 +16,52 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    // Get the authorization header from the request
     const authHeader = req.headers.get("Authorization");
-
     if (!authHeader) {
       throw new Error("Missing Authorization header");
     }
 
-    // Create a Supabase client with the user's JWT to verify authentication
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: { Authorization: authHeader },
-      },
+      global: { headers: { Authorization: authHeader } },
     });
 
-    // Verify the user is authenticated
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser();
-
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
-      console.error("Auth error:", userError);
       throw new Error("Invalid token or user not authenticated");
     }
 
-    // Verify the caller is a tenant_admin
     const { data: callerProfile, error: profileError } = await supabaseClient
-      .from("users")
+      .from("user_profiles")
       .select("role, tenant_id")
-      .eq("auth_user_id", user.id)
+      .eq("id", user.id)
       .single();
 
     if (profileError || !callerProfile) {
-      console.error("Profile error:", profileError);
       throw new Error("Could not verify user profile");
     }
 
-    if (callerProfile.role !== "tenant_admin") {
-      throw new Error("Only tenant administrators can create users");
+    if (callerProfile.role !== "tenant_admin" && callerProfile.role !== "group_admin") {
+      throw new Error("Only administrators can create users");
     }
 
-    // Parse request body
-    const { email, password, phone } = await req.json();
+    const { email, password, full_name, phone_number, role, group_ids } = await req.json();
 
     if (!email || !password) {
       throw new Error("Email and password are required");
     }
 
-    // Create Supabase Admin client to manage auth users (requires service role key)
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
 
-    // Create the new user in Supabase Auth
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm the user
-      phone,
+      email_confirm: true,
+      phone: phone_number,
       user_metadata: {
-        created_by_tenant_admin: user.id,
+        full_name,
+        created_by: user.id,
         tenant_id: callerProfile.tenant_id,
       },
     });
@@ -85,16 +71,55 @@ serve(async (req) => {
       throw authError;
     }
 
-    // Return the created user data
-    return new Response(JSON.stringify(authData), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    if (!authData.user) {
+      throw new Error("User creation failed - no user returned");
+    }
+
+    const { error: profileInsertError } = await supabaseAdmin
+      .from("user_profiles")
+      .insert({
+        id: authData.user.id,
+        email: email,
+        full_name: full_name || null,
+        phone_number: phone_number || null,
+        role: role || "member",
+        tenant_id: callerProfile.tenant_id,
+      });
+
+    if (profileInsertError) {
+      console.error("Profile insert error:", profileInsertError);
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      throw new Error(`Failed to create user profile: ${profileInsertError.message}`);
+    }
+
+    if (group_ids && Array.isArray(group_ids) && group_ids.length > 0) {
+      const memberships = group_ids.map((group_id: string) => ({
+        user_id: authData.user.id,
+        group_id: group_id,
+      }));
+
+      const { error: membershipError } = await supabaseAdmin
+        .from("group_memberships")
+        .insert(memberships);
+
+      if (membershipError) {
+        console.error("Group membership error:", membershipError);
+      }
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        user: authData.user,
+        message: "User created successfully"
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+    );
   } catch (error) {
     console.error("Error in create-user function:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    });
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+    );
   }
 });
