@@ -32,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Search, Trash2, Shield, Settings, Server, Users, Activity, Router, Pencil } from "lucide-react";
 import { GroupHierarchy } from "@/components/GroupHierarchy";
 import { RoutingRulesTab } from "@/components/settings/RoutingRulesTab";
@@ -41,7 +42,6 @@ import { groupService, type Group } from "@/services/groupService";
 import { userService, type UserProfile } from "@/services/userService";
 import { auditService, type AuditLogEntry } from "@/services/auditService";
 
-// CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
 const db = supabase as any;
 
 export default function AdminPage() {
@@ -64,6 +64,13 @@ export default function AdminPage() {
   });
 
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [editUserData, setEditUserData] = useState({
+    full_name: "",
+    email: "",
+    phone_number: "",
+    role: "",
+    group_ids: [] as string[],
+  });
 
   const [newGroup, setNewGroup] = useState({
     name: "",
@@ -77,6 +84,16 @@ export default function AdminPage() {
   });
 
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [editGroupData, setEditGroupData] = useState({
+    name: "",
+    description: "",
+    kind: "operational",
+    parent_id: "",
+    gateway_id: "",
+    escalation_enabled: false,
+    escalation_timeout_minutes: 30,
+    min_on_duty_count: 1,
+  });
 
   const [newGateway, setNewGateway] = useState({
     name: "",
@@ -90,11 +107,37 @@ export default function AdminPage() {
     gw_phone: "",
   });
 
+  useEffect(() => {
+    if (editingUser) {
+      setEditUserData({
+        full_name: editingUser.full_name || "",
+        email: editingUser.email || "",
+        phone_number: editingUser.phone_number || "",
+        role: editingUser.role || "member",
+        group_ids: (editingUser as any).group_memberships?.map((gm: any) => gm.group_id) || [],
+      });
+    }
+  }, [editingUser]);
+
+  useEffect(() => {
+    if (editingGroup) {
+      setEditGroupData({
+        name: editingGroup.name,
+        description: (editingGroup as any).description || "",
+        kind: editingGroup.kind,
+        parent_id: editingGroup.parent_id || "none",
+        gateway_id: (editingGroup as any).gateway_id || "",
+        escalation_enabled: editingGroup.escalation_enabled || false,
+        escalation_timeout_minutes: editingGroup.escalation_timeout_minutes || 30,
+        min_on_duty_count: editingGroup.min_on_duty_count || 1,
+      });
+    }
+  }, [editingGroup]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      // Fetch current user's role
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await db
@@ -108,7 +151,6 @@ export default function AdminPage() {
         }
       }
 
-      // Fetch Users
       const { data: usersData, error: usersError } = await db
         .from("user_profiles")
         .select(`
@@ -123,7 +165,6 @@ export default function AdminPage() {
       if (usersError) throw usersError;
       setUsers(usersData || []);
 
-      // Fetch Groups
       const { data: groupsData, error: groupsError } = await db
         .from("group_admin_view")
         .select("*")
@@ -132,7 +173,6 @@ export default function AdminPage() {
       if (groupsError) throw groupsError;
       setGroups(groupsData || []);
 
-      // Fetch Gateways
       const { data: gatewaysData, error: gatewaysError } = await db
         .from("sms_gateways")
         .select("*")
@@ -141,7 +181,6 @@ export default function AdminPage() {
       if (gatewaysError) throw gatewaysError;
       setGateways(gatewaysData || []);
 
-      // Fetch Audit Logs
       const logs = await auditService.getAuditLogs(20);
       setAuditLogs(logs);
 
@@ -224,23 +263,79 @@ export default function AdminPage() {
     }
   };
 
-  const handleUpdateUser = async (userId: string, updatedUser: any) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('update-user', {
-        body: {
-          user_id: userId,
-          ...updatedUser
-        }
-      });
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+    try {
+      const { error: profileError } = await db
+        .from("user_profiles")
+        .update({
+          full_name: editUserData.full_name,
+          email: editUserData.email,
+          phone_number: editUserData.phone_number,
+          role: editUserData.role,
+        })
+        .eq("id", editingUser.id);
+
+      if (profileError) throw profileError;
+
+      const { error: deleteMembershipsError } = await db
+        .from("group_memberships")
+        .delete()
+        .eq("user_id", editingUser.id);
+
+      if (deleteMembershipsError) throw deleteMembershipsError;
+
+      if (editUserData.group_ids.length > 0) {
+        const memberships = editUserData.group_ids.map(groupId => ({
+          user_id: editingUser.id,
+          group_id: groupId,
+        }));
+
+        const { error: insertError } = await db
+          .from("group_memberships")
+          .insert(memberships);
+
+        if (insertError) throw insertError;
+      }
 
       toast({
         title: "Bruker oppdatert",
-        description: `${updatedUser.full_name} er oppdatert`,
+        description: `${editUserData.full_name} er oppdatert`,
       });
 
+      setEditingUser(null);
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Feil ved oppdatering",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateGroup = async () => {
+    if (!editingGroup) return;
+
+    try {
+      await groupService.updateGroup(editingGroup.id, {
+        name: editGroupData.name,
+        description: editGroupData.description,
+        kind: editGroupData.kind,
+        parent_id: editGroupData.parent_id === "none" ? null : editGroupData.parent_id,
+        gateway_id: editGroupData.parent_id === "none" ? editGroupData.gateway_id : null,
+        escalation_enabled: editGroupData.escalation_enabled,
+        escalation_timeout_minutes: editGroupData.escalation_timeout_minutes,
+        min_on_duty_count: editGroupData.min_on_duty_count,
+      });
+
+      toast({
+        title: "Gruppe oppdatert",
+        description: `${editGroupData.name} er oppdatert`,
+      });
+
+      setEditingGroup(null);
       fetchData();
     } catch (error: any) {
       toast({
@@ -256,7 +351,6 @@ export default function AdminPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Validate: Rotgrupper må ha gateway_id
       if (newGroup.parent_id === "none" && !newGroup.gateway_id) {
         toast({
           title: "Gateway mangler",
@@ -279,8 +373,6 @@ export default function AdminPage() {
         escalation_timeout_minutes: newGroup.escalation_timeout_minutes,
         min_on_duty_count: newGroup.min_on_duty_count,
       };
-
-      console.log("Creating group with data:", groupData);
 
       await groupService.createGroup(groupData);
 
@@ -510,6 +602,98 @@ export default function AdminPage() {
                   </DialogContent>
                 </Dialog>
               </CardHeader>
+
+              <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Rediger bruker</DialogTitle>
+                    <DialogDescription>
+                      Oppdater brukerens informasjon og gruppemedlemskap
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label>Navn</Label>
+                      <Input
+                        value={editUserData.full_name}
+                        onChange={(e) =>
+                          setEditUserData({ ...editUserData, full_name: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>E-post</Label>
+                      <Input
+                        value={editUserData.email}
+                        onChange={(e) =>
+                          setEditUserData({ ...editUserData, email: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Telefon</Label>
+                      <Input
+                        value={editUserData.phone_number}
+                        onChange={(e) =>
+                          setEditUserData({ ...editUserData, phone_number: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Rolle</Label>
+                      <Select
+                        value={editUserData.role}
+                        onValueChange={(value) =>
+                          setEditUserData({ ...editUserData, role: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="member">Medlem</SelectItem>
+                          <SelectItem value="group_admin">Gruppe Admin</SelectItem>
+                          <SelectItem value="tenant_admin">System Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Grupper</Label>
+                      <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto">
+                        {groups.map((group) => (
+                          <div key={group.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`group-${group.id}`}
+                              checked={editUserData.group_ids.includes(group.id)}
+                              onCheckedChange={(checked) => {
+                                setEditUserData({
+                                  ...editUserData,
+                                  group_ids: checked
+                                    ? [...editUserData.group_ids, group.id]
+                                    : editUserData.group_ids.filter((id) => id !== group.id),
+                                });
+                              }}
+                            />
+                            <Label
+                              htmlFor={`group-${group.id}`}
+                              className="text-sm font-normal cursor-pointer"
+                            >
+                              {group.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setEditingUser(null)}>
+                      Avbryt
+                    </Button>
+                    <Button onClick={handleUpdateUser}>Lagre endringer</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
               <CardContent>
                 <div className="flex items-center py-4">
                   <Search className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -553,13 +737,24 @@ export default function AdminPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteUser(user.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditingUser(user)}
+                                title="Rediger bruker"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteUser(user.id)}
+                                title="Slett bruker"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -654,7 +849,6 @@ export default function AdminPage() {
                     </Select>
                   </div>
 
-                  {/* Gateway dropdown - kun for tenant_admin og rotgrupper */}
                   {userRole === "tenant_admin" && newGroup.parent_id === "none" && (
                     <div className="space-y-2">
                       <Label>Gateway <span className="text-destructive">*</span></Label>
@@ -718,6 +912,137 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </div>
+
+            <Dialog open={!!editingGroup} onOpenChange={(open) => !open && setEditingGroup(null)}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Rediger gruppe</DialogTitle>
+                  <DialogDescription>
+                    Oppdater gruppens informasjon og innstillinger
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label>Navn</Label>
+                    <Input
+                      value={editGroupData.name}
+                      onChange={(e) =>
+                        setEditGroupData({ ...editGroupData, name: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Beskrivelse</Label>
+                    <Input
+                      value={editGroupData.description}
+                      onChange={(e) =>
+                        setEditGroupData({ ...editGroupData, description: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Type</Label>
+                    <Select
+                      value={editGroupData.kind}
+                      onValueChange={(value) =>
+                        setEditGroupData({ ...editGroupData, kind: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="operational">Operasjonell</SelectItem>
+                        <SelectItem value="administrative">Administrativ</SelectItem>
+                        <SelectItem value="billing">Fakturering</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Forelder-gruppe</Label>
+                    <Select
+                      value={editGroupData.parent_id || "none"}
+                      onValueChange={(value) =>
+                        setEditGroupData({ 
+                          ...editGroupData, 
+                          parent_id: value === "none" ? "" : value,
+                          gateway_id: value === "none" ? editGroupData.gateway_id : ""
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Ingen (Toppnivå)</SelectItem>
+                        {groups
+                          .filter(g => g.id !== editingGroup?.id)
+                          .map((g) => (
+                            <SelectItem key={g.id} value={g.id}>
+                              {g.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {userRole === "tenant_admin" && (editGroupData.parent_id === "none" || !editGroupData.parent_id) && (
+                    <div className="grid gap-2">
+                      <Label>Gateway</Label>
+                      <Select
+                        value={editGroupData.gateway_id}
+                        onValueChange={(value) =>
+                          setEditGroupData({ ...editGroupData, gateway_id: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Velg gateway..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {gateways.filter(gw => gw.is_active).map((gw) => (
+                            <SelectItem key={gw.id} value={gw.id}>
+                              {gw.name} ({gw.gw_phone || "Ingen telefon"})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={editGroupData.escalation_enabled}
+                      onCheckedChange={(checked) =>
+                        setEditGroupData({ ...editGroupData, escalation_enabled: checked })
+                      }
+                    />
+                    <Label>Aktiver eskalering</Label>
+                  </div>
+
+                  {editGroupData.escalation_enabled && (
+                    <div className="grid gap-2">
+                      <Label>Timeout (minutter)</Label>
+                      <Input
+                        type="number"
+                        value={editGroupData.escalation_timeout_minutes}
+                        onChange={(e) =>
+                          setEditGroupData({ 
+                            ...editGroupData, 
+                            escalation_timeout_minutes: parseInt(e.target.value) 
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditingGroup(null)}>
+                    Avbryt
+                  </Button>
+                  <Button onClick={handleUpdateGroup}>Lagre endringer</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             
             <Card>
               <CardHeader>
@@ -750,13 +1075,24 @@ export default function AdminPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteGroup(group.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditingGroup(group)}
+                                title="Rediger gruppe"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteGroup(group.id)}
+                                title="Slett gruppe"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
