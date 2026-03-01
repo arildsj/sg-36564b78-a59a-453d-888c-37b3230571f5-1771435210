@@ -32,7 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Search, Trash2, Shield, Settings, Server, Users, Activity, Router } from "lucide-react";
+import { Plus, Search, Trash2, Shield, Settings, Server, Users, Activity, Router, Pencil } from "lucide-react";
 import { GroupHierarchy } from "@/components/GroupHierarchy";
 import { RoutingRulesTab } from "@/components/settings/RoutingRulesTab";
 import { supabase } from "@/integrations/supabase/client";
