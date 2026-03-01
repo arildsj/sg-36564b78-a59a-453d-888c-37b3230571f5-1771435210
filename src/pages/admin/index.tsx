@@ -76,6 +76,8 @@ export default function AdminPage() {
     min_on_duty_count: 1,
   });
 
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+
   const [newGateway, setNewGateway] = useState({
     name: "",
     gateway_description: "",
