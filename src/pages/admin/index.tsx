@@ -766,15 +766,154 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="groups" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle>Gruppe-hierarki</CardTitle>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="space-y-1">
+                  <CardTitle>Grupper & Tilgang</CardTitle>
                   <CardDescription>
-                    Visuell fremstilling av organisasjonsstrukturen
+                    Administrer organisasjonsstrukturen
                   </CardDescription>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Ny Gruppe
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Opprett ny gruppe</DialogTitle>
+                      <DialogDescription>
+                        Legg til en ny gruppe i organisasjonen
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label>Navn</Label>
+                        <Input
+                          value={newGroup.name}
+                          onChange={(e) =>
+                            setNewGroup({ ...newGroup, name: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Beskrivelse</Label>
+                        <Input
+                          value={newGroup.description}
+                          onChange={(e) =>
+                            setNewGroup({ ...newGroup, description: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Type</Label>
+                        <Select
+                          value={newGroup.kind}
+                          onValueChange={(value) =>
+                            setNewGroup({ ...newGroup, kind: value })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="operational">Operasjonell</SelectItem>
+                            <SelectItem value="administrative">Administrativ</SelectItem>
+                            <SelectItem value="billing">Fakturering</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Forelder-gruppe</Label>
+                        <Select
+                          value={newGroup.parent_id}
+                          onValueChange={(value) =>
+                            setNewGroup({ ...newGroup, parent_id: value, gateway_id: value === "none" ? newGroup.gateway_id : "" })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Velg forelder..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Ingen (Toppnivå)</SelectItem>
+                            {groups.map((g) => (
+                              <SelectItem key={g.id} value={g.id}>
+                                {g.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {userRole === "tenant_admin" && newGroup.parent_id === "none" && (
+                        <div className="grid gap-2">
+                          <Label>Gateway <span className="text-destructive">*</span></Label>
+                          <Select
+                            value={newGroup.gateway_id}
+                            onValueChange={(value) =>
+                              setNewGroup({ ...newGroup, gateway_id: value })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Velg gateway..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {gateways.filter(gw => gw.is_active).map((gw) => (
+                                <SelectItem key={gw.id} value={gw.id}>
+                                  {gw.name} ({gw.gw_phone || "Ingen telefon"})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Rotgrupper må ha en gateway tilknyttet
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center space-x-2 pt-2">
+                        <Switch
+                          checked={newGroup.escalation_enabled}
+                          onCheckedChange={(checked) => 
+                            setNewGroup({ ...newGroup, escalation_enabled: checked })
+                          }
+                        />
+                        <Label>Aktiver eskalering</Label>
+                      </div>
+
+                      {newGroup.escalation_enabled && (
+                        <div className="grid gap-2">
+                          <Label>Timeout (minutter)</Label>
+                          <Input
+                            type="number"
+                            value={newGroup.escalation_timeout_minutes}
+                            onChange={(e) =>
+                              setNewGroup({ ...newGroup, escalation_timeout_minutes: parseInt(e.target.value) })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <Button 
+                        onClick={handleCreateGroup}
+                        disabled={
+                          !newGroup.name || 
+                          (newGroup.parent_id === "none" && userRole === "tenant_admin" && !newGroup.gateway_id)
+                        }
+                      >
+                        Opprett Gruppe
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </CardHeader>
+
+              <CardContent className="space-y-6">
+                <div className="border rounded-lg p-4 bg-muted/20">
+                  <h3 className="font-semibold mb-3 text-sm">Gruppe-hierarki</h3>
                   <GroupHierarchy groups={(() => {
                     const buildHierarchy = (parentId: string | null = null): any[] => {
                       return groups
@@ -791,127 +930,64 @@ export default function AdminPage() {
                     };
                     return buildHierarchy(null);
                   })()} />
-                </CardContent>
-              </Card>
+                </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ny Gruppe</CardTitle>
-                  <CardDescription>Opprett en ny enhet</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Navn</Label>
-                    <Input
-                      value={newGroup.name}
-                      onChange={(e) =>
-                        setNewGroup({ ...newGroup, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Type</Label>
-                    <Select
-                      value={newGroup.kind}
-                      onValueChange={(value) =>
-                        setNewGroup({ ...newGroup, kind: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="operational">Operasjonell</SelectItem>
-                        <SelectItem value="administrative">Administrativ</SelectItem>
-                        <SelectItem value="billing">Fakturering</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Forelder-gruppe</Label>
-                    <Select
-                      value={newGroup.parent_id}
-                      onValueChange={(value) =>
-                        setNewGroup({ ...newGroup, parent_id: value, gateway_id: value === "none" ? newGroup.gateway_id : "" })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Velg forelder..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Ingen (Toppnivå)</SelectItem>
-                        {groups.map((g) => (
-                          <SelectItem key={g.id} value={g.id}>
-                            {g.name}
-                          </SelectItem>
+                <div>
+                  <h3 className="font-semibold mb-3">Alle Grupper</h3>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Navn</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Medlemmer</TableHead>
+                          <TableHead>Eskalering</TableHead>
+                          <TableHead className="text-right">Handlinger</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {groups.map((group) => (
+                          <TableRow key={group.id}>
+                            <TableCell className="font-medium">{group.name}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{group.kind}</Badge>
+                            </TableCell>
+                            <TableCell>{group.active_members || 0}</TableCell>
+                            <TableCell>
+                              {group.escalation_enabled ? (
+                                <Badge variant="secondary">{group.escalation_timeout_minutes}m</Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setEditingGroup(group)}
+                                  title="Rediger gruppe"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteGroup(group.id)}
+                                  title="Slett gruppe"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </TableBody>
+                    </Table>
                   </div>
-
-                  {userRole === "tenant_admin" && newGroup.parent_id === "none" && (
-                    <div className="space-y-2">
-                      <Label>Gateway <span className="text-destructive">*</span></Label>
-                      <Select
-                        value={newGroup.gateway_id}
-                        onValueChange={(value) =>
-                          setNewGroup({ ...newGroup, gateway_id: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Velg gateway..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {gateways.filter(gw => gw.is_active).map((gw) => (
-                            <SelectItem key={gw.id} value={gw.id}>
-                              {gw.name} ({gw.gw_phone || "Ingen telefon"})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        Rotgrupper må ha en gateway tilknyttet
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center space-x-2 pt-2">
-                    <Switch
-                      checked={newGroup.escalation_enabled}
-                      onCheckedChange={(checked) => 
-                        setNewGroup({ ...newGroup, escalation_enabled: checked })
-                      }
-                    />
-                    <Label>Aktiver eskalering</Label>
-                  </div>
-
-                  {newGroup.escalation_enabled && (
-                    <div className="space-y-2">
-                      <Label>Timeout (minutter)</Label>
-                      <Input
-                        type="number"
-                        value={newGroup.escalation_timeout_minutes}
-                        onChange={(e) =>
-                          setNewGroup({ ...newGroup, escalation_timeout_minutes: parseInt(e.target.value) })
-                        }
-                      />
-                    </div>
-                  )}
-
-                  <Button 
-                    onClick={handleCreateGroup} 
-                    className="w-full"
-                    disabled={
-                      !newGroup.name || 
-                      (newGroup.parent_id === "none" && userRole === "tenant_admin" && !newGroup.gateway_id)
-                    }
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Opprett Gruppe
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
 
             <Dialog open={!!editingGroup} onOpenChange={(open) => !open && setEditingGroup(null)}>
               <DialogContent className="max-w-2xl">
@@ -1043,63 +1119,6 @@ export default function AdminPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Alle Grupper</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Navn</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Medlemmer</TableHead>
-                        <TableHead>Eskalering</TableHead>
-                        <TableHead className="text-right">Handlinger</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {groups.map((group) => (
-                        <TableRow key={group.id}>
-                          <TableCell className="font-medium">{group.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{group.kind}</Badge>
-                          </TableCell>
-                          <TableCell>{group.active_members || 0}</TableCell>
-                          <TableCell>
-                            {group.escalation_enabled ? (
-                              <Badge variant="secondary">{group.escalation_timeout_minutes}m</Badge>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setEditingGroup(group)}
-                                title="Rediger gruppe"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteGroup(group.id)}
-                                title="Slett gruppe"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="gateways" className="space-y-4">
