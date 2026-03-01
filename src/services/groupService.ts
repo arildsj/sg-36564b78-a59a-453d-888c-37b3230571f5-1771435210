@@ -196,6 +196,8 @@ export const groupService = {
   async updateGroup(groupId: string, updates: {
     name?: string;
     description?: string | null;
+    kind?: string;
+    parent_id?: string | null;
     gateway_id?: string | null;
     is_fallback?: boolean;
     escalation_enabled?: boolean;
