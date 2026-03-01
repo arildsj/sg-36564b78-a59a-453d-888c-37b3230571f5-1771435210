@@ -183,8 +183,7 @@ export const groupService = {
       .from("group_memberships")
       .insert({
         group_id: data.id,
-        user_id: user.id,
-        role: "group_admin"
+        user_id: user.id
       });
 
     if (membershipError) {
