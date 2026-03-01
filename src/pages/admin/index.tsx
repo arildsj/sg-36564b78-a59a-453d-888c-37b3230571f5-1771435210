@@ -222,6 +222,33 @@ export default function AdminPage() {
     }
   };
 
+  const handleUpdateUser = async (userId: string, updatedUser: any) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('update-user', {
+        body: {
+          user_id: userId,
+          ...updatedUser
+        }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: "Bruker oppdatert",
+        description: `${updatedUser.full_name} er oppdatert`,
+      });
+
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Feil ved oppdatering",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCreateGroup = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
