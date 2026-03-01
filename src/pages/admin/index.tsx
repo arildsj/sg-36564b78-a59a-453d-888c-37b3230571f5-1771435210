@@ -63,6 +63,8 @@ export default function AdminPage() {
     password: "",
   });
 
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+
   const [newGroup, setNewGroup] = useState({
     name: "",
     description: "",
