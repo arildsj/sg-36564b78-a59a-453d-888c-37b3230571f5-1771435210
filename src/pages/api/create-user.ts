@@ -46,9 +46,48 @@ export default async function handler(
     );
 
     console.log("✅ Supabase Admin Client created");
+    console.log("📝 Request data:", { email, full_name, phone, role, tenant_id, group_ids });
+
+    // VALIDATION: Verify groups exist and belong to tenant
+    console.log("🔍 Validating groups...");
+    const { data: groupsData, error: groupsError } = await supabaseAdmin
+      .from("groups")
+      .select("id, name, tenant_id")
+      .in("id", group_ids);
+
+    if (groupsError) {
+      console.error("❌ Group validation error:", groupsError);
+      return res.status(400).json({
+        error: "Failed to validate groups",
+        details: groupsError.message
+      });
+    }
+
+    if (!groupsData || groupsData.length !== group_ids.length) {
+      console.error("❌ Some groups don't exist:", { 
+        requested: group_ids, 
+        found: groupsData?.map(g => g.id) 
+      });
+      return res.status(400).json({
+        error: "Invalid group IDs",
+        details: "One or more group IDs do not exist"
+      });
+    }
+
+    // Verify all groups belong to the same tenant
+    const invalidTenantGroups = groupsData.filter(g => g.tenant_id !== tenant_id);
+    if (invalidTenantGroups.length > 0) {
+      console.error("❌ Groups belong to wrong tenant:", invalidTenantGroups);
+      return res.status(400).json({
+        error: "Invalid groups for tenant",
+        details: "One or more groups do not belong to the specified tenant"
+      });
+    }
+
+    console.log("✅ Groups validated:", groupsData.map(g => g.name).join(", "));
 
     // STEP 1: Create auth user
-    console.log("Creating auth user...");
+    console.log("🔐 Creating auth user...");
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -75,7 +114,7 @@ export default async function handler(
     console.log("✅ Auth user created:", userId);
 
     // STEP 2: Create user profile
-    console.log("Creating user profile...");
+    console.log("👤 Creating user profile...");
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from("user_profiles")
       .insert({
@@ -85,7 +124,8 @@ export default async function handler(
         phone,
         role: role || "member",
         tenant_id,
-        status: "active"
+        status: "active",
+        group_id: null  // Deprecated - we use group_memberships instead
       })
       .select()
       .single();
@@ -94,7 +134,7 @@ export default async function handler(
       console.error("❌ Profile creation error:", profileError);
       
       // Rollback: Delete auth user
-      console.log("Rolling back: Deleting auth user...");
+      console.log("🔄 Rolling back: Deleting auth user...");
       await supabaseAdmin.auth.admin.deleteUser(userId);
       
       return res.status(500).json({
@@ -113,28 +153,54 @@ export default async function handler(
 
     console.log("✅ User profile created");
 
-    // STEP 3: Add user to groups if group_ids provided
-    if (group_ids && Array.isArray(group_ids) && group_ids.length > 0) {
-      console.log("Adding user to groups:", group_ids);
+    // STEP 3: Add user to groups (CRITICAL - MUST SUCCEED)
+    console.log("👥 Adding user to groups:", groupsData.map(g => g.name).join(", "));
+    
+    const memberships = group_ids.map((group_id: string) => ({
+      user_id: userId,
+      group_id,
+      is_admin: false
+    }));
+
+    const { data: membershipData, error: membershipError } = await supabaseAdmin
+      .from("group_memberships")
+      .insert(memberships)
+      .select();
+
+    if (membershipError) {
+      console.error("❌ Membership creation error:", membershipError);
+      console.error("❌ Failed memberships:", memberships);
       
-      const memberships = group_ids.map((group_id: string) => ({
-        user_id: userId,
-        group_id,
-        is_admin: false
-      }));
-
-      const { error: membershipError } = await supabaseAdmin
-        .from("group_memberships")
-        .insert(memberships);
-
-      if (membershipError) {
-        console.error("❌ Membership creation error:", membershipError);
-        // Don't rollback - user is created, just log the error
-        console.warn("User created but failed to add to groups");
-      } else {
-        console.log("✅ User added to groups");
-      }
+      // CRITICAL ROLLBACK: Delete profile and auth user
+      console.log("🔄 Rolling back: Deleting profile and auth user...");
+      await supabaseAdmin.from("user_profiles").delete().eq("id", userId);
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      
+      return res.status(500).json({
+        error: "Failed to add user to groups",
+        details: membershipError.message,
+        rollback: "User creation rolled back completely"
+      });
     }
+
+    if (!membershipData || membershipData.length !== group_ids.length) {
+      console.error("❌ Incorrect number of memberships created");
+      console.error("Expected:", group_ids.length, "Created:", membershipData?.length || 0);
+      
+      // ROLLBACK
+      console.log("🔄 Rolling back: Deleting profile and auth user...");
+      await supabaseAdmin.from("user_profiles").delete().eq("id", userId);
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      
+      return res.status(500).json({
+        error: "Failed to create all group memberships",
+        details: `Expected ${group_ids.length} memberships, created ${membershipData?.length || 0}`,
+        rollback: "User creation rolled back completely"
+      });
+    }
+
+    console.log("✅ User added to groups successfully");
+    console.log("✅ Memberships created:", membershipData.length);
 
     console.log("=== CREATE USER SUCCESS ===");
 
@@ -145,7 +211,8 @@ export default async function handler(
       user: {
         id: userId,
         email,
-        full_name
+        full_name,
+        groups: groupsData.map(g => g.name)
       }
     });
 
