@@ -231,6 +231,17 @@ export default function AdminPage() {
         throw new Error("Not authenticated");
       }
 
+      // Hent innlogget brukers tenant_id fra user_profiles
+      const { data: currentUserProfile, error: profileError } = await db
+        .from("user_profiles")
+        .select("tenant_id")
+        .eq("id", session.user.id)
+        .single();
+
+      if (profileError || !currentUserProfile?.tenant_id) {
+        throw new Error("Could not find tenant for current user");
+      }
+
       const response = await fetch("/api/create-user", {
         method: "POST",
         headers: {
@@ -243,7 +254,7 @@ export default function AdminPage() {
           full_name: newUser.full_name,
           phone: newUser.phone_number,
           role: newUser.role,
-          tenant_id: session.user.id,
+          tenant_id: currentUserProfile.tenant_id,
           group_ids: newUser.group_ids,
         }),
       });
