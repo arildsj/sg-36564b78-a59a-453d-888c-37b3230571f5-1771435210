@@ -75,7 +75,7 @@ export default async function handler(
         email,
         full_name,
         phone,
-        role: role || "member",
+        role: role || "user",
         tenant_id,
         status: "active"
       })
