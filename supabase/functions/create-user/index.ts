@@ -62,8 +62,7 @@ serve(async (req) => {
       const memberships = group_ids.map((group_id: string) => ({
         user_id: authData.user.id,
         group_id,
-        role: "member",
-        is_on_duty: false
+        is_admin: false
       }));
 
       const { error: membershipError } = await supabaseClient
