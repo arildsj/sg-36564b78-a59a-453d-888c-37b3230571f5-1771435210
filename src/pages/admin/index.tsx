@@ -259,6 +259,18 @@ export default function AdminPage() {
         }),
       });
 
+      console.log("📤 API Request:", {
+        email: newUser.email,
+        full_name: newUser.full_name,
+        phone: newUser.phone_number,
+        role: newUser.role,
+        tenant_id: currentUserProfile.tenant_id,
+        group_ids: newUser.group_ids,
+        password: "***"
+      });
+
+      console.log("📥 API Response Status:", response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || errorData.details || "Failed to create user");
