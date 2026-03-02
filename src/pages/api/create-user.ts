@@ -113,7 +113,7 @@ export default async function handler(
     const userId = authData.user.id;
     console.log("✅ Auth user created:", userId);
 
-    // STEP 2: Create user profile
+    // STEP 2: Create user profile (FASIT: use 'phone', not 'phone_number')
     console.log("👤 Creating user profile...");
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from("user_profiles")
@@ -121,11 +121,11 @@ export default async function handler(
         id: userId,
         email,
         full_name,
-        phone,
+        phone: phone,  // FASIT: 'phone' (not 'phone_number')
         role: role || "member",
         tenant_id,
         status: "active",
-        group_id: null  // Deprecated - we use group_memberships instead
+        group_id: group_ids[0]  // FASIT: Primary group in user_profiles
       })
       .select()
       .single();
