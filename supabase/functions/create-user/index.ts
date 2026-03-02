@@ -19,6 +19,8 @@ serve(async (req) => {
 
     const { email, password, full_name, phone, role, tenant_id, group_ids } = await req.json();
 
+    console.log("Creating user with:", { email, full_name, phone, role, tenant_id, group_ids: group_ids?.length });
+
     // Create auth user
     const { data: authData, error: authError } = await supabaseClient.auth.admin.createUser({
       email,
@@ -35,6 +37,8 @@ serve(async (req) => {
       );
     }
 
+    console.log("Auth user created:", authData.user.id);
+
     // Create user profile
     const { error: profileError } = await supabaseClient
       .from("user_profiles")
@@ -50,6 +54,7 @@ serve(async (req) => {
 
     if (profileError) {
       console.error("Profile error:", profileError);
+      // Rollback: Delete auth user
       await supabaseClient.auth.admin.deleteUser(authData.user.id);
       return new Response(
         JSON.stringify({ error: profileError.message }),
@@ -57,8 +62,12 @@ serve(async (req) => {
       );
     }
 
+    console.log("User profile created");
+
     // Add user to groups if group_ids provided
     if (group_ids && group_ids.length > 0) {
+      console.log("Adding user to groups:", group_ids);
+      
       const memberships = group_ids.map((group_id: string) => ({
         user_id: authData.user.id,
         group_id,
@@ -71,6 +80,9 @@ serve(async (req) => {
 
       if (membershipError) {
         console.error("Membership error:", membershipError);
+        // Don't rollback - user is created, just log the error
+      } else {
+        console.log("User added to groups successfully");
       }
     }
 
