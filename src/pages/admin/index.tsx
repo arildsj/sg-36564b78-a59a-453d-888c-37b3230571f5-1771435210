@@ -226,13 +226,17 @@ export default function AdminPage() {
 
   const handleCreateUser = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase.functions.invoke('create-user', {
         body: {
           email: newUser.email,
           password: newUser.password,
           full_name: newUser.full_name,
-          phone_number: newUser.phone_number,
+          phone: newUser.phone_number,
           role: newUser.role,
+          tenant_id: user.id,
           group_ids: newUser.group_ids
         }
       });
