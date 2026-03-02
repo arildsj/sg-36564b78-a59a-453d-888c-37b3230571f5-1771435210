@@ -655,7 +655,17 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button onClick={handleCreateUser}>Opprett bruker</Button>
+                      {newUser.group_ids.length === 0 && (
+                        <p className="text-sm text-destructive mr-auto">
+                          ⚠️ Velg minst én gruppe
+                        </p>
+                      )}
+                      <Button 
+                        onClick={handleCreateUser}
+                        disabled={newUser.group_ids.length === 0}
+                      >
+                        Opprett bruker
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>

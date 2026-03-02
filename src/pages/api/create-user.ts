@@ -17,6 +17,14 @@ export default async function handler(
       return res.status(400).json({ error: "Missing required fields" });
     }
 
+    // Validate group membership - all users must belong to at least one group
+    if (!group_ids || !Array.isArray(group_ids) || group_ids.length === 0) {
+      return res.status(400).json({ 
+        error: "Group membership required",
+        details: "All users must be assigned to at least one group"
+      });
+    }
+
     // Verify environment variables exist
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error("❌ Missing environment variables!");
