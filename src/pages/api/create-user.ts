@@ -77,7 +77,7 @@ export default async function handler(
         phone,
         role: role || "member",
         tenant_id,
-        is_active: true
+        status: true
       })
       .select()
       .single();
