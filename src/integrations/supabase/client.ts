@@ -12,4 +12,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,      // Automatically refresh the session before it expires
+    persistSession: true,         // Persist session in localStorage across page refreshes
+    detectSessionInUrl: true      // Detect OAuth sessions in URL (for OAuth flows)
+  }
+});
