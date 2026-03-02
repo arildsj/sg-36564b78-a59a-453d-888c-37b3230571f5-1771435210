@@ -12,98 +12,66 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Missing Authorization header");
-    }
+    const { email, password, full_name, phone, role, tenant_id, group_ids } = await req.json();
 
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      throw new Error("Invalid token or user not authenticated");
-    }
-
-    const { data: callerProfile, error: profileError } = await supabaseClient
-      .from("user_profiles")
-      .select("role, tenant_id")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !callerProfile) {
-      throw new Error("Could not verify user profile");
-    }
-
-    if (callerProfile.role !== "tenant_admin" && callerProfile.role !== "group_admin") {
-      throw new Error("Only administrators can create users");
-    }
-
-    const { email, password, full_name, phone_number, role, group_ids } = await req.json();
-
-    if (!email || !password) {
-      throw new Error("Email and password are required");
-    }
-
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    });
-
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    // Create auth user
+    const { data: authData, error: authError } = await supabaseClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      phone: phone_number,
-      user_metadata: {
-        full_name,
-        created_by: user.id,
-        tenant_id: callerProfile.tenant_id,
-      },
+      user_metadata: { full_name, phone }
     });
 
     if (authError) {
-      console.error("Create user error:", authError);
-      throw authError;
+      console.error("Auth error:", authError);
+      return new Response(
+        JSON.stringify({ error: authError.message }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
     }
 
-    if (!authData.user) {
-      throw new Error("User creation failed - no user returned");
-    }
-
-    const { error: profileInsertError } = await supabaseAdmin
+    // Create user profile
+    const { error: profileError } = await supabaseClient
       .from("user_profiles")
       .insert({
         id: authData.user.id,
-        email: email,
-        full_name: full_name || null,
-        phone_number: phone_number || null,
+        email,
+        full_name,
+        phone,
         role: role || "member",
-        tenant_id: callerProfile.tenant_id,
+        tenant_id,
+        is_active: true
       });
 
-    if (profileInsertError) {
-      console.error("Profile insert error:", profileInsertError);
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      throw new Error(`Failed to create user profile: ${profileInsertError.message}`);
+    if (profileError) {
+      console.error("Profile error:", profileError);
+      await supabaseClient.auth.admin.deleteUser(authData.user.id);
+      return new Response(
+        JSON.stringify({ error: profileError.message }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
     }
 
-    if (group_ids && Array.isArray(group_ids) && group_ids.length > 0) {
+    // Add user to groups if group_ids provided
+    if (group_ids && group_ids.length > 0) {
       const memberships = group_ids.map((group_id: string) => ({
         user_id: authData.user.id,
-        group_id: group_id,
+        group_id,
+        role: "member",
+        is_on_duty: false
       }));
 
-      const { error: membershipError } = await supabaseAdmin
+      const { error: membershipError } = await supabaseClient
         .from("group_memberships")
         .insert(memberships);
 
       if (membershipError) {
-        console.error("Group membership error:", membershipError);
+        console.error("Membership error:", membershipError);
       }
     }
 
@@ -115,8 +83,9 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
+
   } catch (error) {
-    console.error("Error in create-user function:", error);
+    console.error("Error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
