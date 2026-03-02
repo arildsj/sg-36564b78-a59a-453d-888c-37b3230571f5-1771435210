@@ -226,23 +226,34 @@ export default function AdminPage() {
 
   const handleCreateUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
 
-      const { data, error } = await supabase.functions.invoke('create-user', {
-        body: {
+      const response = await fetch("/api/create-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
           email: newUser.email,
           password: newUser.password,
           full_name: newUser.full_name,
           phone: newUser.phone_number,
           role: newUser.role,
-          tenant_id: user.id,
-          group_ids: newUser.group_ids
-        }
+          tenant_id: session.user.id,
+          group_ids: newUser.group_ids,
+        }),
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.details || "Failed to create user");
+      }
+
+      const result = await response.json();
 
       toast({
         title: "Bruker opprettet",
@@ -259,6 +270,7 @@ export default function AdminPage() {
         password: "",
       });
     } catch (error: any) {
+      console.error("Failed to create user:", error);
       toast({
         title: "Feil ved opprettelse",
         description: error.message,
