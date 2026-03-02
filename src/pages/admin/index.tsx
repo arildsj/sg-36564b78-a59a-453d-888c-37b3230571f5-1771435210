@@ -57,7 +57,7 @@ export default function AdminPage() {
   const [newUser, setNewUser] = useState({
     email: "",
     full_name: "",
-    phone_number: "",
+    phone: "", // FASIT: phone
     role: "member",
     group_ids: [] as string[],
     password: "",
@@ -67,7 +67,7 @@ export default function AdminPage() {
   const [editUserData, setEditUserData] = useState({
     full_name: "",
     email: "",
-    phone_number: "",
+    phone: "", // FASIT: phone
     role: "",
     group_ids: [] as string[],
   });
@@ -112,7 +112,7 @@ export default function AdminPage() {
       setEditUserData({
         full_name: editingUser.full_name || "",
         email: editingUser.email || "",
-        phone_number: editingUser.phone_number || "",
+        phone: editingUser.phone || "", // FASIT: phone
         role: editingUser.role || "member",
         group_ids: (editingUser as any).group_memberships?.map((gm: any) => gm.group_id) || [],
       });
@@ -165,8 +165,9 @@ export default function AdminPage() {
       if (usersError) throw usersError;
       setUsers(usersData || []);
 
+      // FASIT: groups table
       const { data: groupsData, error: groupsError } = await db
-        .from("group_admin_view")
+        .from("groups")
         .select("*")
         .order("name", { ascending: true });
 
@@ -252,7 +253,7 @@ export default function AdminPage() {
           email: newUser.email,
           password: newUser.password,
           full_name: newUser.full_name,
-          phone: newUser.phone_number,
+          phone: newUser.phone, // FASIT: phone
           role: newUser.role,
           tenant_id: currentUserProfile.tenant_id,
           group_ids: newUser.group_ids,
@@ -262,7 +263,7 @@ export default function AdminPage() {
       console.log("📤 API Request:", {
         email: newUser.email,
         full_name: newUser.full_name,
-        phone: newUser.phone_number,
+        phone: newUser.phone,
         role: newUser.role,
         tenant_id: currentUserProfile.tenant_id,
         group_ids: newUser.group_ids,
@@ -287,7 +288,7 @@ export default function AdminPage() {
       setNewUser({
         email: "",
         full_name: "",
-        phone_number: "",
+        phone: "",
         role: "member",
         group_ids: [],
         password: "",
@@ -311,7 +312,7 @@ export default function AdminPage() {
         .update({
           full_name: editUserData.full_name,
           email: editUserData.email,
-          phone_number: editUserData.phone_number,
+          phone: editUserData.phone, // FASIT: phone
           role: editUserData.role,
         })
         .eq("id", editingUser.id);
@@ -610,9 +611,9 @@ export default function AdminPage() {
                       <div className="grid gap-2">
                         <Label>Telefon</Label>
                         <Input
-                          value={newUser.phone_number}
+                          value={newUser.phone}
                           onChange={(e) =>
-                            setNewUser({ ...newUser, phone_number: e.target.value })
+                            setNewUser({ ...newUser, phone: e.target.value })
                           }
                         />
                       </div>
@@ -713,9 +714,9 @@ export default function AdminPage() {
                     <div className="grid gap-2">
                       <Label>Telefon</Label>
                       <Input
-                        value={editUserData.phone_number}
+                        value={editUserData.phone}
                         onChange={(e) =>
-                          setEditUserData({ ...editUserData, phone_number: e.target.value })
+                          setEditUserData({ ...editUserData, phone: e.target.value })
                         }
                       />
                     </div>

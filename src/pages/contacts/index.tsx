@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Mail, Building2, Users, Plus, Edit, Trash2, Search, Upload, UserPlus, Pencil, MessageSquare, Edit2, Eye } from "lucide-react";
+import { Phone, User, Building2, Users, Plus, Edit, Trash2, Search, Upload, UserPlus, Pencil, MessageSquare, Edit2, Eye } from "lucide-react";
 import { contactService, type Contact } from "@/services/contactService";
 import { useToast } from "@/hooks/use-toast";
 import { groupService } from "@/services/groupService";
@@ -62,7 +62,6 @@ export default function ContactsPage() {
   const { t } = useLanguage();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   
@@ -74,14 +73,7 @@ export default function ContactsPage() {
   const [submitting, setSubmitting] = useState(false);
   
   // GDPR state
-  const [gdprData, setGdprData] = useState<{
-    contact: {
-      id: string;
-      phone: string;
-      name: string;
-    };
-    groups: any[];
-  } | null>(null);
+  const [gdprData, setGdprData] = useState<any>(null);
   const [gdprDeletionReason, setGdprDeletionReason] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   
@@ -94,20 +86,9 @@ export default function ContactsPage() {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    email: "",
-    is_whitelisted: true,
-    group_ids: [] as string[],
+    group_id: "" as string | null, // FASIT: Single group
+    tags: [] as string[]
   });
-  
-  // Relationship state
-  const [relationships, setRelationships] = useState<{
-    asRelated: any[];
-    asSubject: any[]
-  }>({ asRelated: [], asSubject: [] });
-  const [newRelSubject, setNewRelSubject] = useState("");
-  const [newRelType, setNewRelType] = useState("Foresatt");
-  const [isSearchingRel, setIsSearchingRel] = useState(false);
-  const [relSearchResults, setRelSearchResults] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
@@ -140,14 +121,6 @@ export default function ContactsPage() {
       ]);
       setContacts(contactsData as Contact[]);
       setGroups(groupsData as Group[]);
-
-      // Fetch Users (for assignment)
-      const { data: usersData, error: usersError } = await db
-        .from("user_profiles")
-        .select("id, full_name, email");
-      
-      if (usersError) throw usersError;
-      setUsers(usersData || []);
     } catch (error: any) {
       console.error("Failed to load contacts:", error);
     } finally {
@@ -160,9 +133,8 @@ export default function ContactsPage() {
     setFormData({
       name: "",
       phone: "",
-      email: "",
-      is_whitelisted: true,
-      group_ids: [],
+      group_id: null,
+      tags: [],
     });
     setShowDialog(true);
   };
@@ -172,19 +144,9 @@ export default function ContactsPage() {
     setFormData({
       name: contact.name,
       phone: contact.phone,
-      email: contact.email || "",
-      is_whitelisted: contact.is_whitelisted,
-      group_ids: contact.groups.map(g => g.id),
+      group_id: contact.group_id,
+      tags: contact.tags || [],
     });
-    
-    // Load relationships
-    try {
-      const rels = await contactService.getRelationships(contact.id);
-      setRelationships(rels);
-    } catch (e) {
-      console.error("Failed to load relationships", e);
-      setRelationships({ asRelated: [], asSubject: [] });
-    }
     
     setShowDialog(true);
   };
@@ -206,22 +168,24 @@ export default function ContactsPage() {
         await contactService.updateContact(editingContact.id, {
           name: formData.name,
           phone: formData.phone,
-          email: formData.email || null,
-          is_whitelisted: formData.is_whitelisted,
-          group_ids: formData.group_ids,
+          group_id: formData.group_id,
+          tags: formData.tags,
         });
       } else {
         await contactService.createContact({
           name: formData.name,
           phone: formData.phone,
-          email: formData.email || null,
-          is_whitelisted: formData.is_whitelisted,
-          group_ids: formData.group_ids,
+          group_id: formData.group_id,
+          tags: formData.tags,
         });
       }
 
       setShowDialog(false);
       await loadData();
+      toast({
+        title: editingContact ? "Kontakt oppdatert" : "Kontakt opprettet",
+        description: `${formData.name} er lagret`,
+      });
     } catch (error: any) {
       console.error("Failed to save contact:", error);
       toast({
@@ -255,55 +219,6 @@ export default function ContactsPage() {
     }
   };
   
-  const searchPotentialRelations = async (query: string) => {
-    setNewRelSubject(query);
-    if (query.length < 2) {
-      setRelSearchResults([]);
-      return;
-    }
-    
-    setIsSearchingRel(true);
-    try {
-      // Use existing search but filter in UI or backend ideally
-      // For now reusing searchContacts which searches whitelisted numbers
-      const results = await contactService.searchContacts(query);
-      setRelSearchResults(results.filter(c => c.id !== editingContact?.id));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsSearchingRel(false);
-    }
-  };
-
-  const handleAddRelationship = async (subjectId: string) => {
-    if (!editingContact) return;
-    try {
-      await contactService.addRelationship(subjectId, editingContact.id, newRelType);
-      const rels = await contactService.getRelationships(editingContact.id);
-      setRelationships(rels);
-      setNewRelSubject("");
-      setRelSearchResults([]);
-    } catch (e) {
-      console.error(e);
-      toast({
-        title: "Feil",
-        description: "Kunne ikke legge til relasjon",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleRemoveRelationship = async (relId: string) => {
-    if (!editingContact) return;
-    try {
-      await contactService.removeRelationship(relId);
-      const rels = await contactService.getRelationships(editingContact.id);
-      setRelationships(rels);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const handleImport = async () => {
     if (!importFile) return;
     
@@ -335,26 +250,6 @@ export default function ContactsPage() {
     setShowDeleteDialog(true);
   };
 
-  const handleDeleteContact = async (contactId: string) => {
-    // Note: We use the confirm dialog in the UI (AlertDialog), not window.confirm
-    // But keeping this as a fallback or for direct calls
-    try {
-      await contactService.deleteContact(contactId);
-      await loadData();
-      toast({
-        title: "Kontakt slettet",
-        description: "Kontakten er fjernet",
-      });
-    } catch (error: any) {
-      console.error("Failed to delete contact:", error);
-      toast({
-        title: "Feil ved sletting",
-        description: "Kunne ikke slette kontakt",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleOpenGDPRView = async (contact: Contact) => {
     if (!isAdmin) {
       toast({
@@ -367,7 +262,8 @@ export default function ContactsPage() {
 
     try {
       setSubmitting(true);
-      const data = await contactService.getContactGroupMemberships(contact.id);
+      // FASIT: Only fetch contact data, no group memberships lookup needed
+      const data = await contactService.getContactData(contact.id);
       setGdprData(data);
       setShowGDPRDialog(true);
     } catch (error: any) {
@@ -395,13 +291,13 @@ export default function ContactsPage() {
     try {
       setSubmitting(true);
       const result = await contactService.deleteContactGDPR(
-        gdprData.contact.id,
+        gdprData.id,
         gdprDeletionReason
       );
 
       toast({
         title: "Kontakt slettet (GDPR)",
-        description: `${result.contact.name} er fjernet fra ${result.groups_removed} grupper`,
+        description: `${result.contact.name} er fjernet permanent`,
       });
 
       setShowGDPRDialog(false);
@@ -422,31 +318,17 @@ export default function ContactsPage() {
 
   const handleSearch = () => {
     // Search is already handled by onChange and filteredContacts
-    // This function can be used for explicit search actions if needed
-    // or just removed if the button is purely decorative/submit
   };
 
   const handleViewHistory = (contact: Contact) => {
-    // Navigate to inbox with filter or show history dialog
-    // For now, just a placeholder or navigate to inbox
     window.location.href = `/inbox?phone=${encodeURIComponent(contact.phone)}`;
   };
 
   const filteredContacts = contacts.filter(
     (contact) =>
-      contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.phone.includes(searchQuery) ||
-      (contact.email && contact.email.toLowerCase().includes(searchQuery.toLowerCase()))
+      contact.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contact.phone?.includes(searchQuery)
   );
-
-  const toggleGroupSelection = (groupId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      group_ids: prev.group_ids.includes(groupId)
-        ? prev.group_ids.filter((id) => id !== groupId)
-        : [...prev.group_ids, groupId],
-    }));
-  };
 
   return (
     <>
@@ -503,14 +385,12 @@ export default function ContactsPage() {
                 </div>
               ) : (
                 <>
-                  {/* Desktop table view - scrollable on mobile */}
                   <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>{t("contacts.name")}</TableHead>
                           <TableHead>{t("contacts.phone")}</TableHead>
-                          <TableHead>{t("contacts.email")}</TableHead>
                           <TableHead>{t("contacts.groups")}</TableHead>
                           <TableHead>{t("contacts.created")}</TableHead>
                           <TableHead className="text-right">{t("contacts.actions")}</TableHead>
@@ -523,19 +403,14 @@ export default function ContactsPage() {
                               {contact.name || "-"}
                             </TableCell>
                             <TableCell>{contact.phone}</TableCell>
-                            <TableCell>{contact.email || "-"}</TableCell>
                             <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {contact.groups && contact.groups.length > 0 ? (
-                                  contact.groups.map((g: any) => (
-                                    <Badge key={g.id} variant="secondary">
-                                      {g.name}
-                                    </Badge>
-                                  ))
-                                ) : (
-                                  <span className="text-muted-foreground">-</span>
-                                )}
-                              </div>
+                              {contact.group_id ? (
+                                <Badge variant="secondary">
+                                  {groups.find(g => g.id === contact.group_id)?.name || "Unknown"}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               {contact.created_at ? new Date(contact.created_at).toLocaleDateString("nb-NO") : "-"}
@@ -587,7 +462,7 @@ export default function ContactsPage() {
             <DialogDescription>
               {editingContact 
                 ? "Oppdater kontaktinformasjon og gruppetilhørighet."
-                : "Opprett en ny kontakt og tildel til relevante grupper."}
+                : "Opprett en ny kontakt og tildel til en gruppe."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -613,101 +488,23 @@ export default function ContactsPage() {
             </div>
             
             <div className="space-y-2">
-              <Label>Gruppetilhørighet (Routing)</Label>
-              <div className="border rounded-lg p-4 space-y-2 max-h-48 overflow-y-auto bg-card">
-                {groups.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Ingen grupper tilgjengelig</p>
-                ) : (
-                  groups.filter(g => g.kind === 'operational').map((group) => (
-                    <label key={group.id} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-accent rounded-md transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={formData.group_ids.includes(group.id)}
-                        onChange={() => toggleGroupSelection(group.id)}
-                        className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
-                      />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{group.name}</span>
-                        <span className="text-xs text-muted-foreground">Operasjonell gruppe</span>
-                      </div>
-                    </label>
-                  ))
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Velg hvilke grupper denne kontakten tilhører. Meldinger fra dette nummeret vil automatisk bli rutet til disse gruppene.
-              </p>
-            </div>
-            
-            {editingContact && (
-              <div className="space-y-2 border-t pt-4">
-                <Label>Relasjoner</Label>
-                <div className="text-sm text-muted-foreground mb-2">
-                  Koble denne kontakten til andre (f.eks. barn/elever).
-                </div>
-                
-                {/* List existing relationships */}
-                <div className="space-y-2 mb-4">
-                  {relationships.asRelated.map((rel: any) => (
-                    <div key={rel.id} className="flex items-center justify-between bg-secondary/20 p-2 rounded">
-                      <div className="flex items-center gap-2">
-                         <Badge variant="outline">{rel.relationship_type}</Badge>
-                         <span>til <strong>{rel.subject?.name}</strong></span>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => handleRemoveRelationship(rel.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+              <Label>Gruppe (Påkrevet)</Label>
+              <Select
+                value={formData.group_id || ""}
+                onValueChange={(value) => setFormData({ ...formData, group_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Velg gruppe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.filter(g => g.kind === 'operational').map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
                   ))}
-                  {relationships.asRelated.length === 0 && (
-                    <div className="text-sm text-muted-foreground italic">Ingen relasjoner registrert.</div>
-                  )}
-                </div>
-
-                {/* Add new relationship */}
-                <div className="flex flex-col gap-2 p-3 bg-secondary/10 rounded-md">
-                  <span className="text-sm font-medium">Legg til ny relasjon:</span>
-                  <div className="flex gap-2">
-                    <select 
-                      className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
-                      value={newRelType}
-                      onChange={(e) => setNewRelType(e.target.value)}
-                    >
-                      <option value="Foresatt">Foresatt</option>
-                      <option value="Mor">Mor</option>
-                      <option value="Far">Far</option>
-                      <option value="Verge">Verge</option>
-                      <option value="Søsken">Søsken</option>
-                      <option value="Annet">Annet</option>
-                    </select>
-                    <div className="relative flex-1">
-                      <Input 
-                        placeholder="Søk etter navn..." 
-                        value={newRelSubject}
-                        onChange={(e) => searchPotentialRelations(e.target.value)}
-                        className="h-9"
-                      />
-                      {relSearchResults.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 bg-popover text-popover-foreground border rounded-md shadow-md mt-1 z-50 max-h-40 overflow-y-auto">
-                          {relSearchResults.map(res => (
-                            <div 
-                              key={res.id}
-                              className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
-                              onClick={() => handleAddRelationship(res.id)}
-                            >
-                              {res.name} {res.phone ? `(${res.phone})` : ''}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Søk opp personen denne kontakten er {newRelType?.toLowerCase()} til.
-                  </p>
-                </div>
-              </div>
-            )}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)} disabled={submitting}>
@@ -726,8 +523,7 @@ export default function ContactsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Er du sikker?</AlertDialogTitle>
             <AlertDialogDescription>
-              Dette vil fjerne <strong>{editingContact?.name}</strong> ({editingContact?.phone}) fra hvitelisten.
-              Meldinger fra dette nummeret vil heretter bli behandlet som ukjente og gå til manuell fordeling.
+              Dette vil slette <strong>{editingContact?.name}</strong> ({editingContact?.phone}) permanent.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -748,7 +544,7 @@ export default function ContactsPage() {
           <DialogHeader>
             <DialogTitle>Importer kontakter</DialogTitle>
             <DialogDescription>
-              Last opp en CSV-fil med kontakter. Støtter kolonner som Navn, Telefon, Epost, Gruppe, Relasjon, Tilhører.
+              Last opp en CSV-fil med kontakter.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -762,7 +558,7 @@ export default function ContactsPage() {
             </div>
             
             <div className="space-y-2">
-              <Label>Standard gruppe (valgfritt)</Label>
+              <Label>Standard gruppe</Label>
               <select 
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={importGroupId}
@@ -773,9 +569,6 @@ export default function ContactsPage() {
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
               </select>
-              <p className="text-xs text-muted-foreground">
-                Alle kontakter i filen vil bli lagt til i denne gruppen hvis ikke "Gruppe" er spesifisert i filen.
-              </p>
             </div>
           </div>
           <DialogFooter>
@@ -795,8 +588,7 @@ export default function ContactsPage() {
           <DialogHeader>
             <DialogTitle>GDPR: Kontaktinformasjon</DialogTitle>
             <DialogDescription>
-              Fullstendig oversikt over gruppetilhørighet og slettemulighet.
-              All tilgang logges automatisk.
+              Fullstendig oversikt over data og slettemulighet.
             </DialogDescription>
           </DialogHeader>
           
@@ -805,26 +597,11 @@ export default function ContactsPage() {
               <div className="bg-muted/30 p-4 rounded-lg">
                 <h3 className="font-semibold mb-2">Kontaktdetaljer</h3>
                 <div className="space-y-1 text-sm">
-                  <p><strong>Navn:</strong> {gdprData.contact.name}</p>
-                  <p><strong>Telefon:</strong> {gdprData.contact.phone}</p>
-                  <p><strong>ID:</strong> {gdprData.contact.id}</p>
+                  <p><strong>Navn:</strong> {gdprData.name}</p>
+                  <p><strong>Telefon:</strong> {gdprData.phone}</p>
+                  <p><strong>ID:</strong> {gdprData.id}</p>
+                  <p><strong>Gruppe:</strong> {groups.find(g => g.id === gdprData.group_id)?.name || "Ukjent"}</p>
                 </div>
-              </div>
-
-              <div className="bg-muted/30 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Gruppetilhørighet ({gdprData.groups.length})</h3>
-                {gdprData.groups.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Ikke medlem av noen grupper</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {gdprData.groups.map((group: any) => (
-                      <li key={group.id} className="flex items-center gap-2 text-sm">
-                        <Badge variant="secondary">{group.name}</Badge>
-                        <span className="text-muted-foreground">({group.kind})</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
 
               <div className="border-t pt-4 space-y-3">
@@ -834,7 +611,7 @@ export default function ContactsPage() {
                     GDPR-sletting
                   </h3>
                   <p className="text-sm text-red-600 dark:text-red-300 mb-3">
-                    Kontakten vil bli fjernet fra alle grupper og slettet permanent.
+                    Kontakten vil bli slettet permanent.
                     Denne handlingen kan ikke angres og logges i systemet.
                   </p>
                   

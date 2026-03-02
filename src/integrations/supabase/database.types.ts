@@ -337,10 +337,13 @@ export type Database = {
           deleted_at: string | null
           email: string | null
           first_name: string | null
+          group_id: string | null
           id: string
           last_name: string | null
           metadata: Json | null
+          name: string | null
           notes: string | null
+          phone: string | null
           tenant_id: string
           updated_at: string
         }
@@ -349,10 +352,13 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           first_name?: string | null
+          group_id?: string | null
           id?: string
           last_name?: string | null
           metadata?: Json | null
+          name?: string | null
           notes?: string | null
+          phone?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -361,14 +367,31 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           first_name?: string | null
+          group_id?: string | null
           id?: string
           last_name?: string | null
           metadata?: Json | null
+          name?: string | null
           notes?: string | null
+          phone?: string | null
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contacts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contacts_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -636,11 +659,12 @@ export type Database = {
           description: string | null
           escalation_enabled: boolean
           escalation_timeout_minutes: number
+          gateway_id: string | null
           id: string
           kind: string
           min_on_duty_count: number
           name: string
-          parent_group_id: string | null
+          parent_id: string | null
           path: string[] | null
           tenant_id: string
           updated_at: string
@@ -652,11 +676,12 @@ export type Database = {
           description?: string | null
           escalation_enabled?: boolean
           escalation_timeout_minutes?: number
+          gateway_id?: string | null
           id?: string
           kind: string
           min_on_duty_count?: number
           name: string
-          parent_group_id?: string | null
+          parent_id?: string | null
           path?: string[] | null
           tenant_id: string
           updated_at?: string
@@ -668,26 +693,34 @@ export type Database = {
           description?: string | null
           escalation_enabled?: boolean
           escalation_timeout_minutes?: number
+          gateway_id?: string | null
           id?: string
           kind?: string
           min_on_duty_count?: number
           name?: string
-          parent_group_id?: string | null
+          parent_id?: string | null
           path?: string[] | null
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "groups_gateway_id_fkey"
+            columns: ["gateway_id"]
+            isOneToOne: false
+            referencedRelation: "sms_gateways"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "groups_parent_group_id_fkey"
-            columns: ["parent_group_id"]
+            columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "groups_parent_group_id_fkey"
-            columns: ["parent_group_id"]
+            columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
@@ -1565,8 +1598,9 @@ export type Database = {
           deleted_at: string | null
           email: string
           full_name: string | null
+          group_id: string | null
           id: string
-          phone_number: string | null
+          phone: string | null
           role: string
           status: string
           tenant_id: string
@@ -1577,8 +1611,9 @@ export type Database = {
           deleted_at?: string | null
           email: string
           full_name?: string | null
+          group_id?: string | null
           id: string
-          phone_number?: string | null
+          phone?: string | null
           role?: string
           status?: string
           tenant_id: string
@@ -1589,14 +1624,29 @@ export type Database = {
           deleted_at?: string | null
           email?: string
           full_name?: string | null
+          group_id?: string | null
           id?: string
-          phone_number?: string | null
+          phone?: string | null
           role?: string
           status?: string
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_profiles_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_admin_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_profiles_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_profiles_tenant_id_fkey"
             columns: ["tenant_id"]
