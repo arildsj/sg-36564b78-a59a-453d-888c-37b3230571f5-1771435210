@@ -1,7 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
-type AdminGroupPermission = Tables<"admin_group_permissions">;
+// Define the type manually since it's not in the generated types yet
+type AdminGroupPermission = {
+  id: string;
+  user_id: string;
+  group_id: string;
+  tenant_id: string;
+  granted_by: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
 
 /**
  * Grant admin permission to a user for a specific group
@@ -19,7 +28,7 @@ export async function grantAdminPermission(
     }
 
     const { error } = await supabase
-      .from("admin_group_permissions")
+      .from("admin_group_permissions" as any)
       .insert({
         user_id: userId,
         group_id: groupId,
@@ -49,7 +58,7 @@ export async function revokeAdminPermission(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase
-      .from("admin_group_permissions")
+      .from("admin_group_permissions" as any)
       .delete()
       .eq("user_id", userId)
       .eq("group_id", groupId);
@@ -74,7 +83,7 @@ export async function getAdminPermissions(
 ): Promise<{ groupIds: string[]; error?: string }> {
   try {
     const { data, error } = await supabase
-      .from("admin_group_permissions")
+      .from("admin_group_permissions" as any)
       .select("group_id")
       .eq("user_id", userId);
 
@@ -83,7 +92,9 @@ export async function getAdminPermissions(
       return { groupIds: [], error: error.message };
     }
 
-    const groupIds = Array.isArray(data) ? data.map((p) => p.group_id) : [];
+    // Cast data to any to avoid TS errors with the missing table type
+    const permissions = (data || []) as any[];
+    const groupIds = permissions.map((p) => p.group_id);
     return { groupIds };
   } catch (error) {
     console.error("Error fetching admin permissions:", error);
@@ -99,7 +110,7 @@ export async function getGroupAdmins(
 ): Promise<{ admins: Array<Tables<"user_profiles">>; error?: string }> {
   try {
     const { data, error } = await supabase
-      .from("admin_group_permissions")
+      .from("admin_group_permissions" as any)
       .select(
         `
         user_id,
@@ -155,7 +166,7 @@ export async function updateAdminPermissions(
 
     // First, remove all existing permissions for this user
     const { error: deleteError } = await supabase
-      .from("admin_group_permissions")
+      .from("admin_group_permissions" as any)
       .delete()
       .eq("user_id", userId);
 
@@ -178,7 +189,7 @@ export async function updateAdminPermissions(
     }));
 
     const { error: insertError } = await supabase
-      .from("admin_group_permissions")
+      .from("admin_group_permissions" as any)
       .insert(permissions);
 
     if (insertError) {
@@ -202,7 +213,7 @@ export async function hasAdminPermission(
 ): Promise<{ hasPermission: boolean; error?: string }> {
   try {
     const { data, error } = await supabase
-      .from("admin_group_permissions")
+      .from("admin_group_permissions" as any)
       .select("id")
       .eq("user_id", userId)
       .eq("group_id", groupId)
