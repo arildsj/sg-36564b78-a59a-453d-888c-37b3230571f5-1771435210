@@ -219,3 +219,12 @@ export async function hasAdminPermission(
     return { hasPermission: false, error: String(error) };
   }
 }
+
+export const adminPermissionService = {
+  grantAdminPermission,
+  revokeAdminPermission,
+  getAdminPermissions,
+  getGroupAdmins,
+  updateAdminPermissions,
+  hasAdminPermission,
+};
