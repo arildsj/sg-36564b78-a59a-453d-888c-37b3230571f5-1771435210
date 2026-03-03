@@ -240,16 +240,40 @@ export default function AdminPage() {
         .select("*")
         .order("name", { ascending: true });
 
-      if (groupsError) throw groupsError;
-      setGroups(groupsData || []);
+      console.log("📦 Raw groupsData:", groupsData);
+      console.log("❌ groupsError:", groupsError);
+
+      if (groupsError) {
+        console.error("Error fetching groups:", groupsError);
+        toast({
+          title: "Feil ved henting av grupper",
+          description: groupsError.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log("✅ Fetched groups count:", groupsData?.length || 0);
+        setGroups(groupsData || []);
+      }
 
       const { data: gatewaysData, error: gatewaysError } = await db
         .from("sms_gateways")
         .select("*")
         .order("created_at", { ascending: false });
       
-      if (gatewaysError) throw gatewaysError;
-      setGateways(gatewaysData || []);
+      console.log("📡 Raw gatewaysData:", gatewaysData);
+      console.log("❌ gatewaysError:", gatewaysError);
+
+      if (gatewaysError) {
+        console.error("Error fetching gateways:", gatewaysError);
+        toast({
+          title: "Feil ved henting av gateways",
+          description: gatewaysError.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log("✅ Fetched gateways count:", gatewaysData?.length || 0);
+        setGateways(gatewaysData || []);
+      }
 
       const logs = await auditService.getAuditLogs(20);
       setAuditLogs(logs);
