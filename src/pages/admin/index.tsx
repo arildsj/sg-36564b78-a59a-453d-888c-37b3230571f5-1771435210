@@ -170,19 +170,48 @@ export default function AdminPage() {
         }
       }
 
+      // FIXED: Simplified query without nested joins to avoid RLS issues
       const { data: usersData, error: usersError } = await db
         .from("user_profiles")
-        .select(`
-          *,
-          group_memberships!group_memberships_user_id_fkey (
-            group_id,
-            groups (name)
-          )
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (usersError) throw usersError;
-      setUsers(usersData || []);
+      if (usersError) {
+        console.error("Error fetching users:", usersError);
+        throw usersError;
+      }
+
+      console.log("👥 Fetched users:", usersData);
+
+      // Fetch group memberships separately
+      if (usersData && usersData.length > 0) {
+        const { data: memberships, error: membershipsError } = await db
+          .from("group_memberships")
+          .select(`
+            user_id,
+            group_id,
+            groups (
+              name
+            )
+          `)
+          .in("user_id", usersData.map(u => u.id));
+
+        if (membershipsError) {
+          console.error("Error fetching memberships:", membershipsError);
+        } else {
+          console.log("🔗 Fetched memberships:", memberships);
+          
+          // Attach memberships to users
+          const usersWithMemberships = usersData.map(user => ({
+            ...user,
+            group_memberships: memberships?.filter(m => m.user_id === user.id) || []
+          }));
+          
+          setUsers(usersWithMemberships);
+        }
+      } else {
+        setUsers(usersData || []);
+      }
 
       // FASIT: groups table
       const { data: groupsData, error: groupsError } = await db
