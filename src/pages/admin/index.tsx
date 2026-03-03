@@ -41,6 +41,7 @@ import { gatewayService, type Gateway } from "@/services/gatewayService";
 import { groupService, type Group } from "@/services/groupService";
 import { userService, type UserProfile } from "@/services/userService";
 import { auditService, type AuditLogEntry } from "@/services/auditService";
+import { adminPermissionService } from "@/services/adminPermissionService";
 
 const db = supabase as any;
 
@@ -70,6 +71,7 @@ export default function AdminPage() {
     phone: "", // FASIT: phone
     role: "",
     group_ids: [] as string[],
+    admin_group_ids: [] as string[], // NEW: For group_admin permissions
   });
 
   const [newGroup, setNewGroup] = useState({
@@ -109,13 +111,29 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (editingUser) {
-      setEditUserData({
-        full_name: editingUser.full_name || "",
-        email: editingUser.email || "",
-        phone: editingUser.phone || "", // FASIT: phone
-        role: editingUser.role || "member",
-        group_ids: (editingUser as any).group_memberships?.map((gm: any) => gm.group_id) || [],
-      });
+      const loadAdminPermissions = async () => {
+        if (editingUser.role === "group_admin") {
+          const permissions = await adminPermissionService.getAdminPermissions(editingUser.id);
+          setEditUserData({
+            full_name: editingUser.full_name || "",
+            email: editingUser.email || "",
+            phone: editingUser.phone || "",
+            role: editingUser.role || "member",
+            group_ids: (editingUser as any).group_memberships?.map((gm: any) => gm.group_id) || [],
+            admin_group_ids: permissions,
+          });
+        } else {
+          setEditUserData({
+            full_name: editingUser.full_name || "",
+            email: editingUser.email || "",
+            phone: editingUser.phone || "",
+            role: editingUser.role || "member",
+            group_ids: (editingUser as any).group_memberships?.map((gm: any) => gm.group_id) || [],
+            admin_group_ids: [],
+          });
+        }
+      };
+      loadAdminPermissions();
     }
   }, [editingUser]);
 
@@ -337,6 +355,43 @@ export default function AdminPage() {
           .insert(memberships);
 
         if (insertError) throw insertError;
+      }
+
+      // Handle admin permissions for group_admin role
+      if (editUserData.role === "group_admin") {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        const { data: currentUserProfile } = await db
+          .from("user_profiles")
+          .select("tenant_id")
+          .eq("id", user.id)
+          .single();
+
+        if (!currentUserProfile?.tenant_id) throw new Error("Could not find tenant");
+
+        // Get current permissions
+        const currentPermissions = await adminPermissionService.getAdminPermissions(editingUser.id);
+
+        // Find permissions to add
+        const toAdd = editUserData.admin_group_ids.filter(gid => !currentPermissions.includes(gid));
+
+        // Find permissions to remove
+        const toRemove = currentPermissions.filter(gid => !editUserData.admin_group_ids.includes(gid));
+
+        // Grant new permissions
+        for (const groupId of toAdd) {
+          await adminPermissionService.grantAdminPermission(
+            editingUser.id,
+            groupId,
+            currentUserProfile.tenant_id
+          );
+        }
+
+        // Revoke removed permissions
+        for (const groupId of toRemove) {
+          await adminPermissionService.revokeAdminPermission(editingUser.id, groupId);
+        }
       }
 
       toast({
@@ -738,6 +793,44 @@ export default function AdminPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                    
+                    {editUserData.role === "group_admin" && (
+                      <div className="grid gap-2">
+                        <Label>Grupper å administrere</Label>
+                        <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto bg-muted/30">
+                          {groups.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Ingen grupper tilgjengelig</p>
+                          ) : (
+                            groups.map((group) => (
+                              <div key={group.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`admin-group-${group.id}`}
+                                  checked={editUserData.admin_group_ids.includes(group.id)}
+                                  onCheckedChange={(checked) => {
+                                    setEditUserData({
+                                      ...editUserData,
+                                      admin_group_ids: checked
+                                        ? [...editUserData.admin_group_ids, group.id]
+                                        : editUserData.admin_group_ids.filter((id) => id !== group.id),
+                                    });
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`admin-group-${group.id}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {group.name}
+                                </Label>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Velg hvilke grupper denne group_admin kan administrere
+                        </p>
+                      </div>
+                    )}
+
                     <div className="grid gap-2">
                       <Label>Grupper</Label>
                       <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto">
