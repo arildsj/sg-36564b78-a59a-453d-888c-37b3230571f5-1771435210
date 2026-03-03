@@ -61,6 +61,7 @@ export default function AdminPage() {
     phone: "", // FASIT: phone
     role: "member",
     group_ids: [] as string[],
+    admin_group_ids: [] as string[], // NEW: For group_admin permissions during creation
     password: "",
   });
 
@@ -275,6 +276,8 @@ export default function AdminPage() {
           role: newUser.role,
           tenant_id: currentUserProfile.tenant_id,
           group_ids: newUser.group_ids,
+          admin_group_ids: newUser.admin_group_ids, // NEW: Send admin permissions
+          granted_by: session?.user?.id, // NEW: ID of the admin creating the user
         }),
       });
 
@@ -285,6 +288,7 @@ export default function AdminPage() {
         role: newUser.role,
         tenant_id: currentUserProfile.tenant_id,
         group_ids: newUser.group_ids,
+        admin_group_ids: newUser.admin_group_ids,
         password: "***"
       });
 
@@ -309,6 +313,7 @@ export default function AdminPage() {
         phone: "",
         role: "member",
         group_ids: [],
+        admin_group_ids: [], // NEW: Reset admin permissions
         password: "",
       });
     } catch (error: any) {
@@ -629,7 +634,7 @@ export default function AdminPage() {
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Opprett ny bruker</DialogTitle>
+                      <DialogTitle id="create-user-dialog-title">Opprett ny bruker</DialogTitle>
                       <DialogDescription>
                         Legg til en ny bruker med tilgangsnivå
                       </DialogDescription>
@@ -721,6 +726,40 @@ export default function AdminPage() {
                           )}
                         </div>
                       </div>
+                      <div className="grid gap-2">
+                        <Label>Grupper å administrere</Label>
+                        <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto bg-muted/30">
+                          {groups.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Ingen grupper tilgjengelig</p>
+                          ) : (
+                            groups.map((group) => (
+                              <div key={group.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`new-user-admin-group-${group.id}`}
+                                  checked={newUser.admin_group_ids.includes(group.id)}
+                                  onCheckedChange={(checked) => {
+                                    setNewUser({
+                                      ...newUser,
+                                      admin_group_ids: checked
+                                        ? [...newUser.admin_group_ids, group.id]
+                                        : newUser.admin_group_ids.filter((id) => id !== group.id),
+                                    });
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`new-user-admin-group-${group.id}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {group.name}
+                                </Label>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Velg hvilke grupper denne group_admin kan administrere
+                        </p>
+                      </div>
                     </div>
                     <DialogFooter>
                       {newUser.group_ids.length === 0 && (
@@ -742,7 +781,7 @@ export default function AdminPage() {
               <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Rediger bruker</DialogTitle>
+                    <DialogTitle id="edit-user-dialog-title">Rediger bruker</DialogTitle>
                     <DialogDescription>
                       Oppdater brukerens informasjon og gruppemedlemskap
                     </DialogDescription>
@@ -957,7 +996,7 @@ export default function AdminPage() {
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Opprett ny gruppe</DialogTitle>
+                      <DialogTitle id="create-group-dialog-title">Opprett ny gruppe</DialogTitle>
                       <DialogDescription>
                         Legg til en ny gruppe i organisasjonen
                       </DialogDescription>
@@ -1166,7 +1205,7 @@ export default function AdminPage() {
             <Dialog open={!!editingGroup} onOpenChange={(open) => !open && setEditingGroup(null)}>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Rediger gruppe</DialogTitle>
+                  <DialogTitle id="edit-group-dialog-title">Rediger gruppe</DialogTitle>
                   <DialogDescription>
                     Oppdater gruppens informasjon og innstillinger
                   </DialogDescription>

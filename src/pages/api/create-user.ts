@@ -10,7 +10,17 @@ export default async function handler(
   }
 
   try {
-    const { email, password, full_name, phone, role, tenant_id, group_ids } = req.body;
+    const {
+      email,
+      password,
+      full_name,
+      phone,
+      role,
+      tenant_id,
+      group_ids,
+      admin_group_ids, // NEW: Admin permissions for group_admin role
+      granted_by, // NEW: ID of the admin creating the user
+    } = req.body;
 
     // Validate required fields
     if (!email || !password || !full_name || !phone || !role || !tenant_id) {
@@ -22,6 +32,14 @@ export default async function handler(
       return res.status(400).json({ 
         error: "Group membership required",
         details: "All users must be assigned to at least one group"
+      });
+    }
+
+    // NEW: Validate admin_group_ids if role is group_admin
+    if (role === "group_admin" && (!Array.isArray(admin_group_ids) || admin_group_ids.length === 0)) {
+      return res.status(400).json({ 
+        error: "Group admins must have at least one group to administrate",
+        details: "admin_group_ids array is required for group_admin role"
       });
     }
 
@@ -159,8 +177,7 @@ export default async function handler(
     const memberships = group_ids.map((group_id: string) => ({
       user_id: userId,
       group_id,
-      tenant_id,  // CRITICAL: RLS policies require tenant_id
-      is_admin: false
+      tenant_id
     }));
 
     const { data: membershipData, error: membershipError } = await supabaseAdmin
@@ -169,19 +186,25 @@ export default async function handler(
       .select();
 
     if (membershipError) {
-      console.error("❌ Membership creation error:", membershipError);
-      console.error("❌ Failed memberships:", memberships);
-      
-      // CRITICAL ROLLBACK: Delete profile and auth user
-      console.log("🔄 Rolling back: Deleting profile and auth user...");
-      await supabaseAdmin.from("user_profiles").delete().eq("id", userId);
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      
-      return res.status(500).json({
-        error: "Failed to add user to groups",
-        details: membershipError.message,
-        rollback: "User creation rolled back completely"
-      });
+      throw new Error(`Failed to add user to groups: ${membershipError.message}`);
+    }
+
+    // NEW: Create admin permissions if role is group_admin
+    if (role === "group_admin" && admin_group_ids && admin_group_ids.length > 0) {
+      const adminPermissions = admin_group_ids.map((group_id: string) => ({
+        user_id: userId,
+        group_id,
+        tenant_id,
+        granted_by: granted_by || null, // Use passed ID or null
+      }));
+
+      const { error: permissionError } = await supabaseAdmin
+        .from("admin_group_permissions")
+        .insert(adminPermissions);
+
+      if (permissionError) {
+        throw new Error(`Failed to grant admin permissions: ${permissionError.message}`);
+      }
     }
 
     if (!membershipData || membershipData.length !== group_ids.length) {
