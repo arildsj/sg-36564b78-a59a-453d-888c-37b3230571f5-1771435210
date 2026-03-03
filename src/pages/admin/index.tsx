@@ -158,12 +158,16 @@ export default function AdminPage() {
       setLoading(true);
 
       const { data: { user } } = await supabase.auth.getUser();
+      console.log("🔐 Current logged in user:", user?.id);
+      
       if (user) {
         const { data: profile } = await db
           .from("user_profiles")
-          .select("role")
+          .select("role, tenant_id")
           .eq("id", user.id)
           .single();
+        
+        console.log("👤 Current user profile:", profile);
         
         if (profile) {
           setUserRole(profile.role);
@@ -176,15 +180,22 @@ export default function AdminPage() {
         .select("*")
         .order("created_at", { ascending: false });
 
+      console.log("📊 Raw usersData:", usersData);
+      console.log("❌ usersError:", usersError);
+
       if (usersError) {
         console.error("Error fetching users:", usersError);
         throw usersError;
       }
 
-      console.log("👥 Fetched users:", usersData);
+      console.log("👥 Fetched users count:", usersData?.length || 0);
+      console.log("👥 User IDs:", usersData?.map(u => ({ id: u.id, name: u.full_name, role: u.role })));
 
       // Fetch group memberships separately
       if (usersData && usersData.length > 0) {
+        const userIds = usersData.map(u => u.id);
+        console.log("🔗 Fetching memberships for user IDs:", userIds);
+
         const { data: memberships, error: membershipsError } = await db
           .from("group_memberships")
           .select(`
@@ -194,22 +205,32 @@ export default function AdminPage() {
               name
             )
           `)
-          .in("user_id", usersData.map(u => u.id));
+          .in("user_id", userIds);
+
+        console.log("🔗 Raw memberships:", memberships);
+        console.log("❌ membershipsError:", membershipsError);
 
         if (membershipsError) {
           console.error("Error fetching memberships:", membershipsError);
         } else {
-          console.log("🔗 Fetched memberships:", memberships);
+          console.log("🔗 Fetched memberships count:", memberships?.length || 0);
           
           // Attach memberships to users
-          const usersWithMemberships = usersData.map(user => ({
-            ...user,
-            group_memberships: memberships?.filter(m => m.user_id === user.id) || []
-          }));
+          const usersWithMemberships = usersData.map(user => {
+            const userMemberships = memberships?.filter(m => m.user_id === user.id) || [];
+            console.log(`👤 ${user.full_name} memberships:`, userMemberships);
+            
+            return {
+              ...user,
+              group_memberships: userMemberships
+            };
+          });
           
+          console.log("✅ Final users with memberships:", usersWithMemberships);
           setUsers(usersWithMemberships);
         }
       } else {
+        console.log("⚠️ No users data, setting empty array");
         setUsers(usersData || []);
       }
 
