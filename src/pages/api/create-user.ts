@@ -159,6 +159,7 @@ export default async function handler(
     const memberships = group_ids.map((group_id: string) => ({
       user_id: userId,
       group_id,
+      tenant_id,  // CRITICAL: RLS policies require tenant_id
       is_admin: false
     }));
 
