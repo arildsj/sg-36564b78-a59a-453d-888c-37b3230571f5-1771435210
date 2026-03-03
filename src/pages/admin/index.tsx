@@ -113,14 +113,14 @@ export default function AdminPage() {
     if (editingUser) {
       const loadAdminPermissions = async () => {
         if (editingUser.role === "group_admin") {
-          const permissions = await adminPermissionService.getAdminPermissions(editingUser.id);
+          const { groupIds } = await adminPermissionService.getAdminPermissions(editingUser.id);
           setEditUserData({
             full_name: editingUser.full_name || "",
             email: editingUser.email || "",
             phone: editingUser.phone || "",
             role: editingUser.role || "member",
             group_ids: (editingUser as any).group_memberships?.map((gm: any) => gm.group_id) || [],
-            admin_group_ids: permissions,
+            admin_group_ids: groupIds || [],
           });
         } else {
           setEditUserData({
@@ -371,13 +371,13 @@ export default function AdminPage() {
         if (!currentUserProfile?.tenant_id) throw new Error("Could not find tenant");
 
         // Get current permissions
-        const currentPermissions = await adminPermissionService.getAdminPermissions(editingUser.id);
+        const { groupIds: currentPermissions } = await adminPermissionService.getAdminPermissions(editingUser.id);
 
         // Find permissions to add
-        const toAdd = editUserData.admin_group_ids.filter(gid => !currentPermissions.includes(gid));
+        const toAdd = editUserData.admin_group_ids.filter(gid => !currentPermissions?.includes(gid));
 
         // Find permissions to remove
-        const toRemove = currentPermissions.filter(gid => !editUserData.admin_group_ids.includes(gid));
+        const toRemove = currentPermissions?.filter(gid => !editUserData.admin_group_ids.includes(gid)) || [];
 
         // Grant new permissions
         for (const groupId of toAdd) {
