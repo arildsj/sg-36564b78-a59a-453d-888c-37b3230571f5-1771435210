@@ -124,14 +124,15 @@ FROM tenants
 ORDER BY created_at DESC
 LIMIT 5;
 
--- 7. SAMPLE DATA - GATEWAYS
+-- 7. SAMPLE DATA - GATEWAYS (UTEN PROVIDER)
 SELECT 
   '=== SAMPLE: GATEWAYS ===' AS section,
   id,
   name,
   tenant_id,
-  provider,
-  is_active
+  gateway_description,
+  is_active,
+  gw_phone
 FROM sms_gateways
 ORDER BY created_at DESC
 LIMIT 5;
@@ -186,7 +187,7 @@ SELECT
   '=== SAMPLE: CONTACTS ===' AS section,
   c.id,
   c.name,
-  c.phone_number,
+  c.phone,
   c.group_id,
   c.tenant_id,
   g.name AS group_name,
