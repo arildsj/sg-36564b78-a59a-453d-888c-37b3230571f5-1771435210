@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -1872,15 +1872,25 @@ export type Database = {
           is_member: boolean
         }[]
       }
+      get_user_group_id: { Args: never; Returns: string }
+      get_user_role: { Args: never; Returns: string }
+      get_user_tenant_id: { Args: never; Returns: string }
       hard_delete_tenant_data: {
         Args: { p_tenant_id: string }
         Returns: undefined
       }
-      is_group_admin: { Args: { p_group_id: string }; Returns: boolean }
+      is_group_admin:
+        | { Args: never; Returns: boolean }
+        | { Args: { p_group_id: string }; Returns: boolean }
+      is_group_admin_for_group: {
+        Args: { target_group_id: string }
+        Returns: boolean
+      }
       is_group_admin_of_subtree: {
         Args: { p_target_group_id: string }
         Returns: boolean
       }
+      is_group_member: { Args: { target_group_id: string }; Returns: boolean }
       is_number_whitelisted: {
         Args: {
           p_group_id?: string
