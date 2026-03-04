@@ -1886,10 +1886,6 @@ export type Database = {
         Args: { target_group_id: string }
         Returns: boolean
       }
-      is_group_admin_of_subtree: {
-        Args: { p_target_group_id: string }
-        Returns: boolean
-      }
       is_group_member: { Args: { target_group_id: string }; Returns: boolean }
       is_number_whitelisted: {
         Args: {
@@ -1918,8 +1914,6 @@ export type Database = {
         Args: { p_entity_id: string; p_table_name: string }
         Returns: boolean
       }
-      user_group_ids: { Args: never; Returns: string[] }
-      user_tenant_id: { Args: never; Returns: string }
       validate_e164_phone: { Args: { p_phone: string }; Returns: boolean }
     }
     Enums: {
