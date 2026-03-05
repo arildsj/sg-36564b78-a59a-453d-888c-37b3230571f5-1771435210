@@ -92,18 +92,56 @@ export const bulkService = {
     try {
       console.log("Creating internal bulk campaign...");
       
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
+
+      const { data: profile } = await db
+        .from("user_profiles")
+        .select("id, tenant_id")
+        .eq("id", user.user.id)
+        .single();
+
+      if (!profile) throw new Error("User profile not found");
+
       // 1. Create campaign record
       const campaign = await this.createBulkCampaign({
         name: campaignData?.name || subjectLine || `Internal Bulk ${new Date().toISOString()}`,
         message_template: messageContent,
         subject_line: subjectLine,
-        status: "sending",
+        status: "draft",
         group_id: groupId,
         target_group_id: groupId,
         recipient_contacts: [],
         recipient_groups: [groupId],
-        reply_window_hours: campaignData?.reply_window_hours
+        reply_window_hours: campaignData?.reply_window_hours,
+        tenant_id: profile.tenant_id,
+        created_by: profile.id
       });
+
+      // 2. Create campaign recipients
+      if (recipientUserIds.length > 0) {
+        const { data: users } = await db
+          .from("user_profiles")
+          .select("id, phone, full_name")
+          .in("id", recipientUserIds);
+
+        if (users && users.length > 0) {
+          const recipients = users
+            .filter(u => u.phone)
+            .map(u => ({
+              campaign_id: campaign.id,
+              phone: u.phone,
+              status: "pending",
+              personalized_message: messageContent
+            }));
+
+          if (recipients.length > 0) {
+            await db.from("campaign_recipients").insert(recipients);
+          }
+        }
+      }
+
+      return campaign;
     } catch (error) {
       console.error("Error creating internal bulk campaign:", error);
       throw error;

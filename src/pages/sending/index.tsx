@@ -197,7 +197,7 @@ export default function SendingPage() {
 
       if (!profile) throw new Error("User profile not found");
 
-      // Calculate total recipients
+      // Calculate total recipients and collect phone numbers
       let totalRecipients = 0;
       const recipientPhones: string[] = [];
 
@@ -242,6 +242,25 @@ export default function SendingPage() {
         created_by: profile.id,
         group_id: selectedGroups[0].groupId
       });
+
+      // Create campaign recipients
+      const recipients = recipientPhones.map(phone => ({
+        campaign_id: campaign.id,
+        phone: phone,
+        status: "pending",
+        personalized_message: message
+      }));
+
+      if (recipients.length > 0) {
+        const { error: recipientsError } = await db
+          .from("campaign_recipients")
+          .insert(recipients);
+
+        if (recipientsError) {
+          console.error("Error creating recipients:", recipientsError);
+          throw new Error("Failed to create campaign recipients");
+        }
+      }
 
       // Trigger sending if not scheduled
       if (!scheduleDate) {
