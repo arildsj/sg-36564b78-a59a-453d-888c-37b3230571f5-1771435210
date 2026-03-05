@@ -404,6 +404,18 @@ export default function AdminPage() {
     if (!editingUser) return;
 
     try {
+      // Hent brukerens tenant_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: currentUserProfile } = await db
+        .from("user_profiles")
+        .select("tenant_id")
+        .eq("id", user.id)
+        .single();
+
+      if (!currentUserProfile?.tenant_id) throw new Error("Could not find tenant");
+
       const { error: profileError } = await db
         .from("user_profiles")
         .update({
@@ -427,6 +439,7 @@ export default function AdminPage() {
         const memberships = editUserData.group_ids.map(groupId => ({
           user_id: editingUser.id,
           group_id: groupId,
+          tenant_id: currentUserProfile.tenant_id,
         }));
 
         const { error: insertError } = await db
