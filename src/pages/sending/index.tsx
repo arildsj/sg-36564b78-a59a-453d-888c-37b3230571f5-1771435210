@@ -5,13 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Card,
   CardContent,
   CardDescription,
@@ -23,24 +16,34 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Send, Smartphone, Users, Clock, AlertTriangle, FileText, Upload } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Send, Clock, FileText, ChevronDown, ChevronRight, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { bulkService, type BulkCampaign } from "@/services/bulkService";
+import { bulkService } from "@/services/bulkService";
 import { groupService, type Group as ServiceGroup } from "@/services/groupService";
+import { contactService, type Contact } from "@/services/contactService";
+import { messageService } from "@/services/messageService";
 
-// CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
 const db = supabase as any;
+
+type GroupSelection = {
+  groupId: string;
+  selectedContactIds: string[];
+};
 
 export default function SendingPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("compose");
   const [loading, setLoading] = useState(false);
   const [groups, setGroups] = useState<ServiceGroup[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
+  
+  // New state structure for granular contact selection
+  const [selectedGroups, setSelectedGroups] = useState<GroupSelection[]>([]);
+  const [groupContacts, setGroupContacts] = useState<Map<string, Contact[]>>(new Map());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
   // Form states
   const [message, setMessage] = useState("");
-  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [scheduleDate, setScheduleDate] = useState("");
   const [isUrgent, setIsUrgent] = useState(false);
   const [requireAck, setRequireAck] = useState(false);
@@ -49,18 +52,115 @@ export default function SendingPage() {
     fetchData();
   }, []);
 
+  // Fetch contacts when a group is selected/expanded
+  useEffect(() => {
+    expandedGroups.forEach(groupId => {
+      if (!groupContacts.has(groupId)) {
+        contactService.getContactsByGroup(groupId).then(contacts => {
+          setGroupContacts(prev => new Map(prev).set(groupId, contacts));
+        }).catch(error => {
+          console.error(`Error fetching contacts for group ${groupId}:`, error);
+        });
+      }
+    });
+  }, [expandedGroups]);
+
   const fetchData = async () => {
     try {
-      // Fetch operational groups
       const groupsData = await groupService.getOperationalGroups();
       setGroups(groupsData);
-
-      // Fetch templates (mock or real)
-      // const templatesData = await messageService.getTemplates();
-      // setTemplates(templatesData);
     } catch (error) {
       console.error("Error loading data:", error);
     }
+  };
+
+  // Helper functions
+  const isGroupSelected = (groupId: string): boolean => {
+    return selectedGroups.some(g => g.groupId === groupId);
+  };
+
+  const getGroupSelection = (groupId: string): GroupSelection | undefined => {
+    return selectedGroups.find(g => g.groupId === groupId);
+  };
+
+  const getSelectedContactCount = (groupId: string): number => {
+    return getGroupSelection(groupId)?.selectedContactIds.length || 0;
+  };
+
+  const getTotalContactCount = (groupId: string): number => {
+    return groupContacts.get(groupId)?.length || 0;
+  };
+
+  const areAllContactsSelected = (groupId: string): boolean => {
+    const selection = getGroupSelection(groupId);
+    const totalContacts = getTotalContactCount(groupId);
+    return selection ? selection.selectedContactIds.length === totalContacts && totalContacts > 0 : false;
+  };
+
+  const isContactSelected = (groupId: string, contactId: string): boolean => {
+    const selection = getGroupSelection(groupId);
+    return selection ? selection.selectedContactIds.includes(contactId) : false;
+  };
+
+  // Toggle functions
+  const toggleGroup = (groupId: string) => {
+    if (isGroupSelected(groupId)) {
+      // Deselect group - remove from selection
+      setSelectedGroups(prev => prev.filter(g => g.groupId !== groupId));
+      setExpandedGroups(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(groupId);
+        return newSet;
+      });
+    } else {
+      // Select group - add to selection with empty contacts
+      setSelectedGroups(prev => [...prev, { groupId, selectedContactIds: [] }]);
+      setExpandedGroups(prev => new Set(prev).add(groupId));
+    }
+  };
+
+  const toggleAllContacts = (groupId: string) => {
+    const contacts = groupContacts.get(groupId) || [];
+    const allContactIds = contacts.map(c => c.id);
+    
+    setSelectedGroups(prev => prev.map(g => {
+      if (g.groupId === groupId) {
+        // If all are selected, deselect all. Otherwise, select all.
+        const allSelected = g.selectedContactIds.length === allContactIds.length;
+        return {
+          ...g,
+          selectedContactIds: allSelected ? [] : allContactIds
+        };
+      }
+      return g;
+    }));
+  };
+
+  const toggleContact = (groupId: string, contactId: string) => {
+    setSelectedGroups(prev => prev.map(g => {
+      if (g.groupId === groupId) {
+        const isSelected = g.selectedContactIds.includes(contactId);
+        return {
+          ...g,
+          selectedContactIds: isSelected
+            ? g.selectedContactIds.filter(id => id !== contactId)
+            : [...g.selectedContactIds, contactId]
+        };
+      }
+      return g;
+    }));
+  };
+
+  const toggleGroupExpansion = (groupId: string) => {
+    setExpandedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupId)) {
+        newSet.delete(groupId);
+      } else {
+        newSet.add(groupId);
+      }
+      return newSet;
+    });
   };
 
   const handleSend = async () => {
@@ -76,7 +176,7 @@ export default function SendingPage() {
     if (selectedGroups.length === 0) {
       toast({
         title: "Mangler mottakere",
-        description: "Velg minst én mottakergruppe",
+        description: "Velg minst én mottakergruppe eller kontakt",
         variant: "destructive",
       });
       return;
@@ -84,32 +184,51 @@ export default function SendingPage() {
 
     try {
       setLoading(true);
-      
-      // Expand groups to phone numbers (naive implementation)
-      // Ideally this happens on backend via Bulk Service
-      
-      const { data: user } = await supabase.auth.getUser();
-      
-      // Calculate total recipients (estimation)
-      const totalRecipients = groups
-        .filter(g => selectedGroups.includes(g.id))
-        .reduce((acc, g) => acc + (g.active_members || 0), 0);
+
+      // Calculate total recipients
+      let totalRecipients = 0;
+      const recipientPhones: string[] = [];
+
+      for (const group of selectedGroups) {
+        const contacts = groupContacts.get(group.groupId) || [];
+        
+        if (group.selectedContactIds.length > 0) {
+          // Send to selected contacts only
+          const selectedContacts = contacts.filter(c => 
+            group.selectedContactIds.includes(c.id)
+          );
+          totalRecipients += selectedContacts.length;
+          recipientPhones.push(...selectedContacts.map(c => c.phone));
+        } else {
+          // Send to all contacts in group (fallback to old behavior)
+          totalRecipients += contacts.length;
+          recipientPhones.push(...contacts.map(c => c.phone));
+        }
+      }
+
+      if (totalRecipients === 0) {
+        toast({
+          title: "Ingen mottakere",
+          description: "De valgte gruppene har ingen kontakter",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create bulk campaign
+      const groupNames = selectedGroups
+        .map(sg => groups.find(g => g.id === sg.groupId)?.name)
+        .filter(Boolean)
+        .join(", ");
 
       const campaign = await bulkService.createBulkCampaign({
-        name: `Melding til ${selectedGroups.length} grupper`,
+        name: `Melding til ${groupNames}`,
         message_template: message,
-        total_recipients: totalRecipients, // This is just an estimate
-        // scheduled_at: scheduleDate ? new Date(scheduleDate).toISOString() : undefined, // Schema doesn't have scheduled_at yet in types above, checking service
+        total_recipients: totalRecipients,
         status: scheduleDate ? "scheduled" : "draft"
       });
 
-      // Add groups to campaign context (if we had a table for it)
-      // For now we assume the backend handles expansion based on some logic, 
-      // or we insert into bulk_recipients here.
-      
-      // Let's manually trigger expansion via Edge Function if available, 
-      // or just simulate success for the UI prototype.
-      
+      // Trigger sending if not scheduled
       if (!scheduleDate) {
         await bulkService.triggerCampaign(campaign.id);
       }
@@ -118,12 +237,13 @@ export default function SendingPage() {
         title: scheduleDate ? "Melding planlagt" : "Melding sendt",
         description: scheduleDate 
           ? `Meldingen sendes ${new Date(scheduleDate).toLocaleString()}`
-          : `Meldingen sendes til ca ${totalRecipients} mottakere nå`,
+          : `Meldingen sendes til ${totalRecipients} mottakere nå`,
       });
 
       // Reset form
       setMessage("");
       setSelectedGroups([]);
+      setExpandedGroups(new Set());
       setScheduleDate("");
       setIsUrgent(false);
       setRequireAck(false);
@@ -175,34 +295,101 @@ export default function SendingPage() {
                     <CardDescription>Velg hvem som skal motta meldingen</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Velg grupper</Label>
-                        <div className="grid grid-cols-1 gap-2 border rounded-md p-2 max-h-[200px] overflow-y-auto">
-                          {groups.map(group => (
-                            <div key={group.id} className="flex items-center space-x-2 p-1 hover:bg-secondary/50 rounded">
-                              <Checkbox 
-                                id={`g-${group.id}`}
-                                checked={selectedGroups.includes(group.id)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) setSelectedGroups([...selectedGroups, group.id]);
-                                  else setSelectedGroups(selectedGroups.filter(id => id !== group.id));
-                                }}
-                              />
-                              <Label htmlFor={`g-${group.id}`} className="flex-1 cursor-pointer flex justify-between">
-                                <span>{group.name}</span>
-                                <Badge variant="secondary" className="text-xs">{group.active_members || 0}</Badge>
-                              </Label>
+                    <div className="space-y-2">
+                      <Label>Velg grupper og kontakter</Label>
+                      <div className="border rounded-md p-3 max-h-[400px] overflow-y-auto space-y-2">
+                        {groups.map(group => {
+                          const isSelected = isGroupSelected(group.id);
+                          const isExpanded = expandedGroups.has(group.id);
+                          const selectedCount = getSelectedContactCount(group.id);
+                          const totalCount = getTotalContactCount(group.id);
+                          const contacts = groupContacts.get(group.id) || [];
+
+                          return (
+                            <div key={group.id} className="space-y-2">
+                              {/* Group checkbox */}
+                              <div className="flex items-center gap-2 p-2 hover:bg-secondary/50 rounded">
+                                <Checkbox 
+                                  id={`g-${group.id}`}
+                                  checked={isSelected}
+                                  onCheckedChange={() => toggleGroup(group.id)}
+                                />
+                                <button
+                                  onClick={() => {
+                                    if (isSelected) toggleGroupExpansion(group.id);
+                                  }}
+                                  disabled={!isSelected}
+                                  className="flex items-center gap-1 flex-1 text-left disabled:opacity-50"
+                                >
+                                  {isSelected && (isExpanded ? 
+                                    <ChevronDown className="h-4 w-4" /> : 
+                                    <ChevronRight className="h-4 w-4" />
+                                  )}
+                                  <Label htmlFor={`g-${group.id}`} className="cursor-pointer flex-1">
+                                    {group.name}
+                                  </Label>
+                                </button>
+                                <div className="flex items-center gap-2">
+                                  {isSelected && selectedCount > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {selectedCount} av {totalCount}
+                                    </Badge>
+                                  )}
+                                  {!isSelected && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {group.active_members || 0}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Contact list (shown when group is selected and expanded) */}
+                              {isSelected && isExpanded && (
+                                <div className="ml-6 pl-4 border-l-2 border-secondary space-y-2">
+                                  {/* "Select all" checkbox */}
+                                  {contacts.length > 0 && (
+                                    <div className="flex items-center gap-2 p-1">
+                                      <Checkbox
+                                        id={`all-${group.id}`}
+                                        checked={areAllContactsSelected(group.id)}
+                                        onCheckedChange={() => toggleAllContacts(group.id)}
+                                      />
+                                      <Label htmlFor={`all-${group.id}`} className="cursor-pointer font-medium text-sm">
+                                        Velg alle kontakter ({contacts.length})
+                                      </Label>
+                                    </div>
+                                  )}
+
+                                  {/* Individual contacts */}
+                                  {contacts.length > 0 ? (
+                                    <div className="space-y-1 max-h-[200px] overflow-y-auto">
+                                      {contacts.map(contact => (
+                                        <div key={contact.id} className="flex items-center gap-2 p-1 hover:bg-secondary/30 rounded">
+                                          <Checkbox
+                                            id={`c-${contact.id}`}
+                                            checked={isContactSelected(group.id, contact.id)}
+                                            onCheckedChange={() => toggleContact(group.id, contact.id)}
+                                          />
+                                          <Label htmlFor={`c-${contact.id}`} className="cursor-pointer flex-1 text-sm">
+                                            {contact.name || "Ukjent"}
+                                          </Label>
+                                          <span className="text-xs text-muted-foreground">
+                                            {contact.phone}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground italic p-2">
+                                      Denne gruppen har ingen kontakter ennå
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })}
                       </div>
-                      
-                      {/* Placeholder for whitelisted numbers (needs proper implementation) */}
-                      {/* <div className="space-y-2">
-                         <Label>Eller skriv inn nummer (whitelist sjekk)</Label>
-                         <Input placeholder="+47..." />
-                      </div> */}
                     </div>
                   </CardContent>
                 </Card>
@@ -303,13 +490,12 @@ export default function SendingPage() {
           </TabsContent>
           
           <TabsContent value="templates">
-             <Card>
+            <Card>
               <CardHeader>
                 <CardTitle>Meldingsmaler</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {/* Mock templates */}
                   {["Kalle inn til vakt", "Systemvarsel", "Påminnelse møte"].map((t, i) => (
                     <Card key={i} className="cursor-pointer hover:border-primary transition-colors" onClick={() => {
                       setMessage(`Hei, dette er en mal for ${t}...`);
@@ -332,6 +518,3 @@ export default function SendingPage() {
     </AppLayout>
   );
 }
-
-// Missing component definition for Switch (was implicitly imported or just standard UI)
-import { Switch } from "@/components/ui/switch";
