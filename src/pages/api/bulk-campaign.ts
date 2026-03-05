@@ -16,7 +16,6 @@ export default async function handler(
       return res.status(400).json({ error: "campaign_id is required" });
     }
 
-    // Get Supabase credentials from environment
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -24,13 +23,11 @@ export default async function handler(
       return res.status(500).json({ error: "Supabase credentials missing" });
     }
 
-    // Get auth token from request
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       return res.status(401).json({ error: "Unauthorized - no auth token" });
     }
 
-    // Create Supabase client with user's auth token
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: { Authorization: authHeader },
@@ -39,7 +36,6 @@ export default async function handler(
 
     console.log("Invoking Edge Function with campaign_id:", campaign_id);
 
-    // Invoke Edge Function
     const { data: functionData, error: functionError } = await supabase.functions.invoke(
       "bulk-campaign",
       {
@@ -47,7 +43,6 @@ export default async function handler(
       }
     );
 
-    // Log the full response for debugging
     console.log("Edge Function response:", {
       data: functionData,
       error: functionError,
@@ -71,6 +66,15 @@ export default async function handler(
           message: functionError.message,
           context: functionError.context,
         },
+      });
+    }
+
+    if (functionData && typeof functionData === "object" && "error" in functionData) {
+      console.error("Edge Function returned error in data:", functionData);
+      return res.status(500).json({
+        error: "Campaign processing failed",
+        details: functionData.error || "Unknown error from Edge Function",
+        data: functionData,
       });
     }
 

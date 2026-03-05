@@ -35,7 +35,6 @@ serve(async (req) => {
     console.log("=== BULK CAMPAIGN START ===");
     console.log("Campaign ID:", campaign_id);
 
-    // Check auth first
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
       console.error("Auth error:", authError);
@@ -46,7 +45,6 @@ serve(async (req) => {
     }
     console.log("User authenticated:", user.id);
 
-    // Fetch campaign with explicit error handling
     console.log("Fetching campaign...");
     const { data: campaign, error: campaignError } = await supabaseClient
       .from("bulk_campaigns")
@@ -93,7 +91,6 @@ serve(async (req) => {
     console.log("Recipients count:", campaign.campaign_recipients?.length || 0);
     console.log("Group:", campaign.groups?.name);
 
-    // Check gateway
     const gateway = campaign.groups?.sms_gateways;
     if (!gateway) {
       console.error("No gateway found on group:", campaign.groups?.name);
@@ -109,7 +106,6 @@ serve(async (req) => {
 
     console.log(`Gateway found: ${gateway.gw_phone} (${gateway.name})`);
 
-    // Update campaign status
     await supabaseClient
       .from("bulk_campaigns")
       .update({
