@@ -139,7 +139,7 @@ export const bulkService = {
       .from("bulk_campaigns")
       .insert({
         tenant_id: profile.tenant_id,
-        created_by: profile.id,
+        created_by_user_id: profile.id,
         name: `Bulk til ${groupName}`,
         subject_line: subjectLine,
         bulk_code: bulkCode,
@@ -236,7 +236,7 @@ export const bulkService = {
       .from("bulk_campaigns")
       .insert({
         tenant_id: profile.tenant_id,
-        created_by: profile.id,
+        created_by_user_id: profile.id,
         name: `Bulk til ${groupName}`,
         subject_line: subjectLine,
         bulk_code: bulkCode,
@@ -441,7 +441,7 @@ export const bulkService = {
       .from("bulk_campaigns")
       .insert({
         tenant_id: profile.tenant_id,
-        created_by: profile.id,
+        created_by_user_id: profile.id,
         name: `Påminnelse: ${originalCampaign.subject_line}`,
         subject_line: originalCampaign.subject_line,
         bulk_code: bulkCode,
