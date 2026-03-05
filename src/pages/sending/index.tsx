@@ -185,6 +185,18 @@ export default function SendingPage() {
     try {
       setLoading(true);
 
+      // Get user profile for tenant_id and created_by
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
+
+      const { data: profile } = await db
+        .from("user_profiles")
+        .select("id, tenant_id")
+        .eq("id", user.user.id)
+        .single();
+
+      if (!profile) throw new Error("User profile not found");
+
       // Calculate total recipients
       let totalRecipients = 0;
       const recipientPhones: string[] = [];
@@ -225,7 +237,10 @@ export default function SendingPage() {
         name: `Melding til ${groupNames}`,
         message_template: message,
         total_recipients: totalRecipients,
-        status: scheduleDate ? "scheduled" : "draft"
+        status: scheduleDate ? "scheduled" : "draft",
+        tenant_id: profile.tenant_id,
+        created_by: profile.id,
+        group_id: selectedGroups[0].groupId
       });
 
       // Trigger sending if not scheduled
