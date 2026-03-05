@@ -99,7 +99,7 @@ export const bulkService = {
         subject_line: subjectLine,
         status: "sending",
         group_id: groupId,
-        target_group_id: groupId, // Sending to same group members
+        target_group_id: groupId,
         recipient_contacts: [],
         recipient_groups: [groupId],
         reply_window_hours: campaignData?.reply_window_hours
@@ -139,7 +139,7 @@ export const bulkService = {
       .from("bulk_campaigns")
       .insert({
         tenant_id: profile.tenant_id,
-        created_by_user_id: profile.id,
+        created_by: profile.id,
         name: `Bulk til ${groupName}`,
         subject_line: subjectLine,
         bulk_code: bulkCode,
@@ -236,7 +236,7 @@ export const bulkService = {
       .from("bulk_campaigns")
       .insert({
         tenant_id: profile.tenant_id,
-        created_by_user_id: profile.id,
+        created_by: profile.id,
         name: `Bulk til ${groupName}`,
         subject_line: subjectLine,
         bulk_code: bulkCode,
@@ -441,7 +441,7 @@ export const bulkService = {
       .from("bulk_campaigns")
       .insert({
         tenant_id: profile.tenant_id,
-        created_by_user_id: profile.id,
+        created_by: profile.id,
         name: `Påminnelse: ${originalCampaign.subject_line}`,
         subject_line: originalCampaign.subject_line,
         bulk_code: bulkCode,
