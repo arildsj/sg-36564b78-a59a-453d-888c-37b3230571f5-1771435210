@@ -439,12 +439,12 @@ export default function InboxPage() {
       
       const { data: campaign } = await db
         .from("bulk_campaigns")
-        .select("source_group_id")
+        .select("group_id")
         .eq("id", campaignId)
         .maybeSingle();
 
-      // Determine group_id (prefer campaign's source_group_id, fallback to user's first group)
-      let groupId = campaign?.source_group_id;
+      // Determine group_id (prefer campaign's group_id, fallback to user's first group)
+      let groupId = campaign?.group_id;
       // Use 'groups' state variable instead of undefined 'userGroups'
       if (!groupId && groups && groups.length > 0) {
         groupId = groups[0].id;
@@ -616,21 +616,21 @@ export default function InboxPage() {
       // Get campaign info
       const { data: campaign } = await db
         .from("bulk_campaigns")
-        .select("source_group_id")
+        .select("group_id")
         .eq("id", selectedThreadId)
-        .single();
-        
+        .maybeSingle();
+
       if (!campaign) throw new Error("Campaign not found");
 
       let fromNumber = "System";
       let gatewayId: string | null = null;
       
-      if (campaign.source_group_id) {
+      if (campaign.group_id) {
         // First try to get gateway from source group
         const { data: groupGateway } = await db
           .from("groups")
           .select("gateway_id, gateways!groups_gateway_id_fkey(phone_number)")
-          .eq("id", campaign.source_group_id)
+          .eq("id", campaign.group_id)
           .maybeSingle();
 
         if (groupGateway?.gateways) {

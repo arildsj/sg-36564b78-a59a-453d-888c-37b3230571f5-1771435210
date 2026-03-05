@@ -227,7 +227,7 @@ export const messageService = {
       .from("bulk_campaigns")
       .select(`
         *,
-        groups:source_group_id(name),
+        groups:group_id(name),
         bulk_recipients(count)
       `)
       .eq("tenant_id", profile.tenant_id)
@@ -280,7 +280,7 @@ export const messageService = {
         last_message_at: c.created_at,
         last_message_content: c.message_template,
         group_name: c.groups?.name || "Ukjent gruppe",
-        resolved_group_id: c.source_group_id,
+        resolved_group_id: c.group_id,
         is_resolved: c.status === 'completed',
         resolved_at: null,
         gateway_id: null,

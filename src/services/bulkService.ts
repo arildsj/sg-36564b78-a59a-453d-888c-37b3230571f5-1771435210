@@ -15,7 +15,7 @@ export type BulkCampaign = {
   failed_count: number;
   created_at: string;
   expires_at?: string;
-  source_group_id?: string;
+  group_id?: string;
 };
 
 export type BulkRecipient = {
@@ -83,7 +83,7 @@ export const bulkService = {
    */
   async sendBulkToInternalGroup(
     messageContent: string,
-    sourceGroupId: string,
+    groupId: string,
     groupName: string,
     subjectLine: string,
     recipientUserIds: string[],
@@ -98,10 +98,10 @@ export const bulkService = {
         message_template: messageContent,
         subject_line: subjectLine,
         status: "sending",
-        source_group_id: sourceGroupId,
-        target_group_id: sourceGroupId, // Sending to same group members
+        group_id: groupId,
+        target_group_id: groupId, // Sending to same group members
         recipient_contacts: [],
-        recipient_groups: [sourceGroupId],
+        recipient_groups: [groupId],
         reply_window_hours: campaignData?.reply_window_hours
       });
     } catch (error) {
@@ -145,7 +145,7 @@ export const bulkService = {
         bulk_code: bulkCode,
         message_template: message,
         status: "draft",
-        source_group_id: groupId,
+        group_id: groupId,
         target_group_id: groupId,
         expires_at: expiresAt.toISOString()
       })
@@ -242,7 +242,7 @@ export const bulkService = {
         bulk_code: bulkCode,
         message_template: message,
         status: "draft",
-        source_group_id: groupId,
+        group_id: groupId,
         target_group_id: groupId,
         expires_at: expiresAt.toISOString()
       })
@@ -447,7 +447,7 @@ export const bulkService = {
         bulk_code: bulkCode,
         message_template: reminderMessage,
         status: "draft",
-        source_group_id: originalCampaign.source_group_id,
+        group_id: originalCampaign.group_id,
         target_group_id: originalCampaign.target_group_id,
         expires_at: expiresAt.toISOString()
       })

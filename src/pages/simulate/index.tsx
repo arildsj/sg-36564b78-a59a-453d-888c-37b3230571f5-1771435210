@@ -152,7 +152,7 @@ export default function SimulatePage() {
         const { data: campaign, error: campaignError } = await db
           .from("bulk_campaigns")
           .select("id, name")
-          .eq("source_group_id", selectedGroup)
+          .eq("group_id", selectedGroup)
           .in("status", ["pending", "sending", "sent"])
           .order("created_at", { ascending: false })
           .limit(1)
