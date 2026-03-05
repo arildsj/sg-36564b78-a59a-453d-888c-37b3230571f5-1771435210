@@ -1,5 +1,3 @@
-// SeMSe + FairGateway: Bulk Campaign Execution
-// Process bulk SMS campaigns with personalization and gateway routing
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
@@ -35,17 +33,16 @@ serve(async (req) => {
 
     console.log("Processing bulk campaign:", campaign_id);
 
-    // Get campaign details with recipients and group
     const { data: campaign, error: campaignError } = await supabaseClient
       .from("bulk_campaigns")
       .select(`
         *,
-        bulk_recipients(*),
-        groups!bulk_campaigns_source_group_id_fkey(
+        campaign_recipients(*),
+        groups!bulk_campaigns_group_id_fkey(
           id,
           name,
           gateway_id,
-          gateways(id, phone_number, provider, api_key)
+          sms_gateways(id, gw_phone, name, api_key, base_url)
         )
       `)
       .eq("id", campaign_id)
@@ -59,8 +56,7 @@ serve(async (req) => {
       );
     }
 
-    // Validate gateway configuration
-    const gateway = campaign.groups?.gateways;
+    const gateway = campaign.groups?.sms_gateways;
     if (!gateway) {
       return new Response(
         JSON.stringify({ error: "No gateway configured for group" }),
@@ -68,9 +64,8 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Gateway: ${gateway.phone_number} (${gateway.provider})`);
+    console.log(`Gateway: ${gateway.gw_phone} (${gateway.name})`);
 
-    // Get user info for message attribution
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
       return new Response(
@@ -79,38 +74,32 @@ serve(async (req) => {
       );
     }
 
-    // Update campaign status to processing
     await supabaseClient
       .from("bulk_campaigns")
       .update({
         status: "sending",
-        sent_at: new Date().toISOString(),
-        target_group_id: campaign.source_group_id,
-        total_recipients: campaign.bulk_recipients?.length || 0
+        total_recipients: campaign.campaign_recipients?.length || 0
       })
       .eq("id", campaign_id);
 
     let successCount = 0;
     let failCount = 0;
 
-    // Process each recipient
-    for (const recipient of campaign.bulk_recipients || []) {
+    for (const recipient of campaign.campaign_recipients || []) {
       try {
-        // Personalize message content
         const personalizedContent = personalizeMessage(
           campaign.message_template,
           recipient.metadata || {}
         );
 
-        console.log(`Sending to ${recipient.phone_number}: ${personalizedContent}`);
+        console.log(`Sending to ${recipient.phone}: ${personalizedContent}`);
 
-        // Create or find thread for this recipient
         let thread;
         const { data: existingThread } = await supabaseClient
           .from("message_threads")
           .select()
-          .eq("contact_phone", recipient.phone_number)
-          .eq("resolved_group_id", campaign.source_group_id)
+          .eq("contact_phone", recipient.phone)
+          .eq("resolved_group_id", campaign.group_id)
           .maybeSingle();
 
         if (existingThread) {
@@ -119,9 +108,10 @@ serve(async (req) => {
           const { data: newThread } = await supabaseClient
             .from("message_threads")
             .insert({
-              contact_phone: recipient.phone_number,
-              resolved_group_id: campaign.source_group_id,
+              contact_phone: recipient.phone,
+              resolved_group_id: campaign.group_id,
               gateway_id: gateway.id,
+              tenant_id: campaign.tenant_id,
               last_message_at: new Date().toISOString(),
               is_resolved: false,
             })
@@ -130,55 +120,54 @@ serve(async (req) => {
           thread = newThread;
         }
 
-        // Create outbound message record
         const { data: sentMessage, error: messageError } = await supabaseClient
           .from("messages")
           .insert({
             thread_id: thread?.id,
+            contact_id: recipient.contact_id,
             direction: "outbound",
             content: personalizedContent,
-            from_number: gateway.phone_number,
-            to_number: recipient.phone_number,
+            from_number: gateway.gw_phone,
+            to_number: recipient.phone,
             status: "pending",
             gateway_id: gateway.id,
-            group_id: campaign.source_group_id,
+            group_id: campaign.group_id,
             campaign_id: campaign_id,
-            thread_key: `${recipient.phone_number}-${gateway.id}`,
+            tenant_id: campaign.tenant_id,
+            thread_key: `${recipient.phone}-${gateway.id}`,
           })
           .select()
           .single();
 
         if (messageError) {
-          console.error(`Message creation error for ${recipient.phone_number}:`, messageError);
+          console.error(`Message creation error for ${recipient.phone}:`, messageError);
           failCount++;
           
           await supabaseClient
-            .from("bulk_recipients")
+            .from("campaign_recipients")
             .update({ status: "failed" })
             .eq("id", recipient.id);
           
           continue;
         }
 
-        // Call FairGateway API to send SMS
-        const fairGatewayResponse = await fetch("https://fairgateway.no/api/send", {
+        const gatewayResponse = await fetch(gateway.base_url || "https://api.example.com/send", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${gateway.api_key}`,
           },
           body: JSON.stringify({
-            to: recipient.phone_number,
-            from: gateway.phone_number,
+            to: recipient.phone,
+            from: gateway.gw_phone,
             message: personalizedContent,
-            callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/delivery-webhook`,
             reference: sentMessage.id,
           }),
         });
 
-        if (!fairGatewayResponse.ok) {
-          const errorText = await fairGatewayResponse.text();
-          console.error(`FairGateway error for ${recipient.phone_number}:`, errorText);
+        if (!gatewayResponse.ok) {
+          const errorText = await gatewayResponse.text();
+          console.error(`Gateway error for ${recipient.phone}:`, errorText);
           failCount++;
           
           await supabaseClient
@@ -187,32 +176,28 @@ serve(async (req) => {
             .eq("id", sentMessage.id);
 
           await supabaseClient
-            .from("bulk_recipients")
+            .from("campaign_recipients")
             .update({ status: "failed" })
             .eq("id", recipient.id);
           
           continue;
         }
 
-        const gatewayResult = await fairGatewayResponse.json();
-        console.log(`Gateway response for ${recipient.phone_number}:`, gatewayResult);
+        const gatewayResult = await gatewayResponse.json();
+        console.log(`Gateway response for ${recipient.phone}:`, gatewayResult);
 
-        // Update message with gateway message ID
         await supabaseClient
           .from("messages")
           .update({
             status: "sent",
-            gateway_message_id: gatewayResult.message_id,
-            sent_at: new Date().toISOString()
+            external_id: gatewayResult.message_id,
           })
           .eq("id", sentMessage.id);
 
-        // Update bulk recipient status WITH sent_thread_id
         await supabaseClient
-          .from("bulk_recipients")
+          .from("campaign_recipients")
           .update({
-            sent_message_id: sentMessage.id,
-            sent_thread_id: thread?.id,
+            message_id: sentMessage.id,
             sent_at: new Date().toISOString(),
             status: "sent",
           })
@@ -221,24 +206,22 @@ serve(async (req) => {
         successCount++;
 
       } catch (error) {
-        console.error(`Error processing recipient ${recipient.phone_number}:`, error);
+        console.error(`Error processing recipient ${recipient.phone}:`, error);
         failCount++;
         
         await supabaseClient
-          .from("bulk_recipients")
+          .from("campaign_recipients")
           .update({ status: "failed" })
           .eq("id", recipient.id);
       }
     }
 
-    // Update campaign final status
     const finalStatus = failCount === 0 ? "completed" : successCount === 0 ? "failed" : "completed";
     
     await supabaseClient
       .from("bulk_campaigns")
       .update({
         status: finalStatus,
-        completed_at: new Date().toISOString(),
         sent_count: successCount,
         failed_count: failCount
       })
@@ -252,7 +235,7 @@ serve(async (req) => {
         campaign_id,
         sent: successCount,
         failed: failCount,
-        total: campaign.bulk_recipients?.length || 0
+        total: campaign.campaign_recipients?.length || 0
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -275,7 +258,6 @@ serve(async (req) => {
 function personalizeMessage(template: string, metadata: Record<string, any>): string {
   let personalized = template;
   
-  // Replace {{key}} placeholders with metadata values
   Object.keys(metadata).forEach((key) => {
     const placeholder = `{{${key}}}`;
     personalized = personalized.replace(placeholder, metadata[key] || "");

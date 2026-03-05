@@ -39,10 +39,11 @@ serve(async (req) => {
       content,
       gateway_id,
       target_group_id,
+      campaign_id,
     });
 
     const { data: gateway, error: gatewayError } = await supabaseClient
-      .from("gateways")
+      .from("sms_gateways")
       .select("*")
       .eq("id", gateway_id)
       .single();
@@ -66,7 +67,8 @@ serve(async (req) => {
         .insert({
           phone: from_number,
           name: from_number,
-          group_id: target_group_id || gateway.fallback_group_id,
+          group_id: target_group_id || gateway.group_id,
+          tenant_id: gateway.tenant_id,
         })
         .select()
         .single();
@@ -83,38 +85,36 @@ serve(async (req) => {
     if (parent_message_id) {
       const { data: parentMsg } = await supabaseClient
         .from("messages")
-        .select("thread_id, target_group_id")
+        .select("thread_id, group_id")
         .eq("id", parent_message_id)
         .maybeSingle();
 
       if (parentMsg) {
         threadId = parentMsg.thread_id;
         if (!target_group_id) {
-          resolvedGroupId = parentMsg.target_group_id;
+          resolvedGroupId = parentMsg.group_id;
         }
       }
     }
 
     if (!threadId) {
       const { data: existingThread } = await supabaseClient
-        .from("messages")
-        .select("thread_id, target_group_id")
-        .eq("contact_id", contact.id)
-        .eq("direction", "outbound")
-        .order("created_at", { ascending: false })
-        .limit(1)
+        .from("message_threads")
+        .select("*")
+        .eq("contact_phone", from_number)
+        .eq("tenant_id", gateway.tenant_id)
+        .eq("is_resolved", false)
         .maybeSingle();
 
       if (existingThread) {
-        threadId = existingThread.thread_id;
+        threadId = existingThread.id;
         if (!target_group_id) {
-          resolvedGroupId = existingThread.target_group_id;
+          resolvedGroupId = existingThread.resolved_group_id;
         }
       } else {
         if (!target_group_id) {
-          resolvedGroupId = contact.group_id || gateway.fallback_group_id;
+          resolvedGroupId = contact.group_id || gateway.group_id;
 
-          // Apply routing rules only if no target_group_id provided
           const { data: rules, error: rulesError } = await supabaseClient
             .from("routing_rules")
             .select("*")
@@ -155,7 +155,7 @@ serve(async (req) => {
               }
 
               if (matches) {
-                resolvedGroupId = rule.target_group_id;
+                resolvedGroupId = rule.group_id;
                 break;
               }
             }
@@ -169,11 +169,12 @@ serve(async (req) => {
         }
 
         const { data: newThread, error: threadError } = await supabaseClient
-          .from("threads")
+          .from("message_threads")
           .insert({
-            contact_id: contact.id,
-            target_group_id: resolvedGroupId,
-            status: "open",
+            contact_phone: from_number,
+            resolved_group_id: resolvedGroupId,
+            gateway_id: gateway_id,
+            tenant_id: gateway.tenant_id,
             last_message_at: received_at || new Date().toISOString(),
           })
           .select()
@@ -192,13 +193,14 @@ serve(async (req) => {
         thread_id: threadId,
         contact_id: contact.id,
         direction: "inbound",
-        content,
+        content: content,
         status: "received",
         gateway_id,
-        target_group_id: resolvedGroupId,
+        group_id: resolvedGroupId,
         from_number,
         to_number,
-        received_at: received_at || new Date().toISOString(),
+        tenant_id: gateway.tenant_id,
+        thread_key: `${from_number}-${gateway_id}`,
         campaign_id: campaign_id || null,
         parent_message_id: parent_message_id || null,
       })
@@ -210,10 +212,9 @@ serve(async (req) => {
     }
 
     await supabaseClient
-      .from("threads")
+      .from("message_threads")
       .update({
-        last_message_at: message.received_at || message.created_at,
-        status: "open",
+        last_message_at: message.created_at,
       })
       .eq("id", threadId);
 

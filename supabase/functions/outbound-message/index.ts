@@ -1,6 +1,3 @@
-// SeMSe + FairGateway: Outbound Message Handler
-// PROMPT 2: Send messages via FairGateway with delivery tracking
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -33,21 +30,20 @@ serve(async (req) => {
       );
     }
 
-    // Fetch message with gateway credentials
     const { data: message, error: messageError } = await supabase
       .from("messages")
       .select(`
         *,
-        gateways (
+        sms_gateways (
           id,
-          provider_name,
+          name,
           api_key,
-          api_endpoint,
-          from_number
+          base_url,
+          gw_phone
         )
       `)
       .eq("id", message_id)
-      .eq("direction", "out")
+      .eq("direction", "outbound")
       .single();
 
     if (messageError || !message) {
@@ -57,37 +53,24 @@ serve(async (req) => {
       );
     }
 
-    if (message.status !== "queued") {
+    if (message.status !== "pending") {
       return new Response(
         JSON.stringify({ error: "Message already processed", status: message.status }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Send via FairGateway
-    const gateway = message.gateways;
-    const result = await sendViaFairGateway(gateway, message);
+    const gateway = message.sms_gateways;
+    const result = await sendViaGateway(gateway, message);
 
-    // Update message status
     await supabase
       .from("messages")
       .update({
         status: result.success ? "sent" : "failed",
-        external_message_id: result.external_id,
-        sent_at: result.success ? new Date().toISOString() : null,
+        external_id: result.external_id,
         error_message: result.error,
       })
       .eq("id", message_id);
-
-    // Log delivery event
-    if (result.success) {
-      await supabase.from("delivery_status_events").insert({
-        message_id: message_id,
-        status: "sent",
-        external_message_id: result.external_id,
-        provider_response: result.response,
-      });
-    }
 
     return new Response(
       JSON.stringify({
@@ -107,7 +90,7 @@ serve(async (req) => {
   }
 });
 
-async function sendViaFairGateway(
+async function sendViaGateway(
   gateway: any,
   message: any
 ): Promise<{ success: boolean; external_id?: string; error?: string; response?: any }> {
@@ -116,10 +99,9 @@ async function sendViaFairGateway(
       from: message.from_number,
       to: message.to_number,
       message: message.content,
-      media_urls: message.mms_urls || [],
     };
 
-    const response = await fetch(gateway.api_endpoint, {
+    const response = await fetch(gateway.base_url || "https://api.example.com/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
