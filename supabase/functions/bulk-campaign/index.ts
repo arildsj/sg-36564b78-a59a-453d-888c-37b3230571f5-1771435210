@@ -25,14 +25,29 @@ serve(async (req) => {
     const { campaign_id } = await req.json();
 
     if (!campaign_id) {
+      console.error("Missing campaign_id in request");
       return new Response(
         JSON.stringify({ error: "campaign_id is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Processing bulk campaign:", campaign_id);
+    console.log("=== BULK CAMPAIGN START ===");
+    console.log("Campaign ID:", campaign_id);
 
+    // Check auth first
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized", details: authError?.message }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    console.log("User authenticated:", user.id);
+
+    // Fetch campaign with explicit error handling
+    console.log("Fetching campaign...");
     const { data: campaign, error: campaignError } = await supabaseClient
       .from("bulk_campaigns")
       .select(`
@@ -48,32 +63,53 @@ serve(async (req) => {
       .eq("id", campaign_id)
       .single();
 
-    if (campaignError || !campaign) {
-      console.error("Campaign fetch error:", campaignError);
+    if (campaignError) {
+      console.error("=== CAMPAIGN FETCH ERROR ===");
+      console.error("Error code:", campaignError.code);
+      console.error("Error message:", campaignError.message);
+      console.error("Error details:", campaignError.details);
+      console.error("Error hint:", campaignError.hint);
+      return new Response(
+        JSON.stringify({ 
+          error: "Campaign fetch failed",
+          code: campaignError.code,
+          message: campaignError.message,
+          details: campaignError.details,
+          hint: campaignError.hint
+        }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!campaign) {
+      console.error("Campaign not found (empty result)");
       return new Response(
         JSON.stringify({ error: "Campaign not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    console.log("Campaign fetched:", campaign.id, campaign.name);
+    console.log("Recipients count:", campaign.campaign_recipients?.length || 0);
+    console.log("Group:", campaign.groups?.name);
+
+    // Check gateway
     const gateway = campaign.groups?.sms_gateways;
     if (!gateway) {
+      console.error("No gateway found on group:", campaign.groups?.name);
       return new Response(
-        JSON.stringify({ error: "No gateway configured for group" }),
+        JSON.stringify({ 
+          error: "No gateway configured for group",
+          group_name: campaign.groups?.name,
+          group_id: campaign.group_id
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Gateway: ${gateway.gw_phone} (${gateway.name})`);
+    console.log(`Gateway found: ${gateway.gw_phone} (${gateway.name})`);
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
+    // Update campaign status
     await supabaseClient
       .from("bulk_campaigns")
       .update({
@@ -82,6 +118,7 @@ serve(async (req) => {
       })
       .eq("id", campaign_id);
 
+    console.log("Starting to send messages...");
     let successCount = 0;
     let failCount = 0;
 
