@@ -70,7 +70,7 @@ serve(async (req) => {
       .from("bulk_campaigns")
       .update({ 
         status: "processing",
-        started_at: new Date().toISOString()
+        updated_at: new Date().toISOString()
       })
       .eq("id", campaignId);
 
@@ -133,7 +133,7 @@ serve(async (req) => {
         status: successCount === recipients.length ? "completed" : "partial",
         sent_count: successCount,
         failed_count: failureCount,
-        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq("id", campaignId);
 
