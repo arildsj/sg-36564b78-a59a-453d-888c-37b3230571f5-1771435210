@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Send, Clock, FileText, ChevronDown, ChevronRight, Users } from "lucide-react";
+import { Send, Clock, FileText, ChevronDown, ChevronRight, Users, Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bulkService } from "@/services/bulkService";
 import { groupService, type Group as ServiceGroup } from "@/services/groupService";
@@ -36,6 +36,10 @@ export default function SendingPage() {
   const [activeTab, setActiveTab] = useState("compose");
   const [loading, setLoading] = useState(false);
   const [groups, setGroups] = useState<ServiceGroup[]>([]);
+  
+  // Campaign state
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaignLoading, setCampaignLoading] = useState(false);
   
   // New state structure for granular contact selection
   const [selectedGroups, setSelectedGroups] = useState<GroupSelection[]>([]);
@@ -393,6 +397,10 @@ export default function SendingPage() {
               <Send className="h-4 w-4" />
               Ny melding
             </TabsTrigger>
+            <TabsTrigger value="campaign" className="flex items-center gap-2">
+              <Megaphone className="h-4 w-4" />
+              Kampanje
+            </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Historikk
@@ -590,6 +598,108 @@ export default function SendingPage() {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="campaign" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Opprett Kampanje</CardTitle>
+                <CardDescription>
+                  Lag en bulk-kampanje for å sende meldinger til mange mottakere samtidig
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Kampanjenavn</Label>
+                      <Input placeholder="F.eks: Julekampanje 2026" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Velg gruppe</Label>
+                      <div className="border rounded-md p-3 max-h-[200px] overflow-y-auto space-y-2">
+                        {groups.map(group => (
+                          <div key={group.id} className="flex items-center gap-2 p-2 hover:bg-secondary/50 rounded">
+                            <Checkbox id={`camp-${group.id}`} />
+                            <Label htmlFor={`camp-${group.id}`} className="cursor-pointer flex-1">
+                              {group.name}
+                            </Label>
+                            <Badge variant="outline" className="text-xs">
+                              {group.active_members || 0}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Melding</Label>
+                      <Textarea 
+                        placeholder="Skriv kampanjemelding..." 
+                        className="min-h-[150px]"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button className="flex-1" variant="outline">
+                        Lagre som utkast
+                      </Button>
+                      <Button className="flex-1">
+                        <Megaphone className="h-4 w-4 mr-2" />
+                        Send kampanje
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Aktive kampanjer</CardTitle>
+                <CardDescription>Oversikt over dine kampanjer</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {campaignLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Laster kampanjer...
+                  </div>
+                ) : campaigns.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Ingen kampanjer funnet
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {campaigns.map((campaign) => (
+                      <div 
+                        key={campaign.id} 
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-secondary/50"
+                      >
+                        <div className="space-y-1">
+                          <h4 className="font-medium">{campaign.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {campaign.total_recipients} mottakere
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Badge variant={
+                            campaign.status === "completed" ? "default" :
+                            campaign.status === "sending" ? "secondary" :
+                            campaign.status === "failed" ? "destructive" : 
+                            "outline"
+                          }>
+                            {campaign.status}
+                          </Badge>
+                          <Button size="sm" variant="outline">
+                            Se detaljer
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="history">

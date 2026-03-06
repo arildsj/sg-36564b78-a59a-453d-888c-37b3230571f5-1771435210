@@ -66,11 +66,14 @@ serve(async (req) => {
       );
     }
 
+    const now = new Date().toISOString();
+
     await supabaseClient
       .from("bulk_campaigns")
       .update({ 
         status: "processing",
-        updated_at: new Date().toISOString()
+        started_at: now,
+        updated_at: now
       })
       .eq("id", campaignId);
 
@@ -127,13 +130,17 @@ serve(async (req) => {
       }
     }
 
+    const finalStatus = successCount === recipients.length ? "completed" : "partial";
+    const completedAt = new Date().toISOString();
+
     await supabaseClient
       .from("bulk_campaigns")
       .update({
-        status: successCount === recipients.length ? "completed" : "partial",
+        status: finalStatus,
         sent_count: successCount,
         failed_count: failureCount,
-        updated_at: new Date().toISOString(),
+        completed_at: completedAt,
+        updated_at: completedAt,
       })
       .eq("id", campaignId);
 
