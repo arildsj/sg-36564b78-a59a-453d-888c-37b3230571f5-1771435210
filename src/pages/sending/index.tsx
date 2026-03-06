@@ -289,20 +289,14 @@ export default function SendingPage() {
             console.log(`📨 Sending to ${contact.name} (${contact.phone})...`);
             
             // Use messageService to send with proper thread logic
-            const newMessage = await messageService.sendMessage({
-              to_number: contact.phone,
-              content: message,
-              from_number: "system", // No physical gateway in development
-              contact_id: contact.id,
-              group_id: groupId,
-              tenant_id: profile.tenant_id,
-              campaign_id: campaign.id,
-              metadata: {
-                is_urgent: isUrgent,
-                requires_acknowledgment: requireAck,
-                campaign_name: campaign.name
-              }
-            });
+            // sendMessage(content, toNumber, fromNumber, threadId?, explicitGroupId?)
+            const newMessage = await messageService.sendMessage(
+              message,              // content
+              contact.phone,        // toNumber
+              "system",            // fromNumber (no physical gateway in development)
+              undefined,           // threadId (let messageService find/create)
+              groupId              // explicitGroupId
+            );
 
             console.log(`✅ Message created:`, newMessage.id);
 
