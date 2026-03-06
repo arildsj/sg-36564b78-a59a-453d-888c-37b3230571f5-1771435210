@@ -132,6 +132,7 @@ export type Database = {
       }
       bulk_campaigns: {
         Row: {
+          campaign_type: string
           completed_at: string | null
           created_at: string
           created_by_user_id: string
@@ -144,6 +145,7 @@ export type Database = {
           name: string
           scheduled_at: string | null
           sent_count: number
+          sent_immediately: boolean
           started_at: string | null
           status: string
           tenant_id: string
@@ -151,6 +153,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          campaign_type?: string
           completed_at?: string | null
           created_at?: string
           created_by_user_id: string
@@ -163,6 +166,7 @@ export type Database = {
           name: string
           scheduled_at?: string | null
           sent_count?: number
+          sent_immediately?: boolean
           started_at?: string | null
           status?: string
           tenant_id: string
@@ -170,6 +174,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          campaign_type?: string
           completed_at?: string | null
           created_at?: string
           created_by_user_id?: string
@@ -182,6 +187,7 @@ export type Database = {
           name?: string
           scheduled_at?: string | null
           sent_count?: number
+          sent_immediately?: boolean
           started_at?: string | null
           status?: string
           tenant_id?: string

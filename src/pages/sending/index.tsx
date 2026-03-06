@@ -247,15 +247,25 @@ export default function SendingPage() {
 
       console.log("💾 Creating campaign record for history...");
 
+      // Determine campaign type based on scheduling and recipient count
+      const isScheduled = !!scheduleDate;
+      const campaignType = 
+        isScheduled ? "scheduled" as const :
+        totalRecipients === 1 ? "single" as const : 
+        "bulk" as const;
+
       const campaign = await bulkService.createBulkCampaign({
         name: `Melding til ${groupNames}`,
         message_template: message,
         total_recipients: totalRecipients,
-        status: scheduleDate ? "scheduled" : "processing",
+        campaign_type: campaignType,
+        status: isScheduled ? "scheduled" : "sending",
+        sent_immediately: !isScheduled,
+        scheduled_at: scheduleDate || null,
         tenant_id: profile.tenant_id,
         created_by: profile.id,
         group_id: selectedGroups[0].groupId,
-        started_at: scheduleDate ? undefined : new Date().toISOString()
+        started_at: isScheduled ? undefined : new Date().toISOString()
       });
 
       console.log("✅ Campaign created:", campaign.id);
@@ -335,11 +345,13 @@ export default function SendingPage() {
 
         console.log(`📊 Send complete: ${successCount} success, ${failureCount} failed`);
 
-        // Update campaign status
+        // Update campaign status: completed if all succeeded, failed if any failed
+        const finalStatus = failureCount === 0 ? "completed" : "failed";
+
         await db
           .from("bulk_campaigns")
           .update({
-            status: successCount === totalRecipients ? "completed" : "partial",
+            status: finalStatus,
             sent_count: successCount,
             failed_count: failureCount,
             completed_at: new Date().toISOString()

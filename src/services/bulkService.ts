@@ -10,12 +10,17 @@ export type BulkCampaign = {
   bulk_code?: string;
   message_template: string;
   status: "draft" | "scheduled" | "sending" | "completed" | "failed";
+  campaign_type?: "single" | "bulk" | "scheduled";
+  sent_immediately?: boolean;
   total_recipients: number;
   sent_count: number;
   failed_count: number;
   created_at: string;
   expires_at?: string;
   group_id?: string;
+  scheduled_at?: string;
+  started_at?: string;
+  completed_at?: string;
 };
 
 export type BulkRecipient = {
@@ -35,6 +40,8 @@ export interface BulkCampaignData {
   reply_window_hours?: number;
   recipient_contacts?: string[];
   recipient_groups?: string[];
+  campaign_type?: "single" | "bulk" | "scheduled";
+  sent_immediately?: boolean;
 }
 
 export const bulkService = {
@@ -65,7 +72,7 @@ export const bulkService = {
   },
 
   /**
-   * Create a new bulk campaign record
+   * Create a new bulk campaign record with campaign_type and sent_immediately support
    */
   async createBulkCampaign(data: any) {
     const { data: campaign, error } = await db
@@ -103,17 +110,24 @@ export const bulkService = {
 
       if (!profile) throw new Error("User profile not found");
 
+      // Determine campaign type based on recipient count
+      const totalRecipients = recipientUserIds.length;
+      const campaignType = totalRecipients === 1 ? "single" : "bulk";
+
       // 1. Create campaign record
       const campaign = await this.createBulkCampaign({
-        name: campaignData?.name || subjectLine || `Internal Bulk ${new Date().toISOString()}`,
+        name: campaignData?.name || subjectLine || `Internal ${campaignType === "single" ? "Message" : "Bulk"} ${new Date().toISOString()}`,
         message_template: messageContent,
         subject_line: subjectLine,
         status: "draft",
+        campaign_type: campaignType,
+        sent_immediately: true,
         group_id: groupId,
         target_group_id: groupId,
         recipient_contacts: [],
         recipient_groups: [groupId],
         reply_window_hours: campaignData?.reply_window_hours,
+        total_recipients: totalRecipients,
         tenant_id: profile.tenant_id,
         created_by: profile.id
       });
@@ -183,6 +197,8 @@ export const bulkService = {
         bulk_code: bulkCode,
         message_template: message,
         status: "draft",
+        campaign_type: "bulk",
+        sent_immediately: true,
         group_id: groupId,
         target_group_id: groupId,
         expires_at: expiresAt.toISOString()
@@ -270,16 +286,21 @@ export const bulkService = {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 6);
 
+    // Determine campaign type based on recipient count
+    const campaignType = targetPhoneNumbers.length === 1 ? "single" : "bulk";
+
     const { data: campaign, error: campaignError } = await db
       .from("bulk_campaigns")
       .insert({
         tenant_id: profile.tenant_id,
         created_by_user_id: profile.id,
-        name: `Bulk til ${groupName}`,
+        name: `${campaignType === "single" ? "Melding" : "Bulk"} til ${groupName}`,
         subject_line: subjectLine,
         bulk_code: bulkCode,
         message_template: message,
         status: "draft",
+        campaign_type: campaignType,
+        sent_immediately: true,
         group_id: groupId,
         target_group_id: groupId,
         expires_at: expiresAt.toISOString()
@@ -475,6 +496,9 @@ export const bulkService = {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 6);
 
+    // Determine campaign type based on recipient count
+    const campaignType = targetRecipients.length === 1 ? "single" : "bulk";
+
     const { data: reminderCampaign, error: campaignError } = await db
       .from("bulk_campaigns")
       .insert({
@@ -485,6 +509,8 @@ export const bulkService = {
         bulk_code: bulkCode,
         message_template: reminderMessage,
         status: "draft",
+        campaign_type: campaignType,
+        sent_immediately: true,
         group_id: originalCampaign.group_id,
         target_group_id: originalCampaign.target_group_id,
         expires_at: expiresAt.toISOString()
