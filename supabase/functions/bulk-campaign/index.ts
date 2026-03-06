@@ -14,287 +14,147 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: req.headers.get("Authorization")! },
-        },
-      }
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { campaign_id } = await req.json();
+    const { campaignId } = await req.json();
 
-    if (!campaign_id) {
-      console.error("Missing campaign_id in request");
+    if (!campaignId) {
       return new Response(
-        JSON.stringify({ error: "campaign_id is required" }),
+        JSON.stringify({ error: "Campaign ID is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("=== BULK CAMPAIGN START ===");
-    console.log("Campaign ID:", campaign_id);
+    console.log("Processing bulk campaign:", campaignId);
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      console.error("Auth error:", authError);
-      return new Response(
-        JSON.stringify({ error: "Unauthorized", details: authError?.message }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    console.log("User authenticated:", user.id);
-
-    console.log("Fetching campaign...");
     const { data: campaign, error: campaignError } = await supabaseClient
       .from("bulk_campaigns")
-      .select(`
-        *,
-        campaign_recipients(*),
-        groups!bulk_campaigns_group_id_fkey(
-          id,
-          name,
-          gateway_id,
-          sms_gateways(id, gw_phone, name, api_key, base_url)
-        )
-      `)
-      .eq("id", campaign_id)
+      .select("*")
+      .eq("id", campaignId)
       .single();
 
-    if (campaignError) {
-      console.error("=== CAMPAIGN FETCH ERROR ===");
-      console.error("Error code:", campaignError.code);
-      console.error("Error message:", campaignError.message);
-      console.error("Error details:", campaignError.details);
-      console.error("Error hint:", campaignError.hint);
+    if (campaignError || !campaign) {
+      console.error("Campaign fetch error:", campaignError);
       return new Response(
-        JSON.stringify({ 
-          error: "Campaign fetch failed",
-          code: campaignError.code,
-          message: campaignError.message,
-          details: campaignError.details,
-          hint: campaignError.hint
-        }),
+        JSON.stringify({ error: "Campaign not found", details: campaignError }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!campaign) {
-      console.error("Campaign not found (empty result)");
+    console.log("Campaign fetched:", campaign.name);
+
+    const { data: recipients, error: recipientsError } = await supabaseClient
+      .from("campaign_recipients")
+      .select("*")
+      .eq("campaign_id", campaignId);
+
+    if (recipientsError) {
+      console.error("Recipients fetch error:", recipientsError);
       return new Response(
-        JSON.stringify({ error: "Campaign not found" }),
+        JSON.stringify({ error: "Failed to fetch recipients", details: recipientsError }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Found ${recipients?.length || 0} recipients`);
+
+    if (!recipients || recipients.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "No recipients found for this campaign" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    console.log("Campaign fetched:", campaign.id, campaign.name);
-    console.log("Recipients count:", campaign.campaign_recipients?.length || 0);
-    console.log("Group:", campaign.groups?.name);
-
-    const gateway = campaign.groups?.sms_gateways;
-    if (!gateway) {
-      console.error("No gateway found on group:", campaign.groups?.name);
-      return new Response(
-        JSON.stringify({ 
-          error: "No gateway configured for group",
-          group_name: campaign.groups?.name,
-          group_id: campaign.group_id
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log(`Gateway found: ${gateway.gw_phone} (${gateway.name})`);
 
     await supabaseClient
       .from("bulk_campaigns")
-      .update({
-        status: "sending",
-        total_recipients: campaign.campaign_recipients?.length || 0
+      .update({ 
+        status: "processing",
+        started_at: new Date().toISOString()
       })
-      .eq("id", campaign_id);
+      .eq("id", campaignId);
 
-    console.log("Starting to send messages...");
     let successCount = 0;
-    let failCount = 0;
+    let failureCount = 0;
 
-    for (const recipient of campaign.campaign_recipients || []) {
+    for (const recipient of recipients) {
       try {
-        const personalizedContent = personalizeMessage(
-          campaign.message_template,
-          recipient.metadata || {}
-        );
+        const messageData = {
+          direction: "outbound",
+          from_number: campaign.gateway_id || "system",
+          to_number: recipient.phone,
+          content: recipient.personalized_message || campaign.message_template,
+          status: "pending",
+          gateway_id: campaign.gateway_id,
+          contact_id: recipient.contact_id,
+          group_id: campaign.group_id,
+          tenant_id: campaign.tenant_id,
+          campaign_id: campaignId,
+        };
 
-        console.log(`Sending to ${recipient.phone}: ${personalizedContent}`);
-
-        let thread;
-        const { data: existingThread } = await supabaseClient
-          .from("message_threads")
-          .select()
-          .eq("contact_phone", recipient.phone)
-          .eq("resolved_group_id", campaign.group_id)
-          .maybeSingle();
-
-        if (existingThread) {
-          thread = existingThread;
-        } else {
-          const { data: newThread } = await supabaseClient
-            .from("message_threads")
-            .insert({
-              contact_phone: recipient.phone,
-              resolved_group_id: campaign.group_id,
-              gateway_id: gateway.id,
-              tenant_id: campaign.tenant_id,
-              last_message_at: new Date().toISOString(),
-              is_resolved: false,
-            })
-            .select()
-            .single();
-          thread = newThread;
-        }
-
-        const { data: sentMessage, error: messageError } = await supabaseClient
+        const { data: message, error: messageError } = await supabaseClient
           .from("messages")
-          .insert({
-            thread_id: thread?.id,
-            contact_id: recipient.contact_id,
-            direction: "outbound",
-            content: personalizedContent,
-            from_number: gateway.gw_phone,
-            to_number: recipient.phone,
-            status: "pending",
-            gateway_id: gateway.id,
-            group_id: campaign.group_id,
-            campaign_id: campaign_id,
-            tenant_id: campaign.tenant_id,
-            thread_key: `${recipient.phone}-${gateway.id}`,
-          })
+          .insert(messageData)
           .select()
           .single();
 
         if (messageError) {
-          console.error(`Message creation error for ${recipient.phone}:`, messageError);
-          failCount++;
-          
-          await supabaseClient
-            .from("campaign_recipients")
-            .update({ status: "failed" })
-            .eq("id", recipient.id);
-          
-          continue;
+          throw messageError;
         }
-
-        const gatewayResponse = await fetch(gateway.base_url || "https://api.example.com/send", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${gateway.api_key}`,
-          },
-          body: JSON.stringify({
-            to: recipient.phone,
-            from: gateway.gw_phone,
-            message: personalizedContent,
-            reference: sentMessage.id,
-          }),
-        });
-
-        if (!gatewayResponse.ok) {
-          const errorText = await gatewayResponse.text();
-          console.error(`Gateway error for ${recipient.phone}:`, errorText);
-          failCount++;
-          
-          await supabaseClient
-            .from("messages")
-            .update({ status: "failed" })
-            .eq("id", sentMessage.id);
-
-          await supabaseClient
-            .from("campaign_recipients")
-            .update({ status: "failed" })
-            .eq("id", recipient.id);
-          
-          continue;
-        }
-
-        const gatewayResult = await gatewayResponse.json();
-        console.log(`Gateway response for ${recipient.phone}:`, gatewayResult);
-
-        await supabaseClient
-          .from("messages")
-          .update({
-            status: "sent",
-            external_id: gatewayResult.message_id,
-          })
-          .eq("id", sentMessage.id);
 
         await supabaseClient
           .from("campaign_recipients")
           .update({
-            message_id: sentMessage.id,
-            sent_at: new Date().toISOString(),
             status: "sent",
+            message_id: message.id,
+            sent_at: new Date().toISOString(),
           })
           .eq("id", recipient.id);
 
         successCount++;
-
       } catch (error) {
-        console.error(`Error processing recipient ${recipient.phone}:`, error);
-        failCount++;
+        console.error("Failed to send to recipient:", recipient.id, error);
         
         await supabaseClient
           .from("campaign_recipients")
-          .update({ status: "failed" })
+          .update({
+            status: "failed",
+            error_message: error instanceof Error ? error.message : "Unknown error",
+          })
           .eq("id", recipient.id);
+
+        failureCount++;
       }
     }
 
-    const finalStatus = failCount === 0 ? "completed" : successCount === 0 ? "failed" : "completed";
-    
     await supabaseClient
       .from("bulk_campaigns")
       .update({
-        status: finalStatus,
+        status: successCount === recipients.length ? "completed" : "partial",
         sent_count: successCount,
-        failed_count: failCount
+        failed_count: failureCount,
+        completed_at: new Date().toISOString(),
       })
-      .eq("id", campaign_id);
-
-    console.log(`Campaign ${campaign_id} completed: ${successCount} sent, ${failCount} failed`);
+      .eq("id", campaignId);
 
     return new Response(
       JSON.stringify({
         success: true,
-        campaign_id,
+        campaign_id: campaignId,
+        total: recipients.length,
         sent: successCount,
-        failed: failCount,
-        total: campaign.campaign_recipients?.length || 0
+        failed: failureCount,
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
   } catch (error) {
-    console.error("Bulk campaign error:", error);
+    console.error("Edge function error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+        details: error,
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
-
-function personalizeMessage(template: string, metadata: Record<string, any>): string {
-  let personalized = template;
-  
-  Object.keys(metadata).forEach((key) => {
-    const placeholder = `{{${key}}}`;
-    personalized = personalized.replace(placeholder, metadata[key] || "");
-  });
-
-  return personalized;
-}

@@ -184,6 +184,7 @@ export default function SendingPage() {
 
     try {
       setLoading(true);
+      console.log("🚀 Starting message send process...");
 
       // Get user profile for tenant_id and created_by
       const { data: user } = await supabase.auth.getUser();
@@ -197,24 +198,29 @@ export default function SendingPage() {
 
       if (!profile) throw new Error("User profile not found");
 
-      // Calculate total recipients and collect phone numbers
+      console.log("✅ User authenticated:", profile.id);
+
+      // Calculate total recipients and collect contact data
       let totalRecipients = 0;
-      const recipientPhones: string[] = [];
+      const recipientData: Array<{ contact: Contact; groupId: string }> = [];
 
       for (const group of selectedGroups) {
         const contacts = groupContacts.get(group.groupId) || [];
+        console.log(`📋 Group ${group.groupId}: ${contacts.length} total contacts`);
         
         if (group.selectedContactIds.length > 0) {
           // Send to selected contacts only
           const selectedContacts = contacts.filter(c => 
             group.selectedContactIds.includes(c.id)
           );
+          console.log(`✅ Selected ${selectedContacts.length} contacts from group ${group.groupId}`);
           totalRecipients += selectedContacts.length;
-          recipientPhones.push(...selectedContacts.map(c => c.phone));
+          recipientData.push(...selectedContacts.map(c => ({ contact: c, groupId: group.groupId })));
         } else {
-          // Send to all contacts in group (fallback to old behavior)
+          // Send to all contacts in group
+          console.log(`✅ Sending to all ${contacts.length} contacts in group ${group.groupId}`);
           totalRecipients += contacts.length;
-          recipientPhones.push(...contacts.map(c => c.phone));
+          recipientData.push(...contacts.map(c => ({ contact: c, groupId: group.groupId })));
         }
       }
 
@@ -227,52 +233,134 @@ export default function SendingPage() {
         return;
       }
 
-      // Create bulk campaign
+      console.log(`📊 Total recipients: ${totalRecipients}`);
+
+      // Create bulk campaign for tracking/history
       const groupNames = selectedGroups
         .map(sg => groups.find(g => g.id === sg.groupId)?.name)
         .filter(Boolean)
         .join(", ");
 
+      console.log("💾 Creating campaign record for history...");
+
       const campaign = await bulkService.createBulkCampaign({
         name: `Melding til ${groupNames}`,
         message_template: message,
         total_recipients: totalRecipients,
-        status: scheduleDate ? "scheduled" : "draft",
+        status: scheduleDate ? "scheduled" : "processing",
         tenant_id: profile.tenant_id,
         created_by: profile.id,
-        group_id: selectedGroups[0].groupId
+        group_id: selectedGroups[0].groupId,
+        started_at: scheduleDate ? undefined : new Date().toISOString()
       });
 
-      // Create campaign recipients
-      const recipients = recipientPhones.map(phone => ({
+      console.log("✅ Campaign created:", campaign.id);
+
+      // Create campaign recipients for history
+      const recipients = recipientData.map(({ contact }) => ({
         campaign_id: campaign.id,
-        phone: phone,
-        status: "pending",
+        contact_id: contact.id,
+        phone: contact.phone,
+        status: "pending" as const,
         personalized_message: message
       }));
 
       if (recipients.length > 0) {
+        console.log("💾 Creating campaign recipients records...");
         const { error: recipientsError } = await db
           .from("campaign_recipients")
           .insert(recipients);
 
         if (recipientsError) {
-          console.error("Error creating recipients:", recipientsError);
+          console.error("❌ Error creating recipients:", recipientsError);
           throw new Error("Failed to create campaign recipients");
         }
+        console.log(`✅ Created ${recipients.length} recipient records`);
       }
 
-      // Trigger sending if not scheduled
+      // Send messages directly using messageService if not scheduled
       if (!scheduleDate) {
-        await bulkService.triggerCampaign(campaign.id);
-      }
+        console.log("📤 Sending messages now...");
+        let successCount = 0;
+        let failureCount = 0;
 
-      toast({
-        title: scheduleDate ? "Melding planlagt" : "Melding sendt",
-        description: scheduleDate 
-          ? `Meldingen sendes ${new Date(scheduleDate).toLocaleString()}`
-          : `Meldingen sendes til ${totalRecipients} mottakere nå`,
-      });
+        for (const { contact, groupId } of recipientData) {
+          try {
+            console.log(`📨 Sending to ${contact.name} (${contact.phone})...`);
+            
+            // Use messageService to send with proper thread logic
+            const newMessage = await messageService.sendMessage({
+              to_number: contact.phone,
+              content: message,
+              from_number: "system", // No physical gateway in development
+              contact_id: contact.id,
+              group_id: groupId,
+              tenant_id: profile.tenant_id,
+              campaign_id: campaign.id,
+              metadata: {
+                is_urgent: isUrgent,
+                requires_acknowledgment: requireAck,
+                campaign_name: campaign.name
+              }
+            });
+
+            console.log(`✅ Message created:`, newMessage.id);
+
+            // Update recipient status
+            await db
+              .from("campaign_recipients")
+              .update({
+                status: "sent",
+                message_id: newMessage.id,
+                sent_at: new Date().toISOString()
+              })
+              .eq("campaign_id", campaign.id)
+              .eq("contact_id", contact.id);
+
+            successCount++;
+          } catch (error) {
+            console.error(`❌ Failed to send to ${contact.name}:`, error);
+            
+            // Update recipient with error
+            await db
+              .from("campaign_recipients")
+              .update({
+                status: "failed",
+                error_message: error instanceof Error ? error.message : "Unknown error"
+              })
+              .eq("campaign_id", campaign.id)
+              .eq("contact_id", contact.id);
+
+            failureCount++;
+          }
+        }
+
+        console.log(`📊 Send complete: ${successCount} success, ${failureCount} failed`);
+
+        // Update campaign status
+        await db
+          .from("bulk_campaigns")
+          .update({
+            status: successCount === totalRecipients ? "completed" : "partial",
+            sent_count: successCount,
+            failed_count: failureCount,
+            completed_at: new Date().toISOString()
+          })
+          .eq("id", campaign.id);
+
+        console.log("✅ Campaign status updated");
+
+        toast({
+          title: "Meldinger sendt",
+          description: `${successCount} av ${totalRecipients} meldinger ble opprettet${failureCount > 0 ? ` (${failureCount} feilet)` : ""}`,
+        });
+      } else {
+        console.log(`⏰ Messages scheduled for ${scheduleDate}`);
+        toast({
+          title: "Melding planlagt",
+          description: `Meldingen sendes ${new Date(scheduleDate).toLocaleString()}`,
+        });
+      }
 
       // Reset form
       setMessage("");
@@ -284,6 +372,7 @@ export default function SendingPage() {
       setActiveTab("history");
 
     } catch (error: any) {
+      console.error("❌ Error in handleSend:", error);
       toast({
         title: "Feil ved sending",
         description: error.message,
