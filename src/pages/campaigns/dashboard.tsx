@@ -73,7 +73,7 @@ export default function CampaignDashboard() {
         .select(`
           *,
           groups!bulk_campaigns_target_group_id_fkey(name),
-          bulk_recipients(*)
+          campaign_recipients(*)
         `)
         .order("created_at", { ascending: false });
 
@@ -84,7 +84,7 @@ export default function CampaignDashboard() {
 
       // Calculate stats for each campaign
       const stats: CampaignStats[] = (campaigns || []).map((campaign: any) => {
-        const recipients = campaign.bulk_recipients || [];
+        const recipients = campaign.campaign_recipients || [];
         const total = recipients.length;
         const sent = recipients.filter((r: BulkRecipient) => r.status !== "pending").length;
         const delivered = recipients.filter((r: BulkRecipient) => r.status === "delivered" || r.status === "replied").length;

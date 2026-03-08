@@ -235,7 +235,7 @@ export const bulkService = {
     }
 
     const { error: recipientsError } = await db
-      .from("bulk_recipients")
+      .from("campaign_recipients")
       .insert(recipients);
 
     if (recipientsError) throw recipientsError;
@@ -338,7 +338,7 @@ export const bulkService = {
     }
 
     const { error: recipientsError } = await db
-      .from("bulk_recipients")
+      .from("campaign_recipients")
       .insert(recipients);
 
     if (recipientsError) throw recipientsError;
@@ -381,7 +381,7 @@ export const bulkService = {
     if (campaignError) throw campaignError;
 
     const { data: recipients, error: recipientsError } = await db
-      .from("bulk_recipients")
+      .from("campaign_recipients")
       .select("*")
       .eq("campaign_id", campaignId);
 
@@ -427,7 +427,7 @@ export const bulkService = {
    */
   async getNonResponders(campaignId: string): Promise<BulkRecipient[]> {
     const { data: recipients, error: recipientsError } = await db
-      .from("bulk_recipients")
+      .from("campaign_recipients")
       .select("*")
       .eq("campaign_id", campaignId)
       .eq("status", "sent");
@@ -528,7 +528,7 @@ export const bulkService = {
     }));
 
     const { error: recipientsError } = await db
-      .from("bulk_recipients")
+      .from("campaign_recipients")
       .insert(recipients);
 
     if (recipientsError) throw recipientsError;
