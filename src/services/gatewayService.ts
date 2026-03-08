@@ -23,6 +23,7 @@ export interface GatewayWithGroup extends Gateway {
 }
 
 export async function getGatewaysForGroup(groupId: string): Promise<GatewayWithGroup[]> {
+  // @ts-expect-error - TS2589: Type instantiation is excessively deep due to complex Supabase joins
   const request = supabase
     .from("sms_gateways")
     .select("*, groups(id, name)")

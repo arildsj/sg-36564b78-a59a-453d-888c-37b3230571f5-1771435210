@@ -355,11 +355,13 @@ export const bulkService = {
 
     if (campaignError) throw campaignError;
 
-    const { data: recipients, error: recipientsError } = await supabase
+    // Remove .returns<>() and use simple variable casting instead to avoid TS2589
+    const { data: recipientsRaw, error: recipientsError } = await supabase
       .from("campaign_recipients")
       .select("id, campaign_id, contact_id, phone, personalized_message, status, message_id, error_message, sent_at, created_at")
-      .eq("campaign_id", campaignId)
-      .returns<BulkRecipient[]>();
+      .eq("campaign_id", campaignId);
+
+    const recipients = recipientsRaw as unknown as BulkRecipient[];
 
     if (recipientsError) throw recipientsError;
 
@@ -396,12 +398,14 @@ export const bulkService = {
   },
 
   async getNonResponders(campaignId: string): Promise<BulkRecipient[]> {
-    const { data: recipients, error: recipientsError } = await supabase
+    // Remove .returns<>() to avoid TS2589
+    const { data: recipientsRaw, error: recipientsError } = await supabase
       .from("campaign_recipients")
       .select("id, campaign_id, contact_id, phone, personalized_message, status, message_id, error_message, sent_at, created_at")
       .eq("campaign_id", campaignId)
-      .eq("status", "sent")
-      .returns<BulkRecipient[]>();
+      .eq("status", "sent");
+
+    const recipients = recipientsRaw as unknown as BulkRecipient[];
 
     if (recipientsError) throw recipientsError;
 
