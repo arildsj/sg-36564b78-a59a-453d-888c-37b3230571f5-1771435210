@@ -309,7 +309,7 @@ export async function canUserViewBulkCampaign(campaignId: string): Promise<boole
 
   const { data: campaign, error } = await supabase
     .from("bulk_campaigns")
-    .select("tenant_id, created_by")
+    .select("*")
     .eq("id", campaignId)
     .maybeSingle();
 
