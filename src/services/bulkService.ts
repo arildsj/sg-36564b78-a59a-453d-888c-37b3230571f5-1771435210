@@ -287,11 +287,17 @@ export const bulkService = {
       gateway_id: groupGateway?.gateway_id || ""
     };
 
-    const { data: campaign, error: campaignError } = await supabase
+    const campaignRequest = supabase
       .from("bulk_campaigns")
       .insert(newCampaign)
       .select()
       .single();
+
+    // Bypass excessively deep type instantiation
+    const { data: campaign, error: campaignError } = await (campaignRequest as unknown as Promise<{
+      data: BulkCampaign;
+      error: Error | null;
+    }>);
 
     if (campaignError) throw campaignError;
 
@@ -480,7 +486,6 @@ export const bulkService = {
     const request = supabase
       .from("bulk_campaigns")
       .insert(reminderCampaignData)
-      // @ts-expect-error - TS2589: Type instantiation is excessively deep
       .select()
       .single();
 
