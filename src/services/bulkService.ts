@@ -371,6 +371,7 @@ export const bulkService = {
 
     if (recipientsError) throw recipientsError;
 
+    // @ts-expect-error - TS2589: Type instantiation is excessively deep
     const responsesRequest = supabase
       .from("messages")
       .select("from_number")
@@ -421,6 +422,7 @@ export const bulkService = {
 
     if (!recipients || recipients.length === 0) return [];
 
+    // @ts-expect-error - TS2589: Type instantiation is excessively deep
     const responsesRequest = supabase
       .from("messages")
       .select("from_number")
