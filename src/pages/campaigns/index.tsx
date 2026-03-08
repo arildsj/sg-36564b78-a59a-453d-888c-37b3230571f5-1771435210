@@ -160,9 +160,9 @@ export default function CampaignsPage() {
                             )}
                             <div className="flex-1">
                               <CardTitle className="text-lg">
-                                {campaign.subject_line || campaign.name}
+                                {campaign.name || campaign.name}
                               </CardTitle>
-                              {campaign.subject_line && campaign.subject_line !== campaign.name && (
+                              {campaign.name && campaign.name !== campaign.name && (
                                 <CardDescription className="mt-1">
                                   {campaign.name}
                                 </CardDescription>
@@ -181,9 +181,9 @@ export default function CampaignsPage() {
                                 {format(new Date(campaign.created_at), "d. MMM yyyy 'kl.' HH:mm", { locale: nb })}
                               </span>
                             </div>
-                            {campaign.bulk_code && (
+                            {campaign.id && (
                               <Badge variant="outline" className="font-mono">
-                                #{campaign.bulk_code}
+                                #{campaign.id}
                               </Badge>
                             )}
                           </div>

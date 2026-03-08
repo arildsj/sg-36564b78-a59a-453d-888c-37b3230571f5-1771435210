@@ -232,7 +232,7 @@ export type Database = {
           },
         ]
       }
-      bulk_recipients: {
+      campaign_recipients: {
         Row: {
           campaign_id: string
           contact_id: string
@@ -1477,6 +1477,7 @@ export type Database = {
           deleted_at: string | null
           gw_phone: string
           id: string
+          is_active: boolean | null
           name: string
           status: string
           tenant_id: string
@@ -1490,6 +1491,7 @@ export type Database = {
           deleted_at?: string | null
           gw_phone: string
           id?: string
+          is_active?: boolean | null
           name: string
           status?: string
           tenant_id: string
@@ -1503,6 +1505,7 @@ export type Database = {
           deleted_at?: string | null
           gw_phone?: string
           id?: string
+          is_active?: boolean | null
           name?: string
           status?: string
           tenant_id?: string
