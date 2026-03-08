@@ -609,7 +609,7 @@ export default function InboxPage() {
 
       toast({
         title: "Svar simulert",
-        description: `Simulert svar fra ${recipient.metadata?.name || recipient.phone}`,
+        description: `Simulert svar fra ${recipient.phone}`,
       });
 
       // Refresh data
@@ -983,7 +983,7 @@ export default function InboxPage() {
                                        <div className="flex justify-between items-start mb-2">
                                          <div className="flex items-center gap-2">
                                             <span className="font-semibold text-sm">
-                                              {bulkRecipients.find(r => r.phone === msg.from_number)?.metadata?.name || msg.from_number}
+                                              {bulkRecipients.find(r => r.phone === msg.from_number)?.phone || msg.from_number}
                                             </span>
                                             <span className="text-xs text-muted-foreground">
                                               {msg.from_number}
@@ -1076,7 +1076,7 @@ export default function InboxPage() {
                                             </TableCell>
                                             <TableCell>
                                               <div className="space-y-1">
-                                                <div className="font-medium">{recipient.metadata?.name || recipient.phone}</div>
+                                                <div className="font-medium">{recipient.phone}</div>
                                                 {(() => {
                                                   const reminder = hasReceivedReminder(recipient.phone);
                                                   if (reminder) {
@@ -1307,7 +1307,7 @@ export default function InboxPage() {
                   {bulkRecipients.map((recipient) => (
                     <SelectItem key={recipient.id} value={recipient.id}>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{recipient.metadata?.name || t("inbox.unknown")}</span>
+                        <span className="font-medium">{recipient.phone}</span>
                         <span className="text-muted-foreground text-xs">({recipient.phone})</span>
                         {bulkResponses.some(r => r.from_number === recipient.phone) && (
                           <Badge variant="outline" className="text-[10px] ml-2">{t("inbox.already_replied")}</Badge>
@@ -1324,7 +1324,7 @@ export default function InboxPage() {
                 <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">{t("inbox.current_info")}</p>
                 <div className="flex justify-between items-center text-sm">
                   <span>{t("inbox.sender")}:</span>
-                  <span className="font-mono">{bulkRecipients.find(r => r.id === selectedRecipientForSim)?.metadata?.name || t("inbox.unknown")}</span>
+                  <span className="font-mono">{bulkRecipients.find(r => r.id === selectedRecipientForSim)?.phone || t("inbox.unknown")}</span>
                 </div>
               </div>
             )}

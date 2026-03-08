@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import type { Tables, TablesInsert } from "@/integrations/supabase/database.types";
+import type { Database } from "@/integrations/supabase/database.types";
 
 export type BulkCampaign = Tables<"bulk_campaigns">;
 export type BulkRecipient = Tables<"campaign_recipients">;
@@ -475,7 +476,7 @@ export const bulkService = {
 
     if (campaignError) throw campaignError;
 
-    const recipients: TablesInsert<"campaign_recipients">[] = targetRecipients.map(r => ({
+    const recipients: Database["public"]["Tables"]["campaign_recipients"]["Insert"][] = targetRecipients.map(r => ({
       campaign_id: reminderCampaign.id,
       phone: r.phone,
       status: "pending"
@@ -483,7 +484,7 @@ export const bulkService = {
 
     const { error: recipientsError } = await supabase
       .from("campaign_recipients")
-      .insert(recipients);
+      .insert(recipients as Database["public"]["Tables"]["campaign_recipients"]["Insert"][]);
 
     if (recipientsError) throw recipientsError;
 

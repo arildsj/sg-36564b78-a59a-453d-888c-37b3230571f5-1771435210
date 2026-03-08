@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import type { Tables, TablesInsert } from "@/integrations/supabase/database.types";
 
 export type Gateway = Tables<"sms_gateways">;
 
@@ -42,7 +42,7 @@ export async function getGatewaysForGroup(groupId: string): Promise<GatewayWithG
   const result: GatewayWithGroup[] = (data || []).map(item => ({
     ...item,
     groups: Array.isArray(item.groups) ? item.groups[0] : item.groups
-  })) as GatewayWithGroup[];
+  })) as unknown as GatewayWithGroup[];
   
   return result;
 }
