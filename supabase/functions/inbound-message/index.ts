@@ -125,31 +125,29 @@ serve(async (req) => {
             for (const rule of rules) {
               let matches = false;
 
-              if (rule.rule_type === "keyword") {
-                const keywords = rule.conditions?.keywords || [];
-                matches = keywords.some((kw: string) =>
+              const conditions = rule.conditions || {};
+
+              if (conditions.keywords && Array.isArray(conditions.keywords)) {
+                matches = conditions.keywords.some((kw: string) =>
                   content.toLowerCase().includes(kw.toLowerCase())
                 );
-              } else if (rule.rule_type === "sender") {
-                const numbers = rule.conditions?.phone_numbers || [];
-                matches = numbers.includes(from_number);
-              } else if (rule.rule_type === "time") {
+              } else if (conditions.phone_numbers && Array.isArray(conditions.phone_numbers)) {
+                matches = conditions.phone_numbers.includes(from_number);
+              } else if (conditions.start_hour !== undefined || conditions.end_hour !== undefined) {
                 const now = new Date();
                 const currentHour = now.getHours();
                 const currentDay = now.getDay();
-                const { start_hour, end_hour, days_of_week } =
-                  rule.conditions || {};
 
                 const hourMatch =
-                  start_hour !== undefined &&
-                  end_hour !== undefined &&
-                  currentHour >= start_hour &&
-                  currentHour < end_hour;
+                  conditions.start_hour !== undefined &&
+                  conditions.end_hour !== undefined &&
+                  currentHour >= conditions.start_hour &&
+                  currentHour < conditions.end_hour;
 
                 const dayMatch =
-                  !days_of_week ||
-                  days_of_week.length === 0 ||
-                  days_of_week.includes(currentDay);
+                  !conditions.days_of_week ||
+                  conditions.days_of_week.length === 0 ||
+                  conditions.days_of_week.includes(currentDay);
 
                 matches = hourMatch && dayMatch;
               }

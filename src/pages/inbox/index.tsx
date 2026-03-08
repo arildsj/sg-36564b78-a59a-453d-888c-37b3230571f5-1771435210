@@ -502,11 +502,11 @@ export default function InboxPage() {
       }
 
       // Fetch a valid gateway ID for the tenant
-      const { data: gateway } = await db
+      const { data: gateways } = await db
         .from("sms_gateways")
-        .select("id, phone_number")
+        .select("id, gw_phone")
         .eq("tenant_id", tenantId)
-        .eq("status", "active")
+        .eq("is_active", true)
         .limit(1)
         .maybeSingle();
 
@@ -515,8 +515,8 @@ export default function InboxPage() {
       // If we are in a simulation context, maybe we can fetch the gateway from the group if linked, but schema says group has gateway_id too?
       // Group schema: gateway_id (nullable). Let's check group first.
       
-      let gatewayId = gateway?.id;
-      let systemPhoneNumber = gateway?.phone_number || "+4790000000"; // Fallback
+      let gatewayId = gateways?.id;
+      let systemPhoneNumber = gateways?.phone_number || "+4790000000"; // Fallback
 
       // Check if group has specific gateway
       if (groupId) {
@@ -532,12 +532,12 @@ export default function InboxPage() {
          // or just throw error.
          // For now, let's assume the previous fetch worked or user has at least one gateway.
          // If not, we can't create a thread.
-         if (!gateway) {
+         if (!gateways) {
             // Try one more fallback: fetch ANY gateway
-            const { data: anyGateway } = await db.from("sms_gateways").select("id, phone_number").limit(1).maybeSingle();
+            const { data: anyGateway } = await db.from("sms_gateways").select("id, gw_phone").eq("tenant_id", tenantId).limit(1).maybeSingle();
             if (anyGateway) {
                 gatewayId = anyGateway.id;
-                systemPhoneNumber = anyGateway.phone_number;
+                systemPhoneNumber = anyGateway.gw_phone;
             } else {
                  throw new Error("Ingen gateway funnet. Kan ikke opprette samtale.");
             }
@@ -671,12 +671,12 @@ export default function InboxPage() {
         // First try to get gateway from source group
         const { data: groupGateway } = await db
           .from("groups")
-          .select("gateway_id, gateways!groups_gateway_id_fkey(phone_number)")
+          .select("gateway_id, gateways!groups_gateway_id_fkey(gw_phone)")
           .eq("id", campaign.group_id)
           .maybeSingle();
 
         if (groupGateway?.gateways) {
-          fromNumber = groupGateway.gateways.phone_number;
+          fromNumber = groupGateway.gateways.gw_phone;
         }
       }
 
@@ -684,14 +684,14 @@ export default function InboxPage() {
           // Fallback to default gateway if group has none
            const { data: defaultGateway } = await db
             .from("sms_gateways")
-            .select("id, phone_number")
+            .select("id, gw_phone")
             .eq("tenant_id", tenantId)
             .eq("is_default", true)
             .maybeSingle();
             
            if (defaultGateway) {
                gatewayId = defaultGateway.id;
-               fromNumber = defaultGateway.phone_number;
+               fromNumber = defaultGateway.gw_phone;
            }
       }
       
@@ -699,14 +699,14 @@ export default function InboxPage() {
       if (!gatewayId) {
            const { data: anyGateway } = await db
             .from("sms_gateways")
-            .select("id, phone_number")
+            .select("id, gw_phone")
             .eq("tenant_id", tenantId)
             .limit(1)
             .maybeSingle();
 
            if (anyGateway) {
                gatewayId = anyGateway.id;
-               fromNumber = anyGateway.phone_number;
+               fromNumber = anyGateway.gw_phone;
            } else {
                throw new Error("Ingen gateway funnet. Kan ikke sende melding.");
            }

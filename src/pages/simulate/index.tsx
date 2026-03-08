@@ -68,14 +68,14 @@ export default function SimulatePage() {
       const { data: gatewaysData } = await db
         .from("sms_gateways")
         .select("*")
-        .eq("status", "active");
+        .eq("is_active", true);
       
       if (gatewaysData) setGateways(gatewaysData);
 
       // 2. Fetch Groups
       const { data: groupsData } = await db
         .from("groups")
-        .select("*, gateway:gateways!groups_gateway_id_fkey(*)")
+        .select("*, gateway:sms_gateways!groups_gateway_id_fkey(*)")
         .eq("kind", "operational")
         .order("name");
         
