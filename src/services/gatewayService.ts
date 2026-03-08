@@ -191,3 +191,32 @@ export const gatewayService = {
     return true;
   }
 };
+
+export async function getGatewayById(id: string) {
+  const { data: gateway, error } = await supabase
+    .from("sms_gateways")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) throw error;
+  return (gateway as any)?.gw_phone || "";
+}
+
+export async function getGatewaysForGroup(groupId: string) {
+  const { data, error } = await supabase
+    .from("groups")
+    .select(
+      `
+      id,
+      name,
+      gateway_id,
+      sms_gateways!sms_gateways_group_id_fkey(id, name, gw_phone)
+    `
+    )
+    .eq("id", groupId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
