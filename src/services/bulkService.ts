@@ -371,11 +371,15 @@ export const bulkService = {
 
     if (recipientsError) throw recipientsError;
 
-    const { data: responses } = await supabase
+    const responsesRequest = supabase
       .from("messages")
       .select("from_number")
       .eq("campaign_id", campaignId)
       .eq("direction", "inbound");
+
+    const { data: responses } = await (responsesRequest as unknown as Promise<{
+      data: { from_number: string }[] | null;
+    }>);
 
     const responderNumbers = new Set(
       (responses || []).map((r) => r.from_number)
@@ -417,11 +421,15 @@ export const bulkService = {
 
     if (!recipients || recipients.length === 0) return [];
 
-    const { data: responses } = await supabase
+    const responsesRequest = supabase
       .from("messages")
       .select("from_number")
       .eq("campaign_id", campaignId)
       .eq("direction", "inbound");
+
+    const { data: responses } = await (responsesRequest as unknown as Promise<{
+      data: { from_number: string }[] | null;
+    }>);
 
     const responderNumbers = new Set(
       (responses || []).map((r) => r.from_number)
