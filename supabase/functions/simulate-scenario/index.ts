@@ -199,7 +199,7 @@ async function simulateRoutingTest(supabase: any, tenantId: string, event: any):
       )
     `)
     .eq("tenant_id", tenantId)
-    .eq("phone_number", event.from_number);
+    .eq("identifier", event.from_number);
 
   const { data: routingRules } = await supabase
     .from("routing_rules")

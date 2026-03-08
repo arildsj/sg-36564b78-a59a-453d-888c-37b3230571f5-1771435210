@@ -159,7 +159,7 @@ async function validateImport(supabase: any, type: string, rows: any[], tenant_i
   for (let idx = 0; idx < rows.length; idx++) {
     const row = rows[idx];
     if (type === "contacts" || type === "whitelisted_numbers") {
-      const phone = row.tlf || row.phone_number || row.telefon;
+      const phone = row.tlf || row.identifier || row.telefon;
       if (!phone) {
         errors.push(`Row ${idx + 2}: Missing phone number`);
       } else if (!isValidE164(phone)) {
@@ -181,8 +181,8 @@ async function processImport(supabase: any, type: string, rows: any[], tenant_id
         await supabase.from("users").insert({ ...row, tenant_id });
         imported++;
       } else if (type === "whitelisted_numbers") {
-        const phone = row.tlf || row.phone_number || row.telefon;
-        await supabase.from("whitelisted_numbers").insert({ phone_number: phone, description: row.navn || row.name, tenant_id });
+        const phone = row.tlf || row.identifier || row.telefon;
+        await supabase.from("whitelisted_numbers").insert({ identifier: phone, label: row.navn || row.name, tenant_id });
         imported++;
       }
     } catch (error) {
@@ -201,7 +201,7 @@ async function processContactsImport(supabase: any, rows: any[], tenant_id: stri
 
   for (const row of rows) {
     try {
-      const phone = row.tlf || row.phone_number || row.telefon;
+      const phone = row.tlf || row.identifier || row.telefon;
       const name = row.navn || row.name;
       const groupName = row.gruppe || row.group;
 
@@ -213,7 +213,7 @@ async function processContactsImport(supabase: any, rows: any[], tenant_id: stri
       const { data: existing } = await supabase
         .from("whitelisted_numbers")
         .select("id")
-        .eq("phone_number", phone)
+        .eq("identifier", phone)
         .eq("tenant_id", tenant_id)
         .single();
 
@@ -223,12 +223,12 @@ async function processContactsImport(supabase: any, rows: any[], tenant_id: stri
         contactId = existing.id;
         await supabase
           .from("whitelisted_numbers")
-          .update({ description: name })
+          .update({ label: name })
           .eq("id", contactId);
       } else {
         const { data: newContact, error: insertError } = await supabase
           .from("whitelisted_numbers")
-          .insert({ phone_number: phone, description: name, tenant_id })
+          .insert({ identifier: phone, label: name, tenant_id })
           .select()
           .single();
 
