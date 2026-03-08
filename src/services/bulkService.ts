@@ -480,6 +480,7 @@ export const bulkService = {
     const request = supabase
       .from("bulk_campaigns")
       .insert(reminderCampaignData)
+      // @ts-expect-error - TS2589: Type instantiation is excessively deep
       .select()
       .single();
 
