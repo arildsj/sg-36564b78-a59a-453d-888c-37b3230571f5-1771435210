@@ -309,7 +309,7 @@ export async function canUserViewBulkCampaign(campaignId: string): Promise<boole
 
   const { data: campaign, error } = await supabase
     .from("bulk_campaigns")
-    .select("tenant_id, created_by_user_id")
+    .select("tenant_id, created_by")
     .eq("id", campaignId)
     .maybeSingle();
 
@@ -322,7 +322,7 @@ export async function canUserViewBulkCampaign(campaignId: string): Promise<boole
   if (profile.role === "admin") return true;
 
   // Others can only view their own campaigns
-  return campaign.created_by_user_id === profile.id;
+  return campaign.created_by === profile.id;
 }
 
 // ============================================================================

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import Head from "next/head";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,23 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  MessageSquare,
-  Send,
-  Clock,
-  CheckCheck,
-  Check,
-  Inbox as InboxIcon,
-  AlertTriangle,
-  FolderInput,
-  Archive,
-  ArrowRight,
-  ArrowLeft,
-  Users,
-  PlayCircle,
-  Mail,
-  RefreshCw,
-} from "lucide-react";
+import { Phone, Mail, Tag, AlertTriangle, Users, Inbox, Send, Clock, CheckCircle2, XCircle, MessageSquare, User, Settings as SettingsIcon, ArrowDownLeft, Settings, FolderInput, Inbox as InboxIcon, Check, ArrowRight, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -102,10 +86,14 @@ const formatMessageTime = (dateString: string) => {
 // CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
 const db = supabase as any;
 
+type FilterType = "all" | "unassigned" | "escalated" | "inbound" | "rule_based";
+
 export default function InboxPage() {
-  const { toast } = useToast();
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<"all" | "fallback" | "escalated">("all");
+  const { toast } = useToast();
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"all" | "fallback" | "escalated" | "inbound" | "rule_based">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [threads, setThreads] = useState<ExtendedMessageThread[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -158,39 +146,62 @@ export default function InboxPage() {
     if (activeTab === "all") return matchesSearch;
     if (activeTab === "fallback") return matchesSearch && thread.is_fallback;
     if (activeTab === "escalated") return matchesSearch; // Escalated logic handled in loadThreads
+    if (activeTab === "inbound") return matchesSearch; // Inbound logic handled in loadThreads
+    if (activeTab === "rule_based") return matchesSearch; // Rule based logic handled in loadThreads
     
     return matchesSearch;
   });
 
   useEffect(() => {
-    loadGroups();
-    loadThreads();
-
-    const channel = db
-      .channel("inbox_updates")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "messages" },
-        () => {
-          loadThreads();
-          if (selectedThreadId) {
-            loadMessages(selectedThreadId);
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "message_threads" },
-        () => {
-          loadThreads();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      db.removeChannel(channel);
+    // Get user
+    const getUser = async () => {
+      const { data: { session } } = await db.auth.getSession();
+      if (session?.user) {
+        // Hent tenant id for bruker
+        const { data: userData } = await db
+          .from('user_profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        setUser({ ...session.user, tenant_id: userData?.tenant_id });
+      }
+      setAuthLoading(false);
     };
-  }, [activeTab, selectedGroupFilter]);
+    getUser();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadGroups();
+      loadThreads();
+
+      const channel = db
+        .channel("inbox_updates")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "messages" },
+          () => {
+            loadThreads();
+            if (selectedThreadId) {
+              loadMessages(selectedThreadId);
+            }
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "message_threads" },
+          () => {
+            loadThreads();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        db.removeChannel(channel);
+      };
+    }
+  }, [activeTab, selectedGroupFilter, user]);
 
   useEffect(() => {
     if (selectedThreadId) {
@@ -207,52 +218,84 @@ export default function InboxPage() {
     }
   };
 
-  const loadThreads = async () => {
+  const loadThreads = useCallback(async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
-      let loadedThreads: ExtendedMessageThread[] = [];
 
-      if (activeTab === "all") {
-        loadedThreads = await messageService.getInboxThreads();
-      } else if (activeTab === "fallback") {
-        loadedThreads = await messageService.getFallbackThreads();
-      } else if (activeTab === "escalated") {
-        loadedThreads = await messageService.getEscalatedThreads(30);
+      let query = supabase
+        .from("message_threads")
+        .select(`
+          *,
+          messages!inner(
+            id,
+            content,
+            created_at,
+            direction,
+            from_number,
+            to_number,
+            status,
+            assigned_to,
+            metadata
+          )
+        `)
+        .eq("tenant_id", user.tenant_id)
+        .order("last_message_at", { ascending: false });
+
+      // Apply direction filter for inbound messages
+      if (activeTab === "inbound") {
+        query = query.eq("messages.direction", "inbound");
       }
 
+      // Apply rule-based filter (messages with routing metadata)
+      if (activeTab === "rule_based") {
+        query = query.not("messages.metadata->routing_rule_id", "is", null);
+      }
+
+      // Apply group filter
       if (selectedGroupFilter !== "all") {
-        loadedThreads = loadedThreads.filter(
-          (t) => t.resolved_group_id === selectedGroupFilter
-        );
+        query = query.eq("resolved_group_id", selectedGroupFilter);
       }
 
-      setThreads(loadedThreads);
+      const { data, error } = await query;
 
-      // Auto-select first thread if none selected
-      if (loadedThreads.length > 0) {
-        if (!selectedThreadId || !loadedThreads.find(t => t.id === selectedThreadId)) {
-          setSelectedThreadId(loadedThreads[0].id);
+      if (error) throw error;
+
+      // Deduplicate threads - only keep the most recent message per thread_id
+      const uniqueThreadsMap = new Map<string, any>();
+      
+      data?.forEach((thread) => {
+        const threadId = thread.id;
+        if (!uniqueThreadsMap.has(threadId) || 
+            new Date(thread.last_message_at) > new Date(uniqueThreadsMap.get(threadId).last_message_at)) {
+          uniqueThreadsMap.set(threadId, thread);
         }
-      } else {
-        setSelectedThreadId(null);
-      }
-    } catch (error) {
-      console.error("Failed to load threads:", error);
+      });
+
+      const uniqueThreads = Array.from(uniqueThreadsMap.values());
+
+      setThreads(uniqueThreads || []);
+    } catch (error: any) {
+      console.error("Error loading threads:", error);
+      toast({
+        title: t("inbox.error"),
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, activeTab, selectedGroupFilter, toast, t]);
 
   const loadMessages = async (threadId: string) => {
     const thread = threads.find(t => t.id === threadId);
     
     if (thread?.is_bulk) {
-      // LOAD BULK DATA
       try {
         const details = await bulkService.getCampaignDetails(threadId);
         setBulkRecipients(details.recipients);
 
-        // Fetch inbound responses
         const { data: responses } = await db
           .from("messages")
           .select("*")
@@ -262,7 +305,6 @@ export default function InboxPage() {
           
         setBulkResponses((responses as any) || []);
 
-        // Fetch outbound reminders separately
         const { data: reminders } = await db
           .from("messages")
           .select("*")
@@ -556,7 +598,7 @@ export default function InboxPage() {
 
       // Update bulk_recipient with response info
       const { error: updateError } = await db
-        .from("bulk_recipients")
+        .from("campaign_recipients")
         .update({
           responded_at: new Date().toISOString(),
           response_message_id: newMessage.id,
@@ -738,18 +780,26 @@ export default function InboxPage() {
             className="flex-1 flex flex-col space-y-4 min-h-0"
           >
             <div className="flex-none flex items-center justify-between flex-wrap gap-4">
-              <TabsList>
-                <TabsTrigger value="all" className="gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  {t("inbox.all_conversations")}
+              <TabsList className="grid grid-cols-5 bg-muted/50 h-auto py-1">
+                <TabsTrigger value="all" className="gap-2 py-2">
+                  <Inbox className="h-4 w-4" />
+                  <span className="hidden sm:inline">Alle</span>
                 </TabsTrigger>
-                <TabsTrigger value="fallback" className="gap-2">
+                <TabsTrigger value="inbound" className="gap-2 py-2">
+                  <ArrowDownLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Innkommende</span>
+                </TabsTrigger>
+                <TabsTrigger value="rule_based" className="gap-2 py-2">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden sm:inline">Regelstyrte</span>
+                </TabsTrigger>
+                <TabsTrigger value="fallback" className="gap-2 py-2">
                   <FolderInput className="h-4 w-4" />
-                  {t("inbox.unknown_senders")}
+                  <span className="hidden sm:inline">Ukjente</span>
                 </TabsTrigger>
-                <TabsTrigger value="escalated" className="gap-2">
+                <TabsTrigger value="escalated" className="gap-2 py-2">
                   <AlertTriangle className="h-4 w-4" />
-                  {t("inbox.escalated")}
+                  <span className="hidden sm:inline">Eskalerte</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -1271,7 +1321,7 @@ export default function InboxPage() {
 
             {selectedRecipientForSim && (
               <div className="bg-muted/30 p-3 rounded-md border">
-                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">{t("inbox.selected_recipient")}</p>
+                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider font-semibold">{t("inbox.current_info")}</p>
                 <div className="flex justify-between items-center text-sm">
                   <span>{t("inbox.sender")}:</span>
                   <span className="font-mono">{bulkRecipients.find(r => r.id === selectedRecipientForSim)?.metadata?.name || t("inbox.unknown")}</span>

@@ -134,70 +134,67 @@ export type Database = {
         Row: {
           campaign_type: string
           completed_at: string | null
-          created_at: string
-          created_by_user_id: string
-          deleted_at: string | null
-          failed_count: number
-          gateway_id: string
-          group_id: string
+          created_at: string | null
+          created_by: string | null
+          failed_count: number | null
+          gateway_id: string | null
+          group_id: string | null
           id: string
           message_template: string
           name: string
           scheduled_at: string | null
-          sent_count: number
+          sent_count: number | null
           sent_immediately: boolean
           started_at: string | null
           status: string
-          tenant_id: string
-          total_recipients: number
-          updated_at: string
+          tenant_id: string | null
+          total_recipients: number | null
+          updated_at: string | null
         }
         Insert: {
           campaign_type?: string
           completed_at?: string | null
-          created_at?: string
-          created_by_user_id: string
-          deleted_at?: string | null
-          failed_count?: number
-          gateway_id: string
-          group_id: string
+          created_at?: string | null
+          created_by?: string | null
+          failed_count?: number | null
+          gateway_id?: string | null
+          group_id?: string | null
           id?: string
           message_template: string
           name: string
           scheduled_at?: string | null
-          sent_count?: number
+          sent_count?: number | null
           sent_immediately?: boolean
           started_at?: string | null
           status?: string
-          tenant_id: string
-          total_recipients?: number
-          updated_at?: string
+          tenant_id?: string | null
+          total_recipients?: number | null
+          updated_at?: string | null
         }
         Update: {
           campaign_type?: string
           completed_at?: string | null
-          created_at?: string
-          created_by_user_id?: string
-          deleted_at?: string | null
-          failed_count?: number
-          gateway_id?: string
-          group_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          failed_count?: number | null
+          gateway_id?: string | null
+          group_id?: string | null
           id?: string
           message_template?: string
           name?: string
           scheduled_at?: string | null
-          sent_count?: number
+          sent_count?: number | null
           sent_immediately?: boolean
           started_at?: string | null
           status?: string
-          tenant_id?: string
-          total_recipients?: number
-          updated_at?: string
+          tenant_id?: string | null
+          total_recipients?: number | null
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "bulk_campaigns_created_by_user_id_fkey"
-            columns: ["created_by_user_id"]
+            foreignKeyName: "bulk_campaigns_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
@@ -207,13 +204,6 @@ export type Database = {
             columns: ["gateway_id"]
             isOneToOne: false
             referencedRelation: "sms_gateways"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bulk_campaigns_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "group_admin_view"
             referencedColumns: ["id"]
           },
           {
@@ -232,66 +222,60 @@ export type Database = {
           },
         ]
       }
-      bulk_recipients: {
+      campaign_recipients: {
         Row: {
-          campaign_id: string
-          contact_id: string
-          created_at: string
-          delivered_at: string | null
+          campaign_id: string | null
+          contact_id: string | null
+          created_at: string | null
           error_message: string | null
-          failed_at: string | null
           id: string
           message_id: string | null
-          phone_number: string
+          personalized_message: string | null
+          phone: string
           sent_at: string | null
           status: string
-          updated_at: string
         }
         Insert: {
-          campaign_id: string
-          contact_id: string
-          created_at?: string
-          delivered_at?: string | null
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
           error_message?: string | null
-          failed_at?: string | null
           id?: string
           message_id?: string | null
-          phone_number: string
+          personalized_message?: string | null
+          phone: string
           sent_at?: string | null
           status?: string
-          updated_at?: string
         }
         Update: {
-          campaign_id?: string
-          contact_id?: string
-          created_at?: string
-          delivered_at?: string | null
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
           error_message?: string | null
-          failed_at?: string | null
           id?: string
           message_id?: string | null
-          phone_number?: string
+          personalized_message?: string | null
+          phone?: string
           sent_at?: string | null
           status?: string
-          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "bulk_recipients_campaign_id_fkey"
+            foreignKeyName: "campaign_recipients_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "bulk_campaigns"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "bulk_recipients_contact_id_fkey"
+            foreignKeyName: "campaign_recipients_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "bulk_recipients_message_id_fkey"
+            foreignKeyName: "campaign_recipients_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "messages"
@@ -1859,15 +1843,6 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_or_create_thread: {
-        Args: {
-          p_external_number: string
-          p_gateway_id: string
-          p_group_id: string
-          p_tenant_id: string
-        }
-        Returns: string
-      }
       get_user_accessible_groups: {
         Args: { p_user_id: string }
         Returns: {
@@ -1949,7 +1924,7 @@ export type Tables<
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R

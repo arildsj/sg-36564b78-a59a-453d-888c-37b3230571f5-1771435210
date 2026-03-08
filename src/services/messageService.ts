@@ -228,7 +228,7 @@ export const messageService = {
       .select(`
         *,
         groups:group_id(name),
-        bulk_recipients(count)
+        campaign_recipients(count)
       `)
       .eq("tenant_id", profile.tenant_id)
       .neq("status", "archived")
@@ -265,7 +265,7 @@ export const messageService = {
 
     // 5. Map campaigns to thread structure
     const mappedCampaigns: ExtendedMessageThread[] = (campaigns || []).map((c: any) => {
-      const totalRecipients = c.bulk_recipients?.[0]?.count || 0;
+      const totalRecipients = c.campaign_recipients?.[0]?.count || 0;
       const responseCount = responseCounts.get(c.id) || 0;
 
       return {

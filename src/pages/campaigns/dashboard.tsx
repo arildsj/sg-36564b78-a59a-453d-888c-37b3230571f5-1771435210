@@ -21,7 +21,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Tables } from "@/integrations/supabase/types";
 
 type BulkCampaign = Tables<"bulk_campaigns">;
-type BulkRecipient = Tables<"bulk_recipients">;
+type BulkRecipient = Tables<"campaign_recipients">;
 
 interface CampaignStats {
   id: string;
