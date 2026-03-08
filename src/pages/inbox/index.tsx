@@ -224,7 +224,7 @@ export default function InboxPage() {
     try {
       setLoading(true);
 
-      let query = supabase
+      let query = db
         .from("message_threads")
         .select(`
           *,
