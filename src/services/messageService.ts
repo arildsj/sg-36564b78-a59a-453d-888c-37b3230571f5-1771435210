@@ -11,7 +11,7 @@ export type Message = {
   updated_at: string;
   tenant_id: string;
   thread_id: string | null;
-  campaign_id?: string | null; // Added campaign_id
+  campaign_id?: string | null;
   thread_key: string | null;
   direction: "inbound" | "outbound";
   content: string;
@@ -614,26 +614,40 @@ export const messageService = {
     const thread = await this.findOrCreateThread(formattedToNumber, targetGroupId, gatewayId);
 
     // Get gateway phone number for sending
-    const { data: gateway } = await db
+    // NOTE: This query depends on sms_gateways SELECT RLS policy.
+    const { data: gateway, error: gatewayError } = await db
       .from("sms_gateways")
-      .select("phone_number")
+      .select("gw_phone")
       .eq("id", gatewayId)
+      .eq("is_active", true)
       .maybeSingle();
 
+    if (gatewayError) {
+      console.error("sendMessage: Failed to fetch sms gateway", {
+        gatewayId,
+        targetGroupId,
+        code: gatewayError.code,
+        message: gatewayError.message,
+        details: gatewayError.details,
+        hint: gatewayError.hint,
+      });
+      throw new Error("Kunne ikke hente gateway-oppsett. Sjekk at brukeren har tilgang i riktig tenant.");
+    }
+
     if (!gateway) {
-      throw new Error("Gateway not found");
+      throw new Error("Gateway mangler eller er inaktiv for valgt gruppe.");
     }
 
     // MOCK SENDING to external API
     console.log("🚀 MOCK API SENDING:", {
       to: formattedToNumber,
-      from: gateway.phone_number || fromNumber,
+      from: gateway.gw_phone || fromNumber,
       content,
       threadId: thread.id,
       threadContactPhone: thread.contact_phone,
       routedToGroup: targetGroupId,
       gatewayId,
-      gatewayPhone: gateway.phone_number
+      gatewayPhone: gateway.gw_phone
     });
 
     // Store in database
@@ -645,7 +659,7 @@ export const messageService = {
         thread_key: thread.contact_phone,
         direction: "outbound",
         content,
-        from_number: gateway.phone_number || fromNumber,
+        from_number: gateway.gw_phone || fromNumber,
         to_number: formattedToNumber,
         status: "sent",
         group_id: targetGroupId
