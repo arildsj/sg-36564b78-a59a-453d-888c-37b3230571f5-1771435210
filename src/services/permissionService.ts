@@ -322,7 +322,7 @@ export async function canUserViewBulkCampaign(campaignId: string): Promise<boole
   if (profile.role === "admin") return true;
 
   // Others can only view their own campaigns
-  return campaign.created_by === profile.id;
+  return (campaign as any).created_by === profile.id;
 }
 
 // ============================================================================
