@@ -25,10 +25,7 @@ export interface GatewayWithGroup extends Gateway {
 export async function getGatewaysForGroup(groupId: string): Promise<GatewayWithGroup[]> {
   const { data, error } = await supabase
     .from("sms_gateways")
-    .select(`
-      *,
-      groups(id, name)
-    `)
+    .select("*, groups(id, name)")
     .eq("group_id", groupId)
     .eq("is_active", true);
 
@@ -37,12 +34,16 @@ export async function getGatewaysForGroup(groupId: string): Promise<GatewayWithG
     return [];
   }
 
-  // Map result properly without 'as unknown' chained casts 
-  // which trigger 'excessively deep' TS instantiation errors
-  const result: GatewayWithGroup[] = (data || []).map(item => ({
-    ...item,
-    groups: Array.isArray(item.groups) ? item.groups[0] : item.groups
-  })) as unknown as GatewayWithGroup[];
+  // Type-safe map without `as unknown as any` chains
+  const result: GatewayWithGroup[] = (data || []).map((item) => {
+    const groupData = item.groups;
+    const singleGroup = Array.isArray(groupData) ? groupData[0] : groupData;
+    
+    return {
+      ...item,
+      groups: singleGroup
+    } as GatewayWithGroup;
+  });
   
   return result;
 }

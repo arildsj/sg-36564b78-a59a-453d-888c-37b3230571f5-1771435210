@@ -137,14 +137,14 @@ export const bulkService = {
           .in("id", recipientUserIds);
 
         if (users && users.length > 0) {
-          const recipients: TablesInsert<"campaign_recipients">[] = users
+          const recipients = users
             .filter(u => u.phone)
             .map(u => ({
               campaign_id: campaign.id,
               phone: u.phone!,
               status: "pending",
               personalized_message: messageContent
-            }));
+            } as TablesInsert<"campaign_recipients">));
 
           if (recipients.length > 0) {
             await supabase.from("campaign_recipients").insert(recipients);
@@ -208,13 +208,13 @@ export const bulkService = {
 
     if (contactsError) throw contactsError;
 
-    const recipients: TablesInsert<"campaign_recipients">[] = (contacts || [])
+    const recipients = (contacts || [])
       .filter((c: any) => c.phone)
       .map((c: any) => ({
         campaign_id: campaign.id,
         phone: c.phone,
         status: "pending"
-      }));
+      } as TablesInsert<"campaign_recipients">));
 
     if (recipients.length === 0) {
       throw new Error("Ingen kontakter funnet i denne gruppen");
@@ -300,13 +300,13 @@ export const bulkService = {
 
     if (contactsError) throw contactsError;
 
-    const recipients: TablesInsert<"campaign_recipients">[] = (contacts || [])
+    const recipients = (contacts || [])
       .filter((c: any) => c.phone && targetPhoneNumbers.includes(c.phone))
       .map((c: any) => ({
         campaign_id: campaign.id,
         phone: c.phone,
         status: "pending"
-      }));
+      } as TablesInsert<"campaign_recipients">));
 
     if (recipients.length === 0) {
       throw new Error("Ingen gyldige mottakere funnet i denne gruppen");
@@ -476,15 +476,15 @@ export const bulkService = {
 
     if (campaignError) throw campaignError;
 
-    const recipients: Database["public"]["Tables"]["campaign_recipients"]["Insert"][] = targetRecipients.map(r => ({
+    const recipients = targetRecipients.map(r => ({
       campaign_id: reminderCampaign.id,
       phone: r.phone,
       status: "pending"
-    }));
+    } as TablesInsert<"campaign_recipients">));
 
     const { error: recipientsError } = await supabase
       .from("campaign_recipients")
-      .insert(recipients as Database["public"]["Tables"]["campaign_recipients"]["Insert"][]);
+      .insert(recipients);
 
     if (recipientsError) throw recipientsError;
 
