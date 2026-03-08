@@ -23,12 +23,17 @@ export interface GatewayWithGroup extends Gateway {
 }
 
 export async function getGatewaysForGroup(groupId: string): Promise<GatewayWithGroup[]> {
-  const response = await supabase
+  const request = supabase
     .from("sms_gateways")
     .select("*, groups(id, name)")
     .eq("group_id", groupId)
-    .eq("is_active", true)
-    .returns<(Gateway & { groups: { id: string; name: string } | { id: string; name: string }[] | null })[]>();
+    .eq("is_active", true);
+
+  // Bypass deep instantiation by casting the promise directly to our strict expected types
+  const response = await (request as unknown as Promise<{ 
+    data: (Gateway & { groups: { id: string; name: string } | { id: string; name: string }[] | null })[] | null;
+    error: Error | null;
+  }>);
 
   if (response.error) {
     console.error("Error fetching gateways for group:", response.error);

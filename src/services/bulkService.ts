@@ -473,11 +473,17 @@ export const bulkService = {
       gateway_id: originalCampaign.gateway_id
     };
 
-    const { data: reminderCampaign, error: campaignError } = await supabase
+    const request = supabase
       .from("bulk_campaigns")
       .insert(reminderCampaignData)
       .select()
       .single();
+
+    // Bypass excessively deep type instantiation
+    const { data: reminderCampaign, error: campaignError } = await (request as unknown as Promise<{
+      data: BulkCampaign;
+      error: Error | null;
+    }>);
 
     if (campaignError) throw campaignError;
 
