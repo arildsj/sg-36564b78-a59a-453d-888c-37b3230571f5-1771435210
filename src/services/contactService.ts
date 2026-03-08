@@ -6,7 +6,7 @@ const db = supabase as any;
 // FASIT: Simplified contact structure
 export type Contact = {
   id: string;
-  phone: string;  // FASIT: 'phone' (not phone_number)
+  phone: string;  // FASIT: 'phone' (not phone)
   name: string;   // FASIT: 'name' (not first_name/last_name)
   group_id: string | null;  // FASIT: Direct group_id
   tags: string[];

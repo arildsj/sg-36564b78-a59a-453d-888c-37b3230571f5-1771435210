@@ -441,7 +441,7 @@ export default function InboxPage() {
       }
 
       // Normalize phone number
-      const normalizedPhone = recipient.phone_number.replace(/[\s\-\(\)]/g, "");
+      const normalizedPhone = recipient.phone.replace(/[\s\-\(\)]/g, "");
       
       // Check if it's alphanumeric (1-11 chars) or numeric E.164
       const isAlphanumeric = /^[A-Za-z0-9]{1,11}$/.test(normalizedPhone);
@@ -516,7 +516,7 @@ export default function InboxPage() {
       // Group schema: gateway_id (nullable). Let's check group first.
       
       let gatewayId = gateways?.id;
-      let systemPhoneNumber = gateways?.phone_number || "+4790000000"; // Fallback
+      let systemPhoneNumber = gateways?.gw_phone || "+4790000000"; // Fallback
 
       // Check if group has specific gateway
       if (groupId) {
@@ -609,7 +609,7 @@ export default function InboxPage() {
 
       toast({
         title: "Svar simulert",
-        description: `Simulert svar fra ${recipient.metadata?.name || recipient.phone_number}`,
+        description: `Simulert svar fra ${recipient.metadata?.name || recipient.phone}`,
       });
 
       // Refresh data
@@ -716,10 +716,10 @@ export default function InboxPage() {
         // Create outbound reminder message
         const { error: msgError } = await db.from("messages").insert({
           tenant_id: tenantId,
-          thread_key: recipient.phone_number,
+          thread_key: recipient.phone,
           direction: "outbound",
           from_number: fromNumber,
-          to_number: recipient.phone_number,
+          to_number: recipient.phone,
           content: reminderMessage,
           campaign_id: selectedThreadId,
           thread_id: null,
@@ -983,7 +983,7 @@ export default function InboxPage() {
                                        <div className="flex justify-between items-start mb-2">
                                          <div className="flex items-center gap-2">
                                             <span className="font-semibold text-sm">
-                                              {bulkRecipients.find(r => r.phone_number === msg.from_number)?.metadata?.name || msg.from_number}
+                                              {bulkRecipients.find(r => r.phone === msg.from_number)?.metadata?.name || msg.from_number}
                                             </span>
                                             <span className="text-xs text-muted-foreground">
                                               {msg.from_number}
@@ -1027,9 +1027,9 @@ export default function InboxPage() {
                                         <TableHead className="w-12">
                                           <input
                                             type="checkbox"
-                                            checked={selectedForReminder.length === bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone_number)).length && bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone_number)).length > 0}
+                                            checked={selectedForReminder.length === bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone)).length && bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone)).length > 0}
                                             onChange={(e) => {
-                                              const nonResponders = bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone_number));
+                                              const nonResponders = bulkRecipients.filter(r => !bulkResponses.some(resp => resp.from_number === r.phone));
                                               if (e.target.checked) {
                                                 setSelectedForReminder(nonResponders.map(r => r.id));
                                               } else {
@@ -1047,13 +1047,13 @@ export default function InboxPage() {
                                     </TableHeader>
                                     <TableBody>
                                       {bulkRecipients.map((recipient) => {
-                                        const hasResponded = bulkResponses.some(resp => resp.from_number === recipient.phone_number);
+                                        const hasResponded = bulkResponses.some(resp => resp.from_number === recipient.phone);
                                         return (
                                           <TableRow
                                             key={recipient.id}
                                             className={cn(
                                               hasResponded ? "bg-green-50/50 dark:bg-green-950/10" : "",
-                                              hasReceivedReminder(recipient.phone_number) && 
+                                              hasReceivedReminder(recipient.phone) && 
                                               !hasResponded
                                                 ? "bg-blue-50/30"
                                                 : ""
@@ -1076,9 +1076,9 @@ export default function InboxPage() {
                                             </TableCell>
                                             <TableCell>
                                               <div className="space-y-1">
-                                                <div className="font-medium">{recipient.metadata?.name || recipient.phone_number}</div>
+                                                <div className="font-medium">{recipient.metadata?.name || recipient.phone}</div>
                                                 {(() => {
-                                                  const reminder = hasReceivedReminder(recipient.phone_number);
+                                                  const reminder = hasReceivedReminder(recipient.phone);
                                                   if (reminder) {
                                                     return (
                                                       <div className="text-xs text-muted-foreground space-y-0.5">
@@ -1105,7 +1105,7 @@ export default function InboxPage() {
                                                 })()}
                                               </div>
                                             </TableCell>
-                                            <TableCell>{recipient.phone_number}</TableCell>
+                                            <TableCell>{recipient.phone}</TableCell>
                                             <TableCell>
                                               {hasResponded ? (
                                                 <Badge className="bg-green-500 text-white">
@@ -1115,7 +1115,7 @@ export default function InboxPage() {
                                                 <div className="flex items-center gap-2">
                                                   <Badge variant="secondary">{t("inbox.waiting")}</Badge>
                                                   {(() => {
-                                                    const reminder = hasReceivedReminder(recipient.phone_number);
+                                                    const reminder = hasReceivedReminder(recipient.phone);
                                                     return reminder ? (
                                                       <TooltipProvider>
                                                         <Tooltip>
@@ -1308,8 +1308,8 @@ export default function InboxPage() {
                     <SelectItem key={recipient.id} value={recipient.id}>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{recipient.metadata?.name || t("inbox.unknown")}</span>
-                        <span className="text-muted-foreground text-xs">({recipient.phone_number})</span>
-                        {bulkResponses.some(r => r.from_number === recipient.phone_number) && (
+                        <span className="text-muted-foreground text-xs">({recipient.phone})</span>
+                        {bulkResponses.some(r => r.from_number === recipient.phone) && (
                           <Badge variant="outline" className="text-[10px] ml-2">{t("inbox.already_replied")}</Badge>
                         )}
                       </div>

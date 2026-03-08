@@ -21,7 +21,7 @@ import { Send, QrCode, CheckCircle, Clock, AlertCircle, Search, X } from "lucide
 interface Contact {
   id: string;
   name: string;
-  phone_number: string;
+  phone: string;
 }
 
 interface Group {
@@ -71,42 +71,33 @@ export default function PrintToSMS() {
 
   // Load contacts and groups
   useEffect(() => {
-    async function loadData() {
+    async function loadContacts() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login");
-        return;
-      }
+      if (!user) return;
 
-      // Use type assertion to avoid "excessively deep" TypeScript errors with complex schemas
-      const { data: contactsData, error: contactsError } = await supabase
-        .from("contacts" as any)
-        .select("id, name, phone_number")
-        .eq("created_by", user.id)
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("group_id")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile?.group_id) return;
+
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("id, name, phone")
+        .eq("group_id", profile.group_id)
         .order("name");
 
-      if (contactsError) {
-        console.error("Error fetching contacts:", contactsError);
-      } else if (contactsData) {
-        setContacts(contactsData as unknown as Contact[]);
-      }
-
-      // Use type assertion for groups as well
-      const { data: groupsData, error: groupsError } = await supabase
-        .from("groups" as any)
-        .select("id, name, description")
-        .eq("created_by", user.id)
-        .order("name");
-        
-      if (groupsError) {
-        console.error("Error fetching groups:", groupsError);
-      } else if (groupsData) {
-        setGroups(groupsData as unknown as Group[]);
+      if (error) {
+        console.error("Error loading contacts:", error);
+      } else {
+        setContacts(data || []);
       }
     }
 
-    loadData();
-  }, [router]);
+    loadContacts();
+  }, []);
 
   // Validation functions
   const validatePastedText = (value: string): string | undefined => {
@@ -180,7 +171,7 @@ export default function PrintToSMS() {
   // Filter contacts and groups by search
   const filteredContacts = contacts.filter(contact =>
     contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    contact.phone_number.includes(searchQuery)
+    contact.phone.includes(searchQuery)
   );
 
   const filteredGroups = groups.filter(group =>
@@ -696,7 +687,7 @@ export default function PrintToSMS() {
                                   {contact.name}
                                 </div>
                                 <div className="text-sm text-muted-foreground font-mono">
-                                  {contact.phone_number}
+                                  {contact.phone}
                                 </div>
                               </div>
                             </div>

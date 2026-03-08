@@ -135,7 +135,7 @@ export type Database = {
           campaign_type: string
           completed_at: string | null
           created_at: string
-          created_by_user_id: string
+          created_by: string
           deleted_at: string | null
           failed_count: number
           gateway_id: string
@@ -156,7 +156,7 @@ export type Database = {
           campaign_type?: string
           completed_at?: string | null
           created_at?: string
-          created_by_user_id: string
+          created_by: string
           deleted_at?: string | null
           failed_count?: number
           gateway_id: string
@@ -177,7 +177,7 @@ export type Database = {
           campaign_type?: string
           completed_at?: string | null
           created_at?: string
-          created_by_user_id?: string
+          created_by?: string
           deleted_at?: string | null
           failed_count?: number
           gateway_id?: string
@@ -197,7 +197,7 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "bulk_campaigns_created_by_user_id_fkey"
-            columns: ["created_by_user_id"]
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
@@ -1475,9 +1475,9 @@ export type Database = {
           config: Json | null
           created_at: string
           deleted_at: string | null
+          gw_phone: string
           id: string
           name: string
-          phone_number: string
           status: string
           tenant_id: string
           updated_at: string
@@ -1488,9 +1488,9 @@ export type Database = {
           config?: Json | null
           created_at?: string
           deleted_at?: string | null
+          gw_phone: string
           id?: string
           name: string
-          phone_number: string
           status?: string
           tenant_id: string
           updated_at?: string
@@ -1501,9 +1501,9 @@ export type Database = {
           config?: Json | null
           created_at?: string
           deleted_at?: string | null
+          gw_phone?: string
           id?: string
           name?: string
-          phone_number?: string
           status?: string
           tenant_id?: string
           updated_at?: string

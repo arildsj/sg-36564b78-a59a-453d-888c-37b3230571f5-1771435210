@@ -25,7 +25,7 @@ export interface UserProfile {
   updated_at: string;
   deleted_at?: string | null;
   tenant_id: string;
-  phone?: string | null;  // FASIT: 'phone' (not 'phone_number')
+  phone?: string | null;  // FASIT: 'phone' (not 'phone')
   group_id?: string | null;  // FASIT: Primary group
 }
 

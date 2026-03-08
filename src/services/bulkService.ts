@@ -26,7 +26,7 @@ export type BulkCampaign = {
 export type BulkRecipient = {
   id: string;
   campaign_id: string;
-  phone_number: string;
+  phone: string;
   status: "pending" | "sent" | "failed";
   metadata?: any;
   sent_at?: string;
@@ -42,6 +42,70 @@ export interface BulkCampaignData {
   recipient_groups?: string[];
   campaign_type?: "single" | "bulk" | "scheduled";
   sent_immediately?: boolean;
+}
+
+export async function createBulkCampaign(params: {
+  name: string;
+  message: string;
+  contacts: Array<{ id: string; name: string; phone: string }>;
+  groupId: string;
+  gatewayId: string;
+  scheduledAt?: string;
+  userId: string;
+  tenantId: string;
+}): Promise<string> {
+  const {
+    name,
+    message,
+    contacts,
+    groupId,
+    gatewayId,
+    scheduledAt,
+    userId,
+    tenantId,
+  } = params;
+
+  // Create campaign
+  const { data: campaign, error: campaignError } = await supabase
+    .from("bulk_campaigns")
+    .insert({
+      name,
+      message_template: message,
+      status: scheduledAt ? "scheduled" : "draft",
+      scheduled_at: scheduledAt,
+      total_recipients: contacts.length,
+      created_by: userId,
+      group_id: groupId,
+      gateway_id: gatewayId,
+      tenant_id: tenantId,
+      campaign_type: scheduledAt ? "scheduled" : "bulk",
+      sent_immediately: !scheduledAt,
+    })
+    .select()
+    .single();
+
+  if (campaignError || !campaign) {
+    throw new Error("Failed to create campaign");
+  }
+
+  // Create recipients with phone field
+  const recipients = contacts.map((c) => ({
+    campaign_id: campaign.id,
+    contact_id: c.id,
+    phone: c.phone,
+    personalized_message: message,
+    status: "pending" as const,
+  }));
+
+  const { error: recipientsError } = await supabase
+    .from("campaign_recipients")
+    .insert(recipients);
+
+  if (recipientsError) {
+    throw new Error("Failed to create recipients");
+  }
+
+  return campaign.id;
 }
 
 export const bulkService = {
@@ -225,7 +289,7 @@ export const bulkService = {
       .filter(Boolean)
       .map((c: any) => ({
         campaign_id: campaign.id,
-        phone_number: c.identifier,
+        phone: c.identifier,
         metadata: { name: c.description },
         status: "pending"
       }));
@@ -328,7 +392,7 @@ export const bulkService = {
       .filter((c: any) => targetPhoneNumbers.includes(c.identifier))
       .map((c: any) => ({
         campaign_id: campaign.id,
-        phone_number: c.identifier,
+        phone: c.identifier,
         metadata: { name: c.description },
         status: "pending"
       }));
@@ -398,7 +462,7 @@ export const bulkService = {
     );
 
     const nonResponders = (recipients || []).filter(
-      (r: any) => !responderNumbers.has(r.phone_number)
+      (r: any) => !responderNumbers.has(r.phone)
     );
 
     return {
@@ -447,7 +511,7 @@ export const bulkService = {
     );
 
     return recipients.filter(
-      (r: any) => !responderNumbers.has(r.phone_number)
+      (r: any) => !responderNumbers.has(r.phone)
     ) as BulkRecipient[];
   },
 
@@ -522,7 +586,7 @@ export const bulkService = {
 
     const recipients = targetRecipients.map(r => ({
       campaign_id: reminderCampaign.id,
-      phone_number: r.phone_number,
+      phone: r.phone,
       metadata: r.metadata,
       status: "pending"
     }));

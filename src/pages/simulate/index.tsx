@@ -40,7 +40,7 @@ type Group = {
 type Contact = {
   id: string;
   name: string;
-  phone_number: string;
+  phone: string;
 };
 
 export default function SimulatePage() {
@@ -88,7 +88,7 @@ export default function SimulatePage() {
         setContacts(serviceContacts.map(c => ({
           id: c.id,
           name: c.name,
-          phone_number: c.phone
+          phone: c.phone
         })));
       }
 
@@ -338,15 +338,15 @@ export default function SimulatePage() {
                               {contacts
                                 .filter(contact => 
                                   (contact.name?.toLowerCase() || "").includes(fromSearchValue.toLowerCase()) ||
-                                  (contact.phone_number || "").includes(fromSearchValue)
+                                  (contact.phone || "").includes(fromSearchValue)
                                 )
                                 .slice(0, 10)
                                 .map((contact) => (
                                   <CommandItem
                                     key={contact.id}
-                                    value={contact.phone_number + " " + contact.name}
+                                    value={contact.phone + " " + contact.name}
                                     onSelect={() => {
-                                      setFromPhone(contact.phone_number);
+                                      setFromPhone(contact.phone);
                                       setFromSearchOpen(false);
                                       setFromSearchValue("");
                                     }}
@@ -354,12 +354,12 @@ export default function SimulatePage() {
                                     <Check
                                       className={cn(
                                         "mr-2 h-4 w-4",
-                                        fromPhone === contact.phone_number ? "opacity-100" : "opacity-0"
+                                        fromPhone === contact.phone ? "opacity-100" : "opacity-0"
                                       )}
                                     />
                                     <div className="flex flex-col">
                                       <span className="font-medium">{contact.name}</span>
-                                      <span className="text-sm text-muted-foreground">{contact.phone_number}</span>
+                                      <span className="text-sm text-muted-foreground">{contact.phone}</span>
                                     </div>
                                   </CommandItem>
                                 ))}
