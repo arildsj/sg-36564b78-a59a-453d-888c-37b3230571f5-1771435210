@@ -23,26 +23,29 @@ export interface GatewayWithGroup extends Gateway {
 }
 
 export async function getGatewaysForGroup(groupId: string): Promise<GatewayWithGroup[]> {
-  const { data, error } = await supabase
+  const response = await supabase
     .from("sms_gateways")
     .select("*, groups(id, name)")
     .eq("group_id", groupId)
     .eq("is_active", true);
 
-  if (error) {
-    console.error("Error fetching gateways for group:", error);
+  if (response.error) {
+    console.error("Error fetching gateways for group:", response.error);
     return [];
   }
 
+  // Use unknown as stepping stone to avoid "excessively deep" TS errors with Supabase joins
+  const rawData = response.data as unknown as (Gateway & { groups: { id: string; name: string } | { id: string; name: string }[] | null })[];
+
   // Type-safe map without `as unknown as any` chains
-  const result: GatewayWithGroup[] = (data || []).map((item) => {
+  const result: GatewayWithGroup[] = (rawData || []).map((item) => {
     const groupData = item.groups;
     const singleGroup = Array.isArray(groupData) ? groupData[0] : groupData;
     
     return {
       ...item,
-      groups: singleGroup
-    } as GatewayWithGroup;
+      groups: singleGroup || null
+    };
   });
   
   return result;
