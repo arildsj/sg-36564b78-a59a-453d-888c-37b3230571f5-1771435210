@@ -111,17 +111,22 @@ export const bulkService = {
 
       const totalRecipients = recipientUserIds.length;
       const campaignType = totalRecipients === 1 ? "single" : "bulk";
+      
+      // Get a default gateway for the group
+      const { data: groupGateway } = await supabase
+        .from("groups")
+        .select("gateway_id")
+        .eq("id", groupId)
+        .single();
 
       const campaign = await this.createBulkCampaign({
         name: campaignData?.name || subjectLine || `Internal ${campaignType === "single" ? "Message" : "Bulk"}`,
-        message_template: messageContent,
-        status: "draft",
-        campaign_type: campaignType,
-        sent_immediately: true,
-        group_id: groupId,
-        total_recipients: totalRecipients,
-        tenant_id: profile.tenant_id,
-        created_by: profile.id
+        message: messageContent,
+        contacts: [],
+        groupId: groupId,
+        gatewayId: groupGateway?.gateway_id || "",
+        userId: profile.id,
+        tenantId: profile.tenant_id,
       });
 
       if (recipientUserIds.length > 0) {
@@ -169,6 +174,13 @@ export const bulkService = {
       .single();
 
     if (!profile) throw new Error("User profile not found");
+    
+    // Get a default gateway for the group
+    const { data: groupGateway } = await supabase
+      .from("groups")
+      .select("gateway_id")
+      .eq("id", groupId)
+      .single();
 
     const { data: campaign, error: campaignError } = await supabase
       .from("bulk_campaigns")
@@ -180,7 +192,8 @@ export const bulkService = {
         status: "draft",
         campaign_type: "bulk",
         sent_immediately: true,
-        group_id: groupId
+        group_id: groupId,
+        gateway_id: groupGateway?.gateway_id || ""
       })
       .select()
       .single();
@@ -188,23 +201,17 @@ export const bulkService = {
     if (campaignError) throw campaignError;
 
     const { data: contacts, error: contactsError } = await supabase
-      .from("whitelist_group_links")
-      .select(`
-        whitelisted_number:whitelisted_numbers(
-          identifier,
-          description
-        )
-      `)
+      .from("contacts")
+      .select("phone, name")
       .eq("group_id", groupId);
 
     if (contactsError) throw contactsError;
 
     const recipients: TablesInsert<"campaign_recipients">[] = (contacts || [])
-      .map((link: any) => link.whitelisted_number)
-      .filter(Boolean)
+      .filter((c: any) => c.phone)
       .map((c: any) => ({
         campaign_id: campaign.id,
-        phone: c.identifier,
+        phone: c.phone,
         status: "pending"
       }));
 
@@ -257,43 +264,46 @@ export const bulkService = {
     if (!profile) throw new Error("User profile not found");
 
     const campaignType = targetPhoneNumbers.length === 1 ? "single" : "bulk";
+    
+    // Get a default gateway for the group
+    const { data: groupGateway } = await supabase
+      .from("groups")
+      .select("gateway_id")
+      .eq("id", groupId)
+      .single();
+
+    const newCampaign: TablesInsert<"bulk_campaigns"> = {
+      tenant_id: profile.tenant_id,
+      created_by: profile.id,
+      name: `${campaignType === "single" ? "Melding" : "Bulk"} til ${groupName}`,
+      message_template: message,
+      status: "draft",
+      campaign_type: campaignType,
+      sent_immediately: true,
+      group_id: groupId,
+      gateway_id: groupGateway?.gateway_id || ""
+    };
 
     const { data: campaign, error: campaignError } = await supabase
       .from("bulk_campaigns")
-      .insert({
-        tenant_id: profile.tenant_id,
-        created_by: profile.id,
-        name: `${campaignType === "single" ? "Melding" : "Bulk"} til ${groupName}`,
-        message_template: message,
-        status: "draft",
-        campaign_type: campaignType,
-        sent_immediately: true,
-        group_id: groupId
-      })
+      .insert(newCampaign)
       .select()
       .single();
 
     if (campaignError) throw campaignError;
 
     const { data: contacts, error: contactsError } = await supabase
-      .from("whitelist_group_links")
-      .select(`
-        whitelisted_number:whitelisted_numbers(
-          identifier,
-          description
-        )
-      `)
+      .from("contacts")
+      .select("phone, name")
       .eq("group_id", groupId);
 
     if (contactsError) throw contactsError;
 
     const recipients: TablesInsert<"campaign_recipients">[] = (contacts || [])
-      .map((link: any) => link.whitelisted_number)
-      .filter(Boolean)
-      .filter((c: any) => targetPhoneNumbers.includes(c.identifier))
+      .filter((c: any) => c.phone && targetPhoneNumbers.includes(c.phone))
       .map((c: any) => ({
         campaign_id: campaign.id,
-        phone: c.identifier,
+        phone: c.phone,
         status: "pending"
       }));
 
@@ -445,18 +455,21 @@ export const bulkService = {
 
     const campaignType = targetRecipients.length === 1 ? "single" : "bulk";
 
+    const reminderCampaignData: TablesInsert<"bulk_campaigns"> = {
+      tenant_id: profile.tenant_id,
+      created_by: profile.id,
+      name: `Påminnelse: ${originalCampaign.name}`,
+      message_template: reminderMessage,
+      status: "draft",
+      campaign_type: campaignType,
+      sent_immediately: true,
+      group_id: originalCampaign.group_id,
+      gateway_id: originalCampaign.gateway_id
+    };
+
     const { data: reminderCampaign, error: campaignError } = await supabase
       .from("bulk_campaigns")
-      .insert({
-        tenant_id: profile.tenant_id,
-        created_by: profile.id,
-        name: `Påminnelse: ${originalCampaign.name}`,
-        message_template: reminderMessage,
-        status: "draft",
-        campaign_type: campaignType,
-        sent_immediately: true,
-        group_id: originalCampaign.group_id
-      })
+      .insert(reminderCampaignData)
       .select()
       .single();
 

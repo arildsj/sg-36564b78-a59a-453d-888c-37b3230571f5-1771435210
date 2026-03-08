@@ -30,15 +30,21 @@ export async function getGatewaysForGroup(groupId: string): Promise<GatewayWithG
       groups(id, name)
     `)
     .eq("group_id", groupId)
-    .eq("is_active", true)
-    .returns<GatewayWithGroup[]>();
+    .eq("is_active", true);
 
   if (error) {
     console.error("Error fetching gateways for group:", error);
     return [];
   }
 
-  return data || [];
+  // Map result properly without 'as unknown' chained casts 
+  // which trigger 'excessively deep' TS instantiation errors
+  const result: GatewayWithGroup[] = (data || []).map(item => ({
+    ...item,
+    groups: Array.isArray(item.groups) ? item.groups[0] : item.groups
+  })) as GatewayWithGroup[];
+  
+  return result;
 }
 
 export async function getAll(): Promise<Gateway[]> {

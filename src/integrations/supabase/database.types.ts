@@ -242,7 +242,7 @@ export type Database = {
           failed_at: string | null
           id: string
           message_id: string | null
-          phone_number: string
+          phone: string
           sent_at: string | null
           status: string
           updated_at: string
@@ -256,7 +256,7 @@ export type Database = {
           failed_at?: string | null
           id?: string
           message_id?: string | null
-          phone_number: string
+          phone: string
           sent_at?: string | null
           status?: string
           updated_at?: string
@@ -270,7 +270,7 @@ export type Database = {
           failed_at?: string | null
           id?: string
           message_id?: string | null
-          phone_number?: string
+          phone?: string
           sent_at?: string | null
           status?: string
           updated_at?: string

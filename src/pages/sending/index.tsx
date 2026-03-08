@@ -265,7 +265,8 @@ export default function SendingPage() {
         tenant_id: profile.tenant_id,
         created_by: profile.id,
         group_id: selectedGroups[0].groupId,
-        started_at: isScheduled ? undefined : new Date().toISOString()
+        started_at: isScheduled ? undefined : new Date().toISOString(),
+        gateway_id: null
       });
 
       console.log("✅ Campaign created:", campaign.id);
