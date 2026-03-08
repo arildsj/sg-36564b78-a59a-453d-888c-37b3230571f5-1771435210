@@ -116,14 +116,14 @@ export const bulkService = {
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-    const { data: existingCodes } = await db
+    const { data: existingCodes } = await supabase
       .from("bulk_campaigns")
       .select("bulk_code")
       .eq("tenant_id", tenantId)
       .gte("created_at", fourteenDaysAgo.toISOString())
       .not("bulk_code", "is", null);
 
-    const usedCodes = new Set((existingCodes || []).map((c: any) => c.bulk_code));
+    const usedCodes = new Set((existingCodes || []).map((c) => c.bulk_code));
 
     for (let i = 10; i <= 99; i++) {
       const code = i.toString();
@@ -139,7 +139,7 @@ export const bulkService = {
    * Create a new bulk campaign record with campaign_type and sent_immediately support
    */
   async createBulkCampaign(data: any) {
-    const { data: campaign, error } = await db
+    const { data: campaign, error } = await supabase
       .from("bulk_campaigns")
       .insert(data)
       .select()
@@ -166,7 +166,7 @@ export const bulkService = {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not authenticated");
 
-      const { data: profile } = await db
+      const { data: profile } = await supabase
         .from("user_profiles")
         .select("id, tenant_id")
         .eq("id", user.user.id)
@@ -214,7 +214,7 @@ export const bulkService = {
             }));
 
           if (recipients.length > 0) {
-            await db.from("campaign_recipients").insert(recipients);
+            await supabase.from("campaign_recipients").insert(recipients);
           }
         }
       }
@@ -238,7 +238,7 @@ export const bulkService = {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
-    const { data: profile } = await db
+    const { data: profile } = await supabase
       .from("user_profiles")
       .select("id, tenant_id")
       .eq("id", user.user.id)
@@ -255,7 +255,7 @@ export const bulkService = {
       .from("bulk_campaigns")
       .insert({
         tenant_id: profile.tenant_id,
-        created_by_user_id: profile.id,
+        created_by: profile.id,
         name: `Bulk til ${groupName}`,
         subject_line: subjectLine,
         bulk_code: bulkCode,
@@ -298,7 +298,7 @@ export const bulkService = {
       throw new Error("Ingen kontakter funnet i denne gruppen");
     }
 
-    const { error: recipientsError } = await db
+    const { error: recipientsError } = await supabase
       .from("campaign_recipients")
       .insert(recipients);
 
@@ -337,7 +337,7 @@ export const bulkService = {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
-    const { data: profile } = await db
+    const { data: profile } = await supabase
       .from("user_profiles")
       .select("id, tenant_id")
       .eq("id", user.user.id)
@@ -357,7 +357,7 @@ export const bulkService = {
       .from("bulk_campaigns")
       .insert({
         tenant_id: profile.tenant_id,
-        created_by_user_id: profile.id,
+        created_by: profile.id,
         name: `${campaignType === "single" ? "Melding" : "Bulk"} til ${groupName}`,
         subject_line: subjectLine,
         bulk_code: bulkCode,
@@ -401,7 +401,7 @@ export const bulkService = {
       throw new Error("Ingen gyldige mottakere funnet i denne gruppen");
     }
 
-    const { error: recipientsError } = await db
+    const { error: recipientsError } = await supabase
       .from("campaign_recipients")
       .insert(recipients);
 
@@ -436,7 +436,7 @@ export const bulkService = {
     responders: string[];
     nonResponders: BulkRecipient[];
   }> {
-    const { data: campaign, error: campaignError } = await db
+    const { data: campaign, error: campaignError } = await supabase
       .from("bulk_campaigns")
       .select("*")
       .eq("id", campaignId)
@@ -444,25 +444,25 @@ export const bulkService = {
 
     if (campaignError) throw campaignError;
 
-    const { data: recipients, error: recipientsError } = await db
+    const { data: recipients, error: recipientsError } = await supabase
       .from("campaign_recipients")
       .select("*")
       .eq("campaign_id", campaignId);
 
     if (recipientsError) throw recipientsError;
 
-    const { data: responses } = await db
+    const { data: responses } = await supabase
       .from("messages")
       .select("from_number")
       .eq("campaign_id", campaignId)
       .eq("direction", "inbound");
 
     const responderNumbers = new Set(
-      (responses || []).map((r: any) => r.from_number)
+      (responses || []).map((r) => r.from_number)
     );
 
     const nonResponders = (recipients || []).filter(
-      (r: any) => !responderNumbers.has(r.phone)
+      (r) => !responderNumbers.has(r.phone)
     );
 
     return {
@@ -477,7 +477,7 @@ export const bulkService = {
    * Get all campaigns for current user
    */
   async getCampaigns() {
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from("bulk_campaigns")
       .select("*")
       .order("created_at", { ascending: false });
@@ -490,7 +490,7 @@ export const bulkService = {
    * Get recipients who haven't responded to a campaign
    */
   async getNonResponders(campaignId: string): Promise<BulkRecipient[]> {
-    const { data: recipients, error: recipientsError } = await db
+    const { data: recipients, error: recipientsError } = await supabase
       .from("campaign_recipients")
       .select("*")
       .eq("campaign_id", campaignId)
@@ -500,18 +500,18 @@ export const bulkService = {
 
     if (!recipients || recipients.length === 0) return [];
 
-    const { data: responses } = await db
+    const { data: responses } = await supabase
       .from("messages")
       .select("from_number")
       .eq("campaign_id", campaignId)
       .eq("direction", "inbound");
 
     const responderNumbers = new Set(
-      (responses || []).map((r: any) => r.from_number)
+      (responses || []).map((r) => r.from_number)
     );
 
-    return recipients.filter(
-      (r: any) => !responderNumbers.has(r.phone)
+    return (recipients as any[]).filter(
+      (r) => !responderNumbers.has(r.phone)
     ) as BulkRecipient[];
   },
 
@@ -526,7 +526,7 @@ export const bulkService = {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
-    const { data: profile } = await db
+    const { data: profile } = await supabase
       .from("user_profiles")
       .select("id, tenant_id")
       .eq("id", user.user.id)
@@ -534,7 +534,7 @@ export const bulkService = {
 
     if (!profile) throw new Error("User profile not found");
 
-    const { data: originalCampaign } = await db
+    const { data: originalCampaign } = await supabase
       .from("bulk_campaigns")
       .select("*")
       .eq("id", originalCampaignId)
@@ -567,7 +567,7 @@ export const bulkService = {
       .from("bulk_campaigns")
       .insert({
         tenant_id: profile.tenant_id,
-        created_by_user_id: profile.id,
+        created_by: profile.id,
         name: `Påminnelse: ${originalCampaign.subject_line}`,
         subject_line: originalCampaign.subject_line,
         bulk_code: bulkCode,
@@ -591,9 +591,9 @@ export const bulkService = {
       status: "pending"
     }));
 
-    const { error: recipientsError } = await db
+    const { error: recipientsError } = await supabase
       .from("campaign_recipients")
-      .insert(recipients);
+      .insert(recipients as any);
 
     if (recipientsError) throw recipientsError;
 

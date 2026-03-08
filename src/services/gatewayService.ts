@@ -16,30 +16,33 @@ export interface Gateway {
   base_url?: string | null;
 }
 
-export async function getGatewayById(id: string): Promise<string | null> {
+export async function getGatewayById(id: string): Promise<string> {
   const { data: gateway, error } = await supabase
     .from("sms_gateways")
-    .select("*")
+    .select("id, name, gw_phone")
     .eq("id", id)
     .single();
 
   if (error) {
     console.error("Error fetching gateway:", error);
-    return null;
+    return "";
   }
 
-  return gateway?.gw_phone || null;
+  // Fallback to empty string if no phone number
+  return gateway?.gw_phone || "";
 }
 
 export async function getGatewaysForGroup(groupId: string): Promise<any[]> {
   const { data, error } = await supabase
     .from("sms_gateways")
-    .select(`
+    .select(
+      `
       id,
       name,
       gw_phone,
       groups!sms_gateways_group_id_fkey(id, name)
-    `)
+    `
+    )
     .eq("group_id", groupId)
     .eq("is_active", true);
 
