@@ -21,6 +21,8 @@ import {
   Printer,
   LayoutDashboard,
   User,
+  TestTube,
+  Wrench,
 } from "lucide-react";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
@@ -84,7 +86,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     setSidebarOpen(false);
   };
 
-  const filteredNavItems = navItems;
+  const filteredNavItems = navItems.filter((item) => item.labelKey !== "nav.print_to_sms");
 
   if (loading) {
     return (

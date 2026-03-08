@@ -29,7 +29,7 @@ import { contactService } from "@/services/contactService";
 // CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
 const db = supabase as any;
 
-type Gateway = { id: string; name: string; phone_number: string };
+type Gateway = { id: string; name: string; gw_phone: string };
 type Group = { 
   id: string; 
   name: string; 
@@ -130,13 +130,13 @@ export default function SimulatePage() {
         const group = groups.find(g => g.id === selectedGroup);
         if (group?.gateway_id) {
           gatewayId = group.gateway_id;
-          gatewayPhone = group.gateway?.phone_number || "";
+          gatewayPhone = group.gateway?.gw_phone || "";
         }
       }
 
       if (!gatewayId && gateways.length > 0) {
         gatewayId = gateways[0].id;
-        gatewayPhone = gateways[0].phone_number;
+        gatewayPhone = gateways[0].gw_phone;
       }
 
       if (!gatewayId) throw new Error("No active gateway found");
@@ -253,8 +253,8 @@ export default function SimulatePage() {
   };
 
   const selectedGroupData = groups.find((g) => g.id === selectedGroup);
-  const gatewayInfo = selectedGroupData?.gateway?.phone_number 
-    ? `Gateway: ${selectedGroupData.gateway.phone_number}`
+  const gatewayInfo = selectedGroupData?.gateway?.gw_phone 
+    ? `Gateway: ${selectedGroupData.gateway.gw_phone}`
     : "Automatisk valg av gateway";
 
   return (
