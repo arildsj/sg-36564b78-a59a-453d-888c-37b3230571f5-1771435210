@@ -349,7 +349,7 @@ export const bulkService = {
   }> {
     const { data: campaign, error: campaignError } = await supabase
       .from("bulk_campaigns")
-      .select("*")
+      .select("id, name, message_template, status, scheduled_at, total_recipients, sent_count, failed_count, created_by, group_id, gateway_id, created_at, updated_at, tenant_id, started_at, completed_at, campaign_type, sent_immediately")
       .eq("id", campaignId)
       .single();
 
@@ -357,8 +357,9 @@ export const bulkService = {
 
     const { data: recipients, error: recipientsError } = await supabase
       .from("campaign_recipients")
-      .select("*")
-      .eq("campaign_id", campaignId);
+      .select("id, campaign_id, contact_id, phone, personalized_message, status, message_id, error_message, sent_at, created_at")
+      .eq("campaign_id", campaignId)
+      .returns<BulkRecipient[]>();
 
     if (recipientsError) throw recipientsError;
 
@@ -397,9 +398,10 @@ export const bulkService = {
   async getNonResponders(campaignId: string): Promise<BulkRecipient[]> {
     const { data: recipients, error: recipientsError } = await supabase
       .from("campaign_recipients")
-      .select("*")
+      .select("id, campaign_id, contact_id, phone, personalized_message, status, message_id, error_message, sent_at, created_at")
       .eq("campaign_id", campaignId)
-      .eq("status", "sent");
+      .eq("status", "sent")
+      .returns<BulkRecipient[]>();
 
     if (recipientsError) throw recipientsError;
 

@@ -27,18 +27,16 @@ export async function getGatewaysForGroup(groupId: string): Promise<GatewayWithG
     .from("sms_gateways")
     .select("*, groups(id, name)")
     .eq("group_id", groupId)
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .returns<(Gateway & { groups: { id: string; name: string } | { id: string; name: string }[] | null })[]>();
 
   if (response.error) {
     console.error("Error fetching gateways for group:", response.error);
     return [];
   }
 
-  // Use unknown as stepping stone to avoid "excessively deep" TS errors with Supabase joins
-  const rawData = response.data as unknown as (Gateway & { groups: { id: string; name: string } | { id: string; name: string }[] | null })[];
-
   // Type-safe map without `as unknown as any` chains
-  const result: GatewayWithGroup[] = (rawData || []).map((item) => {
+  const result: GatewayWithGroup[] = (response.data || []).map((item) => {
     const groupData = item.groups;
     const singleGroup = Array.isArray(groupData) ? groupData[0] : groupData;
     
