@@ -141,14 +141,17 @@ export default function SimulatePage() {
 
       if (!gatewayId) throw new Error("No active gateway found");
 
-      // NEW: Check if this is a bulk campaign response
+      // Normalize phone numbers
+      const normalizedFrom = fromPhone.trim().replace(/[\s\-\(\)]/g, "");
+      const phoneWithPlus = normalizedFrom.startsWith("+") ? normalizedFrom : `+${normalizedFrom}`;
+
+      // Check if this is a bulk campaign response
       let campaignId: string | null = null;
       let parentMessageId: string | null = null;
 
       if (selectedGroup) {
         console.log("🔍 Checking for bulk campaign in group:", selectedGroup);
         
-        // Find latest bulk campaign for this group
         const { data: campaign, error: campaignError } = await db
           .from("bulk_campaigns")
           .select("id, name")
@@ -164,10 +167,6 @@ export default function SimulatePage() {
 
         if (campaign) {
           console.log("✅ Found campaign:", campaign.id, campaign.name);
-          
-          // Find the outbound message sent to this number
-          const normalizedFrom = fromPhone.trim().replace(/[\s\-\(\)]/g, "");
-          const phoneWithPlus = normalizedFrom.startsWith("+") ? normalizedFrom : `+${normalizedFrom}`;
           
           const { data: parentMsg, error: parentError } = await db
             .from("messages")
@@ -195,25 +194,22 @@ export default function SimulatePage() {
         }
       }
 
-      console.log("📤 Sending to inbound-message:", {
-        from: fromPhone.trim(),
-        to: gatewayPhone,
-        gateway: gatewayId,
+      // FIXED: Send correct field names to Edge Function
+      const payload = {
+        gateway_id: gatewayId,
+        from_number: phoneWithPlus,
+        to_number: gatewayPhone,
+        content: messageContent,
+        received_at: new Date().toISOString(),
         campaign_id: campaignId,
-        parent_message_id: parentMessageId
-      });
+        parent_message_id: parentMessageId,
+        target_group_id: selectedGroup || null,
+      };
 
-      // Call inbound-message Edge Function to simulate incoming message
+      console.log("📤 Sending to inbound-message:", payload);
+
       const { data, error } = await db.functions.invoke("inbound-message", {
-        body: {
-          gateway_id: gatewayId,
-          from_number: fromPhone.trim(),
-          to_number: gatewayPhone,
-          content: messageContent,
-          received_at: new Date().toISOString(),
-          campaign_id: campaignId,
-          parent_message_id: parentMessageId,
-        },
+        body: payload,
       });
 
       if (error) throw error;
