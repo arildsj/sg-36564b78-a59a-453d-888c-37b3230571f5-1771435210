@@ -15,6 +15,16 @@ export type Contact = {
   updated_at: string;
 };
 
+export type ContactGroup = {
+  id: string;
+  tenant_id: string;
+  group_id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export const contactService = {
   async getAllContacts(): Promise<Contact[]> {
     const { data, error } = await db
@@ -156,16 +166,91 @@ export const contactService = {
   },
 
   async importContacts(file: File, groupId?: string) {
-    const base64Content = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64 = result.split(",")[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    const { data: profile } = await db
+      .from("user_profiles")
+      .select("tenant_id")
+      .eq("id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("User profile not found");
+
+    const content = await file.text();
+    const rows = this.parseCSV(content);
+    if (rows.length === 0) {
+      throw new Error("CSV-filen inneholder ingen gyldige rader");
+    }
+
+    let imported = 0;
+    let failed = 0;
+
+    for (const row of rows) {
+      try {
+        const phone = (row.phone || row.telefon || row.tlf || "").trim();
+        const name = (row.name || row.navn || "").trim();
+
+        if (!phone) {
+          failed++;
+          continue;
+        }
+
+        const { data: existing } = await db
+          .from("contacts")
+          .select("id")
+          .eq("tenant_id", profile.tenant_id)
+          .eq("phone", phone)
+          .maybeSingle();
+
+        let contactId = existing?.id as string | undefined;
+
+        if (contactId) {
+          await db
+            .from("contacts")
+            .update({
+              name: name || phone,
+              group_id: groupId || null,
+            })
+            .eq("id", contactId);
+        } else {
+          const { data: created, error: createError } = await db
+            .from("contacts")
+            .insert({
+              tenant_id: profile.tenant_id,
+              phone,
+              name: name || phone,
+              group_id: groupId || null,
+              tags: [],
+            })
+            .select("id")
+            .single();
+
+          if (createError) throw createError;
+          contactId = created.id;
+        }
+
+        imported++;
+      } catch (error) {
+        console.error("Contact import row failed:", error);
+        failed++;
+      }
+    }
+
+    return { imported, failed };
+  },
+
+  async importContactsToGroup(file: File, params: { groupId: string; contactGroupId?: string }) {
+    const result = await this.importContacts(file, params.groupId);
+    if (!params.contactGroupId) return result;
+
+    const content = await file.text();
+    const rows = this.parseCSV(content);
+    const phones = rows
+      .map((row) => (row.phone || row.telefon || row.tlf || "").trim())
+      .filter(Boolean);
+
+    if (phones.length === 0) return result;
 
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
@@ -178,20 +263,152 @@ export const contactService = {
 
     if (!profile) throw new Error("User profile not found");
 
-    const { data, error } = await supabase.functions.invoke("csv-import", {
-      body: {
-        tenant_id: profile.tenant_id,
-        created_by_user_id: user.user.id,
-        import_type: "contacts",
-        csv_data: base64Content,
-        group_id: groupId
+    const { data: importedContacts } = await db
+      .from("contacts")
+      .select("id, phone")
+      .eq("tenant_id", profile.tenant_id)
+      .in("phone", phones);
+
+    for (const contact of importedContacts || []) {
+      const { data: existing } = await db
+        .from("contact_group_members")
+        .select("contact_id")
+        .eq("contact_group_id", params.contactGroupId)
+        .eq("contact_id", contact.id)
+        .maybeSingle();
+
+      if (!existing) {
+        await db.from("contact_group_members").insert({
+          contact_group_id: params.contactGroupId,
+          contact_id: contact.id,
+        });
       }
-    });
+    }
+
+    return result;
+  },
+
+  async getContactGroups(groupId?: string): Promise<ContactGroup[]> {
+    let query = db
+      .from("contact_groups")
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (groupId) {
+      query = query.eq("group_id", groupId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data || []) as ContactGroup[];
+  },
+
+  async createContactGroup(params: { group_id: string; name: string; description?: string }) {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("Not authenticated");
+
+    const { data: profile } = await db
+      .from("user_profiles")
+      .select("tenant_id")
+      .eq("id", user.user.id)
+      .single();
+
+    if (!profile) throw new Error("User profile not found");
+
+    const { data, error } = await db
+      .from("contact_groups")
+      .insert({
+        tenant_id: profile.tenant_id,
+        group_id: params.group_id,
+        name: params.name,
+        description: params.description || null,
+      })
+      .select("*")
+      .single();
 
     if (error) throw error;
-    if (data?.error) throw new Error(data.error);
+    return data as ContactGroup;
+  },
 
-    return data;
+  async updateContactGroup(id: string, params: { name: string; description?: string }) {
+    const { data, error } = await db
+      .from("contact_groups")
+      .update({
+        name: params.name,
+        description: params.description || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return data as ContactGroup;
+  },
+
+  async getContactGroupMemberships(): Promise<Record<string, ContactGroup[]>> {
+    const { data, error } = await db
+      .from("contact_group_members")
+      .select(`
+        contact_id,
+        contact_groups:contact_group_id (
+          id,
+          tenant_id,
+          group_id,
+          name,
+          description,
+          created_at,
+          updated_at
+        )
+      `);
+
+    if (error) throw error;
+
+    const map: Record<string, ContactGroup[]> = {};
+    for (const row of data || []) {
+      if (!map[row.contact_id]) {
+        map[row.contact_id] = [];
+      }
+      if (row.contact_groups) {
+        map[row.contact_id].push(row.contact_groups as ContactGroup);
+      }
+    }
+    return map;
+  },
+
+  async setContactGroupMemberships(contactId: string, contactGroupIds: string[]) {
+    await db.from("contact_group_members").delete().eq("contact_id", contactId);
+
+    if (contactGroupIds.length === 0) return;
+
+    const inserts = contactGroupIds.map((id) => ({
+      contact_id: contactId,
+      contact_group_id: id,
+    }));
+
+    const { error } = await db.from("contact_group_members").insert(inserts);
+    if (error) throw error;
+  },
+
+  parseCSV(text: string): Array<Record<string, string>> {
+    const lines = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length < 2) return [];
+
+    const separator = lines[0].includes(";") ? ";" : ",";
+    const headers = lines[0].split(separator).map((header) => header.trim().toLowerCase());
+
+    return lines.slice(1).map((line) => {
+      const values = line.split(separator).map((value) => value.trim());
+      const row: Record<string, string> = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || "";
+      });
+      return row;
+    });
   },
 
   /**

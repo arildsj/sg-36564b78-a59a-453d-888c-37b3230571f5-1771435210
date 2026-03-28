@@ -17,18 +17,64 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Send, Clock, FileText, ChevronDown, ChevronRight, Users, Megaphone } from "lucide-react";
+import {
+  Send,
+  Clock,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+  Megaphone,
+  CheckCircle2,
+  MessageSquare,
+  AlertCircle,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bulkService } from "@/services/bulkService";
 import { groupService, type Group as ServiceGroup } from "@/services/groupService";
 import { contactService, type Contact } from "@/services/contactService";
 import { messageService } from "@/services/messageService";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const db = supabase as any;
 
 type GroupSelection = {
   groupId: string;
   selectedContactIds: string[];
+};
+
+type CampaignHistory = {
+  id: string;
+  name: string;
+  message_template: string;
+  status: string;
+  created_at: string;
+  total_recipients: number;
+  sent_count: number;
+  failed_count: number;
+  group_id: string | null;
+};
+
+type CampaignRecipient = {
+  id: string;
+  phone: string;
+  status: string;
+  sent_at: string | null;
+};
+
+type CampaignMessage = {
+  id: string;
+  direction: "inbound" | "outbound";
+  from_number: string;
+  to_number: string;
+  created_at: string;
+  content: string;
 };
 
 export default function SendingPage() {
@@ -40,6 +86,16 @@ export default function SendingPage() {
   // Campaign state
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [campaignLoading, setCampaignLoading] = useState(false);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<CampaignHistory | null>(null);
+  const [campaignRecipients, setCampaignRecipients] = useState<CampaignRecipient[]>([]);
+  const [campaignInboundMessages, setCampaignInboundMessages] = useState<CampaignMessage[]>([]);
+  const [campaignReminderMessages, setCampaignReminderMessages] = useState<CampaignMessage[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedForReminder, setSelectedForReminder] = useState<string[]>([]);
+  const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState("");
+  const [sendingReminder, setSendingReminder] = useState(false);
   
   // New state structure for granular contact selection
   const [selectedGroups, setSelectedGroups] = useState<GroupSelection[]>([]);
@@ -73,8 +129,144 @@ export default function SendingPage() {
     try {
       const groupsData = await groupService.getOperationalGroups();
       setGroups(groupsData);
+      await loadCampaignHistory();
     } catch (error) {
       console.error("Error loading data:", error);
+    }
+  };
+
+  const loadCampaignHistory = async () => {
+    try {
+      setCampaignLoading(true);
+
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return;
+
+      const { data: profile } = await db
+        .from("user_profiles")
+        .select("tenant_id")
+        .eq("id", auth.user.id)
+        .single();
+
+      if (!profile?.tenant_id) return;
+
+      const { data, error } = await db
+        .from("bulk_campaigns")
+        .select("id, name, message_template, status, created_at, total_recipients, sent_count, failed_count, group_id")
+        .eq("tenant_id", profile.tenant_id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      setCampaigns((data || []) as CampaignHistory[]);
+    } catch (error) {
+      console.error("Error loading campaign history:", error);
+    } finally {
+      setCampaignLoading(false);
+    }
+  };
+
+  const loadCampaignDetails = async (campaignId: string) => {
+    try {
+      setHistoryLoading(true);
+      setSelectedForReminder([]);
+
+      const campaign = campaigns.find((c: CampaignHistory) => c.id === campaignId) || null;
+      setSelectedCampaign(campaign);
+      setSelectedCampaignId(campaignId);
+
+      const { data: recipientsData, error: recipientsError } = await db
+        .from("campaign_recipients")
+        .select("id, phone, status, sent_at")
+        .eq("campaign_id", campaignId)
+        .order("created_at", { ascending: true });
+
+      if (recipientsError) throw recipientsError;
+      setCampaignRecipients((recipientsData || []) as CampaignRecipient[]);
+
+      const { data: messageData, error: messageError } = await db
+        .from("messages")
+        .select("id, direction, from_number, to_number, created_at, content")
+        .eq("campaign_id", campaignId)
+        .order("created_at", { ascending: true });
+
+      if (messageError) throw messageError;
+
+      const inbound = ((messageData || []) as CampaignMessage[]).filter((m) => m.direction === "inbound");
+      const outbound = ((messageData || []) as CampaignMessage[]).filter((m) => m.direction === "outbound");
+
+      setCampaignInboundMessages(inbound);
+      setCampaignReminderMessages(outbound);
+    } catch (error) {
+      console.error("Error loading campaign details:", error);
+      toast({
+        title: "Kunne ikke laste kampanjedetaljer",
+        description: "Prøv igjen om et øyeblikk.",
+        variant: "destructive",
+      });
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const hasResponded = (phone: string) => {
+    return campaignInboundMessages.some((msg) => msg.from_number === phone);
+  };
+
+  const getLatestReminder = (phone: string) => {
+    const reminders = campaignReminderMessages.filter((msg) => msg.to_number === phone);
+    return reminders.length > 0 ? reminders[reminders.length - 1] : null;
+  };
+
+  const nonResponders = campaignRecipients.filter((recipient) => !hasResponded(recipient.phone));
+
+  const handleSendReminder = async () => {
+    if (!selectedCampaign || selectedForReminder.length === 0 || !reminderMessage.trim()) {
+      return;
+    }
+
+    try {
+      setSendingReminder(true);
+      let successCount = 0;
+
+      const recipientsToSend = campaignRecipients.filter((r) => selectedForReminder.includes(r.id));
+
+      for (const recipient of recipientsToSend) {
+        const sentMessage = await messageService.sendMessage(
+          reminderMessage,
+          recipient.phone,
+          "system",
+          undefined,
+          selectedCampaign.group_id || undefined
+        );
+
+        await db
+          .from("messages")
+          .update({ campaign_id: selectedCampaign.id })
+          .eq("id", sentMessage.id);
+
+        successCount++;
+      }
+
+      toast({
+        title: "Påminnelser sendt",
+        description: `${successCount} påminnelse${successCount === 1 ? "" : "r"} sendt.`,
+      });
+
+      setReminderDialogOpen(false);
+      setReminderMessage("");
+      setSelectedForReminder([]);
+      await loadCampaignDetails(selectedCampaign.id);
+    } catch (error: any) {
+      console.error("Error sending reminders:", error);
+      toast({
+        title: "Feil ved sending av påminnelse",
+        description: error.message || "Kunne ikke sende påminnelser",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingReminder(false);
     }
   };
 
@@ -722,8 +914,133 @@ export default function SendingPage() {
                 <CardDescription>Tidligere kampanjer og utsendinger</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  Ingen utsendinger funnet
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="space-y-3">
+                    {campaignLoading ? (
+                      <div className="text-muted-foreground">Laster kampanjer...</div>
+                    ) : campaigns.length === 0 ? (
+                      <div className="text-muted-foreground">Ingen utsendinger funnet</div>
+                    ) : (
+                      campaigns.map((campaign: CampaignHistory) => (
+                        <button
+                          key={campaign.id}
+                          className={`w-full text-left border rounded-md p-3 transition ${
+                            selectedCampaignId === campaign.id ? "border-primary bg-primary/5" : "hover:bg-secondary/40"
+                          }`}
+                          onClick={() => loadCampaignDetails(campaign.id)}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-medium">{campaign.name || "Uten navn"}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(campaign.created_at).toLocaleString("nb-NO")}
+                              </p>
+                            </div>
+                            <Badge variant={campaign.status === "completed" ? "default" : "outline"}>
+                              {campaign.status}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {campaign.total_recipients} mottakere • {campaign.sent_count || 0} sendt • {campaign.failed_count || 0} feilet
+                          </p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="border rounded-md p-3 min-h-[320px]">
+                    {!selectedCampaignId ? (
+                      <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                        Velg en utsending for å se status og sende påminnelse.
+                      </div>
+                    ) : historyLoading ? (
+                      <div className="text-sm text-muted-foreground">Laster detaljer...</div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <h3 className="font-semibold">{selectedCampaign?.name}</h3>
+                          <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                            {selectedCampaign?.message_template}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between border-y py-2">
+                          <div className="text-sm text-muted-foreground">
+                            {campaignInboundMessages.length} har svart • {nonResponders.length} mangler svar
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => setReminderDialogOpen(true)}
+                            disabled={selectedForReminder.length === 0}
+                          >
+                            Send påminnelse til {selectedForReminder.length} valgte
+                          </Button>
+                        </div>
+
+                        {nonResponders.length > 0 && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={selectedForReminder.length === nonResponders.length && nonResponders.length > 0}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedForReminder(nonResponders.map((r) => r.id));
+                                } else {
+                                  setSelectedForReminder([]);
+                                }
+                              }}
+                            />
+                            <span>Velg alle uten svar</span>
+                          </div>
+                        )}
+
+                        <div className="space-y-2 max-h-[420px] overflow-auto pr-1">
+                          {campaignRecipients.map((recipient) => {
+                            const replied = hasResponded(recipient.phone);
+                            const reminder = getLatestReminder(recipient.phone);
+                            return (
+                              <div key={recipient.id} className="border rounded p-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedForReminder.includes(recipient.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedForReminder((prev) => [...prev, recipient.id]);
+                                        } else {
+                                          setSelectedForReminder((prev) => prev.filter((id) => id !== recipient.id));
+                                        }
+                                      }}
+                                      disabled={replied}
+                                    />
+                                    <span className="text-sm">{recipient.phone}</span>
+                                  </div>
+                                  {replied ? (
+                                    <Badge className="bg-green-600 text-white">
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      Har svart
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary">
+                                      <AlertCircle className="h-3 w-3 mr-1" />
+                                      Ingen respons
+                                    </Badge>
+                                  )}
+                                </div>
+                                {reminder && (
+                                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                                    <MessageSquare className="h-3 w-3" />
+                                    Påminnelse sendt {new Date(reminder.created_at).toLocaleString("nb-NO")}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -755,6 +1072,39 @@ export default function SendingPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send påminnelse</DialogTitle>
+            <DialogDescription>
+              Skriv en variabel påminnelsestekst som sendes til {selectedForReminder.length} valgte mottakere.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={reminderMessage}
+            onChange={(e) => setReminderMessage(e.target.value)}
+            placeholder="Skriv påminnelse..."
+            className="min-h-[140px]"
+            disabled={sendingReminder}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={sendingReminder}
+              onClick={() => {
+                setReminderDialogOpen(false);
+                setReminderMessage("");
+              }}
+            >
+              Avbryt
+            </Button>
+            <Button disabled={sendingReminder || !reminderMessage.trim()} onClick={handleSendReminder}>
+              {sendingReminder ? "Sender..." : `Send til ${selectedForReminder.length}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
