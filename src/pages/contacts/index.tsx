@@ -40,12 +40,12 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Phone, User, Building2, Users, Plus, Edit, Trash2, Search, Upload, UserPlus, Pencil, MessageSquare, Edit2, Eye } from "lucide-react";
-import { contactService, type Contact } from "@/services/contactService";
+import { contactService, type Contact, type ContactGroup } from "@/services/contactService";
 import { useToast } from "@/hooks/use-toast";
 import { groupService } from "@/services/groupService";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageProvider";
-import { useRouter } from "next/router";
+import { Textarea } from "@/components/ui/textarea";
 
 // CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
 const db = supabase as any;
@@ -57,7 +57,6 @@ type Group = {
 };
 
 export default function ContactsPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const { t } = useLanguage();
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -80,6 +79,18 @@ export default function ContactsPage() {
   // Import state
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importGroupId, setImportGroupId] = useState<string>("");
+  const [importContactGroupId, setImportContactGroupId] = useState<string>("");
+  const [importNewContactGroupName, setImportNewContactGroupName] = useState("");
+  const [importNewContactGroupDescription, setImportNewContactGroupDescription] = useState("");
+  const [contactGroups, setContactGroups] = useState<ContactGroup[]>([]);
+  const [contactGroupMemberships, setContactGroupMemberships] = useState<Record<string, ContactGroup[]>>({});
+  const [showContactGroupDialog, setShowContactGroupDialog] = useState(false);
+  const [editingContactGroup, setEditingContactGroup] = useState<ContactGroup | null>(null);
+  const [contactGroupForm, setContactGroupForm] = useState({
+    group_id: "",
+    name: "",
+    description: "",
+  });
   
   // Edit/Create state
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -89,6 +100,7 @@ export default function ContactsPage() {
     group_id: "" as string | null, // FASIT: Single group
     tags: [] as string[]
   });
+  const [selectedContactGroupIds, setSelectedContactGroupIds] = useState<string[]>([]);
 
   useEffect(() => {
     loadData();
@@ -121,6 +133,12 @@ export default function ContactsPage() {
       ]);
       setContacts(contactsData as Contact[]);
       setGroups(groupsData as Group[]);
+      const [contactGroupsData, membershipsData] = await Promise.all([
+        contactService.getContactGroups(),
+        contactService.getContactGroupMemberships(),
+      ]);
+      setContactGroups(contactGroupsData);
+      setContactGroupMemberships(membershipsData);
     } catch (error: any) {
       console.error("Failed to load contacts:", error);
     } finally {
@@ -136,6 +154,7 @@ export default function ContactsPage() {
       group_id: null,
       tags: [],
     });
+    setSelectedContactGroupIds([]);
     setShowDialog(true);
   };
 
@@ -147,6 +166,8 @@ export default function ContactsPage() {
       group_id: contact.group_id,
       tags: contact.tags || [],
     });
+    const membershipIds = (contactGroupMemberships[contact.id] || []).map((group) => group.id);
+    setSelectedContactGroupIds(membershipIds);
     
     setShowDialog(true);
   };
@@ -171,13 +192,15 @@ export default function ContactsPage() {
           group_id: formData.group_id,
           tags: formData.tags,
         });
+        await contactService.setContactGroupMemberships(editingContact.id, selectedContactGroupIds);
       } else {
-        await contactService.createContact({
+        const createdContact = await contactService.createContact({
           name: formData.name,
           phone: formData.phone,
           group_id: formData.group_id,
           tags: formData.tags,
         });
+        await contactService.setContactGroupMemberships(createdContact.id, selectedContactGroupIds);
       }
 
       setShowDialog(false);
@@ -224,10 +247,30 @@ export default function ContactsPage() {
     
     try {
       setSubmitting(true);
-      await contactService.importContacts(importFile, importGroupId || undefined);
+      if (!importGroupId) {
+        throw new Error("Velg SeMSe-gruppe før import.");
+      }
+
+      let targetContactGroupId = importContactGroupId || undefined;
+      if (!targetContactGroupId && importNewContactGroupName.trim()) {
+        const createdContactGroup = await contactService.createContactGroup({
+          group_id: importGroupId,
+          name: importNewContactGroupName.trim(),
+          description: importNewContactGroupDescription.trim() || undefined,
+        });
+        targetContactGroupId = createdContactGroup.id;
+      }
+
+      await contactService.importContactsToGroup(importFile, {
+        groupId: importGroupId,
+        contactGroupId: targetContactGroupId,
+      });
       setShowImportDialog(false);
       setImportFile(null);
       setImportGroupId("");
+      setImportContactGroupId("");
+      setImportNewContactGroupName("");
+      setImportNewContactGroupDescription("");
       await loadData();
       toast({
         title: "Import fullført!",
@@ -324,6 +367,64 @@ export default function ContactsPage() {
     window.location.href = `/inbox?phone=${encodeURIComponent(contact.phone)}`;
   };
 
+  const handleOpenCreateContactGroup = () => {
+    setEditingContactGroup(null);
+    setContactGroupForm({
+      group_id: "",
+      name: "",
+      description: "",
+    });
+    setShowContactGroupDialog(true);
+  };
+
+  const handleOpenEditContactGroup = (contactGroup: ContactGroup) => {
+    setEditingContactGroup(contactGroup);
+    setContactGroupForm({
+      group_id: contactGroup.group_id,
+      name: contactGroup.name,
+      description: contactGroup.description || "",
+    });
+    setShowContactGroupDialog(true);
+  };
+
+  const handleSaveContactGroup = async () => {
+    try {
+      setSubmitting(true);
+
+      if (!contactGroupForm.group_id || !contactGroupForm.name.trim()) {
+        throw new Error("Velg SeMSe-gruppe og skriv navn på kontaktgruppen.");
+      }
+
+      if (editingContactGroup) {
+        await contactService.updateContactGroup(editingContactGroup.id, {
+          name: contactGroupForm.name.trim(),
+          description: contactGroupForm.description.trim() || undefined,
+        });
+      } else {
+        await contactService.createContactGroup({
+          group_id: contactGroupForm.group_id,
+          name: contactGroupForm.name.trim(),
+          description: contactGroupForm.description.trim() || undefined,
+        });
+      }
+
+      setShowContactGroupDialog(false);
+      await loadData();
+      toast({
+        title: editingContactGroup ? "Kontaktgruppe oppdatert" : "Kontaktgruppe opprettet",
+        description: contactGroupForm.name,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Kunne ikke lagre kontaktgruppe",
+        description: error.message || "Ukjent feil",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const filteredContacts = contacts.filter(
     (contact) =>
       contact.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -350,6 +451,16 @@ export default function ContactsPage() {
               <UserPlus className="h-4 w-4 mr-2" />
               {t("contacts.new_contact")}
             </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={handleOpenCreateContactGroup}>
+                <Users className="h-4 w-4 mr-2" />
+                Ny kontaktgruppe
+              </Button>
+              <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Importer CSV
+              </Button>
+            </div>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -392,6 +503,7 @@ export default function ContactsPage() {
                           <TableHead>{t("contacts.name")}</TableHead>
                           <TableHead>{t("contacts.phone")}</TableHead>
                           <TableHead>{t("contacts.groups")}</TableHead>
+                          <TableHead>Kontaktgrupper</TableHead>
                           <TableHead>{t("contacts.created")}</TableHead>
                           <TableHead className="text-right">{t("contacts.actions")}</TableHead>
                         </TableRow>
@@ -411,6 +523,19 @@ export default function ContactsPage() {
                               ) : (
                                 <span className="text-muted-foreground">-</span>
                               )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {(contactGroupMemberships[contact.id] || []).length === 0 ? (
+                                  <span className="text-muted-foreground">-</span>
+                                ) : (
+                                  (contactGroupMemberships[contact.id] || []).map((contactGroup) => (
+                                    <Badge key={contactGroup.id} variant="outline">
+                                      {contactGroup.name}
+                                    </Badge>
+                                  ))
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               {contact.created_at ? new Date(contact.created_at).toLocaleDateString("nb-NO") : "-"}
@@ -487,7 +612,7 @@ export default function ContactsPage() {
               </div>
             </div>
             
-            <div className="space-y-2">
+                            <div className="space-y-2">
               <Label>Gruppe (Påkrevet)</Label>
               <Select
                 value={formData.group_id || ""}
@@ -504,6 +629,33 @@ export default function ContactsPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Kontaktgrupper i valgt SeMSe-gruppe</Label>
+              {formData.group_id ? (
+                <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-[180px] overflow-y-auto">
+                  {contactGroups
+                    .filter((contactGroup) => contactGroup.group_id === formData.group_id)
+                    .map((contactGroup) => (
+                      <label key={contactGroup.id} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={selectedContactGroupIds.includes(contactGroup.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedContactGroupIds((prev) => [...prev, contactGroup.id]);
+                            } else {
+                              setSelectedContactGroupIds((prev) => prev.filter((id) => id !== contactGroup.id));
+                            }
+                          }}
+                        />
+                        {contactGroup.name}
+                      </label>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Velg først en SeMSe-gruppe.</p>
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -558,17 +710,47 @@ export default function ContactsPage() {
             </div>
             
             <div className="space-y-2">
-              <Label>Standard gruppe</Label>
+              <Label>Velg SeMSe-gruppe (påkrevd)</Label>
               <select 
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={importGroupId}
                 onChange={(e) => setImportGroupId(e.target.value)}
               >
-                <option value="">Ingen gruppe valgt</option>
+                <option value="">Velg SeMSe-gruppe</option>
                 {groups.filter(g => g.kind === 'operational').map(g => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
               </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Kontaktgruppe (valgfritt)</Label>
+              <Select value={importContactGroupId} onValueChange={setImportContactGroupId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Velg eksisterende kontaktgruppe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {contactGroups
+                    .filter((contactGroup) => !importGroupId || contactGroup.group_id === importGroupId)
+                    .map((contactGroup) => (
+                      <SelectItem key={contactGroup.id} value={contactGroup.id}>
+                        {contactGroup.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 border rounded-md p-3">
+              <Label>...eller opprett ny kontaktgruppe under import</Label>
+              <Input
+                placeholder="Navn på ny kontaktgruppe"
+                value={importNewContactGroupName}
+                onChange={(e) => setImportNewContactGroupName(e.target.value)}
+              />
+              <Textarea
+                placeholder="Beskrivelse (valgfritt)"
+                value={importNewContactGroupDescription}
+                onChange={(e) => setImportNewContactGroupDescription(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
@@ -577,6 +759,81 @@ export default function ContactsPage() {
             </Button>
             <Button onClick={handleImport} disabled={!importFile || submitting}>
               {submitting ? "Importerer..." : "Start import"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showContactGroupDialog} onOpenChange={setShowContactGroupDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingContactGroup ? "Rediger kontaktgruppe" : "Ny kontaktgruppe"}</DialogTitle>
+            <DialogDescription>
+              Kontaktgrupper lar deg organisere kontakter i undergrupper (f.eks. Styre, FAU, Dugnadsliste).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>SeMSe-gruppe</Label>
+              <Select
+                value={contactGroupForm.group_id}
+                onValueChange={(value) => setContactGroupForm((prev) => ({ ...prev, group_id: value }))}
+                disabled={!!editingContactGroup}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Velg SeMSe-gruppe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.filter((group) => group.kind === "operational").map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Navn</Label>
+              <Input
+                value={contactGroupForm.name}
+                onChange={(e) => setContactGroupForm((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="F.eks. Styre"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Beskrivelse</Label>
+              <Textarea
+                value={contactGroupForm.description}
+                onChange={(e) => setContactGroupForm((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="Valgfri beskrivelse..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Eksisterende kontaktgrupper</Label>
+              <div className="border rounded-md p-2 max-h-[140px] overflow-y-auto space-y-1">
+                {contactGroups.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Ingen kontaktgrupper opprettet ennå.</p>
+                ) : (
+                  contactGroups.map((contactGroup) => (
+                    <button
+                      key={contactGroup.id}
+                      type="button"
+                      onClick={() => handleOpenEditContactGroup(contactGroup)}
+                      className="w-full text-left px-2 py-1 rounded hover:bg-secondary text-sm"
+                    >
+                      {contactGroup.name} • {groups.find((group) => group.id === contactGroup.group_id)?.name || "Ukjent gruppe"}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowContactGroupDialog(false)}>
+              Avbryt
+            </Button>
+            <Button onClick={handleSaveContactGroup} disabled={submitting}>
+              {submitting ? "Lagrer..." : "Lagre kontaktgruppe"}
             </Button>
           </DialogFooter>
         </DialogContent>
