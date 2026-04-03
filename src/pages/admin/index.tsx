@@ -47,6 +47,7 @@ const db = supabase as any;
 
 export default function AdminPage() {
   const { toast } = useToast();
+  const appCommit = process.env.NEXT_PUBLIC_APP_COMMIT || "ukjent";
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [gateways, setGateways] = useState<Gateway[]>([]);
@@ -675,6 +676,9 @@ export default function AdminPage() {
             <h1 className="text-3xl font-bold tracking-tight">System Admin</h1>
             <p className="text-muted-foreground">
               Administrer brukere, grupper og systeminnstillinger
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Commit: <span className="font-mono">{appCommit}</span>
             </p>
           </div>
         </div>
