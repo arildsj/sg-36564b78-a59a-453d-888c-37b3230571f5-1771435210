@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Check, Send, Clock, User } from "lucide-react";
-import { cn, formatPhoneNumber } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { contactService } from "@/services/contactService";
 
@@ -53,6 +53,8 @@ export default function SimulatePage() {
   const [fromPhone, setFromPhone] = useState<string>("");
   const [messageContent, setMessageContent] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [selectedRecentMessageId, setSelectedRecentMessageId] = useState<string>("");
+  const [replyContext, setReplyContext] = useState<string>("");
   
   // Search state
   const [fromSearchOpen, setFromSearchOpen] = useState(false);
@@ -110,6 +112,33 @@ export default function SimulatePage() {
     }
   };
 
+  const normalizePhone = (phone: string) => {
+    const normalized = phone.trim().replace(/[\s\-\(\)]/g, "");
+    return normalized.startsWith("+") ? normalized : `+${normalized}`;
+  };
+
+  const isKnownContactPhone = (phone: string) => {
+    const normalizedPhone = normalizePhone(phone);
+    return contacts.some((contact) => normalizePhone(contact.phone) === normalizedPhone);
+  };
+
+  const handleSelectRecentMessage = (msg: any) => {
+    setSelectedRecentMessageId(msg.id);
+
+    const simulatedSender =
+      msg.direction === "outbound" ? msg.to_number || "" : msg.from_number || "";
+
+    if (simulatedSender) {
+      setFromPhone(simulatedSender);
+    }
+
+    if (msg.group_id) {
+      setSelectedGroup(msg.group_id);
+    }
+
+    setReplyContext(msg.content || "");
+  };
+
   const handleSendMessage = async () => {
     if (!fromPhone || !messageContent) {
       toast({
@@ -142,20 +171,21 @@ export default function SimulatePage() {
       if (!gatewayId) throw new Error("No active gateway found");
 
       // Normalize phone numbers
-      const normalizedFrom = fromPhone.trim().replace(/[\s\-\(\)]/g, "");
-      const phoneWithPlus = normalizedFrom.startsWith("+") ? normalizedFrom : `+${normalizedFrom}`;
+      const phoneWithPlus = normalizePhone(fromPhone);
+      const senderIsKnownContact = isKnownContactPhone(fromPhone);
+      const effectiveTargetGroupId = senderIsKnownContact ? selectedGroup || null : null;
 
       // Check if this is a bulk campaign response
       let campaignId: string | null = null;
       let parentMessageId: string | null = null;
 
-      if (selectedGroup) {
-        console.log("🔍 Checking for bulk campaign in group:", selectedGroup);
+      if (effectiveTargetGroupId) {
+        console.log("🔍 Checking for bulk campaign in group:", effectiveTargetGroupId);
         
         const { data: campaign, error: campaignError } = await db
           .from("bulk_campaigns")
           .select("id, name")
-          .eq("group_id", selectedGroup)
+          .eq("group_id", effectiveTargetGroupId)
           .in("status", ["pending", "sending", "sent"])
           .order("created_at", { ascending: false })
           .limit(1)
@@ -190,7 +220,7 @@ export default function SimulatePage() {
             console.warn("⚠️ No outbound message found to", phoneWithPlus, "in campaign", campaign.id);
           }
         } else {
-          console.log("ℹ️ No active bulk campaign found for group:", selectedGroup);
+          console.log("ℹ️ No active bulk campaign found for group:", effectiveTargetGroupId);
         }
       }
 
@@ -203,7 +233,7 @@ export default function SimulatePage() {
         received_at: new Date().toISOString(),
         campaign_id: campaignId,
         parent_message_id: parentMessageId,
-        target_group_id: selectedGroup || null,
+        target_group_id: effectiveTargetGroupId,
       };
 
       console.log("📤 Sending to inbound-message:", payload);
@@ -218,7 +248,9 @@ export default function SimulatePage() {
 
       toast({
         title: "Melding simulert",
-        description: data.is_bulk_response 
+        description: !senderIsKnownContact
+          ? "Ukjent nummer følger regelstyring og fallback ved manglende treff"
+          : data.is_bulk_response 
           ? "Bulk-kampanje-svar mottatt"
           : data.is_fallback 
           ? "Melding rutet til fallback-gruppe" 
@@ -226,6 +258,8 @@ export default function SimulatePage() {
       });
       
       setMessageContent("");
+      setReplyContext("");
+      setSelectedRecentMessageId("");
       loadData();
     } catch (error: any) {
       console.error("Failed to send message:", error);
@@ -300,7 +334,9 @@ export default function SimulatePage() {
                     ))}
                   </select>
                   <p className="text-xs text-muted-foreground">
-                    {gatewayInfo}
+                    {isKnownContactPhone(fromPhone)
+                      ? gatewayInfo
+                      : "Ukjente numre går alltid via regelstyring (fallback ved manglende treff)"}
                   </p>
                 </div>
 
@@ -384,6 +420,11 @@ export default function SimulatePage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="message-content">Melding</Label>
+                  {replyContext && (
+                    <p className="text-xs text-muted-foreground">
+                      Svarer på: "{replyContext}"
+                    </p>
+                  )}
                   <Textarea
                     id="message-content"
                     placeholder="Hei, jeg lurer på..."
@@ -423,7 +464,11 @@ export default function SimulatePage() {
                     recentMessages.map((msg) => (
                       <div
                         key={msg.id}
-                        className="p-3 border rounded hover:border-primary transition-colors"
+                        onClick={() => handleSelectRecentMessage(msg)}
+                        className={cn(
+                          "p-3 border rounded cursor-pointer hover:border-primary transition-colors",
+                          selectedRecentMessageId === msg.id && "border-primary bg-primary/5",
+                        )}
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
