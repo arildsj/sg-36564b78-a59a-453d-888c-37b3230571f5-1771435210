@@ -53,6 +53,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const appCommit = process.env.NEXT_PUBLIC_APP_COMMIT || "local-dev";
 
   useEffect(() => {
     checkAuth();
@@ -99,9 +100,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <header className={cn("md:hidden flex items-center justify-between px-4 h-16 border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40")}>
-        <Link href="/" className="text-2xl font-bold text-primary">
-          SeMSe
-        </Link>
+        <div className="flex flex-col">
+          <Link href="/" className="text-2xl font-bold text-primary">
+            SeMSe
+          </Link>
+          <span className="text-[10px] text-muted-foreground">Commit: {appCommit}</span>
+        </div>
         <Button
           variant="ghost"
           size="icon"
@@ -124,6 +128,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <Link href="/" className="text-2xl font-bold text-primary">
             SeMSe 2.0
           </Link>
+          <div className="text-xs text-muted-foreground mt-1">
+            Commit: <span className="font-mono">{appCommit}</span>
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
