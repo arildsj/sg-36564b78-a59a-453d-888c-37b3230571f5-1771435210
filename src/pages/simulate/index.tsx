@@ -139,6 +139,17 @@ export default function SimulatePage() {
     setReplyContext(msg.content || "");
   };
 
+  const getConversationPartyNumber = (msg: any) =>
+    msg.direction === "outbound" ? msg.to_number || "" : msg.from_number || "";
+
+  const getConversationPartyLabel = (msg: any) => {
+    const number = getConversationPartyNumber(msg);
+    if (!number) return "Ukjent";
+
+    const contact = contacts.find((c) => normalizePhone(c.phone) === normalizePhone(number));
+    return contact?.name || number;
+  };
+
   const handleSendMessage = async () => {
     if (!fromPhone || !messageContent) {
       toast({
@@ -325,6 +336,7 @@ export default function SimulatePage() {
                     className="w-full h-10 px-3 rounded-md border border-input bg-background"
                     value={selectedGroup}
                     onChange={(e) => setSelectedGroup(e.target.value)}
+                    disabled={!isKnownContactPhone(fromPhone)}
                   >
                     <option value="">-- Automatisk routing (ingen gruppe valgt) --</option>
                     {groups.map((g) => (
@@ -475,7 +487,7 @@ export default function SimulatePage() {
                             <Badge variant={msg.direction === "inbound" ? "default" : "secondary"}>
                               {msg.direction === "inbound" ? "Inn" : "Ut"}
                             </Badge>
-                            <span className="text-sm font-medium">{msg.from_number}</span>
+                            <span className="text-sm font-medium">{getConversationPartyLabel(msg)}</span>
                           </div>
                           <span className="text-xs text-muted-foreground">
                             {formatTime(msg.created_at)}
