@@ -52,6 +52,17 @@ serve(async (req) => {
       throw new Error(`Gateway not found: ${gateway_id}`);
     }
 
+    // sms_gateways has no group_id — look up the first group linked to this gateway as fallback
+    const { data: gatewayGroup } = await supabaseClient
+      .from("groups")
+      .select("id")
+      .eq("gateway_id", gateway_id)
+      .order("name", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const gatewayFallbackGroupId = gatewayGroup?.id ?? null;
+
     let contact = null;
     const { data: existingContact } = await supabaseClient
       .from("contacts")
@@ -67,7 +78,7 @@ serve(async (req) => {
         .insert({
           phone: from_number,
           name: from_number,
-          group_id: target_group_id || gateway.group_id,
+          group_id: target_group_id || gatewayFallbackGroupId,
           tenant_id: gateway.tenant_id,
         })
         .select()
@@ -113,7 +124,7 @@ serve(async (req) => {
         }
       } else {
         if (!target_group_id) {
-          resolvedGroupId = contact.group_id || gateway.group_id;
+          resolvedGroupId = contact.group_id || gatewayFallbackGroupId;
 
           const { data: rules, error: rulesError } = await supabaseClient
             .from("routing_rules")
@@ -216,7 +227,12 @@ serve(async (req) => {
       })
       .eq("id", threadId);
 
-    return new Response(JSON.stringify({ success: true, message }), {
+    return new Response(JSON.stringify({
+      success: true,
+      message,
+      is_bulk_response: !!(campaign_id && parent_message_id),
+      is_fallback: !target_group_id && resolvedGroupId === gatewayFallbackGroupId,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

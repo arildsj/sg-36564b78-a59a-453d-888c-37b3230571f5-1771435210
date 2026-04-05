@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Phone, User, Building2, Users, Plus, Edit, Trash2, Search, Upload, UserPlus, Pencil, MessageSquare, Edit2, Eye } from "lucide-react";
+import { Phone, User, Building2, Users, Plus, Edit, Trash2, Search, Upload, UserPlus, Pencil, MessageSquare, Edit2, Eye, ChevronDown, ChevronRight } from "lucide-react";
 import { contactService, type Contact, type ContactGroup } from "@/services/contactService";
 import { useToast } from "@/hooks/use-toast";
 import { groupService } from "@/services/groupService";
@@ -101,6 +101,13 @@ export default function ContactsPage() {
     tags: [] as string[]
   });
   const [selectedContactGroupIds, setSelectedContactGroupIds] = useState<string[]>([]);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (id: string) => setCollapsedGroups(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   useEffect(() => {
     loadData();
@@ -431,6 +438,12 @@ export default function ContactsPage() {
       contact.phone?.includes(searchQuery)
   );
 
+  const operationalGroups = groups.filter(g => g.kind === 'operational');
+  const groupedContacts = operationalGroups
+    .map(group => ({ group, contacts: filteredContacts.filter(c => c.group_id === group.id) }))
+    .filter(({ contacts }) => contacts.length > 0);
+  const ungroupedContacts = filteredContacts.filter(c => !c.group_id);
+
   return (
     <>
       <Head>
@@ -495,82 +508,100 @@ export default function ContactsPage() {
                   {t("contacts.no_found")}
                 </div>
               ) : (
-                <>
-                  <div className="rounded-md border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t("contacts.name")}</TableHead>
-                          <TableHead>{t("contacts.phone")}</TableHead>
-                          <TableHead>{t("contacts.groups")}</TableHead>
-                          <TableHead>Kontaktgrupper</TableHead>
-                          <TableHead>{t("contacts.created")}</TableHead>
-                          <TableHead className="text-right">{t("contacts.actions")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredContacts.map((contact) => (
-                          <TableRow key={contact.id}>
-                            <TableCell className="font-medium">
-                              {contact.name || "-"}
-                            </TableCell>
-                            <TableCell>{contact.phone}</TableCell>
-                            <TableCell>
-                              {contact.group_id ? (
-                                <Badge variant="secondary">
-                                  {groups.find(g => g.id === contact.group_id)?.name || "Unknown"}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {(contactGroupMemberships[contact.id] || []).length === 0 ? (
-                                  <span className="text-muted-foreground">-</span>
-                                ) : (
-                                  (contactGroupMemberships[contact.id] || []).map((contactGroup) => (
-                                    <Badge key={contactGroup.id} variant="outline">
-                                      {contactGroup.name}
-                                    </Badge>
-                                  ))
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {contact.created_at ? new Date(contact.created_at).toLocaleDateString("nb-NO") : "-"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleOpenEdit(contact)}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleViewHistory(contact)}
-                                >
-                                  <MessageSquare className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => confirmDelete(contact)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
+                <div className="rounded-md border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Navn</TableHead>
+                        <TableHead>Telefon</TableHead>
+                        <TableHead>Opprettet</TableHead>
+                        <TableHead className="text-right">Handlinger</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {groupedContacts.map(({ group, contacts: groupContacts }) => (
+                        <React.Fragment key={group.id}>
+                          <TableRow
+                            className="bg-muted/50 hover:bg-muted/70 cursor-pointer select-none"
+                            onClick={() => toggleGroup(group.id)}
+                          >
+                            <TableCell colSpan={4} className="py-2">
+                              <div className="flex items-center gap-2 font-semibold text-sm">
+                                {collapsedGroups.has(group.id)
+                                  ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                  : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                {group.name}
+                                <Badge variant="secondary" className="font-normal">{groupContacts.length}</Badge>
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </>
+                          {!collapsedGroups.has(group.id) && groupContacts.map((contact) => (
+                            <TableRow key={contact.id}>
+                              <TableCell className="font-medium pl-8">{contact.name || "-"}</TableCell>
+                              <TableCell>{contact.phone}</TableCell>
+                              <TableCell>
+                                {contact.created_at ? new Date(contact.created_at).toLocaleDateString("nb-NO") : "-"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button size="sm" variant="outline" onClick={() => handleOpenEdit(contact)}>
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => handleViewHistory(contact)}>
+                                    <MessageSquare className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => confirmDelete(contact)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </React.Fragment>
+                      ))}
+                      {ungroupedContacts.length > 0 && (
+                        <React.Fragment>
+                          <TableRow
+                            className="bg-muted/50 hover:bg-muted/70 cursor-pointer select-none"
+                            onClick={() => toggleGroup('__ungrouped__')}
+                          >
+                            <TableCell colSpan={4} className="py-2">
+                              <div className="flex items-center gap-2 font-semibold text-sm">
+                                {collapsedGroups.has('__ungrouped__')
+                                  ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                  : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                Uten gruppe
+                                <Badge variant="secondary" className="font-normal">{ungroupedContacts.length}</Badge>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {!collapsedGroups.has('__ungrouped__') && ungroupedContacts.map((contact) => (
+                            <TableRow key={contact.id}>
+                              <TableCell className="font-medium pl-8">{contact.name || "-"}</TableCell>
+                              <TableCell>{contact.phone}</TableCell>
+                              <TableCell>
+                                {contact.created_at ? new Date(contact.created_at).toLocaleDateString("nb-NO") : "-"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button size="sm" variant="outline" onClick={() => handleOpenEdit(contact)}>
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => handleViewHistory(contact)}>
+                                    <MessageSquare className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => confirmDelete(contact)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </React.Fragment>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </div>
           </div>
