@@ -514,6 +514,7 @@ export default function ContactsPage() {
                       <TableRow>
                         <TableHead>Navn</TableHead>
                         <TableHead>Telefon</TableHead>
+                        <TableHead>Kontaktgrupper</TableHead>
                         <TableHead>Opprettet</TableHead>
                         <TableHead className="text-right">Handlinger</TableHead>
                       </TableRow>
@@ -525,7 +526,7 @@ export default function ContactsPage() {
                             className="bg-muted/50 hover:bg-muted/70 cursor-pointer select-none"
                             onClick={() => toggleGroup(group.id)}
                           >
-                            <TableCell colSpan={4} className="py-2">
+                            <TableCell colSpan={5} className="py-2">
                               <div className="flex items-center gap-2 font-semibold text-sm">
                                 {collapsedGroups.has(group.id)
                                   ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -539,6 +540,19 @@ export default function ContactsPage() {
                             <TableRow key={contact.id}>
                               <TableCell className="font-medium pl-8">{contact.name || "-"}</TableCell>
                               <TableCell>{contact.phone}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {(contactGroupMemberships[contact.id] || []).length === 0 ? (
+                                    <span className="text-muted-foreground text-sm">-</span>
+                                  ) : (
+                                    (contactGroupMemberships[contact.id] || []).map((cg) => (
+                                      <Badge key={cg.id} variant="outline" className="text-xs">
+                                        {cg.name}
+                                      </Badge>
+                                    ))
+                                  )}
+                                </div>
+                              </TableCell>
                               <TableCell>
                                 {contact.created_at ? new Date(contact.created_at).toLocaleDateString("nb-NO") : "-"}
                               </TableCell>
@@ -565,7 +579,7 @@ export default function ContactsPage() {
                             className="bg-muted/50 hover:bg-muted/70 cursor-pointer select-none"
                             onClick={() => toggleGroup('__ungrouped__')}
                           >
-                            <TableCell colSpan={4} className="py-2">
+                            <TableCell colSpan={5} className="py-2">
                               <div className="flex items-center gap-2 font-semibold text-sm">
                                 {collapsedGroups.has('__ungrouped__')
                                   ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -579,6 +593,19 @@ export default function ContactsPage() {
                             <TableRow key={contact.id}>
                               <TableCell className="font-medium pl-8">{contact.name || "-"}</TableCell>
                               <TableCell>{contact.phone}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {(contactGroupMemberships[contact.id] || []).length === 0 ? (
+                                    <span className="text-muted-foreground text-sm">-</span>
+                                  ) : (
+                                    (contactGroupMemberships[contact.id] || []).map((cg) => (
+                                      <Badge key={cg.id} variant="outline" className="text-xs">
+                                        {cg.name}
+                                      </Badge>
+                                    ))
+                                  )}
+                                </div>
+                              </TableCell>
                               <TableCell>
                                 {contact.created_at ? new Date(contact.created_at).toLocaleDateString("nb-NO") : "-"}
                               </TableCell>
