@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 import { createRequire } from "module";
+import { execSync } from "child_process";
+
+function getGitCommit() {
+  try {
+    return execSync("git rev-parse --short HEAD").toString().trim();
+  } catch {
+    return "local-dev";
+  }
+}
 
 // Check if element-tagger is available
 function isElementTaggerAvailable() {
@@ -29,6 +38,9 @@ function getTurboRules() {
 
 const nextConfig = {
   reactStrictMode: true,
+  env: {
+    NEXT_PUBLIC_APP_COMMIT: getGitCommit(),
+  },
   experimental: {
     turbo: {
       rules: getTurboRules(),
