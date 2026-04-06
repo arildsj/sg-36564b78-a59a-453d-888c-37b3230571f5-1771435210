@@ -64,6 +64,7 @@ type CampaignHistory = {
 type CampaignRecipient = {
   id: string;
   phone: string;
+  name?: string;
   status: string;
   sent_at: string | null;
 };
@@ -178,12 +179,20 @@ export default function SendingPage() {
 
       const { data: recipientsData, error: recipientsError } = await db
         .from("campaign_recipients")
-        .select("id, phone, status, sent_at")
+        .select("id, phone, status, sent_at, contacts(name)")
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: true });
 
       if (recipientsError) throw recipientsError;
-      setCampaignRecipients((recipientsData || []) as CampaignRecipient[]);
+
+      const mappedRecipients: CampaignRecipient[] = (recipientsData || []).map((r: any) => ({
+        id: r.id,
+        phone: r.phone,
+        name: r.contacts?.name,
+        status: r.status,
+        sent_at: r.sent_at,
+      }));
+      setCampaignRecipients(mappedRecipients);
 
       const { data: messageData, error: messageError } = await db
         .from("messages")
@@ -198,6 +207,13 @@ export default function SendingPage() {
 
       setCampaignInboundMessages(inbound);
       setCampaignReminderMessages(outbound);
+
+      // Pre-select all non-responders by default
+      const inboundPhones = new Set(inbound.map((m) => m.from_number));
+      const preSelected = mappedRecipients
+        .filter((r) => !inboundPhones.has(r.phone))
+        .map((r) => r.id);
+      setSelectedForReminder(preSelected);
     } catch (error) {
       console.error("Error loading campaign details:", error);
       toast({
@@ -1014,7 +1030,12 @@ export default function SendingPage() {
                                       }}
                                       disabled={replied}
                                     />
-                                    <span className="text-sm">{recipient.phone}</span>
+                                    <div className="flex flex-col">
+                                      {recipient.name && (
+                                        <span className="text-sm font-medium">{recipient.name}</span>
+                                      )}
+                                      <span className="text-xs text-muted-foreground">{recipient.phone}</span>
+                                    </div>
                                   </div>
                                   {replied ? (
                                     <Badge className="bg-green-600 text-white">
@@ -1074,20 +1095,44 @@ export default function SendingPage() {
       </div>
 
       <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Send påminnelse</DialogTitle>
             <DialogDescription>
-              Skriv en variabel påminnelsestekst som sendes til {selectedForReminder.length} valgte mottakere.
+              Påminnelsen sendes til {selectedForReminder.length} mottaker{selectedForReminder.length === 1 ? "" : "e"} uten svar.
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            value={reminderMessage}
-            onChange={(e) => setReminderMessage(e.target.value)}
-            placeholder="Skriv påminnelse..."
-            className="min-h-[140px]"
-            disabled={sendingReminder}
-          />
+
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Mottakere</p>
+            <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+              {campaignRecipients
+                .filter((r) => selectedForReminder.includes(r.id))
+                .map((r) => (
+                  <div key={r.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                    <div>
+                      {r.name && <span className="font-medium">{r.name} </span>}
+                      <span className="text-muted-foreground">{r.phone}</span>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      Ingen respons
+                    </Badge>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Påminnelsestekst</p>
+            <Textarea
+              value={reminderMessage}
+              onChange={(e) => setReminderMessage(e.target.value)}
+              placeholder="Skriv påminnelse..."
+              className="min-h-[120px]"
+              disabled={sendingReminder}
+            />
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
