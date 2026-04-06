@@ -911,7 +911,14 @@ export default function SendingPage() {
                           }>
                             {campaign.status}
                           </Badge>
-                          <Button size="sm" variant="outline">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              loadCampaignDetails(campaign.id);
+                              setActiveTab("history");
+                            }}
+                          >
                             Se detaljer
                           </Button>
                         </div>
