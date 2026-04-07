@@ -203,19 +203,37 @@ export default function SendingPage() {
       }));
       setCampaignRecipients(mappedRecipients);
 
-      const { data: messageData, error: messageError } = await db
+      // Outbound campaign messages are tagged with campaign_id
+      const { data: outboundData, error: outboundError } = await db
         .from("messages")
         .select("id, direction, from_number, to_number, created_at, content, sent_at, delivered_at, received_at, status, external_id")
         .eq("campaign_id", campaignId)
+        .eq("direction", "outbound")
         .order("created_at", { ascending: true });
 
-      if (messageError) throw messageError;
+      if (outboundError) throw outboundError;
 
-      const inbound = ((messageData || []) as CampaignMessage[]).filter((m) => m.direction === "inbound");
-      const outbound = ((messageData || []) as CampaignMessage[]).filter((m) => m.direction === "outbound");
+      // Inbound replies are NOT tagged with campaign_id — match by recipient phone
+      // number and any message received after the campaign was created.
+      const recipientPhones = mappedRecipients.map((r) => r.phone);
+      let inbound: CampaignMessage[] = [];
+
+      if (recipientPhones.length > 0) {
+        const campaignCreatedAt = campaign?.created_at ?? "1970-01-01T00:00:00Z";
+        const { data: inboundData, error: inboundError } = await db
+          .from("messages")
+          .select("id, direction, from_number, to_number, created_at, content, sent_at, delivered_at, received_at, status, external_id")
+          .eq("direction", "inbound")
+          .in("from_number", recipientPhones)
+          .gte("created_at", campaignCreatedAt)
+          .order("created_at", { ascending: true });
+
+        if (inboundError) throw inboundError;
+        inbound = (inboundData || []) as CampaignMessage[];
+      }
 
       setCampaignInboundMessages(inbound);
-      setCampaignReminderMessages(outbound);
+      setCampaignReminderMessages((outboundData || []) as CampaignMessage[]);
 
       // Pre-select all non-responders by default
       const inboundPhones = new Set(inbound.map((m) => m.from_number));
