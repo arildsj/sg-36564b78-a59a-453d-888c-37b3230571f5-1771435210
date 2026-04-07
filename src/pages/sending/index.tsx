@@ -267,6 +267,11 @@ export default function SendingPage() {
     return campaignReminderMessages.find((msg) => msg.to_number === phone) || null;
   };
 
+  const getReminders = (phone: string): CampaignMessage[] => {
+    const all = campaignReminderMessages.filter((msg) => msg.to_number === phone);
+    return all.slice(1); // first entry is the original campaign message; rest are reminders
+  };
+
   const getInboundReply = (phone: string) => {
     return campaignInboundMessages.find((msg) => msg.from_number === phone) || null;
   };
@@ -336,8 +341,8 @@ export default function SendingPage() {
 
       setReminderDialogOpen(false);
       setReminderMessage("");
-      setSelectedForReminder([]);
       await loadCampaignDetails(selectedCampaign.id);
+      setCampaignDetailDialogOpen(true);
     } catch (error: any) {
       console.error("Error sending reminders:", error);
       toast({
@@ -1324,6 +1329,17 @@ export default function SendingPage() {
                             Venter på svar
                           </div>
                         )}
+
+                        {/* Reminders sent to this recipient */}
+                        {getReminders(recipient.phone).map((reminder) => (
+                          <div key={reminder.id} className="border-l-2 border-orange-300 pl-3 ml-1 space-y-0.5">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3 text-orange-400" />
+                              Påminnelse sendt {fmtTime(reminder.created_at)}
+                            </p>
+                            <p className="text-sm">{reminder.content || "–"}</p>
+                          </div>
+                        ))}
                       </div>
                     );
                   })
