@@ -1171,9 +1171,10 @@ export default function SendingPage() {
       </div>
 
       <Dialog open={campaignDetailDialogOpen} onOpenChange={setCampaignDetailDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
+        <DialogContent className="max-w-4xl w-full max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
           {/* ── Header ── */}
-          <div className="px-6 pt-6 pb-4 border-b">
+          {/* pr-14 keeps content clear of the absolutely-positioned Radix close button (right-4 top-4) */}
+          <div className="pl-6 pr-14 pt-6 pb-4 border-b">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
