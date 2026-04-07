@@ -97,6 +97,7 @@ export default function SendingPage() {
   const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
   const [reminderMessage, setReminderMessage] = useState("");
   const [sendingReminder, setSendingReminder] = useState(false);
+  const [campaignDetailDialogOpen, setCampaignDetailDialogOpen] = useState(false);
   
   // New state structure for granular contact selection
   const [selectedGroups, setSelectedGroups] = useState<GroupSelection[]>([]);
@@ -916,7 +917,7 @@ export default function SendingPage() {
                             variant="outline"
                             onClick={() => {
                               loadCampaignDetails(campaign.id);
-                              setActiveTab("history");
+                              setCampaignDetailDialogOpen(true);
                             }}
                           >
                             Se detaljer
@@ -1100,6 +1101,106 @@ export default function SendingPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={campaignDetailDialogOpen} onOpenChange={setCampaignDetailDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{selectedCampaign?.name || "Kampanjedetaljer"}</DialogTitle>
+            <DialogDescription className="whitespace-pre-wrap">
+              {selectedCampaign?.message_template}
+            </DialogDescription>
+          </DialogHeader>
+
+          {historyLoading ? (
+            <div className="text-sm text-muted-foreground py-4">Laster detaljer...</div>
+          ) : (
+            <div className="flex-1 overflow-hidden flex flex-col space-y-3 min-h-0">
+              <div className="flex items-center justify-between border-y py-2">
+                <div className="text-sm text-muted-foreground">
+                  {campaignInboundMessages.length} har svart • {nonResponders.length} mangler svar
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setCampaignDetailDialogOpen(false);
+                    setReminderDialogOpen(true);
+                  }}
+                  disabled={selectedForReminder.length === 0}
+                >
+                  Send påminnelse til {selectedForReminder.length} valgte
+                </Button>
+              </div>
+
+              {nonResponders.length > 0 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={selectedForReminder.length === nonResponders.length && nonResponders.length > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedForReminder(nonResponders.map((r) => r.id));
+                      } else {
+                        setSelectedForReminder([]);
+                      }
+                    }}
+                  />
+                  <span>Velg alle uten svar</span>
+                </div>
+              )}
+
+              <div className="space-y-2 overflow-auto pr-1 flex-1">
+                {campaignRecipients.map((recipient) => {
+                  const replied = hasResponded(recipient.phone);
+                  const reminder = getLatestReminder(recipient.phone);
+                  return (
+                    <div key={recipient.id} className="border rounded p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedForReminder.includes(recipient.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedForReminder((prev) => [...prev, recipient.id]);
+                              } else {
+                                setSelectedForReminder((prev) => prev.filter((id) => id !== recipient.id));
+                              }
+                            }}
+                            disabled={replied}
+                          />
+                          <div className="flex flex-col">
+                            {recipient.name && (
+                              <span className="text-sm font-medium">{recipient.name}</span>
+                            )}
+                            <span className="text-xs text-muted-foreground">{recipient.phone}</span>
+                          </div>
+                        </div>
+                        {replied ? (
+                          <Badge className="bg-green-600 text-white">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Har svart
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Ingen respons
+                          </Badge>
+                        )}
+                      </div>
+                      {reminder && (
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <MessageSquare className="h-3 w-3" />
+                          Påminnelse sendt {new Date(reminder.created_at).toLocaleString("nb-NO")}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
         <DialogContent className="max-w-lg">
