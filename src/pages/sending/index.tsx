@@ -27,6 +27,9 @@ import {
   CheckCircle2,
   MessageSquare,
   AlertCircle,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Hash,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { bulkService } from "@/services/bulkService";
@@ -76,6 +79,11 @@ type CampaignMessage = {
   to_number: string;
   created_at: string;
   content: string;
+  sent_at: string | null;
+  delivered_at: string | null;
+  received_at: string | null;
+  status: string;
+  external_id: string | null;
 };
 
 export default function SendingPage() {
@@ -197,7 +205,7 @@ export default function SendingPage() {
 
       const { data: messageData, error: messageError } = await db
         .from("messages")
-        .select("id, direction, from_number, to_number, created_at, content")
+        .select("id, direction, from_number, to_number, created_at, content, sent_at, delivered_at, received_at, status, external_id")
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: true });
 
@@ -234,6 +242,42 @@ export default function SendingPage() {
   const getLatestReminder = (phone: string) => {
     const reminders = campaignReminderMessages.filter((msg) => msg.to_number === phone);
     return reminders.length > 0 ? reminders[reminders.length - 1] : null;
+  };
+
+  const getOutboundMessage = (phone: string) => {
+    return campaignReminderMessages.find((msg) => msg.to_number === phone) || null;
+  };
+
+  const getInboundReply = (phone: string) => {
+    return campaignInboundMessages.find((msg) => msg.from_number === phone) || null;
+  };
+
+  const fmtTime = (ts: string | null | undefined) => {
+    if (!ts) return null;
+    return new Date(ts).toLocaleString("nb-NO", { dateStyle: "short", timeStyle: "short" });
+  };
+
+  const shortId = (msg: CampaignMessage | null) => {
+    if (!msg) return "–";
+    return (msg.external_id || msg.id).substring(0, 8).toUpperCase();
+  };
+
+  const campaignStatusLabel = (status: string) => {
+    switch (status) {
+      case "completed": return "Fullført";
+      case "sending": return "Aktiv";
+      case "failed": return "Feilet";
+      default: return status;
+    }
+  };
+
+  const campaignStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (status) {
+      case "completed": return "default";
+      case "sending": return "secondary";
+      case "failed": return "destructive";
+      default: return "outline";
+    }
   };
 
   const nonResponders = campaignRecipients.filter((recipient) => !hasResponded(recipient.phone));
@@ -1103,100 +1147,184 @@ export default function SendingPage() {
       </div>
 
       <Dialog open={campaignDetailDialogOpen} onOpenChange={setCampaignDetailDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{selectedCampaign?.name || "Kampanjedetaljer"}</DialogTitle>
-            <DialogDescription className="whitespace-pre-wrap">
-              {selectedCampaign?.message_template}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
+          {/* ── Header ── */}
+          <div className="px-6 pt-6 pb-4 border-b">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-lg font-semibold leading-none">
+                    {selectedCampaign?.name || "Kampanjedetaljer"}
+                  </h2>
+                  {selectedCampaign && (
+                    <Badge variant={campaignStatusVariant(selectedCampaign.status)}>
+                      {campaignStatusLabel(selectedCampaign.status)}
+                    </Badge>
+                  )}
+                </div>
+                {selectedCampaign && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Sendt {fmtTime(selectedCampaign.created_at)}
+                  </p>
+                )}
+              </div>
+              {/* Dynamic reminder button */}
+              <Button
+                size="sm"
+                className="shrink-0 bg-orange-500 hover:bg-orange-600 text-white"
+                disabled={selectedForReminder.length === 0 || historyLoading}
+                onClick={() => {
+                  setCampaignDetailDialogOpen(false);
+                  setReminderDialogOpen(true);
+                }}
+              >
+                Send påminnelse til {selectedForReminder.length} valgte
+              </Button>
+            </div>
+          </div>
 
           {historyLoading ? (
-            <div className="text-sm text-muted-foreground py-4">Laster detaljer...</div>
+            <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground py-12">
+              Laster detaljer...
+            </div>
           ) : (
-            <div className="flex-1 overflow-hidden flex flex-col space-y-3 min-h-0">
-              <div className="flex items-center justify-between border-y py-2">
-                <div className="text-sm text-muted-foreground">
-                  {campaignInboundMessages.length} har svart • {nonResponders.length} mangler svar
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setCampaignDetailDialogOpen(false);
-                    setReminderDialogOpen(true);
-                  }}
-                  disabled={selectedForReminder.length === 0}
-                >
-                  Send påminnelse til {selectedForReminder.length} valgte
-                </Button>
+            <div className="flex-1 overflow-y-auto">
+              {/* ── Original message box ── */}
+              <div className="px-6 py-4 border-b bg-muted/30">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                  Kampanjemelding
+                </p>
+                <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                  {selectedCampaign?.message_template || "–"}
+                </p>
               </div>
 
-              {nonResponders.length > 0 && (
-                <div className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={selectedForReminder.length === nonResponders.length && nonResponders.length > 0}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedForReminder(nonResponders.map((r) => r.id));
-                      } else {
-                        setSelectedForReminder([]);
-                      }
-                    }}
-                  />
-                  <span>Velg alle uten svar</span>
-                </div>
-              )}
+              {/* ── Recipient overview ── */}
+              <div className="px-6 py-4 space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Mottakeroversikt ({campaignRecipients.length})
+                </p>
 
-              <div className="space-y-2 overflow-auto pr-1 flex-1">
-                {campaignRecipients.map((recipient) => {
-                  const replied = hasResponded(recipient.phone);
-                  const reminder = getLatestReminder(recipient.phone);
-                  return (
-                    <div key={recipient.id} className="border rounded p-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={selectedForReminder.includes(recipient.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedForReminder((prev) => [...prev, recipient.id]);
-                              } else {
-                                setSelectedForReminder((prev) => prev.filter((id) => id !== recipient.id));
-                              }
-                            }}
-                            disabled={replied}
-                          />
-                          <div className="flex flex-col">
-                            {recipient.name && (
-                              <span className="text-sm font-medium">{recipient.name}</span>
+                {campaignRecipients.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Ingen mottakere funnet.</p>
+                ) : (
+                  campaignRecipients.map((recipient) => {
+                    const replied = hasResponded(recipient.phone);
+                    const outMsg = getOutboundMessage(recipient.phone);
+                    const inMsg = getInboundReply(recipient.phone);
+                    const isChecked = selectedForReminder.includes(recipient.id);
+
+                    return (
+                      <div
+                        key={recipient.id}
+                        className={`rounded-lg border p-3 space-y-2 ${
+                          replied
+                            ? "border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20"
+                            : "border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/20"
+                        }`}
+                      >
+                        {/* Row 1: checkbox (no-response only), name/phone, status badge */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            {!replied && (
+                              <Checkbox
+                                checked={isChecked}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedForReminder((prev) => [...prev, recipient.id]);
+                                  } else {
+                                    setSelectedForReminder((prev) => prev.filter((id) => id !== recipient.id));
+                                  }
+                                }}
+                              />
                             )}
-                            <span className="text-xs text-muted-foreground">{recipient.phone}</span>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">
+                                {recipient.name || recipient.phone}
+                              </span>
+                              {recipient.name && (
+                                <span className="text-xs text-muted-foreground">{recipient.phone}</span>
+                              )}
+                            </div>
                           </div>
+                          {replied ? (
+                            <Badge className="bg-green-600 text-white shrink-0">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Svart
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-orange-500 text-white shrink-0">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Ingen respons
+                            </Badge>
+                          )}
                         </div>
-                        {replied ? (
-                          <Badge className="bg-green-600 text-white">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Har svart
-                          </Badge>
+
+                        {/* Row 2: message IDs and timestamps */}
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          {outMsg && (
+                            <div className="flex flex-wrap gap-x-4 gap-y-1">
+                              <span className="flex items-center gap-1">
+                                <ArrowUpRight className="h-3 w-3 text-blue-500" />
+                                <Hash className="h-3 w-3" />
+                                <span className="font-mono">{shortId(outMsg)}</span>
+                              </span>
+                              {outMsg.sent_at && (
+                                <span className="flex items-center gap-1">
+                                  <Send className="h-3 w-3" />
+                                  Sendt: {fmtTime(outMsg.sent_at)}
+                                </span>
+                              )}
+                              {outMsg.delivered_at && (
+                                <span className="flex items-center gap-1">
+                                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                  Levert: {fmtTime(outMsg.delivered_at)}
+                                </span>
+                              )}
+                              {replied && inMsg && inMsg.received_at && (
+                                <span className="flex items-center gap-1">
+                                  <ArrowDownLeft className="h-3 w-3 text-green-600" />
+                                  Svart: {fmtTime(inMsg.received_at)}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {replied && inMsg && (
+                            <div className="flex items-center gap-1">
+                              <ArrowDownLeft className="h-3 w-3 text-green-600" />
+                              <Hash className="h-3 w-3" />
+                              <span className="font-mono">{shortId(inMsg)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Row 3: reply text or waiting indicator */}
+                        {replied && inMsg ? (
+                          <div className="border-l-2 border-green-400 pl-3 ml-1">
+                            <p className="text-xs text-muted-foreground mb-0.5">Svar:</p>
+                            <p className="text-sm">{inMsg.content || "–"}</p>
+                          </div>
                         ) : (
-                          <Badge variant="secondary">
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                            Ingen respons
-                          </Badge>
+                          <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
+                            <Clock className="h-3 w-3" />
+                            Venter på svar
+                          </div>
                         )}
                       </div>
-                      {reminder && (
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                          <MessageSquare className="h-3 w-3" />
-                          Påminnelse sendt {new Date(reminder.created_at).toLocaleString("nb-NO")}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
+            </div>
+          )}
+
+          {/* ── Footer ── */}
+          {!historyLoading && (
+            <div className="px-6 py-3 border-t bg-muted/20 text-xs text-muted-foreground">
+              {nonResponders.length === 0
+                ? "Alle mottakere har svart."
+                : `${nonResponders.length} mottaker${nonResponders.length === 1 ? "" : "e"} har ikke svart ennå.`}
             </div>
           )}
         </DialogContent>
