@@ -79,9 +79,6 @@ type CampaignMessage = {
   to_number: string;
   created_at: string;
   content: string;
-  sent_at: string | null;
-  delivered_at: string | null;
-  received_at: string | null;
   status: string;
   external_id: string | null;
 };
@@ -203,26 +200,30 @@ export default function SendingPage() {
       }));
       setCampaignRecipients(mappedRecipients);
 
-      // Outbound campaign messages are tagged with campaign_id
-      const { data: outboundData, error: outboundError } = await db
-        .from("messages")
-        .select("id, direction, from_number, to_number, created_at, content, sent_at, delivered_at, received_at, status, external_id")
-        .eq("campaign_id", campaignId)
-        .eq("direction", "outbound")
-        .order("created_at", { ascending: true });
-
-      if (outboundError) throw outboundError;
-
-      // Inbound replies are NOT tagged with campaign_id — match by recipient phone
-      // number and any message received after the campaign was created.
+      // campaign_id is never populated on messages — match both directions by
+      // recipient phone numbers and anything sent/received after the campaign.
       const recipientPhones = mappedRecipients.map((r) => r.phone);
+      const campaignCreatedAt = campaign?.created_at ?? "1970-01-01T00:00:00Z";
+      const MSG_SELECT = "id, direction, from_number, to_number, created_at, content, status, external_id";
+
+      let outbound: CampaignMessage[] = [];
       let inbound: CampaignMessage[] = [];
 
       if (recipientPhones.length > 0) {
-        const campaignCreatedAt = campaign?.created_at ?? "1970-01-01T00:00:00Z";
+        const { data: outboundData, error: outboundError } = await db
+          .from("messages")
+          .select(MSG_SELECT)
+          .eq("direction", "outbound")
+          .in("to_number", recipientPhones)
+          .gte("created_at", campaignCreatedAt)
+          .order("created_at", { ascending: true });
+
+        if (outboundError) throw outboundError;
+        outbound = (outboundData || []) as CampaignMessage[];
+
         const { data: inboundData, error: inboundError } = await db
           .from("messages")
-          .select("id, direction, from_number, to_number, created_at, content, sent_at, delivered_at, received_at, status, external_id")
+          .select(MSG_SELECT)
           .eq("direction", "inbound")
           .in("from_number", recipientPhones)
           .gte("created_at", campaignCreatedAt)
@@ -233,7 +234,7 @@ export default function SendingPage() {
       }
 
       setCampaignInboundMessages(inbound);
-      setCampaignReminderMessages((outboundData || []) as CampaignMessage[]);
+      setCampaignReminderMessages(outbound);
 
       // Pre-select all non-responders by default
       const inboundPhones = new Set(inbound.map((m) => m.from_number));
@@ -1281,40 +1282,34 @@ export default function SendingPage() {
 
                         {/* Row 2: message IDs and timestamps */}
                         <div className="text-xs text-muted-foreground space-y-1">
-                          {outMsg && (
-                            <div className="flex flex-wrap gap-x-4 gap-y-1">
-                              <span className="flex items-center gap-1">
-                                <ArrowUpRight className="h-3 w-3 text-blue-500" />
-                                <Hash className="h-3 w-3" />
-                                <span className="font-mono">{shortId(outMsg)}</span>
-                              </span>
-                              {outMsg.sent_at && (
+                          <div className="flex flex-wrap gap-x-4 gap-y-1">
+                            {outMsg && (
+                              <>
+                                <span className="flex items-center gap-1">
+                                  <ArrowUpRight className="h-3 w-3 text-blue-500" />
+                                  <Hash className="h-3 w-3" />
+                                  <span className="font-mono">{shortId(outMsg)}</span>
+                                </span>
                                 <span className="flex items-center gap-1">
                                   <Send className="h-3 w-3" />
-                                  Sendt: {fmtTime(outMsg.sent_at)}
+                                  Sendt: {fmtTime(outMsg.created_at)}
                                 </span>
-                              )}
-                              {outMsg.delivered_at && (
-                                <span className="flex items-center gap-1">
-                                  <CheckCircle2 className="h-3 w-3 text-green-500" />
-                                  Levert: {fmtTime(outMsg.delivered_at)}
-                                </span>
-                              )}
-                              {replied && inMsg && inMsg.received_at && (
+                              </>
+                            )}
+                            {replied && inMsg && (
+                              <>
                                 <span className="flex items-center gap-1">
                                   <ArrowDownLeft className="h-3 w-3 text-green-600" />
-                                  Svart: {fmtTime(inMsg.received_at)}
+                                  <Hash className="h-3 w-3" />
+                                  <span className="font-mono">{shortId(inMsg)}</span>
                                 </span>
-                              )}
-                            </div>
-                          )}
-                          {replied && inMsg && (
-                            <div className="flex items-center gap-1">
-                              <ArrowDownLeft className="h-3 w-3 text-green-600" />
-                              <Hash className="h-3 w-3" />
-                              <span className="font-mono">{shortId(inMsg)}</span>
-                            </div>
-                          )}
+                                <span className="flex items-center gap-1">
+                                  <ArrowDownLeft className="h-3 w-3 text-green-600" />
+                                  Svart: {fmtTime(inMsg.created_at)}
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
 
                         {/* Row 3: reply text or waiting indicator */}
