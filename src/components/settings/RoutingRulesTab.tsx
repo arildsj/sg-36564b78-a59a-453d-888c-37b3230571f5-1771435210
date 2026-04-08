@@ -220,11 +220,25 @@ export function RoutingRulesTab() {
     );
   }
 
+  const matchTypeBadgeClass = (type: string) => {
+    switch (type) {
+      case "keyword":  return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300";
+      case "prefix":   return "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300";
+      case "sender":   return "bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300";
+      case "fallback": return "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300";
+      default:         return "bg-muted text-muted-foreground";
+    }
+  };
+
   return (
     <div className="space-y-3">
+      {/* ── Form ── */}
       <div id="routing-rule-form" className="grid gap-2 p-3 border rounded-lg bg-card">
-        <h3 className="text-sm font-medium">{editingId ? "Rediger rutingsregel" : "Ny rutingsregel"}</h3>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          {editingId ? "Rediger rutingsregel" : "Ny rutingsregel"}
+        </p>
 
+        {/* Row 1: name + type */}
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
             <Label className="text-xs">Navn på regel</Label>
@@ -256,20 +270,19 @@ export function RoutingRulesTab() {
           </div>
         </div>
 
+        {/* Row 2 (conditional): match value — half-width left col */}
         {newRule.match_type === "sender" && (
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <Label className="text-xs">Avsender-ID</Label>
               <Input
-                placeholder="f.eks. '+4799887766' eller 'Kraftverk-AS'"
+                placeholder="'+4799887766' eller 'Kraftverk-AS'"
                 value={newRule.match_value}
                 maxLength={11}
                 onChange={(e) => setNewRule({ ...newRule, match_value: e.target.value })}
                 className="h-8 text-sm"
               />
-              <p className="text-xs text-muted-foreground leading-tight">
-                Telefonnummer (+47…) eller alfanumerisk ID (maks 11 tegn).
-              </p>
+              <p className="text-xs text-muted-foreground leading-tight">Tlf. (+47…) eller alfanumerisk (maks 11 tegn).</p>
             </div>
           </div>
         )}
@@ -277,13 +290,9 @@ export function RoutingRulesTab() {
         {(newRule.match_type === "keyword" || newRule.match_type === "prefix") && (
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs">
-                {newRule.match_type === "keyword" ? "Nøkkelord" : "Prefiks"}
-              </Label>
+              <Label className="text-xs">{newRule.match_type === "keyword" ? "Nøkkelord" : "Prefiks"}</Label>
               <Input
-                placeholder={
-                  newRule.match_type === "keyword" ? "f.eks. 'hjelp'" : "f.eks. 'START'"
-                }
+                placeholder={newRule.match_type === "keyword" ? "f.eks. 'hjelp'" : "f.eks. 'START'"}
                 value={newRule.match_value}
                 onChange={(e) => setNewRule({ ...newRule, match_value: e.target.value })}
                 className="h-8 text-sm"
@@ -292,35 +301,29 @@ export function RoutingRulesTab() {
           </div>
         )}
 
+        {/* Row 3: group + gateway */}
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
             <Label className="text-xs">Send til gruppe</Label>
             <Select
               value={newRule.target_group_id}
-              onValueChange={(value) =>
-                setNewRule({ ...newRule, target_group_id: value })
-              }
+              onValueChange={(value) => setNewRule({ ...newRule, target_group_id: value })}
             >
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder="Velg gruppe" />
               </SelectTrigger>
               <SelectContent>
                 {groups.map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    {group.name}
-                  </SelectItem>
+                  <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-1">
             <Label className="text-xs">Bruk gateway</Label>
             <Select
               value={newRule.gateway_id}
-              onValueChange={(value) =>
-                setNewRule({ ...newRule, gateway_id: value })
-              }
+              onValueChange={(value) => setNewRule({ ...newRule, gateway_id: value })}
             >
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder="Velg gateway" />
@@ -338,21 +341,16 @@ export function RoutingRulesTab() {
 
         {/* ── Escalation levels ── */}
         <Separator className="my-0.5" />
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <div>
-              <h4 className="text-xs font-medium">Eskaleringsnivåer</h4>
-              <p className="text-xs text-muted-foreground">
-                Varsle andre grupper hvis meldingen ikke besvares innen angitt tid.
-              </p>
-            </div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Eskaleringsnivåer</p>
             <Button
               type="button"
               variant="outline"
               size="sm"
               disabled={escalationLevels.length >= 3}
               onClick={addEscalationLevel}
-              className="h-7 text-xs px-2"
+              className="h-6 text-xs px-2"
             >
               <Plus className="h-3 w-3 mr-1" />
               Legg til nivå
@@ -360,70 +358,50 @@ export function RoutingRulesTab() {
           </div>
 
           {escalationLevels.length === 0 && (
-            <p className="text-xs text-muted-foreground italic">
-              Ingen eskaleringsnivåer lagt til ennå.
-            </p>
+            <p className="text-xs text-muted-foreground italic">Ingen eskaleringsnivåer lagt til ennå.</p>
           )}
 
           {escalationLevels.map((level, index) => (
-            <div key={index} className="border rounded-md p-2 bg-muted/20">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="outline" className="font-mono text-xs h-5 px-1.5">
-                    Nivå {level.level}
-                  </Badge>
-                  <AlertTriangle className="h-3 w-3 text-orange-500" />
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => removeEscalationLevel(index)}
-                >
-                  <Trash2 className="h-3 w-3 text-muted-foreground" />
-                </Button>
+            <div key={index} className="flex items-center gap-2 border rounded-md px-2 py-1.5 bg-muted/20 flex-wrap">
+              {/* Badge */}
+              <Badge variant="outline" className="font-mono text-xs h-5 px-1.5 shrink-0">
+                Nivå {level.level}
+              </Badge>
+
+              {/* Timeout */}
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">Etter</span>
+                <Input
+                  type="number"
+                  min={1}
+                  value={level.timeout_minutes}
+                  onChange={(e) =>
+                    updateEscalationLevel(index, { timeout_minutes: parseInt(e.target.value) || 1 })
+                  }
+                  className="h-6 w-14 text-xs px-1.5"
+                />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">min</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 mb-1.5">
-                <div className="space-y-1">
-                  <Label className="text-xs">Minutter uten svar</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={level.timeout_minutes}
-                    onChange={(e) =>
-                      updateEscalationLevel(index, { timeout_minutes: parseInt(e.target.value) || 1 })
-                    }
-                    className="h-7 text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Varsle gruppe</Label>
-                  <Select
-                    value={level.target_group_id}
-                    onValueChange={(value) =>
-                      updateEscalationLevel(index, { target_group_id: value })
-                    }
-                  >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="Velg gruppe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {groups.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>
-                          {group.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              {/* Group */}
+              <Select
+                value={level.target_group_id}
+                onValueChange={(value) => updateEscalationLevel(index, { target_group_id: value })}
+              >
+                <SelectTrigger className="h-6 text-xs w-36">
+                  <SelectValue placeholder="Velg gruppe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground mr-1">Metoder:</span>
+              {/* Methods */}
+              <div className="flex items-center gap-2">
                 {(["sms", "push", "voicecall"] as const).map((method) => (
-                  <label key={method} className="flex items-center gap-1 cursor-pointer select-none text-xs">
+                  <label key={method} className="flex items-center gap-1 cursor-pointer select-none text-xs whitespace-nowrap">
                     <Checkbox
                       checked={level.methods.includes(method)}
                       onCheckedChange={() => toggleMethod(index, method)}
@@ -433,17 +411,28 @@ export function RoutingRulesTab() {
                   </label>
                 ))}
               </div>
+
+              {/* Delete */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 ml-auto shrink-0"
+                onClick={() => removeEscalationLevel(index)}
+              >
+                <Trash2 className="h-3 w-3 text-muted-foreground" />
+              </Button>
             </div>
           ))}
         </div>
 
-        <div className="flex items-center gap-3 pt-0.5">
-          <Button onClick={handleSaveRule} size="sm" className="h-8">
-            {editingId ? (
-              "Oppdater regel"
-            ) : (
-              <><Plus className="h-3.5 w-3.5 mr-1.5" />Legg til regel</>
-            )}
+        {/* Save / cancel */}
+        <div className="flex items-center gap-3">
+          <Button onClick={handleSaveRule} size="sm" className="h-7 text-xs">
+            {editingId
+              ? "Oppdater regel"
+              : <><Plus className="h-3.5 w-3.5 mr-1" />Legg til regel</>
+            }
           </Button>
           {editingId && (
             <button
@@ -457,50 +446,51 @@ export function RoutingRulesTab() {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Aktive regler</h3>
+      {/* ── Active rules list ── */}
+      <div className="space-y-1.5">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Aktive regler</p>
         {rules.length === 0 ? (
           <div className="text-center p-6 border rounded-lg border-dashed text-muted-foreground text-sm">
             Ingen rutingsregler definert ennå
           </div>
         ) : (
-          <div className="space-y-1.5">
-            {rules.map((rule, index) => (
+          <div className="space-y-1">
+            {rules.map((rule) => (
               <div
                 key={rule.id}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-colors ${
+                className={`flex items-center justify-between px-3 py-1.5 rounded-lg border transition-colors ${
                   editingId === rule.id
                     ? "bg-primary/5 border-primary/40"
                     : "bg-secondary/20"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="bg-background p-1.5 rounded-full border shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="bg-background p-1 rounded-full border shrink-0">
                     <ArrowDownUp className="h-3 w-3 text-muted-foreground" />
                   </div>
-                  <div>
-                    <div className="text-sm font-medium flex items-center gap-1.5">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium flex items-center gap-1.5 flex-wrap">
                       {rule.name || "Navnløs regel"}
-                      <Badge variant="outline" className="text-xs h-4 px-1">{rule.match_type}</Badge>
+                      <span className={`inline-flex items-center rounded border px-1 py-0 text-xs font-mono leading-4 ${matchTypeBadgeClass(rule.match_type)}`}>
+                        {rule.match_type}
+                      </span>
                       {rule.match_value && (
-                        <Badge variant="secondary" className="font-mono text-xs h-4 px-1">
-                          {rule.match_value}
-                        </Badge>
+                        <span className="font-mono text-xs text-muted-foreground">{rule.match_value}</span>
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground flex gap-3">
                       <span className="flex items-center gap-0.5">
-                        <MessageSquare className="h-3 w-3" />
+                        <MessageSquare className="h-3 w-3 shrink-0" />
                         {rule.group_name || "Ukjent gruppe"}
                       </span>
                       <span className="flex items-center gap-0.5">
-                        <Globe className="h-3 w-3" />
+                        <Globe className="h-3 w-3 shrink-0" />
                         {rule.gateway_name || "Ukjent gateway"}
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -512,9 +502,7 @@ export function RoutingRulesTab() {
                   </Button>
                   <Switch
                     checked={rule.is_active}
-                    onCheckedChange={(checked) =>
-                      handleToggleActive(rule.id, checked)
-                    }
+                    onCheckedChange={(checked) => handleToggleActive(rule.id, checked)}
                   />
                   <Button
                     variant="ghost"
