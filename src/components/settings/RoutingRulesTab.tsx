@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,10 @@ export function RoutingRulesTab() {
   const [groups, setGroups] = useState<any[]>([]);
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Drag-to-reorder state
+  const dragIndex = useRef<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [newRule, setNewRule] = useState<{
     name: string;
     match_type: "keyword" | "prefix" | "fallback" | "sender";
@@ -132,12 +136,73 @@ export function RoutingRulesTab() {
     fetchData();
   }, []);
 
+  // ── Drag-to-reorder handlers ──────────────────────────────────────────
+  const handleDragStart = (index: number) => {
+    dragIndex.current = index;
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = async (targetIndex: number) => {
+    const from = dragIndex.current;
+    if (from === null || from === targetIndex) {
+      dragIndex.current = null;
+      setDragOverIndex(null);
+      return;
+    }
+
+    const reordered = [...rules];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    // Optimistic update
+    setRules(reordered);
+    dragIndex.current = null;
+    setDragOverIndex(null);
+
+    try {
+      await routingRuleService.reorderRules(reordered.map((r) => r.id));
+    } catch {
+      toast({ title: "Feil", description: "Kunne ikke lagre ny rekkefølge", variant: "destructive" });
+      fetchData();
+    }
+  };
+
+  const handleDragEnd = () => {
+    dragIndex.current = null;
+    setDragOverIndex(null);
+  };
+
+  // ── Fallback uniqueness check per gateway ─────────────────────────────
+  const hasFallbackConflict = (): boolean => {
+    if (newRule.match_type !== "fallback" || !newRule.gateway_id) return false;
+    return rules.some(
+      (r) =>
+        r.match_type === "fallback" &&
+        r.gateway_id === newRule.gateway_id &&
+        r.is_active &&
+        r.id !== editingId
+    );
+  };
+
   const handleSaveRule = async () => {
     try {
       if (!newRule.target_group_id || !newRule.gateway_id) {
         toast({
           title: "Mangler informasjon",
           description: "Velg både målgruppe og gateway",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (hasFallbackConflict()) {
+        toast({
+          title: "Kun én fallback per gateway",
+          description: "Det finnes allerede en aktiv fallback-regel for valgt gateway. Deaktiver den først.",
           variant: "destructive",
         });
         return;
@@ -269,6 +334,14 @@ export function RoutingRulesTab() {
             </Select>
           </div>
         </div>
+
+        {/* Fallback conflict warning */}
+        {hasFallbackConflict() && (
+          <p className="text-xs text-destructive flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            Det finnes allerede en aktiv fallback-regel for valgt gateway. Deaktiver den først.
+          </p>
+        )}
 
         {/* Row 2 (conditional): match value — half-width left col */}
         {newRule.match_type === "sender" && (
@@ -455,18 +528,25 @@ export function RoutingRulesTab() {
           </div>
         ) : (
           <div className="space-y-1">
-            {rules.map((rule) => (
+            {rules.map((rule, index) => (
               <div
                 key={rule.id}
-                className={`flex items-center justify-between px-3 py-1.5 rounded-lg border transition-colors ${
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={() => handleDrop(index)}
+                onDragEnd={handleDragEnd}
+                className={`flex items-center justify-between px-3 py-1.5 rounded-lg border transition-colors cursor-default ${
                   editingId === rule.id
                     ? "bg-primary/5 border-primary/40"
+                    : dragOverIndex === index
+                    ? "bg-accent border-accent-foreground/30"
                     : "bg-secondary/20"
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="bg-background p-1 rounded-full border shrink-0">
-                    <ArrowDownUp className="h-3 w-3 text-muted-foreground" />
+                  <div className="bg-background p-1 rounded-full border shrink-0 cursor-grab active:cursor-grabbing">
+                    <GripVertical className="h-3 w-3 text-muted-foreground" />
                   </div>
                   <div className="min-w-0">
                     <div className="text-sm font-medium flex items-center gap-1.5 flex-wrap">

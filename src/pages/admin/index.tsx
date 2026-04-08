@@ -33,14 +33,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Trash2, Shield, Settings, Server, Users, Activity, Router, Pencil } from "lucide-react";
+import { Plus, Search, Trash2, Shield, Settings, Server, Users, Activity, Router, Pencil, AlertTriangle, Filter } from "lucide-react";
 import { GroupHierarchy } from "@/components/GroupHierarchy";
 import { RoutingRulesTab } from "@/components/settings/RoutingRulesTab";
 import { supabase } from "@/integrations/supabase/client";
 import { gatewayService, type Gateway } from "@/services/gatewayService";
 import { groupService, type Group } from "@/services/groupService";
 import { userService, type UserProfile } from "@/services/userService";
-import { auditService, type AuditLogEntry } from "@/services/auditService";
+import { auditService, type AuditLogEntry, type AuditLogFilter } from "@/services/auditService";
 import { adminPermissionService } from "@/services/adminPermissionService";
 
 const db = supabase as any;
@@ -54,6 +54,12 @@ export default function AdminPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeMembers, setActiveMembers] = useState<Record<string, number>>({});
+  const [auditFilter, setAuditFilter] = useState<AuditLogFilter>({
+    group_id:   "",
+    user_id:    "",
+    event_type: "",
+  });
   const [userRole, setUserRole] = useState<string>("member");
 
   const [newUser, setNewUser] = useState({
@@ -85,6 +91,7 @@ export default function AdminPage() {
     escalation_enabled: false,
     escalation_timeout_minutes: 30,
     min_on_duty_count: 1,
+    min_active: 0,
   });
 
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
@@ -97,6 +104,7 @@ export default function AdminPage() {
     escalation_enabled: false,
     escalation_timeout_minutes: 30,
     min_on_duty_count: 1,
+    min_active: 0,
   });
 
   const [newGateway, setNewGateway] = useState({
@@ -150,6 +158,7 @@ export default function AdminPage() {
         escalation_enabled: editingGroup.escalation_enabled || false,
         escalation_timeout_minutes: editingGroup.escalation_timeout_minutes || 30,
         min_on_duty_count: editingGroup.min_on_duty_count || 1,
+        min_active: (editingGroup as any).min_active ?? 0,
       });
     }
   }, [editingGroup]);
@@ -276,8 +285,24 @@ export default function AdminPage() {
         setGateways(gatewaysData || []);
       }
 
-      const logs = await auditService.getAuditLogs(20);
+      const logs = await auditService.getAuditLogs(100, {
+        group_id:   auditFilter.group_id   || undefined,
+        user_id:    auditFilter.user_id    || undefined,
+        event_type: auditFilter.event_type || undefined,
+      });
       setAuditLogs(logs);
+
+      // Fetch active member counts per group
+      const { data: activeCounts } = await db
+        .from("group_members")
+        .select("group_id")
+        .eq("is_active", true);
+
+      const countMap: Record<string, number> = {};
+      (activeCounts || []).forEach((m: any) => {
+        countMap[m.group_id] = (countMap[m.group_id] || 0) + 1;
+      });
+      setActiveMembers(countMap);
 
     } catch (error: any) {
       console.error("Error fetching admin data:", error);
@@ -507,6 +532,12 @@ export default function AdminPage() {
     if (!editingGroup) return;
 
     try {
+      const memberCount = Object.keys(activeMembers).length; // rough bound check done server-side
+      if (editGroupData.min_active < 0) {
+        toast({ title: "Ugyldig verdi", description: "min_active kan ikke være negativ", variant: "destructive" });
+        return;
+      }
+
       await groupService.updateGroup(editingGroup.id, {
         name: editGroupData.name,
         description: editGroupData.description,
@@ -516,7 +547,8 @@ export default function AdminPage() {
         escalation_enabled: editGroupData.escalation_enabled,
         escalation_timeout_minutes: editGroupData.escalation_timeout_minutes,
         min_on_duty_count: editGroupData.min_on_duty_count,
-      });
+        min_active: editGroupData.min_active,
+      } as any);
 
       toast({
         title: "Gruppe oppdatert",
@@ -560,6 +592,7 @@ export default function AdminPage() {
         escalation_enabled: newGroup.escalation_enabled,
         escalation_timeout_minutes: newGroup.escalation_timeout_minutes,
         min_on_duty_count: newGroup.min_on_duty_count,
+        min_active: newGroup.min_active,
       };
 
       await groupService.createGroup(groupData);
@@ -579,6 +612,7 @@ export default function AdminPage() {
         escalation_enabled: false,
         escalation_timeout_minutes: 30,
         min_on_duty_count: 1,
+        min_active: 0,
       });
     } catch (error: any) {
       console.error("Failed to create group:", error);
@@ -660,6 +694,35 @@ export default function AdminPage() {
         variant: "destructive",
       });
     }
+  };
+
+  const formatAuditMetadata = (log: AuditLogEntry): string => {
+    const m = (log.metadata || log.old_data) as Record<string, unknown> | null;
+    if (!m) return "—";
+    const et = log.event_type || log.action;
+    if (et === "rule_matched") {
+      return `Avsender: ${m.sender ?? "?"} → Regel: "${m.matched_rule_name ?? "?"}" (${m.match_type ?? "?"})`;
+    }
+    if (et === "min_active_changed") {
+      return `${m.group_name ?? ""}: min_active ${m.old_value} → ${m.new_value}`;
+    }
+    if (et === "admin_override") {
+      const dir = m.set_active ? "aktivert" : "deaktivert";
+      return `${m.group_name ?? ""}: bruker ${dir}${m.reason ? ` — ${m.reason}` : ""}`;
+    }
+    if (et === "activation_requested") {
+      return `${m.group_name ?? ""}: forespørsel sendt til ${(m.requested_user_ids as string[] | undefined)?.length ?? 0} brukere`;
+    }
+    if (et === "activation_confirmed") return `${m.group_name ?? ""}: bruker aktivert`;
+    if (et === "activation_rejected")  return `${m.group_name ?? ""}: bruker avviste forespørsel`;
+    if (et === "activated")            return `${m.group_name ?? ""}: bruker aktivert`;
+    if (et === "deactivated")          return `${m.group_name ?? ""}: bruker deaktivert`;
+    // Fallback: render key=value pairs
+    return Object.entries(m)
+      .filter(([, v]) => v !== null && v !== undefined)
+      .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`)
+      .join(", ")
+      .slice(0, 120);
   };
 
   const filteredUsers = users.filter(
@@ -1177,10 +1240,25 @@ export default function AdminPage() {
                         </div>
                       )}
                       
+                      <div className="grid gap-2">
+                        <Label>Min. aktive medlemmer</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={newGroup.min_active}
+                          onChange={(e) =>
+                            setNewGroup({ ...newGroup, min_active: Math.max(0, parseInt(e.target.value) || 0) })
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Minimum antall medlemmer som må være aktive (på vakt) til enhver tid.
+                        </p>
+                      </div>
+
                       <div className="flex items-center space-x-2 pt-2">
                         <Switch
                           checked={newGroup.escalation_enabled}
-                          onCheckedChange={(checked) => 
+                          onCheckedChange={(checked) =>
                             setNewGroup({ ...newGroup, escalation_enabled: checked })
                           }
                         />
@@ -1244,19 +1322,28 @@ export default function AdminPage() {
                         <TableRow>
                           <TableHead>Navn</TableHead>
                           <TableHead>Type</TableHead>
-                          <TableHead>Medlemmer</TableHead>
+                          <TableHead>Aktive / Min</TableHead>
                           <TableHead>Eskalering</TableHead>
                           <TableHead className="text-right">Handlinger</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {groups.map((group) => (
+                        {groups.map((group) => {
+                          const active  = activeMembers[group.id] ?? 0;
+                          const minAct  = (group as any).min_active ?? 0;
+                          const atMin   = active <= minAct && minAct > 0;
+                          return (
                           <TableRow key={group.id}>
                             <TableCell className="font-medium">{group.name}</TableCell>
                             <TableCell>
                               <Badge variant="outline">{group.kind}</Badge>
                             </TableCell>
-                            <TableCell>{group.active_members || 0}</TableCell>
+                            <TableCell>
+                              <span className={`text-sm flex items-center gap-1 ${atMin ? "text-orange-600 font-medium" : ""}`}>
+                                {atMin && <AlertTriangle className="h-3.5 w-3.5 shrink-0" />}
+                                {active} aktiv{active !== 1 ? "e" : ""} / min {minAct}
+                              </span>
+                            </TableCell>
                             <TableCell>
                               {group.escalation_enabled ? (
                                 <Badge variant="secondary">{group.escalation_timeout_minutes}m</Badge>
@@ -1285,7 +1372,8 @@ export default function AdminPage() {
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))}
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
@@ -1388,6 +1476,31 @@ export default function AdminPage() {
                       </Select>
                     </div>
                   )}
+
+                  <div className="grid gap-2">
+                    <Label>Min. aktive medlemmer</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={editGroupData.min_active}
+                      onChange={(e) =>
+                        setEditGroupData({
+                          ...editGroupData,
+                          min_active: Math.max(0, parseInt(e.target.value) || 0),
+                        })
+                      }
+                    />
+                    {editingGroup && (() => {
+                      const active = activeMembers[editingGroup.id] ?? 0;
+                      const atMin  = active <= editGroupData.min_active && editGroupData.min_active > 0;
+                      return (
+                        <p className={`text-xs flex items-center gap-1 ${atMin ? "text-orange-600" : "text-muted-foreground"}`}>
+                          {atMin && <AlertTriangle className="h-3 w-3 shrink-0" />}
+                          {active} aktiv{active !== 1 ? "e" : ""} for øyeblikket
+                        </p>
+                      );
+                    })()}
+                  </div>
 
                   <div className="flex items-center space-x-2">
                     <Switch
@@ -1561,35 +1674,139 @@ export default function AdminPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Revisjonslogg</CardTitle>
-                <CardDescription>
-                  Logg over alle sensitive handlinger i systemet
-                </CardDescription>
+                <CardDescription>Logg over alle sensitive handlinger i systemet</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* ── Filters ── */}
+                <div className="flex flex-wrap gap-3 items-end border rounded-md p-3 bg-muted/20">
+                  <Filter className="h-4 w-4 text-muted-foreground mt-auto mb-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Hendelsestype</label>
+                    <Select
+                      value={auditFilter.event_type || "__all__"}
+                      onValueChange={(v) =>
+                        setAuditFilter({ ...auditFilter, event_type: v === "__all__" ? "" : v })
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-48 text-sm">
+                        <SelectValue placeholder="Alle typer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">Alle typer</SelectItem>
+                        {[
+                          "activated","deactivated","activation_requested","activation_confirmed",
+                          "activation_rejected","activation_expired","admin_override",
+                          "min_active_changed","rule_changed","rule_matched",
+                        ].map((et) => (
+                          <SelectItem key={et} value={et}>{et}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Gruppe</label>
+                    <Select
+                      value={auditFilter.group_id || "__all__"}
+                      onValueChange={(v) =>
+                        setAuditFilter({ ...auditFilter, group_id: v === "__all__" ? "" : v })
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-44 text-sm">
+                        <SelectValue placeholder="Alle grupper" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">Alle grupper</SelectItem>
+                        {groups.map((g) => (
+                          <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Bruker</label>
+                    <Select
+                      value={auditFilter.user_id || "__all__"}
+                      onValueChange={(v) =>
+                        setAuditFilter({ ...auditFilter, user_id: v === "__all__" ? "" : v })
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-44 text-sm">
+                        <SelectValue placeholder="Alle brukere" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">Alle brukere</SelectItem>
+                        {users.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>{u.full_name || u.email}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {(auditFilter.event_type || auditFilter.group_id || auditFilter.user_id) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={() => setAuditFilter({ group_id: "", user_id: "", event_type: "" })}
+                    >
+                      Nullstill filter
+                    </Button>
+                  )}
+                </div>
+
+                {/* ── Log table ── */}
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tidspunkt</TableHead>
-                      <TableHead>Bruker</TableHead>
-                      <TableHead>Handling</TableHead>
+                      <TableHead className="w-36">Tidspunkt</TableHead>
+                      <TableHead>Aktør</TableHead>
+                      <TableHead>Hendelse</TableHead>
+                      <TableHead>Gruppe</TableHead>
+                      <TableHead>Mål</TableHead>
                       <TableHead>Detaljer</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {auditLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="whitespace-nowrap">
-                          {new Date(log.created_at).toLocaleString()}
-                        </TableCell>
-                        <TableCell>{(log as any).user_profiles?.full_name || "System"}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{log.action_type}</Badge>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {JSON.stringify(log.metadata)}
+                    {auditLogs
+                      .filter((log) => {
+                        if (auditFilter.event_type && log.event_type !== auditFilter.event_type) return false;
+                        if (auditFilter.group_id   && log.group_id   !== auditFilter.group_id)   return false;
+                        if (auditFilter.user_id    && log.user_id    !== auditFilter.user_id)     return false;
+                        return true;
+                      })
+                      .map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                            {new Date(log.created_at).toLocaleString("nb-NO", {
+                              day: "2-digit", month: "2-digit", year: "numeric",
+                              hour: "2-digit", minute: "2-digit",
+                            })}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {(log as any).actor_name || "System"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {log.event_type || log.action || "—"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {(log as any).group_name || "—"}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {(log as any).target_name || "—"}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-xs">
+                            {formatAuditMetadata(log)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    {auditLogs.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                          Ingen loggoppføringer
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
