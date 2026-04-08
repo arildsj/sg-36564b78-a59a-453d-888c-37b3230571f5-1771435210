@@ -27,7 +27,7 @@ export function RoutingRulesTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newRule, setNewRule] = useState<{
     name: string;
-    match_type: "keyword" | "prefix" | "fallback";
+    match_type: "keyword" | "prefix" | "fallback" | "sender";
     match_value: string;
     target_group_id: string;
     gateway_id: string;
@@ -206,13 +206,29 @@ export function RoutingRulesTab() {
               <SelectContent>
                 <SelectItem value="keyword">Nøkkelord (Inneholder)</SelectItem>
                 <SelectItem value="prefix">Prefiks (Starter med)</SelectItem>
+                <SelectItem value="sender">Kjent avsender</SelectItem>
                 <SelectItem value="fallback">Fallback (Standard)</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {newRule.match_type !== "fallback" && (
+        {newRule.match_type === "sender" && (
+          <div className="space-y-2">
+            <Label>Avsender-ID</Label>
+            <Input
+              placeholder="f.eks. '+4799887766' eller 'Kraftverk-AS'"
+              value={newRule.match_value}
+              maxLength={11}
+              onChange={(e) => setNewRule({ ...newRule, match_value: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Internasjonalt telefonnummer (+47…) eller alfanumerisk avsender-ID (maks 11 tegn, GSM-standard).
+            </p>
+          </div>
+        )}
+
+        {(newRule.match_type === "keyword" || newRule.match_type === "prefix") && (
           <div className="space-y-2">
             <Label>
               {newRule.match_type === "keyword" ? "Nøkkelord" : "Prefiks"}

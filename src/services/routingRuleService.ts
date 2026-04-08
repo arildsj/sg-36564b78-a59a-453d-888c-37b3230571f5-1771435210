@@ -8,7 +8,7 @@ export type RoutingRule = {
   name: string;
   gateway_id: string;
   target_group_id: string;
-  match_type: "fallback" | "prefix" | "keyword";
+  match_type: "fallback" | "prefix" | "keyword" | "sender";
   match_value?: string;
   priority: number;
   is_active: boolean;
@@ -138,6 +138,7 @@ export const routingRuleService = {
       } else if (rule.match_type === "fallback") {
         return rule.target_group_id;
       }
+      // "sender" matching is handled at the gateway/inbound layer using from_number
     }
 
     // Default: find any operational group
