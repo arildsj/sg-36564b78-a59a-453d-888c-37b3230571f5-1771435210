@@ -367,13 +367,13 @@ export default function OnboardingPage() {
   return (
     <>
       <Head>
-        <title>Onboarding - SeMSe 2.0</title>
+        <title>Onboarding - SeMSe</title>
       </Head>
 
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Velkommen til SeMSe 2.0</h1>
+            <h1 className="text-3xl font-bold text-foreground">Velkommen til SeMSe</h1>
             <p className="text-muted-foreground mt-2">
               Opprett din organisasjon og kom i gang med SMS-håndtering
             </p>

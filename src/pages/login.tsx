@@ -75,7 +75,7 @@ function LoginPageContent() {
       <div className="w-full max-w-md">
         <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-8 shadow-2xl">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-2">SeMSe 2.0</h1>
+            <h1 className="text-4xl font-bold text-white mb-2">SeMSe</h1>
             <p className="text-slate-400">{t("login.description")}</p>
           </div>
 

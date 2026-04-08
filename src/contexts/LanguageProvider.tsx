@@ -51,7 +51,7 @@ const translations: Record<string, Record<Language, string>> = {
   "dashboard.manage_groups": { no: "Administrer grupper", en: "Manage groups", de: "Gruppen verwalten", fr: "Gérer les groupes", es: "Gestionar grupos", it: "Gestisci gruppi", pl: "Zarządzaj grupami" },
 
   // Home
-  "home.title": { no: "Velkommen til SeMSe 2.0", en: "Welcome to SeMSe 2.0", de: "Willkommen bei SeMSe 2.0", fr: "Bienvenue sur SeMSe 2.0", es: "Bienvenido a SeMSe 2.0", it: "Benvenuto in SeMSe 2.0", pl: "Witamy w SeMSe 2.0" },
+  "home.title": { no: "Velkommen til SeMSe", en: "Welcome to SeMSe", de: "Willkommen bei SeMSe", fr: "Bienvenue sur SeMSe", es: "Bienvenido a SeMSe", it: "Benvenuto in SeMSe", pl: "Witamy w SeMSe" },
   "home.subtitle": { no: "Smart meldingshåndtering for skoler", en: "Smart messaging for schools", de: "Intelligentes Messaging für Schulen", fr: "Messagerie intelligente pour les écoles", es: "Mensajería inteligente para escuelas", it: "Messaggistica intelligente per le scuole", pl: "Inteligentna komunikacja dla szkół" },
 
   // Login - FIXED translations

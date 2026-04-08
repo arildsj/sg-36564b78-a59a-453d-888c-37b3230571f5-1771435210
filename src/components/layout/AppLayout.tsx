@@ -126,7 +126,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       >
         <div className="p-6 border-b flex-none">
           <Link href="/" className="text-2xl font-bold text-primary">
-            SeMSe 2.0
+            SeMSe
           </Link>
           <div className="text-xs text-muted-foreground mt-1">
             Commit: <span className="font-mono">{appCommit}</span>

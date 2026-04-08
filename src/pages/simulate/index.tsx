@@ -305,7 +305,7 @@ export default function SimulatePage() {
   return (
     <>
       <Head>
-        <title>Simulering - SeMSe 2.0</title>
+        <title>Simulering - SeMSe</title>
       </Head>
 
       <AppLayout>
