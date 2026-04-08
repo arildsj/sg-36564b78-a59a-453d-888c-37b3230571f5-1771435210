@@ -3,6 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 // CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
 const db = supabase as any;
 
+export type EscalationLevel = {
+  level: number;              // 1, 2, or 3
+  timeout_minutes: number;    // wait this long with no response before escalating
+  methods: ("sms" | "push" | "voicecall")[];
+  target_group_id: string;    // group to notify at this level
+};
+
 export type RoutingRule = {
   id: string;
   name: string;
@@ -14,6 +21,8 @@ export type RoutingRule = {
   is_active: boolean;
   tenant_id: string;
   created_at: string;
+  escalation_config?: EscalationLevel[] | null;
+  // Enriched display names (not DB columns)
   gateway_name?: string;
   group_name?: string;
 };

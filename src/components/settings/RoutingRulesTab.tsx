@@ -11,10 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { routingRuleService, type RoutingRule } from "@/services/routingRuleService";
+import { routingRuleService, type RoutingRule, type EscalationLevel } from "@/services/routingRuleService";
 import { groupService } from "@/services/groupService";
 import { gatewayService, type Gateway } from "@/services/gatewayService";
-import { Loader2, Plus, Trash2, ArrowDownUp, MessageSquare, Globe, GripVertical, Pencil } from "lucide-react";
+import { Loader2, Plus, Trash2, ArrowDownUp, MessageSquare, Globe, GripVertical, Pencil, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -41,6 +43,8 @@ export function RoutingRulesTab() {
     priority: 0,
   });
 
+  const [escalationLevels, setEscalationLevels] = useState<EscalationLevel[]>([]);
+
   const emptyRule = {
     name: "",
     match_type: "keyword" as const,
@@ -50,23 +54,56 @@ export function RoutingRulesTab() {
     priority: 0,
   };
 
+  const emptyEscalationLevel = (level: number): EscalationLevel => ({
+    level,
+    timeout_minutes: 30,
+    methods: ["sms"],
+    target_group_id: "",
+  });
+
   const cancelEdit = () => {
     setEditingId(null);
     setNewRule(emptyRule);
+    setEscalationLevels([]);
   };
 
   const handleEditClick = (rule: RoutingRule) => {
     setEditingId(rule.id);
     setNewRule({
       name: rule.name || "",
-      match_type: rule.match_type as "keyword" | "prefix" | "fallback",
+      match_type: (rule.match_type as "keyword" | "prefix" | "fallback" | "sender") || "keyword",
       match_value: rule.match_value || "",
       target_group_id: rule.target_group_id || "",
       gateway_id: rule.gateway_id || "",
       priority: rule.priority ?? 0,
     });
-    // Scroll form into view
+    setEscalationLevels(rule.escalation_config || []);
     document.getElementById("routing-rule-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const addEscalationLevel = () => {
+    if (escalationLevels.length >= 3) return;
+    setEscalationLevels(prev => [...prev, emptyEscalationLevel(prev.length + 1)]);
+  };
+
+  const removeEscalationLevel = (index: number) => {
+    setEscalationLevels(prev =>
+      prev.filter((_, i) => i !== index).map((l, i) => ({ ...l, level: i + 1 }))
+    );
+  };
+
+  const updateEscalationLevel = (index: number, changes: Partial<EscalationLevel>) => {
+    setEscalationLevels(prev =>
+      prev.map((l, i) => i === index ? { ...l, ...changes } : l)
+    );
+  };
+
+  const toggleMethod = (index: number, method: "sms" | "push" | "voicecall") => {
+    const level = escalationLevels[index];
+    const methods = level.methods.includes(method)
+      ? level.methods.filter(m => m !== method)
+      : [...level.methods, method];
+    updateEscalationLevel(index, { methods });
   };
 
   const fetchData = async () => {
@@ -106,6 +143,8 @@ export function RoutingRulesTab() {
         return;
       }
 
+      const escalationConfig = escalationLevels.length > 0 ? escalationLevels : null;
+
       if (editingId) {
         await routingRuleService.updateRule(editingId, {
           name: newRule.name,
@@ -114,6 +153,7 @@ export function RoutingRulesTab() {
           target_group_id: newRule.target_group_id,
           gateway_id: newRule.gateway_id,
           priority: newRule.priority,
+          escalation_config: escalationConfig,
         });
         toast({ title: "Regel oppdatert", description: "Rutingsregelen er lagret" });
         setEditingId(null);
@@ -122,12 +162,14 @@ export function RoutingRulesTab() {
           ...newRule,
           priority: rules.length,
           is_active: true,
+          escalation_config: escalationConfig,
         });
         toast({ title: "Regel opprettet", description: "Den nye rutingsregelen er lagret" });
       }
 
       fetchData();
       setNewRule(emptyRule);
+      setEscalationLevels([]);
     } catch (error) {
       console.error("Failed to save rule:", error);
       toast({
@@ -285,6 +327,107 @@ export function RoutingRulesTab() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        {/* ── Escalation levels ── */}
+        <Separator />
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium">Eskaleringsnivåer</h4>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Varsle andre grupper hvis meldingen ikke besvares innen angitt tid.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={escalationLevels.length >= 3}
+              onClick={addEscalationLevel}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Legg til eskaleringsnivå
+            </Button>
+          </div>
+
+          {escalationLevels.length === 0 && (
+            <p className="text-xs text-muted-foreground italic">
+              Ingen eskaleringsnivåer lagt til ennå.
+            </p>
+          )}
+
+          {escalationLevels.map((level, index) => (
+            <div key={index} className="border rounded-lg p-3 space-y-3 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="font-mono text-xs">
+                    Nivå {level.level}
+                  </Badge>
+                  <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => removeEscalationLevel(index)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Eskaler etter (minutter uten svar)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={level.timeout_minutes}
+                    onChange={(e) =>
+                      updateEscalationLevel(index, { timeout_minutes: parseInt(e.target.value) || 1 })
+                    }
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Varsle gruppe</Label>
+                  <Select
+                    value={level.target_group_id}
+                    onValueChange={(value) =>
+                      updateEscalationLevel(index, { target_group_id: value })
+                    }
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="Velg gruppe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Varslingsmetoder</Label>
+                <div className="flex items-center gap-5">
+                  {(["sms", "push", "voicecall"] as const).map((method) => (
+                    <label key={method} className="flex items-center gap-1.5 cursor-pointer select-none text-sm">
+                      <Checkbox
+                        checked={level.methods.includes(method)}
+                        onCheckedChange={() => toggleMethod(index, method)}
+                      />
+                      {method === "sms" ? "SMS" : method === "push" ? "App-varsel" : "Voicecall"}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="flex items-center gap-3">
