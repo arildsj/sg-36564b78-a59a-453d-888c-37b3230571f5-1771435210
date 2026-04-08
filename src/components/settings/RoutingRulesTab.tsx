@@ -123,7 +123,12 @@ export function RoutingRulesTab() {
       gateway_id:      rule.gateway_id || "",
       priority:        rule.priority ?? 0,
     };
-    const levels = rule.escalation_config ? [...rule.escalation_config] : [];
+    const levels: EscalationLevel[] = (rule.escalation_levels_data ?? []).map(l => ({
+      level:            l.level_number,
+      timeout_minutes:  l.minutes_without_reply,
+      methods:          l.methods,
+      target_group_id:  l.notify_group_id,
+    }));
     setEditingId(rule.id);
     setFormRule(form);
     setEscalationLevels(levels);
@@ -195,26 +200,24 @@ export function RoutingRulesTab() {
 
     setSaving(true);
     try {
-      const escalationConfig = escalationLevels.length > 0 ? escalationLevels : null;
-
       if (editingId) {
         await routingRuleService.updateRule(editingId, {
-          name:              formRule.name,
-          match_type:        formRule.match_type,
-          match_value:       formRule.match_value,
-          target_group_id:   formRule.target_group_id,
-          gateway_id:        formRule.gateway_id,
-          priority:          formRule.priority,
-          escalation_config: escalationConfig,
+          name:            formRule.name,
+          match_type:      formRule.match_type,
+          match_value:     formRule.match_value,
+          target_group_id: formRule.target_group_id,
+          gateway_id:      formRule.gateway_id,
+          priority:        formRule.priority,
         });
+        await routingRuleService.saveEscalationLevels(editingId, escalationLevels);
         toast({ title: "Regel oppdatert" });
       } else {
-        await routingRuleService.createRule({
+        const newId = await routingRuleService.createRule({
           ...formRule,
-          priority:          rules.length,
-          is_active:         true,
-          escalation_config: escalationConfig,
+          priority:  rules.length,
+          is_active: true,
         });
+        await routingRuleService.saveEscalationLevels(newId, escalationLevels);
         toast({ title: "Regel opprettet" });
       }
 

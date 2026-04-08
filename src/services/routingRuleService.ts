@@ -98,7 +98,7 @@ export const routingRuleService = {
     }));
   },
 
-  async createRule(rule: Partial<RoutingRule>) {
+  async createRule(rule: Partial<RoutingRule>): Promise<string> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -110,14 +110,41 @@ export const routingRuleService = {
 
     if (!profile) throw new Error("User profile not found");
 
-    const { error } = await db
+    const { data, error } = await db
       .from("routing_rules")
       .insert({
         ...rule,
         tenant_id: profile.tenant_id
-      });
+      })
+      .select("id")
+      .single();
 
     if (error) throw error;
+    return data.id as string;
+  },
+
+  async saveEscalationLevels(ruleId: string, levels: EscalationLevel[]): Promise<void> {
+    // Replace all levels for this rule atomically: delete then insert
+    const { error: deleteError } = await db
+      .from("escalation_levels")
+      .delete()
+      .eq("routing_rule_id", ruleId);
+    if (deleteError) throw deleteError;
+
+    if (levels.length === 0) return;
+
+    const rows = levels.map((l, i) => ({
+      routing_rule_id:      ruleId,
+      level_number:         i + 1,
+      minutes_without_reply: l.timeout_minutes,
+      notify_group_id:      l.target_group_id,
+      methods:              l.methods,
+    }));
+
+    const { error: insertError } = await db
+      .from("escalation_levels")
+      .insert(rows);
+    if (insertError) throw insertError;
   },
 
   async updateRule(id: string, updates: Partial<RoutingRule>) {
