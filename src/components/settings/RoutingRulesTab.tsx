@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { routingRuleService, type RoutingRule, type EscalationLevel } from "@/services/routingRuleService";
+import { routingRuleService, type RoutingRule, type EscalationLevel, type NormalizedEscalationLevel } from "@/services/routingRuleService";
 import { groupService } from "@/services/groupService";
 import { gatewayService, type Gateway } from "@/services/gatewayService";
 import { Loader2, Plus, Trash2, MessageSquare, Globe, GripVertical, Pencil, AlertTriangle } from "lucide-react";
@@ -250,6 +250,21 @@ export function RoutingRulesTab() {
     setDragOverIndex(null);
   };
 
+  // ── Escalation summary for rule row ──────────────────────────────────
+  const escalationSummary = (rule: RoutingRule): string | null => {
+    const levels = rule.escalation_levels_data;
+    if (!levels || levels.length === 0) return null;
+
+    return levels
+      .map((l) => {
+        const methods = l.methods
+          .map((m) => (m === "sms" ? "SMS" : m === "push" ? "App" : "Voice"))
+          .join(" + ");
+        return `Nivå ${l.level_number}: ${l.minutes_without_reply} min → ${methods}`;
+      })
+      .join("   |   ");
+  };
+
   // ── Badge colours ─────────────────────────────────────────────────────
   const matchTypeBadgeClass = (type: string) => {
     switch (type) {
@@ -317,6 +332,12 @@ export function RoutingRulesTab() {
                       {rule.gateway_name || "Ukjent gateway"}
                     </span>
                   </div>
+                  {escalationSummary(rule) && (
+                    <div className="text-xs text-muted-foreground/60 flex items-center gap-1 mt-0.5">
+                      <span>⚡</span>
+                      <span>{escalationSummary(rule)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
