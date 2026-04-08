@@ -63,23 +63,7 @@ export function RoutingRulesTab() {
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [groupsData, gatewaysData, rulesData] = await Promise.all([
-          groupService.getOperationalGroups(),
-          gatewayService.getAll(),
-          routingRuleService.getRules()
-        ]);
-
-        setGroups(groupsData);
-        setGateways(gatewaysData);
-        setRules(rulesData);
-      } catch (error) {
-        console.error("Failed to load routing data:", error);
-      }
-    };
-
-    loadData();
+    fetchData();
   }, []);
 
   const handleCreateRule = async () => {
