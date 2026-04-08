@@ -14,7 +14,7 @@ import {
 import { routingRuleService, type RoutingRule } from "@/services/routingRuleService";
 import { groupService } from "@/services/groupService";
 import { gatewayService, type Gateway } from "@/services/gatewayService";
-import { Loader2, Plus, Trash2, ArrowDownUp, MessageSquare, Globe, GripVertical } from "lucide-react";
+import { Loader2, Plus, Trash2, ArrowDownUp, MessageSquare, Globe, GripVertical, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -24,6 +24,7 @@ export function RoutingRulesTab() {
   const [rules, setRules] = useState<RoutingRule[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [gateways, setGateways] = useState<Gateway[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newRule, setNewRule] = useState<{
     name: string;
     match_type: "keyword" | "prefix" | "fallback";
@@ -39,6 +40,34 @@ export function RoutingRulesTab() {
     gateway_id: "",
     priority: 0,
   });
+
+  const emptyRule = {
+    name: "",
+    match_type: "keyword" as const,
+    match_value: "",
+    target_group_id: "",
+    gateway_id: "",
+    priority: 0,
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setNewRule(emptyRule);
+  };
+
+  const handleEditClick = (rule: RoutingRule) => {
+    setEditingId(rule.id);
+    setNewRule({
+      name: rule.name || "",
+      match_type: rule.match_type as "keyword" | "prefix" | "fallback",
+      match_value: rule.match_value || "",
+      target_group_id: rule.target_group_id || "",
+      gateway_id: rule.gateway_id || "",
+      priority: rule.priority ?? 0,
+    });
+    // Scroll form into view
+    document.getElementById("routing-rule-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const fetchData = async () => {
     try {
@@ -66,7 +95,7 @@ export function RoutingRulesTab() {
     fetchData();
   }, []);
 
-  const handleCreateRule = async () => {
+  const handleSaveRule = async () => {
     try {
       if (!newRule.target_group_id || !newRule.gateway_id) {
         toast({
@@ -77,31 +106,33 @@ export function RoutingRulesTab() {
         return;
       }
 
-      await routingRuleService.createRule({
-        ...newRule,
-        priority: rules.length,
-        is_active: true
-      });
-
-      toast({
-        title: "Regel opprettet",
-        description: "Den nye rutingsregelen er lagret",
-      });
+      if (editingId) {
+        await routingRuleService.updateRule(editingId, {
+          name: newRule.name,
+          match_type: newRule.match_type,
+          match_value: newRule.match_value,
+          target_group_id: newRule.target_group_id,
+          gateway_id: newRule.gateway_id,
+          priority: newRule.priority,
+        });
+        toast({ title: "Regel oppdatert", description: "Rutingsregelen er lagret" });
+        setEditingId(null);
+      } else {
+        await routingRuleService.createRule({
+          ...newRule,
+          priority: rules.length,
+          is_active: true,
+        });
+        toast({ title: "Regel opprettet", description: "Den nye rutingsregelen er lagret" });
+      }
 
       fetchData();
-      setNewRule({
-        name: "",
-        match_type: "keyword",
-        match_value: "",
-        target_group_id: "",
-        gateway_id: "",
-        priority: 0,
-      });
+      setNewRule(emptyRule);
     } catch (error) {
-      console.error("Failed to create rule:", error);
+      console.error("Failed to save rule:", error);
       toast({
         title: "Feil",
-        description: "Kunne ikke opprette regel",
+        description: editingId ? "Kunne ikke oppdatere regel" : "Kunne ikke opprette regel",
         variant: "destructive",
       });
     }
@@ -149,8 +180,8 @@ export function RoutingRulesTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 p-4 border rounded-lg bg-card">
-        <h3 className="font-medium">Ny rutingsregel</h3>
+      <div id="routing-rule-form" className="grid gap-4 p-4 border rounded-lg bg-card">
+        <h3 className="font-medium">{editingId ? "Rediger rutingsregel" : "Ny rutingsregel"}</h3>
         
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -240,10 +271,24 @@ export function RoutingRulesTab() {
           </div>
         </div>
 
-        <Button onClick={handleCreateRule} className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Legg til regel
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button onClick={handleSaveRule} className="w-full sm:w-auto">
+            {editingId ? (
+              "Oppdater regel"
+            ) : (
+              <><Plus className="h-4 w-4 mr-2" />Legg til regel</>
+            )}
+          </Button>
+          {editingId && (
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              Avbryt
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -257,7 +302,11 @@ export function RoutingRulesTab() {
             {rules.map((rule, index) => (
               <div
                 key={rule.id}
-                className="flex items-center justify-between p-4 bg-secondary/20 rounded-lg border"
+                className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                  editingId === rule.id
+                    ? "bg-primary/5 border-primary/40"
+                    : "bg-secondary/20"
+                }`}
               >
                 <div className="flex items-center gap-4">
                   <div className="bg-background p-2 rounded-full border">
@@ -286,6 +335,14 @@ export function RoutingRulesTab() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEditClick(rule)}
+                    title="Rediger regel"
+                  >
+                    <Pencil className="h-4 w-4 text-muted-foreground" />
+                  </Button>
                   <Switch
                     checked={rule.is_active}
                     onCheckedChange={(checked) =>
