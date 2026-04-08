@@ -33,9 +33,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, Trash2, Shield, Settings, Server, Users, Activity, Router, Pencil, AlertTriangle, Filter } from "lucide-react";
+import { Plus, Search, Trash2, Shield, Settings, Server, Users, Activity, Router, Pencil, AlertTriangle, Filter, ChevronDown, ChevronRight, X } from "lucide-react";
 import { GroupHierarchy } from "@/components/GroupHierarchy";
 import { RoutingRulesTab } from "@/components/settings/RoutingRulesTab";
+import { GroupDetailPanel } from "@/components/admin/GroupDetailPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { gatewayService, type Gateway } from "@/services/gatewayService";
 import { groupService, type Group } from "@/services/groupService";
@@ -61,6 +62,7 @@ export default function AdminPage() {
     event_type: "",
   });
   const [userRole, setUserRole] = useState<string>("member");
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   const [newUser, setNewUser] = useState({
     email: "",
@@ -1356,6 +1358,22 @@ export default function AdminPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  onClick={() =>
+                                    setSelectedGroupId(
+                                      selectedGroupId === group.id ? null : group.id
+                                    )
+                                  }
+                                  title="Vis detaljer"
+                                >
+                                  {selectedGroupId === group.id ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4" />
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   onClick={() => setEditingGroup(group)}
                                   title="Rediger gruppe"
                                 >
@@ -1378,6 +1396,34 @@ export default function AdminPage() {
                     </Table>
                   </div>
                 </div>
+
+                {/* ── Group detail panel ── */}
+                {selectedGroupId && (() => {
+                  const selectedGroup = groups.find((g) => g.id === selectedGroupId);
+                  if (!selectedGroup) return null;
+                  return (
+                    <div className="border rounded-lg p-4 bg-muted/10">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold text-sm">
+                          {selectedGroup.name} — Medlemmer
+                        </h3>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => setSelectedGroupId(null)}
+                          title="Lukk"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <GroupDetailPanel
+                        group={selectedGroup}
+                        onRefresh={fetchData}
+                      />
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 
