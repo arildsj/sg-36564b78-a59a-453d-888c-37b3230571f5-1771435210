@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,9 +26,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
+type MatchType = "keyword" | "prefix" | "fallback" | "sender";
+
 const emptyRule = {
   name: "",
-  match_type: "keyword" as "keyword" | "prefix" | "fallback" | "sender",
+  match_type: "keyword" as MatchType,
   match_value: "",
   target_group_id: "",
   gateway_id: "",
@@ -42,6 +44,19 @@ const emptyEscalationLevel = (level: number): EscalationLevel => ({
   target_group_id: "",
 });
 
+// Returns true if the form differs from its initial snapshot
+function isDirty(
+  current: typeof emptyRule,
+  initial: typeof emptyRule,
+  currentLevels: EscalationLevel[],
+  initialLevels: EscalationLevel[]
+): boolean {
+  return (
+    JSON.stringify(current) !== JSON.stringify(initial) ||
+    JSON.stringify(currentLevels) !== JSON.stringify(initialLevels)
+  );
+}
+
 export function RoutingRulesTab() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -54,13 +69,19 @@ export function RoutingRulesTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formRule, setFormRule] = useState({ ...emptyRule });
   const [escalationLevels, setEscalationLevels] = useState<EscalationLevel[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Drag-to-reorder state
+  // Snapshot for dirty-check (set when modal opens)
+  const initialFormRule = useRef({ ...emptyRule });
+  const initialEscalation = useRef<EscalationLevel[]>([]);
+
+  // Drag-to-reorder
   const dragIndex = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // ── Data loading ──────────────────────────────────────────────────────
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [rulesData, groupsData, gatewaysData] = await Promise.all([
@@ -76,30 +97,51 @@ export function RoutingRulesTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   // ── Modal open/close ──────────────────────────────────────────────────
   const openNew = () => {
+    const rule = { ...emptyRule };
+    const levels: EscalationLevel[] = [];
     setEditingId(null);
-    setFormRule({ ...emptyRule });
-    setEscalationLevels([]);
+    setFormRule(rule);
+    setEscalationLevels(levels);
+    setSaveError(null);
+    initialFormRule.current = { ...rule };
+    initialEscalation.current = [];
     setModalOpen(true);
   };
 
   const openEdit = (rule: RoutingRule) => {
-    setEditingId(rule.id);
-    setFormRule({
+    const form = {
       name:            rule.name || "",
-      match_type:      (rule.match_type as typeof emptyRule.match_type) || "keyword",
+      match_type:      (rule.match_type as MatchType) || "keyword",
       match_value:     rule.match_value || "",
       target_group_id: rule.target_group_id || "",
       gateway_id:      rule.gateway_id || "",
       priority:        rule.priority ?? 0,
-    });
-    setEscalationLevels(rule.escalation_config || []);
+    };
+    const levels = rule.escalation_config ? [...rule.escalation_config] : [];
+    setEditingId(rule.id);
+    setFormRule(form);
+    setEscalationLevels(levels);
+    setSaveError(null);
+    initialFormRule.current = { ...form };
+    initialEscalation.current = JSON.parse(JSON.stringify(levels));
     setModalOpen(true);
+  };
+
+  const requestClose = () => {
+    const dirty = isDirty(
+      formRule,
+      initialFormRule.current,
+      escalationLevels,
+      initialEscalation.current
+    );
+    if (dirty && !window.confirm("Du har ulagrede endringer. Lukke likevel?")) return;
+    closeModal();
   };
 
   const closeModal = () => {
@@ -107,6 +149,82 @@ export function RoutingRulesTab() {
     setEditingId(null);
     setFormRule({ ...emptyRule });
     setEscalationLevels([]);
+    setSaveError(null);
+    setSaving(false);
+  };
+
+  // ── Validation ────────────────────────────────────────────────────────
+  const validate = (): string | null => {
+    if (!formRule.name.trim()) return "Regelnavn er påkrevd.";
+    if (formRule.match_type !== "fallback" && !formRule.match_value.trim())
+      return "Matchverdi er påkrevd for valgt regeltype.";
+    if (!formRule.target_group_id) return "Velg en målgruppe.";
+    if (!formRule.gateway_id) return "Velg en gateway.";
+
+    for (let i = 0; i < escalationLevels.length; i++) {
+      const l = escalationLevels[i];
+      if (!l.timeout_minutes || l.timeout_minutes < 1)
+        return `Eskaleringsnivå ${i + 1}: minutter må være ≥ 1.`;
+      if (l.methods.length === 0)
+        return `Eskaleringsnivå ${i + 1}: velg minst én varslingsmetode.`;
+    }
+
+    return null;
+  };
+
+  const hasFallbackConflict = (): boolean => {
+    if (formRule.match_type !== "fallback" || !formRule.gateway_id) return false;
+    return rules.some(
+      r => r.match_type === "fallback" &&
+           r.gateway_id === formRule.gateway_id &&
+           r.is_active &&
+           r.id !== editingId
+    );
+  };
+
+  // ── Save ──────────────────────────────────────────────────────────────
+  const handleSaveRule = async () => {
+    setSaveError(null);
+
+    const validationError = validate();
+    if (validationError) { setSaveError(validationError); return; }
+    if (hasFallbackConflict()) {
+      setSaveError("Det finnes allerede en aktiv fallback-regel for valgt gateway. Deaktiver den først.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const escalationConfig = escalationLevels.length > 0 ? escalationLevels : null;
+
+      if (editingId) {
+        await routingRuleService.updateRule(editingId, {
+          name:              formRule.name,
+          match_type:        formRule.match_type,
+          match_value:       formRule.match_value,
+          target_group_id:   formRule.target_group_id,
+          gateway_id:        formRule.gateway_id,
+          priority:          formRule.priority,
+          escalation_config: escalationConfig,
+        });
+        toast({ title: "Regel oppdatert" });
+      } else {
+        await routingRuleService.createRule({
+          ...formRule,
+          priority:          rules.length,
+          is_active:         true,
+          escalation_config: escalationConfig,
+        });
+        toast({ title: "Regel opprettet" });
+      }
+
+      closeModal();
+      fetchData();
+    } catch (err: any) {
+      setSaveError(err?.message ?? (editingId ? "Kunne ikke oppdatere regel." : "Kunne ikke opprette regel."));
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── Escalation level helpers ──────────────────────────────────────────
@@ -133,67 +251,6 @@ export function RoutingRulesTab() {
       ? level.methods.filter(m => m !== method)
       : [...level.methods, method];
     updateEscalationLevel(index, { methods });
-  };
-
-  // ── Fallback conflict check ───────────────────────────────────────────
-  const hasFallbackConflict = (): boolean => {
-    if (formRule.match_type !== "fallback" || !formRule.gateway_id) return false;
-    return rules.some(
-      r => r.match_type === "fallback" &&
-           r.gateway_id === formRule.gateway_id &&
-           r.is_active &&
-           r.id !== editingId
-    );
-  };
-
-  // ── Save ──────────────────────────────────────────────────────────────
-  const handleSaveRule = async () => {
-    if (!formRule.target_group_id || !formRule.gateway_id) {
-      toast({ title: "Mangler informasjon", description: "Velg både målgruppe og gateway", variant: "destructive" });
-      return;
-    }
-    if (hasFallbackConflict()) {
-      toast({
-        title: "Kun én fallback per gateway",
-        description: "Det finnes allerede en aktiv fallback-regel for valgt gateway. Deaktiver den først.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const escalationConfig = escalationLevels.length > 0 ? escalationLevels : null;
-
-      if (editingId) {
-        await routingRuleService.updateRule(editingId, {
-          name:            formRule.name,
-          match_type:      formRule.match_type,
-          match_value:     formRule.match_value,
-          target_group_id: formRule.target_group_id,
-          gateway_id:      formRule.gateway_id,
-          priority:        formRule.priority,
-          escalation_config: escalationConfig,
-        });
-        toast({ title: "Regel oppdatert" });
-      } else {
-        await routingRuleService.createRule({
-          ...formRule,
-          priority:    rules.length,
-          is_active:   true,
-          escalation_config: escalationConfig,
-        });
-        toast({ title: "Regel opprettet" });
-      }
-
-      closeModal();
-      fetchData();
-    } catch {
-      toast({
-        title: "Feil",
-        description: editingId ? "Kunne ikke oppdatere regel" : "Kunne ikke opprette regel",
-        variant: "destructive",
-      });
-    }
   };
 
   // ── Delete / toggle ───────────────────────────────────────────────────
@@ -250,22 +307,20 @@ export function RoutingRulesTab() {
     setDragOverIndex(null);
   };
 
-  // ── Escalation summary for rule row ──────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────
   const escalationSummary = (rule: RoutingRule): string | null => {
     const levels = rule.escalation_levels_data;
     if (!levels || levels.length === 0) return null;
-
     return levels
-      .map((l) => {
+      .map(l => {
         const methods = l.methods
-          .map((m) => (m === "sms" ? "SMS" : m === "push" ? "App" : "Voice"))
+          .map(m => m === "sms" ? "SMS" : m === "push" ? "App" : "Voice")
           .join(" + ");
         return `Nivå ${l.level_number}: ${l.minutes_without_reply} min → ${methods}`;
       })
       .join("   |   ");
   };
 
-  // ── Badge colours ─────────────────────────────────────────────────────
   const matchTypeBadgeClass = (type: string) => {
     switch (type) {
       case "keyword":  return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300";
@@ -367,7 +422,6 @@ export function RoutingRulesTab() {
           ))
         )}
 
-        {/* New rule button */}
         <Button
           variant="outline"
           size="sm"
@@ -380,17 +434,25 @@ export function RoutingRulesTab() {
       </div>
 
       {/* ── Create / Edit dialog ── */}
-      <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) closeModal(); }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <Dialog
+        open={modalOpen}
+        onOpenChange={(open) => { if (!open) requestClose(); }}
+      >
+        <DialogContent className="max-w-[640px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId ? "Rediger rutingsregel" : "Ny rutingsregel"}</DialogTitle>
+            <DialogTitle>
+              {editingId ? "Rediger rutingsregel" : "Ny rutingsregel"}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-1">
-            {/* Name + type */}
+
+            {/* ── Section 1: Rule basics ── */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-sm">Navn på regel</Label>
+                <Label className="text-sm">
+                  Navn på regel <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   placeholder="F.eks. Support"
                   value={formRule.name}
@@ -398,43 +460,66 @@ export function RoutingRulesTab() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">Type regel</Label>
+                <Label className="text-sm">
+                  Type regel <span className="text-destructive">*</span>
+                </Label>
                 <Select
                   value={formRule.match_type}
-                  onValueChange={(value: any) => setFormRule({ ...formRule, match_type: value })}
+                  onValueChange={(value: any) =>
+                    setFormRule({ ...formRule, match_type: value, match_value: "" })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="keyword">Nøkkelord (Inneholder)</SelectItem>
-                    <SelectItem value="prefix">Prefiks (Starter med)</SelectItem>
                     <SelectItem value="sender">Kjent avsender</SelectItem>
+                    <SelectItem value="prefix">Prefiks (Starter med)</SelectItem>
+                    <SelectItem value="keyword">Nøkkelord (Inneholder)</SelectItem>
                     <SelectItem value="fallback">Fallback (Standard)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* Match value — conditional */}
+            {/* Match value — label and visibility driven by type */}
             {formRule.match_type === "sender" && (
               <div className="space-y-1.5">
-                <Label className="text-sm">Avsender-ID</Label>
+                <Label className="text-sm">
+                  Avsender-ID <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   placeholder="'+4799887766' eller 'Kraftverk-AS'"
                   value={formRule.match_value}
                   maxLength={11}
                   onChange={(e) => setFormRule({ ...formRule, match_value: e.target.value })}
                 />
-                <p className="text-xs text-muted-foreground">Tlf. (+47…) eller alfanumerisk ID (maks 11 tegn).</p>
+                <p className="text-xs text-muted-foreground">
+                  Tlf. (+47…) eller alfanumerisk ID (maks 11 tegn).
+                </p>
               </div>
             )}
 
-            {(formRule.match_type === "keyword" || formRule.match_type === "prefix") && (
+            {formRule.match_type === "prefix" && (
               <div className="space-y-1.5">
-                <Label className="text-sm">{formRule.match_type === "keyword" ? "Nøkkelord" : "Prefiks"}</Label>
+                <Label className="text-sm">
+                  Prefiks <span className="text-destructive">*</span>
+                </Label>
                 <Input
-                  placeholder={formRule.match_type === "keyword" ? "f.eks. 'hjelp'" : "f.eks. 'START'"}
+                  placeholder="f.eks. 'START'"
+                  value={formRule.match_value}
+                  onChange={(e) => setFormRule({ ...formRule, match_value: e.target.value })}
+                />
+              </div>
+            )}
+
+            {formRule.match_type === "keyword" && (
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  Nøkkelord <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  placeholder="f.eks. 'hjelp'"
                   value={formRule.match_value}
                   onChange={(e) => setFormRule({ ...formRule, match_value: e.target.value })}
                 />
@@ -452,7 +537,9 @@ export function RoutingRulesTab() {
             {/* Group + gateway */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-sm">Send til gruppe</Label>
+                <Label className="text-sm">
+                  Send til gruppe <span className="text-destructive">*</span>
+                </Label>
                 <Select
                   value={formRule.target_group_id}
                   onValueChange={(value) => setFormRule({ ...formRule, target_group_id: value })}
@@ -468,7 +555,9 @@ export function RoutingRulesTab() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">Bruk gateway</Label>
+                <Label className="text-sm">
+                  Bruk gateway <span className="text-destructive">*</span>
+                </Label>
                 <Select
                   value={formRule.gateway_id}
                   onValueChange={(value) => setFormRule({ ...formRule, gateway_id: value })}
@@ -487,7 +576,7 @@ export function RoutingRulesTab() {
               </div>
             </div>
 
-            {/* Escalation levels */}
+            {/* ── Section 2: Escalation levels ── */}
             <Separator />
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -509,67 +598,97 @@ export function RoutingRulesTab() {
               </p>
 
               {escalationLevels.length === 0 && (
-                <p className="text-xs text-muted-foreground italic">Ingen eskaleringsnivåer lagt til ennå.</p>
+                <p className="text-xs text-muted-foreground italic">
+                  Ingen eskaleringsnivåer lagt til ennå.
+                </p>
               )}
 
-              {escalationLevels.map((level, index) => (
-                <div key={index} className="flex items-center gap-2 border rounded-md px-2 py-2 bg-muted/20 flex-wrap">
-                  <Badge variant="outline" className="font-mono text-xs h-5 px-1.5 shrink-0">
-                    Nivå {level.level}
-                  </Badge>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">Etter</span>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={level.timeout_minutes}
-                      onChange={(e) => updateEscalationLevel(index, { timeout_minutes: parseInt(e.target.value) || 1 })}
-                      className="h-6 w-14 text-xs px-1.5"
-                    />
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">min</span>
-                  </div>
-                  <Select
-                    value={level.target_group_id}
-                    onValueChange={(value) => updateEscalationLevel(index, { target_group_id: value })}
+              {escalationLevels.map((level, index) => {
+                const methodError = level.methods.length === 0;
+                const minutesError = !level.timeout_minutes || level.timeout_minutes < 1;
+                return (
+                  <div
+                    key={index}
+                    className={`flex items-center gap-2 border rounded-md px-2 py-2 bg-muted/20 flex-wrap ${
+                      (methodError || minutesError) && saveError ? "border-destructive/50" : ""
+                    }`}
                   >
-                    <SelectTrigger className="h-6 text-xs w-36">
-                      <SelectValue placeholder="Velg gruppe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {groups.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                    <Badge variant="outline" className="font-mono text-xs h-5 px-1.5 shrink-0">
+                      Nivå {level.level}
+                    </Badge>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">Etter</span>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={level.timeout_minutes}
+                        onChange={(e) =>
+                          updateEscalationLevel(index, { timeout_minutes: parseInt(e.target.value) || 1 })
+                        }
+                        className={`h-6 w-14 text-xs px-1.5 ${minutesError && saveError ? "border-destructive" : ""}`}
+                      />
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">min</span>
+                    </div>
+                    <Select
+                      value={level.target_group_id}
+                      onValueChange={(value) => updateEscalationLevel(index, { target_group_id: value })}
+                    >
+                      <SelectTrigger className="h-6 text-xs w-36">
+                        <SelectValue placeholder="Velg gruppe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {groups.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className={`flex items-center gap-2 ${methodError && saveError ? "ring-1 ring-destructive/50 rounded px-1" : ""}`}>
+                      {(["sms", "push", "voicecall"] as const).map((method) => (
+                        <label
+                          key={method}
+                          className="flex items-center gap-1 cursor-pointer select-none text-xs whitespace-nowrap"
+                        >
+                          <Checkbox
+                            checked={level.methods.includes(method)}
+                            onCheckedChange={() => toggleMethod(index, method)}
+                            className="h-3.5 w-3.5"
+                          />
+                          {method === "sms" ? "SMS" : method === "push" ? "App-varsel" : "Voicecall"}
+                        </label>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-2">
-                    {(["sms", "push", "voicecall"] as const).map((method) => (
-                      <label key={method} className="flex items-center gap-1 cursor-pointer select-none text-xs whitespace-nowrap">
-                        <Checkbox
-                          checked={level.methods.includes(method)}
-                          onCheckedChange={() => toggleMethod(index, method)}
-                          className="h-3.5 w-3.5"
-                        />
-                        {method === "sms" ? "SMS" : method === "push" ? "App-varsel" : "Voicecall"}
-                      </label>
-                    ))}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 ml-auto shrink-0"
+                      onClick={() => removeEscalationLevel(index)}
+                    >
+                      <Trash2 className="h-3 w-3 text-muted-foreground" />
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 ml-auto shrink-0"
-                    onClick={() => removeEscalationLevel(index)}
-                  >
-                    <Trash2 className="h-3 w-3 text-muted-foreground" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
+
+            {/* ── Inline save error ── */}
+            {saveError && (
+              <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                <p className="text-sm text-destructive">{saveError}</p>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={closeModal}>Avbryt</Button>
-            <Button onClick={handleSaveRule} disabled={hasFallbackConflict()}>
+            <Button variant="outline" onClick={requestClose} disabled={saving}>
+              Avbryt
+            </Button>
+            <Button
+              onClick={handleSaveRule}
+              disabled={saving || hasFallbackConflict()}
+            >
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {editingId ? "Lagre endringer" : "Opprett regel"}
             </Button>
           </DialogFooter>
