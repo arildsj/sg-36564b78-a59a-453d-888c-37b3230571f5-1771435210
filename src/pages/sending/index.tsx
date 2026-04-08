@@ -1226,119 +1226,119 @@ export default function SendingPage() {
               </div>
 
               {/* ── Recipient overview ── */}
-              <div className="px-6 py-4 space-y-3">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <div className="px-6 py-3 space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
                   Mottakeroversikt ({campaignRecipients.length})
                 </p>
 
                 {campaignRecipients.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Ingen mottakere funnet.</p>
                 ) : (
-                  campaignRecipients.map((recipient) => {
+                  // Non-responders first, then replied
+                  [...campaignRecipients]
+                    .sort((a, b) => {
+                      const aReplied = hasResponded(a.phone);
+                      const bReplied = hasResponded(b.phone);
+                      if (aReplied === bReplied) return 0;
+                      return aReplied ? 1 : -1;
+                    })
+                    .map((recipient) => {
                     const replied = hasResponded(recipient.phone);
                     const outMsg = getOutboundMessage(recipient.phone);
                     const inMsg = getInboundReply(recipient.phone);
                     const isChecked = selectedForReminder.includes(recipient.id);
+                    const reminders = getReminders(recipient.phone);
 
                     return (
                       <div
                         key={recipient.id}
-                        className={`rounded-lg border p-3 space-y-2 ${
+                        className={`rounded-md border px-2.5 py-1.5 ${
                           replied
                             ? "border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20"
                             : "border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/20"
                         }`}
                       >
-                        {/* Row 1: checkbox (no-response only), name/phone, status badge */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            {!replied && (
-                              <Checkbox
-                                checked={isChecked}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedForReminder((prev) => [...prev, recipient.id]);
-                                  } else {
-                                    setSelectedForReminder((prev) => prev.filter((id) => id !== recipient.id));
-                                  }
-                                }}
-                              />
-                            )}
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium">
-                                {recipient.name || recipient.phone}
-                              </span>
-                              {recipient.name && (
-                                <span className="text-xs text-muted-foreground">{recipient.phone}</span>
-                              )}
-                            </div>
-                          </div>
+                        {/* Main row: checkbox + name + phone + badge */}
+                        <div className="flex items-center gap-2">
+                          {!replied && (
+                            <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedForReminder((prev) => [...prev, recipient.id]);
+                                } else {
+                                  setSelectedForReminder((prev) => prev.filter((id) => id !== recipient.id));
+                                }
+                              }}
+                            />
+                          )}
+                          <span className="text-sm font-medium leading-none">
+                            {recipient.name || recipient.phone}
+                          </span>
+                          {recipient.name && (
+                            <span className="text-xs text-muted-foreground">{recipient.phone}</span>
+                          )}
+                          <div className="flex-1" />
                           {replied ? (
-                            <Badge className="bg-green-600 text-white shrink-0">
+                            <Badge className="bg-green-600 text-white shrink-0 text-[11px] py-0 px-1.5 h-5">
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                               Svart
                             </Badge>
                           ) : (
-                            <Badge className="bg-orange-500 text-white shrink-0">
+                            <Badge className="bg-orange-500 text-white shrink-0 text-[11px] py-0 px-1.5 h-5">
                               <AlertCircle className="h-3 w-3 mr-1" />
                               Ingen respons
                             </Badge>
                           )}
                         </div>
 
-                        {/* Row 2: message IDs and timestamps */}
-                        <div className="text-xs text-muted-foreground space-y-1">
-                          <div className="flex flex-wrap gap-x-4 gap-y-1">
-                            {outMsg && (
-                              <>
-                                <span className="flex items-center gap-1">
-                                  <ArrowUpRight className="h-3 w-3 text-blue-500" />
-                                  <Hash className="h-3 w-3" />
-                                  <span className="font-mono">{shortId(outMsg)}</span>
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Send className="h-3 w-3" />
-                                  Sendt: {fmtTime(outMsg.created_at)}
-                                </span>
-                              </>
-                            )}
-                            {replied && inMsg && (
-                              <>
-                                <span className="flex items-center gap-1">
-                                  <ArrowDownLeft className="h-3 w-3 text-green-600" />
-                                  <Hash className="h-3 w-3" />
-                                  <span className="font-mono">{shortId(inMsg)}</span>
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <ArrowDownLeft className="h-3 w-3 text-green-600" />
-                                  Svart: {fmtTime(inMsg.created_at)}
-                                </span>
-                              </>
-                            )}
-                          </div>
+                        {/* Compact metadata row */}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0 mt-0.5 text-[11px] text-muted-foreground leading-5">
+                          {outMsg && (
+                            <>
+                              <span className="flex items-center gap-0.5">
+                                <ArrowUpRight className="h-3 w-3 text-blue-400" />
+                                <span className="font-mono">{shortId(outMsg)}</span>
+                              </span>
+                              <span className="flex items-center gap-0.5">
+                                <Send className="h-3 w-3" />
+                                {fmtTime(outMsg.created_at)}
+                              </span>
+                            </>
+                          )}
+                          {replied && inMsg ? (
+                            <>
+                              <span className="flex items-center gap-0.5">
+                                <ArrowDownLeft className="h-3 w-3 text-green-500" />
+                                <span className="font-mono">{shortId(inMsg)}</span>
+                              </span>
+                              <span className="flex items-center gap-0.5">
+                                <ArrowDownLeft className="h-3 w-3 text-green-500" />
+                                {fmtTime(inMsg.created_at)}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="flex items-center gap-0.5 text-orange-500 dark:text-orange-400">
+                              <Clock className="h-3 w-3" />
+                              Venter på svar
+                            </span>
+                          )}
                         </div>
 
-                        {/* Row 3: reply text or waiting indicator */}
-                        {replied && inMsg ? (
-                          <div className="border-l-2 border-green-400 pl-3 ml-1">
-                            <p className="text-xs text-muted-foreground mb-0.5">Svar:</p>
-                            <p className="text-sm">{inMsg.content || "–"}</p>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
-                            <Clock className="h-3 w-3" />
-                            Venter på svar
+                        {/* Reply text */}
+                        {replied && inMsg && (
+                          <div className="mt-1 border-l-2 border-green-400 pl-2 ml-0.5">
+                            <p className="text-xs text-muted-foreground italic">{inMsg.content || "–"}</p>
                           </div>
                         )}
 
-                        {/* Reminders sent to this recipient */}
-                        {getReminders(recipient.phone).map((reminder) => (
-                          <div key={reminder.id} className="border-l-2 border-orange-300 pl-3 ml-1 space-y-0.5">
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <MessageSquare className="h-3 w-3 text-orange-400" />
-                              Påminnelse sendt {fmtTime(reminder.created_at)}
+                        {/* Reminders */}
+                        {reminders.map((reminder) => (
+                          <div key={reminder.id} className="mt-1 border-l-2 border-orange-300 pl-2 ml-0.5">
+                            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3 text-orange-400 shrink-0" />
+                              Påminnelse {fmtTime(reminder.created_at)}: {reminder.content || "–"}
                             </p>
-                            <p className="text-sm">{reminder.content || "–"}</p>
                           </div>
                         ))}
                       </div>
