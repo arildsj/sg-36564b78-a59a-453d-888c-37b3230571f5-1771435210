@@ -380,20 +380,20 @@ export function RoutingRulesTab() {
                       <span className="font-mono text-xs text-muted-foreground">{rule.match_value}</span>
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground flex gap-3">
-                    <span className="flex items-center gap-0.5">
+                  <div className="text-xs text-muted-foreground flex gap-3 flex-wrap">
+                    <span className="flex items-center gap-0.5 shrink-0">
                       <MessageSquare className="h-3 w-3 shrink-0" />
                       {rule.group_name || "Ukjent gruppe"}
                     </span>
-                    <span className="flex items-center gap-0.5">
+                    <span className="flex items-center gap-0.5 shrink-0">
                       <Globe className="h-3 w-3 shrink-0" />
                       {rule.gateway_name || "Ukjent gateway"}
                     </span>
                   </div>
                   {escalationSummary(rule) && (
-                    <div className="text-xs text-muted-foreground/60 flex items-center gap-1 mt-0.5">
-                      <span>⚡</span>
-                      <span>{escalationSummary(rule)}</span>
+                    <div className="text-xs text-muted-foreground/60 flex items-center gap-1 mt-0.5 min-w-0 overflow-hidden">
+                      <span className="shrink-0">⚡</span>
+                      <span className="truncate">{escalationSummary(rule)}</span>
                     </div>
                   )}
                 </div>
@@ -451,7 +451,7 @@ export function RoutingRulesTab() {
           <div className="space-y-4 py-1">
 
             {/* ── Section 1: Rule basics ── */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-sm">
                   Navn på regel <span className="text-destructive">*</span>
@@ -538,7 +538,7 @@ export function RoutingRulesTab() {
             )}
 
             {/* Group + gateway */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-sm">
                   Send til gruppe <span className="text-destructive">*</span>
