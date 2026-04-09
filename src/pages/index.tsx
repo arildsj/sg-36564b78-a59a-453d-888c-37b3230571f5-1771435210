@@ -8,11 +8,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useRouter } from "next/router";
-import { 
-  MessageSquare, 
-  Users, 
-  Send, 
-  Shield, 
+import {
+  MessageSquare,
+  Users,
+  Send,
+  Shield,
   Activity,
   ArrowRight,
   Clock,
@@ -48,13 +48,13 @@ export default function Dashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         console.log("No session found, redirecting to login");
         router.push('/login');
         return;
       }
-      
+
       console.log("Session found:", session.user.id);
       setAuthChecked(true);
     };
@@ -72,7 +72,7 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Get user profile
       const profile = await userService.getCurrentUserProfile();
       setUserRole(profile?.role || null);
@@ -87,7 +87,7 @@ export default function Dashboard() {
 
       // Active groups
       const groups = await groupService.getOperationalGroups();
-      
+
       // Total contacts
       const { count: contactsCount } = await db
         .from("contacts")
@@ -121,7 +121,7 @@ export default function Dashboard() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Sjekker tilgang...</p>
+          <p className="text-muted-foreground">{t("dashboard.checking_access")}</p>
         </div>
       </div>
     );
@@ -155,13 +155,13 @@ export default function Dashboard() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Oversikt</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t("dashboard.title")}</h1>
             <p className="text-muted-foreground">
-              Velkommen tilbake. Her er status for din organisasjon.
+              {t("dashboard.welcome_back")}
             </p>
           </div>
           <Button onClick={() => router.push("/sending")}>
-            <Send className="mr-2 h-4 w-4" /> Ny Melding
+            <Send className="mr-2 h-4 w-4" /> {t("dashboard.new_message")}
           </Button>
         </div>
 
@@ -169,49 +169,49 @@ export default function Dashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ubehandlede Meldinger</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("dashboard.unhandled_messages")}</CardTitle>
               <Inbox className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.unreadMessages}</div>
               <p className="text-xs text-muted-foreground">
-                Krever oppfølging
+                {t("dashboard.requires_followup")}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Operasjonelle Grupper</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("dashboard.operational_groups")}</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.activeGroups}</div>
               <p className="text-xs text-muted-foreground">
-                Aktive i tjeneste
+                {t("dashboard.active_in_service")}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Kontakter</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("contacts.title")}</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalContacts}</div>
               <p className="text-xs text-muted-foreground">
-                Registrert i systemet
+                {t("dashboard.registered_in_system")}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">System Status</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("dashboard.system_status")}</CardTitle>
               <Activity className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">Normal</div>
+              <div className="text-2xl font-bold text-green-600">{t("dashboard.normal")}</div>
               <p className="text-xs text-muted-foreground">
-                Alle tjenester operative
+                {t("dashboard.all_services_operational")}
               </p>
             </CardContent>
           </Card>
@@ -221,15 +221,15 @@ export default function Dashboard() {
           {/* Recent Messages */}
           <Card className="col-span-4">
             <CardHeader>
-              <CardTitle>Siste Meldinger</CardTitle>
+              <CardTitle>{t("dashboard.recent_messages")}</CardTitle>
               <CardDescription>
-                Nylig aktivitet fra innboksen
+                {t("dashboard.recent_activity_inbox")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {recentMessages.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">Ingen nylige meldinger</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">{t("dashboard.no_messages")}</p>
                 ) : (
                   recentMessages.map((msg) => (
                     <div key={msg.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
@@ -252,10 +252,10 @@ export default function Dashboard() {
                     </div>
                   ))
                 )}
-                
+
                 <Button variant="outline" className="w-full" asChild>
                   <Link href="/inbox">
-                    Gå til Innboks <ArrowRight className="ml-2 h-4 w-4" />
+                    {t("dashboard.go_to_inbox")} <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               </div>
@@ -265,9 +265,9 @@ export default function Dashboard() {
           {/* Action Items / Alerts */}
           <Card className="col-span-3">
             <CardHeader>
-              <CardTitle>Handlinger</CardTitle>
+              <CardTitle>{t("dashboard.actions")}</CardTitle>
               <CardDescription>
-                Ting som krever oppmerksomhet
+                {t("dashboard.needs_attention")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -280,11 +280,11 @@ export default function Dashboard() {
                         <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
                       </div>
                       <div className="ml-3">
-                        <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Bemanningsvarsel</h3>
+                        <h3 className="text-sm font-medium text-red-800 dark:text-red-200">{t("dashboard.staffing_alert")}</h3>
                         <div className="mt-2 text-sm text-red-700 dark:text-red-300">
                           <ul role="list" className="list-disc space-y-1 pl-5">
                             {activeIncidents.map(g => (
-                              <li key={g.id}>{g.name}: Kun {g.active_members} på vakt (Min: {g.min_on_duty_count})</li>
+                              <li key={g.id}>{g.name}: {g.active_members} {t("dashboard.on_duty")} ({t("dashboard.on_duty_min")} {g.min_on_duty_count})</li>
                             ))}
                           </ul>
                         </div>
@@ -294,11 +294,11 @@ export default function Dashboard() {
                 )}
 
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Snarveier</h4>
+                  <h4 className="text-sm font-medium">{t("dashboard.shortcuts")}</h4>
                   <div className="grid grid-cols-2 gap-2">
                     <Button variant="outline" size="sm" className="justify-start" asChild>
                       <Link href="/contacts">
-                        <Users className="mr-2 h-4 w-4" /> Kontakter
+                        <Users className="mr-2 h-4 w-4" /> {t("contacts.title")}
                       </Link>
                     </Button>
                     <Button variant="outline" size="sm" className="justify-start" asChild>
@@ -309,7 +309,7 @@ export default function Dashboard() {
                     {(userRole === "tenant_admin" || userRole === "group_admin") && (
                        <Button variant="outline" size="sm" className="justify-start" asChild>
                         <Link href="/admin">
-                          <Shield className="mr-2 h-4 w-4" /> Admin
+                          <Shield className="mr-2 h-4 w-4" /> {t("nav.admin")}
                         </Link>
                       </Button>
                     )}

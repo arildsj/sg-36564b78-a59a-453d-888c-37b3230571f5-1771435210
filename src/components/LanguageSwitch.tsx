@@ -16,6 +16,7 @@ const languageFlags = {
   es: "🇪🇸",
   it: "🇮🇹",
   pl: "🇵🇱",
+  pt: "🇵🇹",
 };
 
 const languageNames = {
@@ -26,6 +27,7 @@ const languageNames = {
   es: "Español",
   it: "Italiano",
   pl: "Polski",
+  pt: "Português",
 };
 
 export function LanguageSwitch() {
@@ -67,6 +69,10 @@ export function LanguageSwitch() {
         <DropdownMenuItem onClick={() => setLanguage("pl")}>
           <span className="mr-2 text-xl">{languageFlags.pl}</span>
           {languageNames.pl}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setLanguage("pt")}>
+          <span className="mr-2 text-xl">{languageFlags.pt}</span>
+          {languageNames.pt}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
