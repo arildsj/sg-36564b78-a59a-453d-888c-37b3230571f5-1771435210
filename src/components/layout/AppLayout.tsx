@@ -111,7 +111,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           size="icon"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="h-12 w-12"
-          aria-label={sidebarOpen ? t("common.close") : "Open menu"}
+          aria-label={sidebarOpen ? t("common.close") : t("nav.open_menu")}
         >
           {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
@@ -163,9 +163,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             {userRole && (
               <div className="text-xs text-muted-foreground pl-6">
-                {userRole === "super_admin" ? "Super Admin" : 
-                 userRole === "admin" ? "Administrator" : 
-                 userRole === "user" ? "Bruker" : userRole}
+                {userRole === "super_admin" ? t("role.super_admin") :
+                 userRole === "admin" ? t("role.admin") :
+                 userRole === "user" ? t("role.user") : userRole}
               </div>
             )}
           </div>

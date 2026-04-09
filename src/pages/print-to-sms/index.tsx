@@ -229,12 +229,12 @@ export default function PrintToSMS() {
   // Format validity text
   const getValidityText = (): string => {
     const validityMap: { [key: string]: string } = {
-      "10m": "10 minutes",
-      "1h": "1 hour",
-      "1d": "1 day",
-      "single": "Single use"
+      "10m": "10 minutter",
+      "1h": "1 time",
+      "1d": "1 dag",
+      "single": "Engangsbruk"
     };
-    return validityMap[qrValidity] || "1 hour";
+    return validityMap[qrValidity] || "1 time";
   };
 
   // Handle send
@@ -547,10 +547,10 @@ export default function PrintToSMS() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="expected-reply">Expected Reply</Label>
+                  <Label htmlFor="expected-reply">Forventet svar</Label>
                   <Input
                     id="expected-reply"
-                    placeholder="e.g., OK, YES, CALL, CONFIRM"
+                    placeholder="f.eks. OK, JA, RING, BEKREFT"
                     value={expectedReply}
                     onChange={(e) => {
                       setExpectedReply(e.target.value);

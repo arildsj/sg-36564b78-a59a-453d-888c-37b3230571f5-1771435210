@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -rn \"kind\\\\|operational\\\\|fallback\" C:/Users/Arild/sg-36564b78-a59a-453d-888c-37b3230571f5-1771435210/supabase/migrations/*.sql)",
+      "Bash(npx supabase:*)",
+      "Bash(grep:*)",
+      "Bash(find /c/Users/Arild/sg-36564b78-a59a-453d-888c-37b3230571f5-1771435210 -name config.toml -o -name .env* -o -name *dump*)"
+    ]
+  }
+}

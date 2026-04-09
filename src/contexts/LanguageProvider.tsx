@@ -13,7 +13,8 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 const translations: Record<string, Record<Language, string>> = {
   // Common
   "common.loading": { no: "Laster...", en: "Loading...", de: "Laden...", fr: "Chargement...", es: "Cargando...", it: "Caricamento...", pl: "Ładowanie..." },
-  
+  "common.close": { no: "Lukk", en: "Close", de: "Schließen", fr: "Fermer", es: "Cerrar", it: "Chiudi", pl: "Zamknij" },
+
   // Navigation
   "nav.home": { no: "Hjem", en: "Home", de: "Startseite", fr: "Accueil", es: "Inicio", it: "Home", pl: "Strona główna" },
   "nav.inbox": { no: "Innboks", en: "Inbox", de: "Posteingang", fr: "Boîte de réception", es: "Bandeja de entrada", it: "Posta in arrivo", pl: "Skrzynka odbiorcza" },
@@ -24,10 +25,11 @@ const translations: Record<string, Record<Language, string>> = {
   "nav.admin": { no: "Admin", en: "Admin", de: "Admin", fr: "Admin", es: "Admin", it: "Admin", pl: "Admin" },
   "nav.settings": { no: "Innstillinger", en: "Settings", de: "Einstellungen", fr: "Paramètres", es: "Configuración", it: "Impostazioni", pl: "Ustawienia" },
   "nav.logout": { no: "Logg ut", en: "Log out", de: "Abmelden", fr: "Se déconnecter", es: "Cerrar sesión", it: "Disconnettersi", pl: "Wyloguj się" },
-  "nav.dashboard": { no: "Kontrollpanel", en: "Dashboard", de: "Übersicht", fr: "Tableau de bord", es: "Panel de control", it: "Cruscotto", pl: "Panel kontrolny" },
+  "nav.dashboard": { no: "Oversikt", en: "Dashboard", de: "Übersicht", fr: "Tableau de bord", es: "Panel de control", it: "Cruscotto", pl: "Panel kontrolny" },
+  "nav.open_menu": { no: "Åpne meny", en: "Open menu", de: "Menü öffnen", fr: "Ouvrir le menu", es: "Abrir menú", it: "Apri menu", pl: "Otwórz menu" },
 
   // Dashboard
-  "dashboard.title": { no: "Kontrollpanel", en: "Dashboard", de: "Übersicht", fr: "Tableau de bord", es: "Panel de control", it: "Cruscotto", pl: "Panel kontrolny" },
+  "dashboard.title": { no: "Oversikt", en: "Dashboard", de: "Übersicht", fr: "Tableau de bord", es: "Panel de control", it: "Cruscotto", pl: "Panel kontrolny" },
   "dashboard.description": { no: "Oversikt over systemstatus og aktivitet", en: "Overview of system status and activity", de: "Übersicht über Systemstatus und Aktivität", fr: "Aperçu de l'état du système et de l'activité", es: "Resumen del estado del sistema y la actividad", it: "Panoramica dello stato del sistema e dell'attività", pl: "Przegląd statusu systemu i aktywności" },
   "dashboard.unhandled_messages": { no: "Ubehandlede meldinger", en: "Unhandled messages", de: "Unbearbeitete Nachrichten", fr: "Messages non traités", es: "Mensajes sin manejar", it: "Messaggi non gestiti", pl: "Nieobsłużone wiadomości" },
   "dashboard.operational_groups": { no: "Operative grupper", en: "Operational groups", de: "Operative Gruppen", fr: "Groupes opérationnels", es: "Grupos operativos", it: "Gruppi operativi", pl: "Grupy operacyjne" },
@@ -253,6 +255,11 @@ const translations: Record<string, Record<Language, string>> = {
   "admin.demo_description": { no: "Du ser nå systemet som", en: "You are now viewing the system as", de: "Sie sehen das System jetzt als", fr: "Vous voyez maintenant le système en tant que", es: "Ahora está viendo el sistema como", it: "Stai ora visualizzando il sistema come", pl: "Teraz widzisz system jako" },
   "admin.exit_demo": { no: "Avslutt demo som", en: "Exit demo as", de: "Demo beenden als", fr: "Quitter la démo en tant que", es: "Salir de la demo como", it: "Esci dalla demo come", pl: "Wyjdź z demo jako" },
   "admin.active_user": { no: "Aktiv bruker", en: "Active user", de: "Aktiver Benutzer", fr: "Utilisateur actif", es: "Usuario activo", it: "Utente attivo", pl: "Aktywny użytkownik" },
+
+  // Roles
+  "role.super_admin": { no: "Super Admin", en: "Super Admin", de: "Super Admin", fr: "Super Admin", es: "Super Admin", it: "Super Admin", pl: "Super Admin" },
+  "role.admin": { no: "Administrator", en: "Administrator", de: "Administrator", fr: "Administrateur", es: "Administrador", it: "Amministratore", pl: "Administrator" },
+  "role.user": { no: "Bruker", en: "User", de: "Benutzer", fr: "Utilisateur", es: "Usuario", it: "Utente", pl: "Użytkownik" },
 };
 
 // Default language for SSR and initial client render

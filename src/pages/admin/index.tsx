@@ -738,7 +738,7 @@ export default function AdminPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">System Admin</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Administrasjon</h1>
             <p className="text-muted-foreground">
               Administrer brukere, grupper og systeminnstillinger
             </p>
@@ -846,8 +846,8 @@ export default function AdminPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="member">Medlem</SelectItem>
-                            <SelectItem value="group_admin">Gruppe Admin</SelectItem>
-                            <SelectItem value="tenant_admin">System Admin</SelectItem>
+                            <SelectItem value="group_admin">Gruppe-admin</SelectItem>
+                            <SelectItem value="tenant_admin">Tenant-admin</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
