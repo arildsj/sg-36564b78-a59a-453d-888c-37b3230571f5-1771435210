@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageProvider";
 import { useToast } from "@/hooks/use-toast";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,8 @@ const db = supabase as any;
 
 export default function AdminPage() {
   const { toast } = useToast();
-  const appCommit = process.env.NEXT_PUBLIC_APP_COMMIT || "ukjent";
+  const { t } = useLanguage();
+  const appCommit = process.env.NEXT_PUBLIC_APP_COMMIT || t("admin.unknown");
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [gateways, setGateways] = useState<Gateway[]>([]);
@@ -325,8 +327,8 @@ export default function AdminPage() {
         
         if (!session) {
           toast({
-            title: "Ikke autentisert",
-            description: "Du må logge inn for å se admin-panelet",
+            title: t("admin.not_authenticated"),
+            description: t("admin.login_required"),
             variant: "destructive",
           });
           return;
@@ -336,7 +338,7 @@ export default function AdminPage() {
       } catch (error: any) {
         console.error("Auth check failed:", error);
         toast({
-          title: "Autentiseringsfeil",
+          title: t("admin.auth_error"),
           description: error.message,
           variant: "destructive",
         });
@@ -536,7 +538,7 @@ export default function AdminPage() {
     try {
       const memberCount = Object.keys(activeMembers).length; // rough bound check done server-side
       if (editGroupData.min_active < 0) {
-        toast({ title: "Ugyldig verdi", description: "min_active kan ikke være negativ", variant: "destructive" });
+        toast({ title: t("admin.invalid_value"), description: t("admin.min_active_negative"), variant: "destructive" });
         return;
       }
 
@@ -575,8 +577,8 @@ export default function AdminPage() {
 
       if (newGroup.parent_id === "none" && !newGroup.gateway_id) {
         toast({
-          title: "Gateway mangler",
-          description: "Du må velge en gateway for rotgrupper",
+          title: t("admin.gateway_missing"),
+          description: t("admin.root_needs_gateway"),
           variant: "destructive",
         });
         return;
@@ -703,22 +705,22 @@ export default function AdminPage() {
     if (!m) return "—";
     const et = log.event_type || log.action;
     if (et === "rule_matched") {
-      return `Avsender: ${m.sender ?? "?"} → Regel: "${m.matched_rule_name ?? "?"}" (${m.match_type ?? "?"})`;
+      return `${t("admin.audit_sender")} ${m.sender ?? "?"} → ${t("admin.audit_rule")} "${m.matched_rule_name ?? "?"}" (${m.match_type ?? "?"})`;
     }
     if (et === "min_active_changed") {
       return `${m.group_name ?? ""}: min_active ${m.old_value} → ${m.new_value}`;
     }
     if (et === "admin_override") {
-      const dir = m.set_active ? "aktivert" : "deaktivert";
-      return `${m.group_name ?? ""}: bruker ${dir}${m.reason ? ` — ${m.reason}` : ""}`;
+      const dir = m.set_active ? t("admin.audit_activated") : t("admin.audit_deactivated");
+      return `${m.group_name ?? ""}: ${t("admin.user_label")} ${dir}${m.reason ? ` — ${m.reason}` : ""}`;
     }
     if (et === "activation_requested") {
-      return `${m.group_name ?? ""}: forespørsel sendt til ${(m.requested_user_ids as string[] | undefined)?.length ?? 0} brukere`;
+      return `${m.group_name ?? ""}: ${t("admin.audit_request_sent")} ${(m.requested_user_ids as string[] | undefined)?.length ?? 0} ${t("admin.audit_users")}`;
     }
-    if (et === "activation_confirmed") return `${m.group_name ?? ""}: bruker aktivert`;
-    if (et === "activation_rejected")  return `${m.group_name ?? ""}: bruker avviste forespørsel`;
-    if (et === "activated")            return `${m.group_name ?? ""}: bruker aktivert`;
-    if (et === "deactivated")          return `${m.group_name ?? ""}: bruker deaktivert`;
+    if (et === "activation_confirmed") return `${m.group_name ?? ""}: ${t("admin.audit_user_activated")}`;
+    if (et === "activation_rejected")  return `${m.group_name ?? ""}: ${t("admin.audit_user_rejected")}`;
+    if (et === "activated")            return `${m.group_name ?? ""}: ${t("admin.audit_user_activated")}`;
+    if (et === "deactivated")          return `${m.group_name ?? ""}: ${t("admin.audit_user_deactivated")}`;
     // Fallback: render key=value pairs
     return Object.entries(m)
       .filter(([, v]) => v !== null && v !== undefined)
@@ -738,9 +740,9 @@ export default function AdminPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Administrasjon</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t("admin.title")}</h1>
             <p className="text-muted-foreground">
-              Administrer brukere, grupper og systeminnstillinger
+              {t("admin.page_description")}
             </p>
             <p className="text-sm text-muted-foreground">
               Commit: <span className="font-mono">{appCommit}</span>
@@ -752,23 +754,23 @@ export default function AdminPage() {
           <TabsList>
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Brukere
+              {t("admin.tabs.users")}
             </TabsTrigger>
             <TabsTrigger value="groups" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              Grupper & Tilgang
+              {t("admin.groups_title")}
             </TabsTrigger>
             <TabsTrigger value="gateways" className="flex items-center gap-2">
               <Server className="h-4 w-4" />
-              SMS Gateways
+              {t("admin.gateways_title")}
             </TabsTrigger>
             <TabsTrigger value="routing" className="flex items-center gap-2">
               <Router className="h-4 w-4" />
-              Rutingsregler
+              {t("admin.tabs.routing")}
             </TabsTrigger>
             <TabsTrigger value="audit" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
-              Audit Logg
+              {t("admin.tabs.audit")}
             </TabsTrigger>
           </TabsList>
 
@@ -776,28 +778,28 @@ export default function AdminPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="space-y-1">
-                  <CardTitle>Brukere</CardTitle>
+                  <CardTitle>{t("admin.users_title")}</CardTitle>
                   <CardDescription>
-                    Oversikt over alle registrerte brukere i systemet
+                    {t("admin.users_description")}
                   </CardDescription>
                 </div>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button>
                       <Plus className="mr-2 h-4 w-4" />
-                      Ny Bruker
+                      {t("admin.new_user_btn")}
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle id="create-user-dialog-title">Opprett ny bruker</DialogTitle>
+                      <DialogTitle id="create-user-dialog-title">{t("admin.create_user_title")}</DialogTitle>
                       <DialogDescription>
-                        Legg til en ny bruker med tilgangsnivå
+                        {t("admin.create_user_description")}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
-                        <Label>Navn</Label>
+                        <Label>{t("admin.name")}</Label>
                         <Input
                           value={newUser.full_name}
                           onChange={(e) =>
@@ -806,7 +808,7 @@ export default function AdminPage() {
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label>E-post</Label>
+                        <Label>{t("admin.email")}</Label>
                         <Input
                           value={newUser.email}
                           onChange={(e) =>
@@ -815,7 +817,7 @@ export default function AdminPage() {
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label>Passord</Label>
+                        <Label>{t("admin.password")}</Label>
                         <Input
                           type="password"
                           value={newUser.password}
@@ -825,7 +827,7 @@ export default function AdminPage() {
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label>Telefon</Label>
+                        <Label>{t("admin.phone")}</Label>
                         <Input
                           value={newUser.phone}
                           onChange={(e) =>
@@ -834,7 +836,7 @@ export default function AdminPage() {
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label>Rolle</Label>
+                        <Label>{t("admin.role")}</Label>
                         <Select
                           value={newUser.role}
                           onValueChange={(value) =>
@@ -845,17 +847,17 @@ export default function AdminPage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="member">Medlem</SelectItem>
-                            <SelectItem value="group_admin">Gruppe-admin</SelectItem>
-                            <SelectItem value="tenant_admin">Tenant-admin</SelectItem>
+                            <SelectItem value="member">{t("admin.member")}</SelectItem>
+                            <SelectItem value="group_admin">{t("admin.group_admin")}</SelectItem>
+                            <SelectItem value="tenant_admin">{t("admin.tenant_admin")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="grid gap-2">
-                        <Label>Grupper</Label>
+                        <Label>{t("admin.groups_label")}</Label>
                         <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto">
                           {groups.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">Ingen grupper tilgjengelig</p>
+                            <p className="text-sm text-muted-foreground">{t("admin.no_groups_available")}</p>
                           ) : (
                             groups.map((group) => (
                               <div key={group.id} className="flex items-center space-x-2">
@@ -883,10 +885,10 @@ export default function AdminPage() {
                         </div>
                       </div>
                       <div className="grid gap-2">
-                        <Label>Grupper å administrere</Label>
+                        <Label>{t("admin.groups_to_admin")}</Label>
                         <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto bg-muted/30">
                           {groups.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">Ingen grupper tilgjengelig</p>
+                            <p className="text-sm text-muted-foreground">{t("admin.no_groups_available")}</p>
                           ) : (
                             groups.map((group) => (
                               <div key={group.id} className="flex items-center space-x-2">
@@ -913,21 +915,21 @@ export default function AdminPage() {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Velg hvilke grupper denne group_admin kan administrere
+                          {t("admin.select_admin_groups")}
                         </p>
                       </div>
                     </div>
                     <DialogFooter>
                       {newUser.group_ids.length === 0 && (
                         <p className="text-sm text-destructive mr-auto">
-                          ⚠️ Velg minst én gruppe
+                          ⚠️ {t("admin.select_at_least_one")}
                         </p>
                       )}
-                      <Button 
+                      <Button
                         onClick={handleCreateUser}
                         disabled={newUser.group_ids.length === 0}
                       >
-                        Opprett bruker
+                        {t("admin.create_user_button")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -937,14 +939,14 @@ export default function AdminPage() {
               <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle id="edit-user-dialog-title">Rediger bruker</DialogTitle>
+                    <DialogTitle id="edit-user-dialog-title">{t("admin.edit_user_title")}</DialogTitle>
                     <DialogDescription>
-                      Oppdater brukerens informasjon og gruppemedlemskap
+                      {t("admin.edit_user_description")}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
-                      <Label>Navn</Label>
+                      <Label>{t("admin.name")}</Label>
                       <Input
                         value={editUserData.full_name}
                         onChange={(e) =>
@@ -953,7 +955,7 @@ export default function AdminPage() {
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label>E-post</Label>
+                      <Label>{t("admin.email")}</Label>
                       <Input
                         value={editUserData.email}
                         onChange={(e) =>
@@ -962,7 +964,7 @@ export default function AdminPage() {
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label>Telefon</Label>
+                      <Label>{t("admin.phone")}</Label>
                       <Input
                         value={editUserData.phone}
                         onChange={(e) =>
@@ -971,7 +973,7 @@ export default function AdminPage() {
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label>Rolle</Label>
+                      <Label>{t("admin.role")}</Label>
                       <Select
                         value={editUserData.role}
                         onValueChange={(value) =>
@@ -982,19 +984,19 @@ export default function AdminPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="member">Medlem</SelectItem>
-                          <SelectItem value="group_admin">Gruppe Admin</SelectItem>
-                          <SelectItem value="tenant_admin">System Admin</SelectItem>
+                          <SelectItem value="member">{t("admin.member")}</SelectItem>
+                          <SelectItem value="group_admin">{t("admin.group_admin")}</SelectItem>
+                          <SelectItem value="tenant_admin">{t("admin.tenant_admin")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     {editUserData.role === "group_admin" && (
                       <div className="grid gap-2">
-                        <Label>Grupper å administrere</Label>
+                        <Label>{t("admin.groups_to_admin")}</Label>
                         <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto bg-muted/30">
                           {groups.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">Ingen grupper tilgjengelig</p>
+                            <p className="text-sm text-muted-foreground">{t("admin.no_groups_available")}</p>
                           ) : (
                             groups.map((group) => (
                               <div key={group.id} className="flex items-center space-x-2">
@@ -1021,13 +1023,13 @@ export default function AdminPage() {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Velg hvilke grupper denne group_admin kan administrere
+                          {t("admin.select_admin_groups")}
                         </p>
                       </div>
                     )}
 
                     <div className="grid gap-2">
-                      <Label>Grupper</Label>
+                      <Label>{t("admin.groups_label")}</Label>
                       <div className="border rounded-md p-4 space-y-2 max-h-48 overflow-y-auto">
                         {groups.map((group) => (
                           <div key={group.id} className="flex items-center space-x-2">
@@ -1056,9 +1058,9 @@ export default function AdminPage() {
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setEditingUser(null)}>
-                      Avbryt
+                      {t("admin.cancel")}
                     </Button>
-                    <Button onClick={handleUpdateUser}>Lagre endringer</Button>
+                    <Button onClick={handleUpdateUser}>{t("admin.save_changes")}</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -1067,7 +1069,7 @@ export default function AdminPage() {
                 <div className="flex items-center py-4">
                   <Search className="mr-2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Søk etter navn eller e-post..."
+                    placeholder={t("admin.search_users")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="max-w-sm"
@@ -1077,12 +1079,12 @@ export default function AdminPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Navn</TableHead>
-                        <TableHead>E-post</TableHead>
-                        <TableHead>Rolle</TableHead>
-                        <TableHead>Grupper</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Handlinger</TableHead>
+                        <TableHead>{t("admin.name")}</TableHead>
+                        <TableHead>{t("admin.email")}</TableHead>
+                        <TableHead>{t("admin.role")}</TableHead>
+                        <TableHead>{t("admin.groups_label")}</TableHead>
+                        <TableHead>{t("admin.status")}</TableHead>
+                        <TableHead className="text-right">{t("admin.actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1102,7 +1104,7 @@ export default function AdminPage() {
                           </TableCell>
                           <TableCell>
                             <Badge variant={user.deleted_at ? "destructive" : "default"}>
-                              {user.deleted_at ? "Inaktiv" : "Aktiv"}
+                              {user.deleted_at ? t("admin.inactive") : t("admin.active")}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
@@ -1111,7 +1113,7 @@ export default function AdminPage() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setEditingUser(user)}
-                                title="Rediger bruker"
+                                title={t("admin.edit_user_title")}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -1119,7 +1121,7 @@ export default function AdminPage() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleDeleteUser(user.id)}
-                                title="Slett bruker"
+                                title={t("admin.delete_user")}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -1138,28 +1140,28 @@ export default function AdminPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="space-y-1">
-                  <CardTitle>Grupper & Tilgang</CardTitle>
+                  <CardTitle>{t("admin.groups_title")}</CardTitle>
                   <CardDescription>
-                    Administrer organisasjonsstrukturen
+                    {t("admin.groups_description")}
                   </CardDescription>
                 </div>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button>
                       <Plus className="mr-2 h-4 w-4" />
-                      Ny Gruppe
+                      {t("admin.new_group_btn")}
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle id="create-group-dialog-title">Opprett ny gruppe</DialogTitle>
+                      <DialogTitle id="create-group-dialog-title">{t("admin.create_group_title")}</DialogTitle>
                       <DialogDescription>
-                        Legg til en ny gruppe i organisasjonen
+                        {t("admin.create_group_description")}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid gap-2">
-                        <Label>Navn</Label>
+                        <Label>{t("admin.name")}</Label>
                         <Input
                           value={newGroup.name}
                           onChange={(e) =>
@@ -1168,7 +1170,7 @@ export default function AdminPage() {
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label>Beskrivelse</Label>
+                        <Label>{t("admin.description_label")}</Label>
                         <Input
                           value={newGroup.description}
                           onChange={(e) =>
@@ -1177,7 +1179,7 @@ export default function AdminPage() {
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label>Type</Label>
+                        <Label>{t("admin.table.type")}</Label>
                         <Select
                           value={newGroup.kind}
                           onValueChange={(value) =>
@@ -1188,14 +1190,14 @@ export default function AdminPage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="operational">Operasjonell</SelectItem>
-                            <SelectItem value="administrative">Administrativ</SelectItem>
-                            <SelectItem value="billing">Fakturering</SelectItem>
+                            <SelectItem value="operational">{t("admin.kind.operational")}</SelectItem>
+                            <SelectItem value="administrative">{t("admin.kind.administrative")}</SelectItem>
+                            <SelectItem value="billing">{t("admin.kind.billing")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="grid gap-2">
-                        <Label>Forelder-gruppe</Label>
+                        <Label>{t("admin.parent_group")}</Label>
                         <Select
                           value={newGroup.parent_id}
                           onValueChange={(value) =>
@@ -1203,10 +1205,10 @@ export default function AdminPage() {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Velg forelder..." />
+                            <SelectValue placeholder={t("admin.select_parent")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">Ingen (Toppnivå)</SelectItem>
+                            <SelectItem value="none">{t("admin.no_parent")}</SelectItem>
                             {groups.map((g) => (
                               <SelectItem key={g.id} value={g.id}>
                                 {g.name}
@@ -1218,7 +1220,7 @@ export default function AdminPage() {
 
                       {userRole === "tenant_admin" && newGroup.parent_id === "none" && (
                         <div className="grid gap-2">
-                          <Label>Gateway <span className="text-destructive">*</span></Label>
+                          <Label>{t("admin.gateway")} <span className="text-destructive">*</span></Label>
                           <Select
                             value={newGroup.gateway_id}
                             onValueChange={(value) =>
@@ -1226,24 +1228,24 @@ export default function AdminPage() {
                             }
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Velg gateway..." />
+                              <SelectValue placeholder={t("admin.select_gateway")} />
                             </SelectTrigger>
                             <SelectContent>
                               {gateways.filter(gw => gw.is_active).map((gw) => (
                                 <SelectItem key={gw.id} value={gw.id}>
-                                  {gw.name} ({gw.gw_phone || "Ingen telefon"})
+                                  {gw.name} ({gw.gw_phone || t("admin.no_phone")})
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground">
-                            Rotgrupper må ha en gateway tilknyttet
+                            {t("admin.root_needs_gateway")}
                           </p>
                         </div>
                       )}
-                      
+
                       <div className="grid gap-2">
-                        <Label>Min. aktive medlemmer</Label>
+                        <Label>{t("admin.min_active_members")}</Label>
                         <Input
                           type="number"
                           min={0}
@@ -1253,7 +1255,7 @@ export default function AdminPage() {
                           }
                         />
                         <p className="text-xs text-muted-foreground">
-                          Minimum antall medlemmer som må være aktive (på vakt) til enhver tid.
+                          {t("admin.min_active_help")}
                         </p>
                       </div>
 
@@ -1264,12 +1266,12 @@ export default function AdminPage() {
                             setNewGroup({ ...newGroup, escalation_enabled: checked })
                           }
                         />
-                        <Label>Aktiver eskalering</Label>
+                        <Label>{t("admin.enable_escalation")}</Label>
                       </div>
 
                       {newGroup.escalation_enabled && (
                         <div className="grid gap-2">
-                          <Label>Timeout (minutter)</Label>
+                          <Label>{t("admin.timeout_minutes")}</Label>
                           <Input
                             type="number"
                             value={newGroup.escalation_timeout_minutes}
@@ -1281,14 +1283,14 @@ export default function AdminPage() {
                       )}
                     </div>
                     <DialogFooter>
-                      <Button 
+                      <Button
                         onClick={handleCreateGroup}
                         disabled={
-                          !newGroup.name || 
+                          !newGroup.name ||
                           (newGroup.parent_id === "none" && userRole === "tenant_admin" && !newGroup.gateway_id)
                         }
                       >
-                        Opprett Gruppe
+                        {t("admin.create_group_button")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -1297,7 +1299,7 @@ export default function AdminPage() {
 
               <CardContent className="space-y-6">
                 <div className="border rounded-lg p-4 bg-muted/20">
-                  <h3 className="font-semibold mb-3 text-sm">Gruppe-hierarki</h3>
+                  <h3 className="font-semibold mb-3 text-sm">{t("admin.group_hierarchy")}</h3>
                   <GroupHierarchy groups={(() => {
                     const buildHierarchy = (parentId: string | null = null): any[] => {
                       return groups
@@ -1317,16 +1319,16 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-3">Alle Grupper</h3>
+                  <h3 className="font-semibold mb-3">{t("admin.all_groups")}</h3>
                   <div className="rounded-md border">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Navn</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Aktive / Min</TableHead>
-                          <TableHead>Eskalering</TableHead>
-                          <TableHead className="text-right">Handlinger</TableHead>
+                          <TableHead>{t("admin.name")}</TableHead>
+                          <TableHead>{t("admin.table.type")}</TableHead>
+                          <TableHead>{t("admin.table.active_min")}</TableHead>
+                          <TableHead>{t("admin.table.escalation")}</TableHead>
+                          <TableHead className="text-right">{t("admin.actions")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1343,7 +1345,7 @@ export default function AdminPage() {
                             <TableCell>
                               <span className={`text-sm flex items-center gap-1 ${atMin ? "text-orange-600 font-medium" : ""}`}>
                                 {atMin && <AlertTriangle className="h-3.5 w-3.5 shrink-0" />}
-                                {active} aktiv{active !== 1 ? "e" : ""} / min {minAct}
+                                {active} {t("admin.active").toLowerCase()} / min {minAct}
                               </span>
                             </TableCell>
                             <TableCell>
@@ -1363,7 +1365,7 @@ export default function AdminPage() {
                                       selectedGroupId === group.id ? null : group.id
                                     )
                                   }
-                                  title="Vis detaljer"
+                                  title={t("admin.view_details")}
                                 >
                                   {selectedGroupId === group.id ? (
                                     <ChevronDown className="h-4 w-4" />
@@ -1375,7 +1377,7 @@ export default function AdminPage() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => setEditingGroup(group)}
-                                  title="Rediger gruppe"
+                                  title={t("admin.edit_group")}
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
@@ -1383,7 +1385,7 @@ export default function AdminPage() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handleDeleteGroup(group.id)}
-                                  title="Slett gruppe"
+                                  title={t("admin.delete_group")}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -1405,14 +1407,14 @@ export default function AdminPage() {
                     <div className="border rounded-lg p-4 bg-muted/10">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-semibold text-sm">
-                          {selectedGroup.name} — Medlemmer
+                          {selectedGroup.name} — {t("admin.members")}
                         </h3>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
                           onClick={() => setSelectedGroupId(null)}
-                          title="Lukk"
+                          title={t("admin.cancel")}
                         >
                           <X className="h-3.5 w-3.5" />
                         </Button>
@@ -1430,14 +1432,14 @@ export default function AdminPage() {
             <Dialog open={!!editingGroup} onOpenChange={(open) => !open && setEditingGroup(null)}>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle id="edit-group-dialog-title">Rediger gruppe</DialogTitle>
+                  <DialogTitle id="edit-group-dialog-title">{t("admin.edit_group")}</DialogTitle>
                   <DialogDescription>
-                    Oppdater gruppens informasjon og innstillinger
+                    {t("admin.update_group_info")}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label>Navn</Label>
+                    <Label>{t("admin.name")}</Label>
                     <Input
                       value={editGroupData.name}
                       onChange={(e) =>
@@ -1446,7 +1448,7 @@ export default function AdminPage() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label>Beskrivelse</Label>
+                    <Label>{t("admin.description_label")}</Label>
                     <Input
                       value={editGroupData.description}
                       onChange={(e) =>
@@ -1455,7 +1457,7 @@ export default function AdminPage() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label>Type</Label>
+                    <Label>{t("admin.table.type")}</Label>
                     <Select
                       value={editGroupData.kind}
                       onValueChange={(value) =>
@@ -1466,19 +1468,19 @@ export default function AdminPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="operational">Operasjonell</SelectItem>
-                        <SelectItem value="administrative">Administrativ</SelectItem>
-                        <SelectItem value="billing">Fakturering</SelectItem>
+                        <SelectItem value="operational">{t("admin.kind.operational")}</SelectItem>
+                        <SelectItem value="administrative">{t("admin.kind.administrative")}</SelectItem>
+                        <SelectItem value="billing">{t("admin.kind.billing")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label>Forelder-gruppe</Label>
+                    <Label>{t("admin.parent_group")}</Label>
                     <Select
                       value={editGroupData.parent_id || "none"}
                       onValueChange={(value) =>
-                        setEditGroupData({ 
-                          ...editGroupData, 
+                        setEditGroupData({
+                          ...editGroupData,
                           parent_id: value === "none" ? "" : value,
                           gateway_id: value === "none" ? editGroupData.gateway_id : ""
                         })
@@ -1488,7 +1490,7 @@ export default function AdminPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Ingen (Toppnivå)</SelectItem>
+                        <SelectItem value="none">{t("admin.no_parent")}</SelectItem>
                         {groups
                           .filter(g => g.id !== editingGroup?.id)
                           .map((g) => (
@@ -1502,7 +1504,7 @@ export default function AdminPage() {
 
                   {userRole === "tenant_admin" && (editGroupData.parent_id === "none" || !editGroupData.parent_id) && (
                     <div className="grid gap-2">
-                      <Label>Gateway</Label>
+                      <Label>{t("admin.gateway")}</Label>
                       <Select
                         value={editGroupData.gateway_id}
                         onValueChange={(value) =>
@@ -1510,12 +1512,12 @@ export default function AdminPage() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Velg gateway..." />
+                          <SelectValue placeholder={t("admin.select_gateway")} />
                         </SelectTrigger>
                         <SelectContent>
                           {gateways.filter(gw => gw.is_active).map((gw) => (
                             <SelectItem key={gw.id} value={gw.id}>
-                              {gw.name} ({gw.gw_phone || "Ingen telefon"})
+                              {gw.name} ({gw.gw_phone || t("admin.no_phone")})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1524,7 +1526,7 @@ export default function AdminPage() {
                   )}
 
                   <div className="grid gap-2">
-                    <Label>Min. aktive medlemmer</Label>
+                    <Label>{t("admin.min_active_members")}</Label>
                     <Input
                       type="number"
                       min={0}
@@ -1542,7 +1544,7 @@ export default function AdminPage() {
                       return (
                         <p className={`text-xs flex items-center gap-1 ${atMin ? "text-orange-600" : "text-muted-foreground"}`}>
                           {atMin && <AlertTriangle className="h-3 w-3 shrink-0" />}
-                          {active} aktiv{active !== 1 ? "e" : ""} for øyeblikket
+                          {active} {t("admin.active_currently")}
                         </p>
                       );
                     })()}
@@ -1555,19 +1557,19 @@ export default function AdminPage() {
                         setEditGroupData({ ...editGroupData, escalation_enabled: checked })
                       }
                     />
-                    <Label>Aktiver eskalering</Label>
+                    <Label>{t("admin.enable_escalation")}</Label>
                   </div>
 
                   {editGroupData.escalation_enabled && (
                     <div className="grid gap-2">
-                      <Label>Timeout (minutter)</Label>
+                      <Label>{t("admin.timeout_minutes")}</Label>
                       <Input
                         type="number"
                         value={editGroupData.escalation_timeout_minutes}
                         onChange={(e) =>
-                          setEditGroupData({ 
-                            ...editGroupData, 
-                            escalation_timeout_minutes: parseInt(e.target.value) 
+                          setEditGroupData({
+                            ...editGroupData,
+                            escalation_timeout_minutes: parseInt(e.target.value)
                           })
                         }
                       />
@@ -1576,9 +1578,9 @@ export default function AdminPage() {
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setEditingGroup(null)}>
-                    Avbryt
+                    {t("admin.cancel")}
                   </Button>
-                  <Button onClick={handleUpdateGroup}>Lagre endringer</Button>
+                  <Button onClick={handleUpdateGroup}>{t("admin.save_changes")}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -1587,22 +1589,22 @@ export default function AdminPage() {
           <TabsContent value="gateways" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>SMS Gateways</CardTitle>
-                <CardDescription>Konfigurer leverandører for SMS-utsendelse</CardDescription>
+                <CardTitle>{t("admin.gateways_title")}</CardTitle>
+                <CardDescription>{t("admin.gateways_description")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-4 border p-4 rounded-md">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Gateway Navn</Label>
-                      <Input 
+                      <Label>{t("admin.gateway_name")}</Label>
+                      <Input
                         placeholder="Helse Gateway"
                         value={newGateway.name}
                         onChange={(e) => setNewGateway({...newGateway, name: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Telefonnummer</Label>
+                      <Label>{t("admin.phone_number")}</Label>
                       <Input 
                         placeholder="+47..."
                         value={newGateway.gw_phone}
@@ -1610,7 +1612,7 @@ export default function AdminPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Base URL</Label>
+                      <Label>{t("admin.base_url")}</Label>
                       <Input 
                         placeholder="https://semse.iotcrafts.in/"
                         value={newGateway.base_url}
@@ -1618,19 +1620,19 @@ export default function AdminPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>API Key</Label>
-                      <Input 
+                      <Label>{t("admin.api_key")}</Label>
+                      <Input
                         type="password"
-                        placeholder="Hemmelig API-nøkkel"
+                        placeholder={t("admin.api_key_placeholder")}
                         value={newGateway.api_key}
                         onChange={(e) => setNewGateway({...newGateway, api_key: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="gateway_description">Beskrivelse</Label>
+                      <Label htmlFor="gateway_description">{t("admin.description_label")}</Label>
                       <Input
                         id="gateway_description"
-                        placeholder="F.eks. Primær SMS-gateway for Norge"
+                        placeholder={t("admin.gateway_desc_placeholder")}
                         value={newGateway.gateway_description}
                         onChange={(e) =>
                           setNewGateway({ ...newGateway, gateway_description: e.target.value })
@@ -1638,11 +1640,11 @@ export default function AdminPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="webhook_secret">Webhook Secret</Label>
+                      <Label htmlFor="webhook_secret">{t("admin.webhook_secret")}</Label>
                       <Input
                         id="webhook_secret"
                         type="password"
-                        placeholder="Valgfritt"
+                        placeholder={t("admin.optional")}
                         value={newGateway.webhook_secret}
                         onChange={(e) =>
                           setNewGateway({ ...newGateway, webhook_secret: e.target.value })
@@ -1651,14 +1653,14 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <Button onClick={() => handleCreateGateway(newGateway)} size="sm" className="w-full mt-4">
-                    <Plus className="mr-2 h-4 w-4" /> Legg til Gateway
+                    <Plus className="mr-2 h-4 w-4" /> {t("admin.add_gateway")}
                   </Button>
                 </div>
 
                 <div className="space-y-2 mt-4">
                   {gateways.length === 0 ? (
                     <div className="text-center p-8 border rounded-lg border-dashed text-muted-foreground">
-                      Ingen gateways konfigurert ennå
+                      {t("admin.no_gateways")}
                     </div>
                   ) : (
                     gateways.map(gw => (
@@ -1666,11 +1668,11 @@ export default function AdminPage() {
                         <div>
                           <div className="font-medium">{gw.name}</div>
                           <div className="text-sm text-muted-foreground">{gw.base_url}</div>
-                          <div className="text-xs text-muted-foreground">{gw.gw_phone || "Ingen telefon"}</div>
+                          <div className="text-xs text-muted-foreground">{gw.gw_phone || t("admin.no_phone")}</div>
                         </div>
                         <div className="flex gap-2">
                           <Badge variant={gw.is_active ? 'default' : 'secondary'}>
-                            {gw.is_active ? 'Aktiv' : 'Inaktiv'}
+                            {gw.is_active ? t("admin.active") : t("admin.inactive")}
                           </Badge>
                           <Button variant="ghost" size="icon" onClick={() => handleDeleteGateway(gw.id)}>
                             <Trash2 className="h-4 w-4" />
@@ -1687,18 +1689,18 @@ export default function AdminPage() {
           <TabsContent value="routing" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Rutingsregler</CardTitle>
+                <CardTitle>{t("admin.routing_rules_title")}</CardTitle>
                 <CardDescription>
-                  Styr hvordan innkommende meldinger rutes til riktig gruppe
+                  {t("admin.routing_description")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {gateways.length === 0 ? (
                   <div className="text-center p-8 border rounded-lg border-dashed">
                     <Server className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <h3 className="font-semibold mb-2">Ingen gateways funnet</h3>
+                    <h3 className="font-semibold mb-2">{t("admin.no_gateways_found")}</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Du må først legge til en SMS gateway før du kan opprette rutingsregler
+                      {t("admin.routing_no_gateways_help")}
                     </p>
                     <Button variant="outline" onClick={() => {
                       const tabsList = document.querySelector('[role="tablist"]');
@@ -1706,7 +1708,7 @@ export default function AdminPage() {
                       gatewaysTab?.click();
                     }}>
                       <Plus className="mr-2 h-4 w-4" />
-                      Gå til SMS Gateways
+                      {t("admin.go_to_gateways")}
                     </Button>
                   </div>
                 ) : (
@@ -1719,15 +1721,15 @@ export default function AdminPage() {
           <TabsContent value="audit" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Revisjonslogg</CardTitle>
-                <CardDescription>Logg over alle sensitive handlinger i systemet</CardDescription>
+                <CardTitle>{t("admin.audit_log_title")}</CardTitle>
+                <CardDescription>{t("admin.audit_description")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* ── Filters ── */}
                 <div className="flex flex-wrap gap-3 items-end border rounded-md p-3 bg-muted/20">
                   <Filter className="h-4 w-4 text-muted-foreground mt-auto mb-0.5 shrink-0" />
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Hendelsestype</label>
+                    <label className="text-xs text-muted-foreground">{t("admin.event_type")}</label>
                     <Select
                       value={auditFilter.event_type || "__all__"}
                       onValueChange={(v) =>
@@ -1735,10 +1737,10 @@ export default function AdminPage() {
                       }
                     >
                       <SelectTrigger className="h-8 w-48 text-sm">
-                        <SelectValue placeholder="Alle typer" />
+                        <SelectValue placeholder={t("admin.all_types")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__all__">Alle typer</SelectItem>
+                        <SelectItem value="__all__">{t("admin.all_types")}</SelectItem>
                         {[
                           "activated","deactivated","activation_requested","activation_confirmed",
                           "activation_rejected","activation_expired","admin_override",
@@ -1750,7 +1752,7 @@ export default function AdminPage() {
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Gruppe</label>
+                    <label className="text-xs text-muted-foreground">{t("admin.group_label")}</label>
                     <Select
                       value={auditFilter.group_id || "__all__"}
                       onValueChange={(v) =>
@@ -1758,10 +1760,10 @@ export default function AdminPage() {
                       }
                     >
                       <SelectTrigger className="h-8 w-44 text-sm">
-                        <SelectValue placeholder="Alle grupper" />
+                        <SelectValue placeholder={t("admin.all_groups_filter")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__all__">Alle grupper</SelectItem>
+                        <SelectItem value="__all__">{t("admin.all_groups_filter")}</SelectItem>
                         {groups.map((g) => (
                           <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
                         ))}
@@ -1769,7 +1771,7 @@ export default function AdminPage() {
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Bruker</label>
+                    <label className="text-xs text-muted-foreground">{t("admin.user_label")}</label>
                     <Select
                       value={auditFilter.user_id || "__all__"}
                       onValueChange={(v) =>
@@ -1777,10 +1779,10 @@ export default function AdminPage() {
                       }
                     >
                       <SelectTrigger className="h-8 w-44 text-sm">
-                        <SelectValue placeholder="Alle brukere" />
+                        <SelectValue placeholder={t("admin.all_users")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__all__">Alle brukere</SelectItem>
+                        <SelectItem value="__all__">{t("admin.all_users")}</SelectItem>
                         {users.map((u) => (
                           <SelectItem key={u.id} value={u.id}>{u.full_name || u.email}</SelectItem>
                         ))}
@@ -1794,7 +1796,7 @@ export default function AdminPage() {
                       className="h-8 text-xs"
                       onClick={() => setAuditFilter({ group_id: "", user_id: "", event_type: "" })}
                     >
-                      Nullstill filter
+                      {t("admin.reset_filter")}
                     </Button>
                   )}
                 </div>
@@ -1803,12 +1805,12 @@ export default function AdminPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-36">Tidspunkt</TableHead>
-                      <TableHead>Aktør</TableHead>
-                      <TableHead>Hendelse</TableHead>
-                      <TableHead>Gruppe</TableHead>
-                      <TableHead>Mål</TableHead>
-                      <TableHead>Detaljer</TableHead>
+                      <TableHead className="w-36">{t("admin.timestamp")}</TableHead>
+                      <TableHead>{t("admin.actor")}</TableHead>
+                      <TableHead>{t("admin.event")}</TableHead>
+                      <TableHead>{t("admin.group_label")}</TableHead>
+                      <TableHead>{t("admin.target")}</TableHead>
+                      <TableHead>{t("admin.details")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1828,7 +1830,7 @@ export default function AdminPage() {
                             })}
                           </TableCell>
                           <TableCell className="text-sm">
-                            {(log as any).actor_name || "System"}
+                            {(log as any).actor_name || t("admin.system")}
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs">
@@ -1849,7 +1851,7 @@ export default function AdminPage() {
                     {auditLogs.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                          Ingen loggoppføringer
+                          {t("admin.no_audit_entries")}
                         </TableCell>
                       </TableRow>
                     )}

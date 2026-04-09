@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,6 +86,7 @@ type CampaignMessage = {
 
 export default function SendingPage() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("compose");
   const [loading, setLoading] = useState(false);
   const [groups, setGroups] = useState<ServiceGroup[]>([]);
@@ -245,8 +247,8 @@ export default function SendingPage() {
     } catch (error) {
       console.error("Error loading campaign details:", error);
       toast({
-        title: "Kunne ikke laste kampanjedetaljer",
-        description: "Prøv igjen om et øyeblikk.",
+        title: t("sending.load_error"),
+        description: t("sending.try_again"),
         variant: "destructive",
       });
     } finally {
@@ -288,9 +290,9 @@ export default function SendingPage() {
 
   const campaignStatusLabel = (status: string) => {
     switch (status) {
-      case "completed": return "Fullført";
-      case "sending": return "Aktiv";
-      case "failed": return "Feilet";
+      case "completed": return t("sending.status.completed");
+      case "sending": return t("sending.status.active");
+      case "failed": return t("sending.status.failed");
       default: return status;
     }
   };
@@ -335,8 +337,8 @@ export default function SendingPage() {
       }
 
       toast({
-        title: "Påminnelser sendt",
-        description: `${successCount} påminnelse${successCount === 1 ? "" : "r"} sendt.`,
+        title: t("sending.toast.reminders_sent"),
+        description: `${successCount} ${successCount === 1 ? t("sending.reminders_sent_desc") : t("sending.reminders_sent_desc_plural")}`,
       });
 
       setReminderDialogOpen(false);
@@ -346,8 +348,8 @@ export default function SendingPage() {
     } catch (error: any) {
       console.error("Error sending reminders:", error);
       toast({
-        title: "Feil ved sending av påminnelse",
-        description: error.message || "Kunne ikke sende påminnelser",
+        title: t("sending.toast.reminder_error"),
+        description: error.message || t("sending.toast.reminder_error"),
         variant: "destructive",
       });
     } finally {
@@ -447,8 +449,8 @@ export default function SendingPage() {
   const handleSend = async () => {
     if (!message.trim()) {
       toast({
-        title: "Mangler melding",
-        description: "Du må skrive en melding før du sender",
+        title: t("sending.toast.missing_message"),
+        description: t("sending.toast.missing_message"),
         variant: "destructive",
       });
       return;
@@ -456,8 +458,8 @@ export default function SendingPage() {
 
     if (selectedGroups.length === 0) {
       toast({
-        title: "Mangler mottakere",
-        description: "Velg minst én mottakergruppe eller kontakt",
+        title: t("sending.toast.missing_recipients"),
+        description: t("sending.toast.missing_recipients"),
         variant: "destructive",
       });
       return;
@@ -507,8 +509,8 @@ export default function SendingPage() {
 
       if (totalRecipients === 0) {
         toast({
-          title: "Ingen mottakere",
-          description: "De valgte gruppene har ingen kontakter",
+          title: t("sending.toast.no_recipients"),
+          description: t("sending.toast.no_recipients"),
           variant: "destructive",
         });
         return;
@@ -639,13 +641,13 @@ export default function SendingPage() {
         console.log("✅ Campaign status updated");
 
         toast({
-          title: "Meldinger sendt",
+          title: t("sending.toast.messages_sent"),
           description: `${successCount} av ${totalRecipients} meldinger ble opprettet${failureCount > 0 ? ` (${failureCount} feilet)` : ""}`,
         });
       } else {
         console.log(`⏰ Messages scheduled for ${scheduleDate}`);
         toast({
-          title: "Melding planlagt",
+          title: t("sending.toast.message_scheduled"),
           description: `Meldingen sendes ${new Date(scheduleDate).toLocaleString()}`,
         });
       }
@@ -662,7 +664,7 @@ export default function SendingPage() {
     } catch (error: any) {
       console.error("❌ Error in handleSend:", error);
       toast({
-        title: "Feil ved sending",
+        title: t("sending.toast.send_error"),
         description: error.message,
         variant: "destructive",
       });
@@ -675,9 +677,9 @@ export default function SendingPage() {
     <AppLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Utsending</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("sending.page_title")}</h1>
           <p className="text-muted-foreground">
-            Send SMS til grupper eller enkeltpersoner
+            {t("sending.page_description")}
           </p>
         </div>
 
@@ -685,19 +687,19 @@ export default function SendingPage() {
           <TabsList>
             <TabsTrigger value="compose" className="flex items-center gap-2">
               <Send className="h-4 w-4" />
-              Ny melding
+              {t("sending.tabs.compose")}
             </TabsTrigger>
             <TabsTrigger value="campaign" className="flex items-center gap-2">
               <Megaphone className="h-4 w-4" />
-              Kampanje
+              {t("sending.tabs.campaign")}
             </TabsTrigger>
             <TabsTrigger value="history" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Historikk
+              {t("sending.tabs.history")}
             </TabsTrigger>
             <TabsTrigger value="templates" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Maler
+              {t("sending.tabs.templates")}
             </TabsTrigger>
           </TabsList>
 
@@ -706,12 +708,12 @@ export default function SendingPage() {
               <div className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Mottakere</CardTitle>
-                    <CardDescription>Velg hvem som skal motta meldingen</CardDescription>
+                    <CardTitle>{t("sending.recipients_title")}</CardTitle>
+                    <CardDescription>{t("sending.select_who")}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      <Label>Velg grupper og kontakter</Label>
+                      <Label>{t("sending.select_groups_and_contacts")}</Label>
                       <div className="border rounded-md p-3 max-h-[400px] overflow-y-auto space-y-2">
                         {groups.map(group => {
                           const isSelected = isGroupSelected(group.id);
@@ -786,7 +788,7 @@ export default function SendingPage() {
                                             onCheckedChange={() => toggleContact(group.id, contact.id)}
                                           />
                                           <Label htmlFor={`c-${contact.id}`} className="cursor-pointer flex-1 text-sm">
-                                            {contact.name || "Ukjent"}
+                                            {contact.name || t("sending.unknown_contact")}
                                           </Label>
                                           <span className="text-xs text-muted-foreground">
                                             {contact.phone}
@@ -796,7 +798,7 @@ export default function SendingPage() {
                                     </div>
                                   ) : (
                                     <p className="text-sm text-muted-foreground italic p-2">
-                                      Denne gruppen har ingen kontakter ennå
+                                      {t("sending.group_no_contacts")}
                                     </p>
                                   )}
                                 </div>
@@ -811,13 +813,13 @@ export default function SendingPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Innstillinger</CardTitle>
+                    <CardTitle>{t("sending.settings_title")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between space-x-2">
                       <Label htmlFor="urgent" className="flex flex-col space-y-1">
-                        <span>Haste-melding</span>
-                        <span className="font-normal text-xs text-muted-foreground">Markeres som viktig og prioriteres</span>
+                        <span>{t("sending.urgent_message")}</span>
+                        <span className="font-normal text-xs text-muted-foreground">{t("sending.urgent_help")}</span>
                       </Label>
                       <Switch 
                         id="urgent" 
@@ -827,8 +829,8 @@ export default function SendingPage() {
                     </div>
                     <div className="flex items-center justify-between space-x-2">
                       <Label htmlFor="ack" className="flex flex-col space-y-1">
-                        <span>Krev bekreftelse</span>
-                        <span className="font-normal text-xs text-muted-foreground">Mottakere må svare OK</span>
+                        <span>{t("sending.require_confirmation")}</span>
+                        <span className="font-normal text-xs text-muted-foreground">{t("sending.confirmation_help")}</span>
                       </Label>
                       <Switch 
                         id="ack" 
@@ -837,7 +839,7 @@ export default function SendingPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Planlegg utsending (valgfritt)</Label>
+                      <Label>{t("sending.schedule_optional")}</Label>
                       <Input 
                         type="datetime-local" 
                         value={scheduleDate}
@@ -851,12 +853,12 @@ export default function SendingPage() {
               <div className="space-y-4">
                 <Card className="h-full flex flex-col">
                   <CardHeader>
-                    <CardTitle>Innhold</CardTitle>
-                    <CardDescription>Skriv meldingen din her</CardDescription>
+                    <CardTitle>{t("sending.content_title")}</CardTitle>
+                    <CardDescription>{t("sending.write_message_label")}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex-1 space-y-4">
                     <Textarea 
-                      placeholder="Skriv din melding..." 
+                      placeholder={t("sending.write_message_here")}
                       className="min-h-[200px] resize-none text-lg"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
@@ -867,20 +869,20 @@ export default function SendingPage() {
                     </div>
                     
                     <div className="bg-secondary/30 p-4 rounded-md">
-                      <h4 className="text-sm font-medium mb-2">Forhåndsvisning</h4>
+                      <h4 className="text-sm font-medium mb-2">{t("sending.preview")}</h4>
                       <div className="bg-white dark:bg-slate-950 p-3 rounded border max-w-[300px] shadow-sm">
-                        <p className="text-sm whitespace-pre-wrap">{message || "Din melding vises her..."}</p>
+                        <p className="text-sm whitespace-pre-wrap">{message || t("sending.preview_placeholder")}</p>
                       </div>
                     </div>
                   </CardContent>
                   <CardFooter>
                     <Button className="w-full" size="lg" onClick={handleSend} disabled={loading}>
                       {loading ? (
-                        <span className="flex items-center gap-2">Sender...</span>
+                        <span className="flex items-center gap-2">{t("sending.sending")}</span>
                       ) : (
                         <span className="flex items-center gap-2">
                           <Send className="h-4 w-4" />
-                          {scheduleDate ? "Planlegg utsending" : "Send melding nå"}
+                          {scheduleDate ? t("sending.schedule_send") : t("sending.send_now")}
                         </span>
                       )}
                     </Button>
@@ -893,20 +895,20 @@ export default function SendingPage() {
           <TabsContent value="campaign" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Opprett Kampanje</CardTitle>
+                <CardTitle>{t("sending.create_campaign")}</CardTitle>
                 <CardDescription>
-                  Lag en bulk-kampanje for å sende meldinger til mange mottakere samtidig
+                  {t("sending.create_campaign_desc")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Kampanjenavn</Label>
-                      <Input placeholder="F.eks: Julekampanje 2026" />
+                      <Label>{t("sending.campaign_name")}</Label>
+                      <Input placeholder={t("sending.campaign_name_placeholder")} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Velg gruppe</Label>
+                      <Label>{t("sending.select_group")}</Label>
                       <div className="border rounded-md p-3 max-h-[200px] overflow-y-auto space-y-2">
                         {groups.map(group => (
                           <div key={group.id} className="flex items-center gap-2 p-2 hover:bg-secondary/50 rounded">
@@ -924,19 +926,19 @@ export default function SendingPage() {
                   </div>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Melding</Label>
-                      <Textarea 
-                        placeholder="Skriv kampanjemelding..." 
+                      <Label>{t("sending.message")}</Label>
+                      <Textarea
+                        placeholder={t("sending.campaign_message_placeholder")}
                         className="min-h-[150px]"
                       />
                     </div>
                     <div className="flex gap-2">
                       <Button className="flex-1" variant="outline">
-                        Lagre som utkast
+                        {t("sending.save_draft")}
                       </Button>
                       <Button className="flex-1">
                         <Megaphone className="h-4 w-4 mr-2" />
-                        Send kampanje
+                        {t("sending.send_campaign_button")}
                       </Button>
                     </div>
                   </div>
@@ -946,17 +948,16 @@ export default function SendingPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Aktive kampanjer</CardTitle>
-                <CardDescription>Oversikt over dine kampanjer</CardDescription>
+                <CardTitle>{t("sending.active_campaigns")}</CardTitle>
               </CardHeader>
               <CardContent>
                 {campaignLoading ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    Laster kampanjer...
+                    {t("sending.loading_campaigns")}
                   </div>
                 ) : campaigns.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    Ingen kampanjer funnet
+                    {t("sending.no_campaigns")}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -968,7 +969,7 @@ export default function SendingPage() {
                         <div className="space-y-1">
                           <h4 className="font-medium">{campaign.name}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {campaign.total_recipients} mottakere
+                            {campaign.total_recipients} {t("sending.recipients_title").toLowerCase()}
                           </p>
                         </div>
                         <div className="flex items-center gap-3">
@@ -988,7 +989,7 @@ export default function SendingPage() {
                               setCampaignDetailDialogOpen(true);
                             }}
                           >
-                            Se detaljer
+                            {t("sending.view_details")}
                           </Button>
                         </div>
                       </div>
@@ -1002,16 +1003,15 @@ export default function SendingPage() {
           <TabsContent value="history">
             <Card>
               <CardHeader>
-                <CardTitle>Utsendingshistorikk</CardTitle>
-                <CardDescription>Tidligere kampanjer og utsendinger</CardDescription>
+                <CardTitle>{t("sending.history_title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 lg:grid-cols-2">
                   <div className="space-y-3">
                     {campaignLoading ? (
-                      <div className="text-muted-foreground">Laster kampanjer...</div>
+                      <div className="text-muted-foreground">{t("sending.loading_campaigns")}</div>
                     ) : campaigns.length === 0 ? (
-                      <div className="text-muted-foreground">Ingen utsendinger funnet</div>
+                      <div className="text-muted-foreground">{t("sending.no_campaigns")}</div>
                     ) : (
                       campaigns.map((campaign: CampaignHistory) => (
                         <button
@@ -1023,7 +1023,7 @@ export default function SendingPage() {
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <p className="font-medium">{campaign.name || "Uten navn"}</p>
+                              <p className="font-medium">{campaign.name || t("sending.no_name")}</p>
                               <p className="text-xs text-muted-foreground">
                                 {new Date(campaign.created_at).toLocaleString("nb-NO")}
                               </p>
@@ -1033,7 +1033,7 @@ export default function SendingPage() {
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-2">
-                            {campaign.total_recipients} mottakere • {campaign.sent_count || 0} sendt • {campaign.failed_count || 0} feilet
+                            {campaign.total_recipients} {t("sending.recipients_title").toLowerCase()} • {campaign.sent_count || 0} {t("sending.sent_label")} • {campaign.failed_count || 0} {t("sending.failed_label")}
                           </p>
                         </button>
                       ))
@@ -1043,10 +1043,10 @@ export default function SendingPage() {
                   <div className="border rounded-md p-3 min-h-[320px]">
                     {!selectedCampaignId ? (
                       <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                        Velg en utsending for å se status og sende påminnelse.
+                        {t("sending.select_campaign")}
                       </div>
                     ) : historyLoading ? (
-                      <div className="text-sm text-muted-foreground">Laster detaljer...</div>
+                      <div className="text-sm text-muted-foreground">{t("sending.loading_details")}</div>
                     ) : (
                       <div className="space-y-3">
                         <div className="space-y-1">
@@ -1058,14 +1058,14 @@ export default function SendingPage() {
 
                         <div className="flex items-center justify-between border-y py-2">
                           <div className="text-sm text-muted-foreground">
-                            {campaignInboundMessages.length} har svart • {nonResponders.length} mangler svar
+                            {campaignInboundMessages.length} {t("sending.has_responded")} • {nonResponders.length} {t("sending.missing_response")}
                           </div>
                           <Button
                             size="sm"
                             onClick={() => setReminderDialogOpen(true)}
                             disabled={selectedForReminder.length === 0}
                           >
-                            Send påminnelse til {selectedForReminder.length} valgte
+                            {t("sending.send_reminder")} ({selectedForReminder.length})
                           </Button>
                         </div>
 
@@ -1082,7 +1082,7 @@ export default function SendingPage() {
                                 }
                               }}
                             />
-                            <span>Velg alle uten svar</span>
+                            <span>{t("sending.select_all_no_response")}</span>
                           </div>
                         )}
 
@@ -1116,19 +1116,19 @@ export default function SendingPage() {
                                   {replied ? (
                                     <Badge className="bg-green-600 text-white">
                                       <CheckCircle2 className="h-3 w-3 mr-1" />
-                                      Har svart
+                                      {t("sending.has_responded")}
                                     </Badge>
                                   ) : (
                                     <Badge variant="secondary">
                                       <AlertCircle className="h-3 w-3 mr-1" />
-                                      Ingen respons
+                                      {t("sending.no_response")}
                                     </Badge>
                                   )}
                                 </div>
                                 {reminder && (
                                   <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                                     <MessageSquare className="h-3 w-3" />
-                                    Påminnelse sendt {new Date(reminder.created_at).toLocaleString("nb-NO")}
+                                    {t("sending.reminder_sent")} {new Date(reminder.created_at).toLocaleString("nb-NO")}
                                   </p>
                                 )}
                               </div>
@@ -1146,20 +1146,20 @@ export default function SendingPage() {
           <TabsContent value="templates">
             <Card>
               <CardHeader>
-                <CardTitle>Meldingsmaler</CardTitle>
+                <CardTitle>{t("sending.templates_title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {["Kalle inn til vakt", "Systemvarsel", "Påminnelse møte"].map((t, i) => (
+                  {["Kalle inn til vakt", "Systemvarsel", "Påminnelse møte"].map((tpl, i) => (
                     <Card key={i} className="cursor-pointer hover:border-primary transition-colors" onClick={() => {
-                      setMessage(`Hei, dette er en mal for ${t}...`);
+                      setMessage(`Hei, dette er en mal for ${tpl}...`);
                       setActiveTab("compose");
                     }}>
                       <CardHeader className="p-4">
-                        <CardTitle className="text-base">{t}</CardTitle>
+                        <CardTitle className="text-base">{tpl}</CardTitle>
                       </CardHeader>
                       <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
-                        Klikk for å bruke denne malen...
+                        {t("sending.click_to_use_template")}
                       </CardContent>
                     </Card>
                   ))}
@@ -1179,7 +1179,7 @@ export default function SendingPage() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-lg font-semibold leading-none">
-                    {selectedCampaign?.name || "Kampanjedetaljer"}
+                    {selectedCampaign?.name || t("sending.campaign_details")}
                   </h2>
                   {selectedCampaign && (
                     <Badge variant={campaignStatusVariant(selectedCampaign.status)}>
@@ -1204,21 +1204,21 @@ export default function SendingPage() {
                   setReminderDialogOpen(true);
                 }}
               >
-                Send påminnelse til {selectedForReminder.length} valgte
+                {t("sending.send_reminder")} ({selectedForReminder.length})
               </Button>
             </div>
           </div>
 
           {historyLoading ? (
             <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground py-12">
-              Laster detaljer...
+              {t("sending.loading_details")}
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto">
               {/* ── Original message box ── */}
               <div className="px-6 py-4 border-b bg-muted/30">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                  Kampanjemelding
+                  {t("sending.campaign_message")}
                 </p>
                 <p className="text-sm whitespace-pre-wrap leading-relaxed">
                   {selectedCampaign?.message_template || "–"}
@@ -1228,11 +1228,11 @@ export default function SendingPage() {
               {/* ── Recipient overview ── */}
               <div className="px-6 py-3 space-y-1.5">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                  Mottakeroversikt ({campaignRecipients.length})
+                  {t("sending.recipient_overview")} ({campaignRecipients.length})
                 </p>
 
                 {campaignRecipients.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Ingen mottakere funnet.</p>
+                  <p className="text-sm text-muted-foreground">{t("sending.no_recipients_found")}</p>
                 ) : (
                   // Non-responders first, then replied
                   [...campaignRecipients]
@@ -1282,12 +1282,12 @@ export default function SendingPage() {
                           {replied ? (
                             <Badge className="bg-green-600 text-white shrink-0 text-[11px] py-0 px-1.5 h-5">
                               <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Svart
+                              {t("sending.replied")}
                             </Badge>
                           ) : (
                             <Badge className="bg-orange-500 text-white shrink-0 text-[11px] py-0 px-1.5 h-5">
                               <AlertCircle className="h-3 w-3 mr-1" />
-                              Ingen respons
+                              {t("sending.no_response")}
                             </Badge>
                           )}
                         </div>
@@ -1320,7 +1320,7 @@ export default function SendingPage() {
                           ) : (
                             <span className="flex items-center gap-0.5 text-orange-500 dark:text-orange-400">
                               <Clock className="h-3 w-3" />
-                              Venter på svar
+                              {t("sending.waiting_for_reply")}
                             </span>
                           )}
                         </div>
@@ -1337,7 +1337,7 @@ export default function SendingPage() {
                           <div key={reminder.id} className="mt-1 border-l-2 border-orange-300 pl-2 ml-0.5">
                             <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                               <MessageSquare className="h-3 w-3 text-orange-400 shrink-0" />
-                              Påminnelse {fmtTime(reminder.created_at)}: {reminder.content || "–"}
+                              {t("sending.reminder_label")} {fmtTime(reminder.created_at)}: {reminder.content || "–"}
                             </p>
                           </div>
                         ))}
@@ -1353,8 +1353,8 @@ export default function SendingPage() {
           {!historyLoading && (
             <div className="px-6 py-3 border-t bg-muted/20 text-xs text-muted-foreground">
               {nonResponders.length === 0
-                ? "Alle mottakere har svart."
-                : `${nonResponders.length} mottaker${nonResponders.length === 1 ? "" : "e"} har ikke svart ennå.`}
+                ? t("sending.all_responded")
+                : `${nonResponders.length} ${t("sending.recipients_title").toLowerCase()} ${t("sending.not_responded_yet")}`}
             </div>
           )}
         </DialogContent>
@@ -1363,14 +1363,14 @@ export default function SendingPage() {
       <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Send påminnelse</DialogTitle>
+            <DialogTitle>{t("sending.send_reminder_title")}</DialogTitle>
             <DialogDescription>
-              Påminnelsen sendes til {selectedForReminder.length} mottaker{selectedForReminder.length === 1 ? "" : "e"} uten svar.
+              {t("sending.reminder_desc_prefix")} {selectedForReminder.length} {t("sending.recipients_title").toLowerCase()} {t("sending.without_response_suffix")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-1">
-            <p className="text-sm font-medium">Mottakere</p>
+            <p className="text-sm font-medium">{t("sending.recipients_title")}</p>
             <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
               {campaignRecipients
                 .filter((r) => selectedForReminder.includes(r.id))
@@ -1382,7 +1382,7 @@ export default function SendingPage() {
                     </div>
                     <Badge variant="secondary" className="text-xs">
                       <AlertCircle className="h-3 w-3 mr-1" />
-                      Ingen respons
+                      {t("sending.no_response")}
                     </Badge>
                   </div>
                 ))}
@@ -1390,11 +1390,11 @@ export default function SendingPage() {
           </div>
 
           <div className="space-y-1">
-            <p className="text-sm font-medium">Påminnelsestekst</p>
+            <p className="text-sm font-medium">{t("sending.reminder_text")}</p>
             <Textarea
               value={reminderMessage}
               onChange={(e) => setReminderMessage(e.target.value)}
-              placeholder="Skriv påminnelse..."
+              placeholder={t("sending.write_reminder")}
               className="min-h-[120px]"
               disabled={sendingReminder}
             />
@@ -1408,10 +1408,10 @@ export default function SendingPage() {
                 setReminderMessage("");
               }}
             >
-              Avbryt
+              {t("sending.cancel")}
             </Button>
             <Button disabled={sendingReminder || !reminderMessage.trim()} onClick={handleSendReminder}>
-              {sendingReminder ? "Sender..." : `Send til ${selectedForReminder.length}`}
+              {sendingReminder ? t("sending.sending") : `${t("sending.send_to_count")} ${selectedForReminder.length}`}
             </Button>
           </DialogFooter>
         </DialogContent>

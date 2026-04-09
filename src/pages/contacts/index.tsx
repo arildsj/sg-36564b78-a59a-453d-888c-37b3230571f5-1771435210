@@ -255,7 +255,7 @@ export default function ContactsPage() {
     try {
       setSubmitting(true);
       if (!importGroupId) {
-        throw new Error("Velg SeMSe-gruppe før import.");
+        throw new Error(t("contacts.import_select_semse_first"));
       }
 
       let targetContactGroupId = importContactGroupId || undefined;
@@ -280,14 +280,14 @@ export default function ContactsPage() {
       setImportNewContactGroupDescription("");
       await loadData();
       toast({
-        title: "Import fullført!",
-        description: "Kontaktene er importert.",
+        title: t("contacts.import_success"),
+        description: t("contacts.import_success_description"),
       });
     } catch (error: any) {
       console.error("Import failed:", error);
       toast({
-        title: "Import feilet",
-        description: error.message || "En feil oppstod under import",
+        title: t("contacts.import_failed"),
+        description: error.message || t("contacts.import_error"),
         variant: "destructive",
       });
     } finally {
@@ -399,7 +399,7 @@ export default function ContactsPage() {
       setSubmitting(true);
 
       if (!contactGroupForm.group_id || !contactGroupForm.name.trim()) {
-        throw new Error("Velg SeMSe-gruppe og skriv navn på kontaktgruppen.");
+        throw new Error(t("contacts.contact_group_fill_info"));
       }
 
       if (editingContactGroup) {
@@ -467,11 +467,11 @@ export default function ContactsPage() {
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={handleOpenCreateContactGroup}>
                 <Users className="h-4 w-4 mr-2" />
-                Ny kontaktgruppe
+                {t("contacts.new_contact_group")}
               </Button>
               <Button variant="outline" onClick={() => setShowImportDialog(true)}>
                 <Upload className="h-4 w-4 mr-2" />
-                Importer CSV
+                {t("contacts.import_csv")}
               </Button>
             </div>
           </div>
@@ -512,11 +512,11 @@ export default function ContactsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Navn</TableHead>
-                        <TableHead>Telefon</TableHead>
-                        <TableHead>Kontaktgrupper</TableHead>
-                        <TableHead>Opprettet</TableHead>
-                        <TableHead className="text-right">Handlinger</TableHead>
+                        <TableHead>{t("contacts.col.name")}</TableHead>
+                        <TableHead>{t("contacts.col.phone")}</TableHead>
+                        <TableHead>{t("contacts.col.contact_groups")}</TableHead>
+                        <TableHead>{t("contacts.col.created")}</TableHead>
+                        <TableHead className="text-right">{t("contacts.col.actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -584,7 +584,7 @@ export default function ContactsPage() {
                                 {collapsedGroups.has('__ungrouped__')
                                   ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
                                   : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                                Uten gruppe
+                                {t("contacts.without_group")}
                                 <Badge variant="secondary" className="font-normal">{ungroupedContacts.length}</Badge>
                               </div>
                             </TableCell>
@@ -640,18 +640,18 @@ export default function ContactsPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingContact ? "Rediger kontakt" : "Legg til ny kontakt"}
+              {editingContact ? t("contacts.edit_dialog_title") : t("contacts.create_dialog_title")}
             </DialogTitle>
             <DialogDescription>
-              {editingContact 
-                ? "Oppdater kontaktinformasjon og gruppetilhørighet."
-                : "Opprett en ny kontakt og tildel til en gruppe."}
+              {editingContact
+                ? t("contacts.edit_dialog_description")
+                : t("contacts.create_dialog_description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="contact-name">Navn *</Label>
+                <Label htmlFor="contact-name">{t("contacts.name_label")}</Label>
                 <Input
                   id="contact-name"
                   placeholder="F.eks. John Doe"
@@ -660,7 +660,7 @@ export default function ContactsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contact-phone">Telefon *</Label>
+                <Label htmlFor="contact-phone">{t("contacts.phone_label")}</Label>
                 <Input
                   id="contact-phone"
                   placeholder="+47 123 45 678"
@@ -671,13 +671,13 @@ export default function ContactsPage() {
             </div>
             
                             <div className="space-y-2">
-              <Label>Gruppe (Påkrevet)</Label>
+              <Label>{t("contacts.group_required")}</Label>
               <Select
                 value={formData.group_id || ""}
                 onValueChange={(value) => setFormData({ ...formData, group_id: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Velg gruppe" />
+                  <SelectValue placeholder={t("contacts.select_group")} />
                 </SelectTrigger>
                 <SelectContent>
                   {groups.filter(g => g.kind === 'operational').map((group) => (
@@ -689,7 +689,7 @@ export default function ContactsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Kontaktgrupper i valgt SeMSe-gruppe</Label>
+              <Label>{t("contacts.contact_groups_in_semse_group")}</Label>
               {formData.group_id ? (
                 <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-[180px] overflow-y-auto">
                   {contactGroups
@@ -712,16 +712,16 @@ export default function ContactsPage() {
                     ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Velg først en SeMSe-gruppe.</p>
+                <p className="text-sm text-muted-foreground">{t("contacts.select_semse_group_first")}</p>
               )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)} disabled={submitting}>
-              Avbryt
+              {t("contacts.cancel")}
             </Button>
             <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting ? "Lagrer..." : (editingContact ? "Lagre endringer" : "Legg til kontakt")}
+              {submitting ? t("contacts.saving") : (editingContact ? t("contacts.save_changes") : t("contacts.add_contact"))}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -731,18 +731,18 @@ export default function ContactsPage() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Er du sikker?</AlertDialogTitle>
+            <AlertDialogTitle>{t("contacts.confirm_delete_title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Dette vil slette <strong>{editingContact?.name}</strong> ({editingContact?.phone}) permanent.
+              {t("contacts.confirm_delete_description_prefix")} <strong>{editingContact?.name}</strong> ({editingContact?.phone}) {t("contacts.confirm_delete_description_suffix")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Avbryt</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogCancel>{t("contacts.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
             >
-              {submitting ? "Sletter..." : "Ja, slett kontakt"}
+              {submitting ? t("contacts.deleting") : t("contacts.confirm_delete_button")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -752,14 +752,14 @@ export default function ContactsPage() {
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Importer kontakter</DialogTitle>
+            <DialogTitle>{t("contacts.import_title")}</DialogTitle>
             <DialogDescription>
-              Last opp en CSV-fil med kontakter.
+              {t("contacts.import_description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Velg fil (CSV)</Label>
+              <Label>{t("contacts.select_file")}</Label>
               <Input 
                 type="file" 
                 accept=".csv"
@@ -768,23 +768,23 @@ export default function ContactsPage() {
             </div>
             
             <div className="space-y-2">
-              <Label>Velg SeMSe-gruppe (påkrevd)</Label>
-              <select 
+              <Label>{t("contacts.select_semse_group_required")}</Label>
+              <select
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={importGroupId}
                 onChange={(e) => setImportGroupId(e.target.value)}
               >
-                <option value="">Velg SeMSe-gruppe</option>
+                <option value="">{t("contacts.select_semse_group_placeholder")}</option>
                 {groups.filter(g => g.kind === 'operational').map(g => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
               </select>
             </div>
             <div className="space-y-2">
-              <Label>Kontaktgruppe (valgfritt)</Label>
+              <Label>{t("contacts.contact_group_optional")}</Label>
               <Select value={importContactGroupId} onValueChange={setImportContactGroupId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Velg eksisterende kontaktgruppe" />
+                  <SelectValue placeholder={t("contacts.select_existing_contact_group")} />
                 </SelectTrigger>
                 <SelectContent>
                   {contactGroups
@@ -798,14 +798,14 @@ export default function ContactsPage() {
               </Select>
             </div>
             <div className="space-y-2 border rounded-md p-3">
-              <Label>...eller opprett ny kontaktgruppe under import</Label>
+              <Label>{t("contacts.create_contact_group_on_import")}</Label>
               <Input
-                placeholder="Navn på ny kontaktgruppe"
+                placeholder={t("contacts.new_contact_group_name_placeholder")}
                 value={importNewContactGroupName}
                 onChange={(e) => setImportNewContactGroupName(e.target.value)}
               />
               <Textarea
-                placeholder="Beskrivelse (valgfritt)"
+                placeholder={t("contacts.description_optional")}
                 value={importNewContactGroupDescription}
                 onChange={(e) => setImportNewContactGroupDescription(e.target.value)}
               />
@@ -813,10 +813,10 @@ export default function ContactsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowImportDialog(false)} disabled={submitting}>
-              Avbryt
+              {t("contacts.cancel")}
             </Button>
             <Button onClick={handleImport} disabled={!importFile || submitting}>
-              {submitting ? "Importerer..." : "Start import"}
+              {submitting ? t("contacts.importing") : t("contacts.start_import")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -825,21 +825,21 @@ export default function ContactsPage() {
       <Dialog open={showContactGroupDialog} onOpenChange={setShowContactGroupDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingContactGroup ? "Rediger kontaktgruppe" : "Ny kontaktgruppe"}</DialogTitle>
+            <DialogTitle>{editingContactGroup ? t("contacts.edit_contact_group_title") : t("contacts.create_contact_group_title")}</DialogTitle>
             <DialogDescription>
-              Kontaktgrupper lar deg organisere kontakter i undergrupper (f.eks. Styre, FAU, Dugnadsliste).
+              {t("contacts.contact_group_description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label>SeMSe-gruppe</Label>
+              <Label>{t("contacts.semse_group_label")}</Label>
               <Select
                 value={contactGroupForm.group_id}
                 onValueChange={(value) => setContactGroupForm((prev) => ({ ...prev, group_id: value }))}
                 disabled={!!editingContactGroup}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Velg SeMSe-gruppe" />
+                  <SelectValue placeholder={t("contacts.select_semse_group_placeholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {groups.filter((group) => group.kind === "operational").map((group) => (
@@ -851,26 +851,25 @@ export default function ContactsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Navn</Label>
+              <Label>{t("contacts.name")}</Label>
               <Input
                 value={contactGroupForm.name}
                 onChange={(e) => setContactGroupForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="F.eks. Styre"
               />
             </div>
             <div className="space-y-2">
-              <Label>Beskrivelse</Label>
+              <Label>{t("contacts.description")}</Label>
               <Textarea
                 value={contactGroupForm.description}
                 onChange={(e) => setContactGroupForm((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="Valgfri beskrivelse..."
+                placeholder={t("contacts.description_placeholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label>Eksisterende kontaktgrupper</Label>
+              <Label>{t("contacts.existing_contact_groups")}</Label>
               <div className="border rounded-md p-2 max-h-[140px] overflow-y-auto space-y-1">
                 {contactGroups.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Ingen kontaktgrupper opprettet ennå.</p>
+                  <p className="text-sm text-muted-foreground">{t("contacts.no_contact_groups")}</p>
                 ) : (
                   contactGroups.map((contactGroup) => (
                     <button
@@ -879,7 +878,7 @@ export default function ContactsPage() {
                       onClick={() => handleOpenEditContactGroup(contactGroup)}
                       className="w-full text-left px-2 py-1 rounded hover:bg-secondary text-sm"
                     >
-                      {contactGroup.name} • {groups.find((group) => group.id === contactGroup.group_id)?.name || "Ukjent gruppe"}
+                      {contactGroup.name} • {groups.find((group) => group.id === contactGroup.group_id)?.name || t("contacts.unknown_group")}
                     </button>
                   ))
                 )}
@@ -888,10 +887,10 @@ export default function ContactsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowContactGroupDialog(false)}>
-              Avbryt
+              {t("contacts.cancel")}
             </Button>
             <Button onClick={handleSaveContactGroup} disabled={submitting}>
-              {submitting ? "Lagrer..." : "Lagre kontaktgruppe"}
+              {submitting ? t("contacts.saving") : t("contacts.save_contact_group")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -901,21 +900,21 @@ export default function ContactsPage() {
       <Dialog open={showGDPRDialog} onOpenChange={setShowGDPRDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>GDPR: Kontaktinformasjon</DialogTitle>
+            <DialogTitle>{t("contacts.gdpr_title")}</DialogTitle>
             <DialogDescription>
-              Fullstendig oversikt over data og slettemulighet.
+              {t("contacts.gdpr_description")}
             </DialogDescription>
           </DialogHeader>
-          
+
           {gdprData && (
             <div className="space-y-4">
               <div className="bg-muted/30 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Kontaktdetaljer</h3>
+                <h3 className="font-semibold mb-2">{t("contacts.contact_details")}</h3>
                 <div className="space-y-1 text-sm">
-                  <p><strong>Navn:</strong> {gdprData.name}</p>
-                  <p><strong>Telefon:</strong> {gdprData.phone}</p>
-                  <p><strong>ID:</strong> {gdprData.id}</p>
-                  <p><strong>Gruppe:</strong> {groups.find(g => g.id === gdprData.group_id)?.name || "Ukjent"}</p>
+                  <p><strong>{t("contacts.prop_name")}</strong> {gdprData.name}</p>
+                  <p><strong>{t("contacts.prop_phone")}</strong> {gdprData.phone}</p>
+                  <p><strong>{t("contacts.prop_id")}</strong> {gdprData.id}</p>
+                  <p><strong>{t("contacts.prop_group")}</strong> {groups.find(g => g.id === gdprData.group_id)?.name || t("contacts.unknown")}</p>
                 </div>
               </div>
 
@@ -923,19 +922,18 @@ export default function ContactsPage() {
                 <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
                   <h3 className="font-semibold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2">
                     <Trash2 className="h-4 w-4" />
-                    GDPR-sletting
+                    {t("contacts.gdpr_deletion")}
                   </h3>
                   <p className="text-sm text-red-600 dark:text-red-300 mb-3">
-                    Kontakten vil bli slettet permanent.
-                    Denne handlingen kan ikke angres og logges i systemet.
+                    {t("contacts.gdpr_deletion_warning")}
                   </p>
-                  
+
                   <Label htmlFor="gdpr-reason" className="text-sm font-medium">
-                    Grunn for sletting (påkrevd)
+                    {t("contacts.deletion_reason_label")}
                   </Label>
                   <Input
                     id="gdpr-reason"
-                    placeholder="F.eks. 'Forespørsel fra kontakt per e-post 2024-01-15'"
+                    placeholder={t("contacts.deletion_reason_placeholder")}
                     value={gdprDeletionReason}
                     onChange={(e) => setGdprDeletionReason(e.target.value)}
                     className="mt-1"
@@ -948,7 +946,7 @@ export default function ContactsPage() {
                   onClick={handleGDPRDeletion}
                   disabled={!gdprDeletionReason.trim() || submitting}
                 >
-                  {submitting ? "Sletter..." : "Bekreft GDPR-sletting"}
+                  {submitting ? t("contacts.deleting") : t("contacts.confirm_gdpr_deletion")}
                 </Button>
               </div>
             </div>
@@ -956,7 +954,7 @@ export default function ContactsPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowGDPRDialog(false)}>
-              Lukk
+              {t("contacts.close")}
             </Button>
           </DialogFooter>
         </DialogContent>

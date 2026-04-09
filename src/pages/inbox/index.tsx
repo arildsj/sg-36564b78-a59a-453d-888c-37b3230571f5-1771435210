@@ -48,18 +48,18 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useLanguage } from "@/contexts/LanguageProvider";
 
 // Hjelpefunksjon for datoformatering
-const formatMessageTime = (dateString: string) => {
+const formatMessageTime = (dateString: string, t: (key: string) => string) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   const now = new Date();
-  const isToday = date.getDate() === now.getDate() && 
-                  date.getMonth() === now.getMonth() && 
+  const isToday = date.getDate() === now.getDate() &&
+                  date.getMonth() === now.getMonth() &&
                   date.getFullYear() === now.getFullYear();
-  
+
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  const isYesterday = date.getDate() === yesterday.getDate() && 
-                      date.getMonth() === yesterday.getMonth() && 
+  const isYesterday = date.getDate() === yesterday.getDate() &&
+                      date.getMonth() === yesterday.getMonth() &&
                       date.getFullYear() === yesterday.getFullYear();
 
   const timeStr = new Intl.DateTimeFormat("no-NO", {
@@ -68,13 +68,13 @@ const formatMessageTime = (dateString: string) => {
   }).format(date);
 
   if (isToday) {
-    return `I dag ${timeStr}`;
+    return `${t("inbox.today")} ${timeStr}`;
   }
-  
+
   if (isYesterday) {
-    return `I går ${timeStr}`;
+    return `${t("inbox.yesterday")} ${timeStr}`;
   }
-  
+
   return new Intl.DateTimeFormat("no-NO", {
     day: "numeric",
     month: "short",
@@ -355,14 +355,14 @@ export default function InboxPage() {
 
       setNewMessage("");
       toast({
-        title: "Melding sendt",
-        description: "Svaret ditt er sendt",
+        title: t("inbox.toast.message_sent"),
+        description: t("inbox.toast.reply_sent"),
       });
     } catch (error) {
       console.error("Failed to send reply:", error);
       toast({
-        title: "Feil ved sending",
-        description: "Kunne ikke sende melding",
+        title: t("inbox.toast.send_error"),
+        description: t("inbox.toast.send_error_description"),
         variant: "destructive",
       });
     } finally {
@@ -377,8 +377,8 @@ export default function InboxPage() {
       await messageService.acknowledgeThread(selectedThread.id);
       await loadThreads();
       toast({
-        title: "Tråd bekreftet",
-        description: "Alle meldinger i tråden er markert som lest",
+        title: t("inbox.toast.thread_acknowledged"),
+        description: t("inbox.toast.thread_acknowledged_description"),
       });
     } catch (error) {
       console.error("Failed to acknowledge thread:", error);
@@ -395,14 +395,14 @@ export default function InboxPage() {
       setReclassifyTargetGroup("");
       await loadThreads();
       toast({
-        title: "Samtale flyttet",
-        description: "Samtalen er flyttet til ny gruppe",
+        title: t("inbox.toast.conversation_moved"),
+        description: t("inbox.toast.conversation_moved_description"),
       });
     } catch (error) {
       console.error("Failed to reclassify thread:", error);
       toast({
-        title: "Feil ved flytting",
-        description: "Kunne ikke omklassifisere samtale",
+        title: t("inbox.toast.move_error"),
+        description: t("inbox.toast.move_error_description"),
         variant: "destructive",
       });
     }
@@ -416,14 +416,14 @@ export default function InboxPage() {
       setSelectedThreadId(null);
       await loadThreads();
       toast({
-        title: "Samtale løst",
-        description: "Samtalen er markert som løst",
+        title: t("inbox.toast.conversation_resolved"),
+        description: t("inbox.toast.conversation_resolved_description"),
       });
     } catch (error) {
       console.error("Failed to resolve thread:", error);
       toast({
-        title: "Feil ved løsing",
-        description: "Kunne ikke løse samtale",
+        title: t("inbox.toast.resolve_error"),
+        description: t("inbox.toast.resolve_error"),
         variant: "destructive",
       });
     }
@@ -452,8 +452,8 @@ export default function InboxPage() {
       // Validate format
       if (!isAlphanumeric && !/^\+[0-9]{8,15}$/.test(phoneWithPlus)) {
         toast({
-          title: "Ugyldig telefonnummer",
-          description: "Telefonnummeret må være enten alfanumerisk (1-11 tegn) eller E.164-format (+XXXXXXXXXXX)",
+          title: t("inbox.invalid_phone"),
+          description: t("inbox.invalid_phone_description"),
           variant: "destructive",
         });
         return;
@@ -462,7 +462,7 @@ export default function InboxPage() {
       // Get current user for tenant_id
       const { data: { user } } = await db.auth.getUser();
       if (!user) {
-        throw new Error("Du må være logget inn");
+        throw new Error(t("inbox.must_login"));
       }
 
       // Fetch tenant_id from users table
@@ -736,8 +736,8 @@ export default function InboxPage() {
       await Promise.all(updates);
       
       toast({
-        title: "Påminnelser sendt",
-        description: `Sendte påminnelse til ${recipientsToSend.length} mottakere.`
+        title: t("inbox.reminders_sent_title"),
+        description: `${t("inbox.sent_reminder_to_prefix")} ${recipientsToSend.length} ${t("inbox.sent_reminder_to_suffix")}`,
       });
       
       setReminderDialogOpen(false);
@@ -747,8 +747,8 @@ export default function InboxPage() {
     } catch (error) {
       console.error("Error sending reminders:", error);
       toast({
-        title: "Feil",
-        description: "Kunne ikke sende påminnelser.",
+        title: t("inbox.error"),
+        description: t("inbox.could_not_send_reminders"),
         variant: "destructive"
       });
     } finally {
@@ -783,23 +783,23 @@ export default function InboxPage() {
               <TabsList className="grid grid-cols-5 bg-muted/50 h-auto py-1">
                 <TabsTrigger value="all" className="gap-2 py-2">
                   <Inbox className="h-4 w-4" />
-                  <span className="hidden sm:inline">Alle</span>
+                  <span className="hidden sm:inline">{t("inbox.tabs.all")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="inbound" className="gap-2 py-2">
                   <ArrowDownLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Innkommende</span>
+                  <span className="hidden sm:inline">{t("inbox.tabs.inbound")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="rule_based" className="gap-2 py-2">
                   <Settings className="h-4 w-4" />
-                  <span className="hidden sm:inline">Regelstyrte</span>
+                  <span className="hidden sm:inline">{t("inbox.tabs.rule_based")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="fallback" className="gap-2 py-2">
                   <FolderInput className="h-4 w-4" />
-                  <span className="hidden sm:inline">Ukjente</span>
+                  <span className="hidden sm:inline">{t("inbox.tabs.unknown")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="escalated" className="gap-2 py-2">
                   <AlertTriangle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Eskalerte</span>
+                  <span className="hidden sm:inline">{t("inbox.tabs.escalated")}</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -900,7 +900,7 @@ export default function InboxPage() {
                                   </Badge>
                                   <span className="flex items-center gap-1 ml-auto">
                                     <Clock className="h-3 w-3" />
-                                    {formatMessageTime(thread.last_message_at || "")}
+                                    {formatMessageTime(thread.last_message_at || "", t)}
                                   </span>
                                 </div>
                                 <p className="text-xs text-muted-foreground truncate line-clamp-1">
@@ -990,7 +990,7 @@ export default function InboxPage() {
                                             </span>
                                          </div>
                                          <span className="text-xs text-muted-foreground">
-                                           {formatMessageTime(msg.created_at)}
+                                           {formatMessageTime(msg.created_at, t)}
                                          </span>
                                        </div>
                                        <p className="text-sm bg-muted/30 p-3 rounded-md">{msg.content}</p>
@@ -1231,7 +1231,7 @@ export default function InboxPage() {
                                       {message.direction === "outbound" ? t("inbox.you") : message.from_number}
                                     </span>
                                     <span className="text-[10px] opacity-70">
-                                      {formatMessageTime(message.created_at)}
+                                      {formatMessageTime(message.created_at, t)}
                                     </span>
                                   </div>
                                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>

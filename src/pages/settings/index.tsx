@@ -174,7 +174,7 @@ export default function SettingsPage() {
                         id="outside-hours-message"
                         rows={4}
                         className="focus:ring-2 focus:ring-primary"
-                        defaultValue="Takk for din henvendelse. Vi har stengt for i dag, men svarer så snart vi åpner igjen."
+                        defaultValue={t("settings.outside_hours_default")}
                       />
                     </div>
                   </div>
@@ -195,7 +195,7 @@ export default function SettingsPage() {
                         id="first-message"
                         rows={4}
                         className="focus:ring-2 focus:ring-primary"
-                        defaultValue="Velkommen! Vi har mottatt din melding og svarer så snart som mulig."
+                        defaultValue={t("settings.first_message_default")}
                       />
                     </div>
                   </div>

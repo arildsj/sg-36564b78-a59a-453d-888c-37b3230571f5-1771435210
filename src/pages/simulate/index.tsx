@@ -25,6 +25,7 @@ import { Check, Send, Clock, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { contactService } from "@/services/contactService";
+import { useLanguage } from "@/contexts/LanguageProvider";
 
 // CRITICAL FIX: Cast supabase to any to completely bypass "Type instantiation is excessively deep" errors
 const db = supabase as any;
@@ -44,6 +45,7 @@ type Contact = {
 };
 
 export default function SimulatePage() {
+  const { t } = useLanguage();
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -147,14 +149,14 @@ export default function SimulatePage() {
     if (!number) return "Ukjent";
 
     const contact = contacts.find((c) => normalizePhone(c.phone) === normalizePhone(number));
-    return contact?.name || number;
+    return contact?.name || number || t("simulate.unknown");
   };
 
   const handleSendMessage = async () => {
     if (!fromPhone || !messageContent) {
       toast({
-        title: "Mangler informasjon",
-        description: "Fyll ut fra-nummer og melding",
+        title: t("simulate.missing_info"),
+        description: t("simulate.fill_phone_and_message"),
         variant: "destructive",
       });
       return;
@@ -258,14 +260,14 @@ export default function SimulatePage() {
       console.log("✅ Inbound message processed:", data);
 
       toast({
-        title: "Melding simulert",
+        title: t("simulate.message_simulated"),
         description: !senderIsKnownContact
-          ? "Ukjent nummer følger regelstyring og fallback ved manglende treff"
-          : data.is_bulk_response 
-          ? "Bulk-kampanje-svar mottatt"
-          : data.is_fallback 
-          ? "Melding rutet til fallback-gruppe" 
-          : "Melding rutet basert på regler",
+          ? t("simulate.unknown_routing")
+          : data.is_bulk_response
+          ? t("simulate.bulk_response")
+          : data.is_fallback
+          ? t("simulate.fallback_routed")
+          : t("simulate.message_routed"),
       });
       
       setMessageContent("");
@@ -275,7 +277,7 @@ export default function SimulatePage() {
     } catch (error: any) {
       console.error("Failed to send message:", error);
       toast({
-        title: "Feil ved sending",
+        title: t("simulate.send_error"),
         description: error.message,
         variant: "destructive",
       });
@@ -291,29 +293,29 @@ export default function SimulatePage() {
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(minutes / 60);
 
-    if (minutes < 1) return "nå";
-    if (minutes < 60) return `${minutes} min siden`;
-    if (hours < 24) return `${hours}t siden`;
+    if (minutes < 1) return t("simulate.just_now");
+    if (minutes < 60) return `${minutes} ${t("simulate.min_ago")}`;
+    if (hours < 24) return `${hours} ${t("simulate.hours_ago")}`;
     return date.toLocaleDateString("no-NO");
   };
 
   const selectedGroupData = groups.find((g) => g.id === selectedGroup);
-  const gatewayInfo = selectedGroupData?.gateway?.gw_phone 
-    ? `Gateway: ${selectedGroupData.gateway.gw_phone}`
-    : "Automatisk valg av gateway";
+  const gatewayInfo = selectedGroupData?.gateway?.gw_phone
+    ? `${t("simulate.gateway_prefix")} ${selectedGroupData.gateway.gw_phone}`
+    : t("simulate.auto_gateway");
 
   return (
     <>
       <Head>
-        <title>Simulering - SeMSe</title>
+        <title>{t("simulate.title")} - SeMSe</title>
       </Head>
 
       <AppLayout>
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">SMS-simulering</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t("simulate.title")}</h1>
             <p className="text-muted-foreground mt-2">
-              Send inn test-SMS for å teste systemets rutinglogikk og automatiske svar
+              {t("simulate.description")}
             </p>
           </div>
 
@@ -322,15 +324,12 @@ export default function SimulatePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Send className="h-5 w-5" />
-                  Send inn melding
+                  {t("simulate.send_message_card")}
                 </CardTitle>
-                <CardDescription>
-                  Simuler en innkommende SMS fra publikum eller kontakt
-                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="group">Målgruppe (valgfritt)</Label>
+                  <Label htmlFor="group">{t("simulate.target_group")}</Label>
                   <select
                     id="group"
                     className="w-full h-10 px-3 rounded-md border border-input bg-background"
@@ -338,7 +337,7 @@ export default function SimulatePage() {
                     onChange={(e) => setSelectedGroup(e.target.value)}
                     disabled={!isKnownContactPhone(fromPhone)}
                   >
-                    <option value="">-- Automatisk routing (ingen gruppe valgt) --</option>
+                    <option value="">{t("simulate.auto_routing")}</option>
                     {groups.map((g) => (
                       <option key={g.id} value={g.id}>
                         {g.name}
@@ -348,12 +347,12 @@ export default function SimulatePage() {
                   <p className="text-xs text-muted-foreground">
                     {isKnownContactPhone(fromPhone)
                       ? gatewayInfo
-                      : "Ukjente numre går alltid via regelstyring (fallback ved manglende treff)"}
+                      : t("simulate.unknown_routing_note")}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Fra-nummer (avsender)</Label>
+                  <Label>{t("simulate.from_number")}</Label>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Popover open={fromSearchOpen} onOpenChange={setFromSearchOpen}>
                       <PopoverTrigger asChild>
@@ -368,20 +367,20 @@ export default function SimulatePage() {
                            ) : (
                              <>
                                <User className="mr-2 h-4 w-4" />
-                               <span>Søk kontakt...</span>
+                               <span>{t("simulate.search_contact")}</span>
                              </>
                            )}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-[calc(100vw-2rem)] sm:w-[300px] p-0" align="start">
                         <Command shouldFilter={false}>
-                          <CommandInput 
-                            placeholder="Søk navn eller nummer..." 
+                          <CommandInput
+                            placeholder={t("simulate.search_name_or_number")}
                             value={fromSearchValue}
                             onValueChange={setFromSearchValue}
                           />
                           <CommandList>
-                            <CommandEmpty>Ingen kontakter funnet.</CommandEmpty>
+                            <CommandEmpty>{t("simulate.no_contacts_found")}</CommandEmpty>
                             <CommandGroup>
                               {contacts
                                 .filter(contact => 
@@ -426,20 +425,20 @@ export default function SimulatePage() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Søk opp kontakt eller skriv nummer direkte i feltet til høyre
+                    {t("simulate.search_contact_note")}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="message-content">Melding</Label>
+                  <Label htmlFor="message-content">{t("simulate.message")}</Label>
                   {replyContext && (
                     <p className="text-xs text-muted-foreground">
-                      Svarer på: "{replyContext}"
+                      {t("simulate.reply_to_prefix")} "{replyContext}"
                     </p>
                   )}
                   <Textarea
                     id="message-content"
-                    placeholder="Hei, jeg lurer på..."
+                    placeholder={t("simulate.message_placeholder")}
                     rows={5}
                     value={messageContent}
                     onChange={(e) => setMessageContent(e.target.value)}
@@ -451,7 +450,7 @@ export default function SimulatePage() {
                   className="w-full"
                   disabled={loading}
                 >
-                  {loading ? "Sender..." : "Send inn melding"}
+                  {loading ? t("simulate.sending") : t("simulate.send_button")}
                 </Button>
               </CardContent>
             </Card>
@@ -460,17 +459,14 @@ export default function SimulatePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5" />
-                  Nylige meldinger
+                  {t("simulate.recent_messages")}
                 </CardTitle>
-                <CardDescription>
-                  Siste simulerte eller ekte meldinger i systemet
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {recentMessages.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">
-                      Ingen meldinger ennå.
+                      {t("simulate.no_messages")}
                     </p>
                   ) : (
                     recentMessages.map((msg) => (
@@ -485,7 +481,7 @@ export default function SimulatePage() {
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <Badge variant={msg.direction === "inbound" ? "default" : "secondary"}>
-                              {msg.direction === "inbound" ? "Inn" : "Ut"}
+                              {msg.direction === "inbound" ? t("simulate.inbound_badge") : t("simulate.outbound_badge")}
                             </Badge>
                             <span className="text-sm font-medium">{getConversationPartyLabel(msg)}</span>
                           </div>

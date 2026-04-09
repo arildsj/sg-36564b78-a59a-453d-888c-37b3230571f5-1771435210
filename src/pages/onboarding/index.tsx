@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageProvider";
 
 interface ValidationErrors {
   full_name?: string;
@@ -21,6 +22,7 @@ interface ValidationErrors {
 export default function OnboardingPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
 
@@ -64,44 +66,44 @@ export default function OnboardingPage() {
 
     // Full name validation
     if (!formData.full_name.trim()) {
-      newErrors.full_name = "Fullt navn er påkrevd";
+      newErrors.full_name = t("onboarding.full_name_required");
     } else if (formData.full_name.trim().length < 2) {
-      newErrors.full_name = "Navnet må være minst 2 tegn";
+      newErrors.full_name = t("onboarding.name_min_length");
     }
 
     // Email validation
     if (!formData.email.trim()) {
-      newErrors.email = "E-post er påkrevd";
+      newErrors.email = t("onboarding.email_required");
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = "Ugyldig e-postformat (f.eks. ola@eksempel.no)";
+      newErrors.email = t("onboarding.invalid_email");
     }
 
     // Phone validation
     if (!formData.phone.trim()) {
-      newErrors.phone = "Telefonnummer er påkrevd";
+      newErrors.phone = t("onboarding.phone_required");
     } else if (!validatePhone(formData.phone)) {
-      newErrors.phone = "Telefonnummer må være i E.164-format (f.eks. +4791234567)";
+      newErrors.phone = t("onboarding.phone_format");
     }
 
     // Password validation
     if (!formData.password) {
-      newErrors.password = "Passord er påkrevd";
+      newErrors.password = t("onboarding.password_required");
     } else if (formData.password.length < 6) {
-      newErrors.password = "Passordet må være minst 6 tegn";
+      newErrors.password = t("onboarding.password_min_length");
     }
 
     // Confirm password validation
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Bekreft passord er påkrevd";
+      newErrors.confirmPassword = t("onboarding.confirm_password_required");
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passordene matcher ikke";
+      newErrors.confirmPassword = t("onboarding.passwords_no_match");
     }
 
     // Organization name validation
     if (!formData.organization_name.trim()) {
-      newErrors.organization_name = "Organisasjonsnavn er påkrevd";
+      newErrors.organization_name = t("onboarding.org_name_required");
     } else if (formData.organization_name.trim().length < 2) {
-      newErrors.organization_name = "Organisasjonsnavnet må være minst 2 tegn";
+      newErrors.organization_name = t("onboarding.org_name_min_length");
     }
 
     setErrors(newErrors);
@@ -112,10 +114,10 @@ export default function OnboardingPage() {
     try {
       // Validate form before proceeding
       if (!validateForm()) {
-        toast({ 
-          title: "Valideringsfeil", 
-          description: "Vennligst rett opp feilene i skjemaet", 
-          variant: "destructive" 
+        toast({
+          title: t("onboarding.validation_error"),
+          description: t("onboarding.fix_errors"),
+          variant: "destructive"
         });
         return;
       }
@@ -139,20 +141,20 @@ export default function OnboardingPage() {
 
       if (error) {
         console.error("❌ Signup error:", error);
-        toast({ 
-          title: "Registreringsfeil", 
-          description: error.message || "Kunne ikke opprette konto", 
-          variant: "destructive" 
+        toast({
+          title: t("onboarding.registration_error"),
+          description: error.message || t("onboarding.could_not_create_account"),
+          variant: "destructive"
         });
         return;
       }
 
       if (!data.user) {
         console.error("❌ No user returned from signup");
-        toast({ 
-          title: "Registreringsfeil", 
-          description: "Kunne ikke opprette bruker", 
-          variant: "destructive" 
+        toast({
+          title: t("onboarding.registration_error"),
+          description: t("onboarding.could_not_create_user"),
+          variant: "destructive"
         });
         return;
       }
@@ -194,7 +196,7 @@ export default function OnboardingPage() {
         }
 
         // Show detailed error message including debug info
-        let errorMessage = onboardData.message || "Kunne ikke fullføre registrering";
+        let errorMessage = onboardData.message || t("onboarding.could_not_complete_registration");
         
         // If there's debug info, show it in a more readable format
         if (onboardData.debug) {
@@ -231,9 +233,9 @@ export default function OnboardingPage() {
           }
         }
 
-        toast({ 
-          title: "Feil ved opprettelse", 
-          description: errorMessage, 
+        toast({
+          title: t("onboarding.creation_error"),
+          description: errorMessage,
           variant: "destructive",
           duration: 10000
         });
@@ -251,9 +253,9 @@ export default function OnboardingPage() {
 
       if (signInError) {
         console.error("❌ Sign in error after onboarding:", signInError);
-        toast({ 
-          title: "Innloggingsfeil", 
-          description: "Konto opprettet, men kunne ikke logge inn automatisk. Vennligst logg inn manuelt.", 
+        toast({
+          title: t("onboarding.login_error"),
+          description: t("onboarding.account_created_login_failed"),
           variant: "destructive",
           duration: 5000
         });
@@ -265,10 +267,10 @@ export default function OnboardingPage() {
 
       if (!signInData.session) {
         console.error("❌ No session after sign in");
-        toast({ 
-          title: "Sesjonsfeil", 
-          description: "Vennligst logg inn manuelt.", 
-          variant: "destructive" 
+        toast({
+          title: t("onboarding.session_error"),
+          description: t("onboarding.please_login_manually"),
+          variant: "destructive"
         });
         setTimeout(() => {
           router.push('/login');
@@ -279,10 +281,10 @@ export default function OnboardingPage() {
       console.log("✅ User signed in successfully with session!");
 
       // Success - user is now authenticated with valid session
-      toast({ 
-        title: "Konto opprettet!", 
-        description: "Du sendes til dashboardet...", 
-        duration: 2000 
+      toast({
+        title: t("onboarding.account_created"),
+        description: t("onboarding.redirecting_dashboard"),
+        duration: 2000
       });
 
       // Wait a moment for toast to show, then redirect to dashboard
@@ -293,10 +295,10 @@ export default function OnboardingPage() {
     } catch (error: any) {
       console.error("❌ Registration error:", error);
       console.error("Error stack:", error?.stack);
-      toast({ 
-        title: "Kritisk feil", 
-        description: `En uventet feil oppstod: ${error.message || "Ukjent feil"}`, 
-        variant: "destructive" 
+      toast({
+        title: t("onboarding.critical_error"),
+        description: `${t("onboarding.unexpected_error_prefix")} ${error.message || t("onboarding.unknown_error")}`,
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -310,9 +312,9 @@ export default function OnboardingPage() {
     switch (field) {
       case 'email':
         if (!formData.email.trim()) {
-          newErrors.email = "E-post er påkrevd";
+          newErrors.email = t("onboarding.email_required");
         } else if (!validateEmail(formData.email)) {
-          newErrors.email = "Ugyldig e-postformat";
+          newErrors.email = t("onboarding.invalid_email_short");
         } else {
           delete newErrors.email;
         }
@@ -320,9 +322,9 @@ export default function OnboardingPage() {
 
       case 'phone':
         if (!formData.phone.trim()) {
-          newErrors.phone = "Telefonnummer er påkrevd";
+          newErrors.phone = t("onboarding.phone_required");
         } else if (!validatePhone(formData.phone)) {
-          newErrors.phone = "Ugyldig telefonnummer (bruk E.164-format)";
+          newErrors.phone = t("onboarding.invalid_phone");
         } else {
           delete newErrors.phone;
         }
@@ -330,9 +332,9 @@ export default function OnboardingPage() {
 
       case 'password':
         if (!formData.password) {
-          newErrors.password = "Passord er påkrevd";
+          newErrors.password = t("onboarding.password_required");
         } else if (formData.password.length < 6) {
-          newErrors.password = "Passordet må være minst 6 tegn";
+          newErrors.password = t("onboarding.password_min_length");
         } else {
           delete newErrors.password;
         }
@@ -340,9 +342,9 @@ export default function OnboardingPage() {
 
       case 'confirmPassword':
         if (!formData.confirmPassword) {
-          newErrors.confirmPassword = "Bekreft passord er påkrevd";
+          newErrors.confirmPassword = t("onboarding.confirm_password_required");
         } else if (formData.password !== formData.confirmPassword) {
-          newErrors.confirmPassword = "Passordene matcher ikke";
+          newErrors.confirmPassword = t("onboarding.passwords_no_match");
         } else {
           delete newErrors.confirmPassword;
         }
@@ -373,9 +375,9 @@ export default function OnboardingPage() {
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Velkommen til SeMSe</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t("onboarding.welcome_title")}</h1>
             <p className="text-muted-foreground mt-2">
-              Opprett din organisasjon og kom i gang med SMS-håndtering
+              {t("onboarding.welcome_description")}
             </p>
           </div>
 
@@ -383,18 +385,18 @@ export default function OnboardingPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-6 w-6" />
-                Opprett konto
+                {t("onboarding.create_account_title")}
               </CardTitle>
               <CardDescription>
-                Fyll inn informasjonen under for å opprette din organisasjon og administrator-konto
+                {t("onboarding.create_account_description")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Personlig informasjon</h3>
+                <h3 className="text-sm font-semibold text-foreground">{t("onboarding.personal_info")}</h3>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="full-name">Fullt navn *</Label>
+                  <Label htmlFor="full-name">{t("onboarding.full_name_label")}</Label>
                   <Input
                     id="full-name"
                     placeholder="Ola Nordmann"
@@ -411,7 +413,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">E-post *</Label>
+                  <Label htmlFor="email">{t("onboarding.email_label")}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -428,12 +430,12 @@ export default function OnboardingPage() {
                     </p>
                   )}
                   {!errors.email && formData.email && (
-                    <p className="text-xs text-green-600">✓ Gyldig e-postformat</p>
+                    <p className="text-xs text-green-600">{t("onboarding.valid_email")}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Telefon *</Label>
+                  <Label htmlFor="phone">{t("onboarding.phone_label")}</Label>
                   <Input
                     id="phone"
                     placeholder="+4791234567"
@@ -449,7 +451,7 @@ export default function OnboardingPage() {
                     </p>
                   )}
                   {!errors.phone && formData.phone && validatePhone(formData.phone) && (
-                    <p className="text-xs text-green-600">✓ Gyldig telefonnummer</p>
+                    <p className="text-xs text-green-600">{t("onboarding.valid_phone")}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
                     Format: +4791234567 (E.164)
@@ -457,11 +459,11 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Passord *</Label>
+                  <Label htmlFor="password">{t("onboarding.password_label")}</Label>
                   <Input
                     id="password"
                     type="password"
-                    placeholder="Minst 6 tegn"
+                    placeholder={t("onboarding.password_placeholder")}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     onBlur={() => handleBlur('password')}
@@ -474,16 +476,16 @@ export default function OnboardingPage() {
                     </p>
                   )}
                   {!errors.password && formData.password.length >= 6 && (
-                    <p className="text-xs text-green-600">✓ Passord er sterkt nok</p>
+                    <p className="text-xs text-green-600">{t("onboarding.password_strong")}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Bekreft passord *</Label>
+                  <Label htmlFor="confirm-password">{t("onboarding.confirm_password_label")}</Label>
                   <Input
                     id="confirm-password"
                     type="password"
-                    placeholder="Skriv inn passordet på nytt"
+                    placeholder={t("onboarding.confirm_password_placeholder")}
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     onBlur={() => handleBlur('confirmPassword')}
@@ -496,16 +498,16 @@ export default function OnboardingPage() {
                     </p>
                   )}
                   {!errors.confirmPassword && formData.confirmPassword && formData.password === formData.confirmPassword && (
-                    <p className="text-xs text-green-600">✓ Passordene matcher</p>
+                    <p className="text-xs text-green-600">{t("onboarding.passwords_match")}</p>
                   )}
                 </div>
               </div>
 
               <div className="border-t pt-4 space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Organisasjonsinformasjon</h3>
+                <h3 className="text-sm font-semibold text-foreground">{t("onboarding.org_info")}</h3>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="organization-name">Organisasjonsnavn *</Label>
+                  <Label htmlFor="organization-name">{t("onboarding.org_name_label")}</Label>
                   <Input
                     id="organization-name"
                     placeholder="Min Skole"
@@ -527,16 +529,16 @@ export default function OnboardingPage() {
                 className="w-full"
                 disabled={loading || !isFormValid()}
               >
-                {loading ? "Oppretter konto..." : "Opprett konto"}
+                {loading ? t("onboarding.creating_account") : t("onboarding.create_account_button")}
               </Button>
 
               <p className="text-xs text-center text-muted-foreground">
-                Har du allerede konto?{" "}
+                {t("onboarding.already_have_account")}{" "}
                 <button
                   onClick={() => router.push("/login")}
                   className="text-primary hover:underline"
                 >
-                  Logg inn her
+                  {t("onboarding.login_here")}
                 </button>
               </p>
             </CardContent>
