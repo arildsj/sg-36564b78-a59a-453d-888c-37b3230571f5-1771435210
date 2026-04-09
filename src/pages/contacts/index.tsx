@@ -858,7 +858,7 @@ export default function ContactsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>{t("contacts.description")}</Label>
+              <Label>{t("contacts.description_label")}</Label>
               <Textarea
                 value={contactGroupForm.description}
                 onChange={(e) => setContactGroupForm((prev) => ({ ...prev, description: e.target.value }))}
