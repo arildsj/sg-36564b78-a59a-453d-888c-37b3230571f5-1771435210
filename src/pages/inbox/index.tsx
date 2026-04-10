@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -136,6 +137,9 @@ export default function InboxPage() {
   // Contact name lookup: phone → name
   const [contactMap, setContactMap] = useState<Map<string, string>>(new Map());
 
+  // Active duty groups for the current user
+  const [activeGroupIds, setActiveGroupIds] = useState<Set<string>>(new Set());
+
   // New-message overlay
   const overlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [overlay, setOverlay] = useState<{
@@ -189,6 +193,7 @@ export default function InboxPage() {
       loadGroups();
       loadThreads();
       loadContacts();
+      loadActiveGroupIds();
 
       const channel = db
         .channel("inbox_updates")
@@ -276,6 +281,18 @@ export default function InboxPage() {
         if (c.phone && c.name) map.set(c.phone, c.name);
       });
       setContactMap(map);
+    }
+  }, [user]);
+
+  const loadActiveGroupIds = useCallback(async () => {
+    if (!user?.id) return;
+    const { data } = await db
+      .from("group_memberships")
+      .select("group_id")
+      .eq("user_id", user.id)
+      .eq("is_active", true);
+    if (data) {
+      setActiveGroupIds(new Set(data.map((r: { group_id: string }) => r.group_id)));
     }
   }, [user]);
 
@@ -1355,27 +1372,36 @@ export default function InboxPage() {
                         
                         {/* Reply Input Area */}
                         <div className="p-4 border-t bg-background mt-auto">
-                          <div className="flex gap-2">
-                            <Textarea
-                              value={newMessage}
-                              onChange={(e) => setNewMessage(e.target.value)}
-                              placeholder={t("inbox.write_reply")}
-                              className="min-h-[80px] resize-none"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                  e.preventDefault();
-                                  handleSendReply();
-                                }
-                              }}
-                            />
-                            <Button 
-                              onClick={handleSendReply} 
-                              disabled={sending || !newMessage.trim()}
-                              className="h-[80px] px-6"
-                            >
-                              <Send className="h-5 w-5" />
-                            </Button>
-                          </div>
+                          {selectedThread?.resolved_group_id && !activeGroupIds.has(selectedThread.resolved_group_id) ? (
+                            <div className="flex flex-col gap-1.5 text-sm text-muted-foreground py-1">
+                              <span>{t("inbox.not_on_duty_reply")}</span>
+                              <Link href="/vaktliste" className="text-primary hover:underline text-xs">
+                                {t("inbox.activate_now")}
+                              </Link>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <Textarea
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                placeholder={t("inbox.write_reply")}
+                                className="min-h-[80px] resize-none"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendReply();
+                                  }
+                                }}
+                              />
+                              <Button
+                                onClick={handleSendReply}
+                                disabled={sending || !newMessage.trim()}
+                                className="h-[80px] px-6"
+                              >
+                                <Send className="h-5 w-5" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </>
                     )

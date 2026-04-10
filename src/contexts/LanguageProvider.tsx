@@ -752,6 +752,19 @@ const translations: Record<string, Record<Language, string>> = {
   "inbox.group_filter_all": { no: "Alle grupper", en: "All groups", de: "Alle Gruppen", fr: "Tous les groupes", es: "Todos los grupos", it: "Tutti i gruppi", pl: "Wszystkie grupy", pt: "Todos os grupos" },
   "inbox.activation_on": { no: "Du er på vakt", en: "You are on duty", de: "Sie sind im Dienst", fr: "Vous êtes de garde", es: "Estás de guardia", it: "Sei in servizio", pl: "Jesteś na dyżurze", pt: "Você está de plantão" },
   "inbox.activation_off": { no: "Du er ikke på vakt", en: "You are not on duty", de: "Sie sind nicht im Dienst", fr: "Vous n'êtes pas de garde", es: "No estás de guardia", it: "Non sei in servizio", pl: "Nie jesteś na dyżurze", pt: "Você não está de plantão" },
+  "inbox.not_on_duty_reply": { no: "Du er ikke på vakt i denne gruppen.", en: "You are not on duty in this group.", de: "Sie sind nicht im Dienst in dieser Gruppe.", fr: "Vous n'êtes pas de garde dans ce groupe.", es: "No estás de guardia en este grupo.", it: "Non sei in servizio in questo gruppo.", pl: "Nie jesteś na dyżurze w tej grupie.", pt: "Você não está de plantão neste grupo." },
+  "inbox.activate_now": { no: "Aktiver meg nå →", en: "Activate me now →", de: "Mich jetzt aktivieren →", fr: "M'activer maintenant →", es: "Activarme ahora →", it: "Attivami ora →", pl: "Aktywuj mnie teraz →", pt: "Ativar-me agora →" },
+
+  // Contacts — duplicate phone handling
+  "contacts.duplicate_message_prefix": { no: "Dette nummeret er registrert som", en: "This number is registered as", de: "Diese Nummer ist registriert als", fr: "Ce numéro est enregistré comme", es: "Este número está registrado como", it: "Questo numero è registrato come", pl: "Ten numer jest zarejestrowany jako", pt: "Este número está registrado como" },
+  "contacts.duplicate_message_suffix": { no: ". Vil du legge til den eksisterende kontakten i stedet?", en: ". Would you like to add the existing contact instead?", de: ". Möchten Sie stattdessen den vorhandenen Kontakt hinzufügen?", fr: ". Voulez-vous ajouter le contact existant à la place?", es: ". ¿Desea agregar el contacto existente en su lugar?", it: ". Vuoi aggiungere il contatto esistente invece?", pl: ". Czy chcesz dodać istniejący kontakt zamiast tego?", pt: ". Deseja adicionar o contato existente em vez disso?" },
+  "contacts.duplicate_add_existing": { no: "Ja, legg til", en: "Yes, add it", de: "Ja, hinzufügen", fr: "Oui, ajouter", es: "Sí, agregar", it: "Sì, aggiungi", pl: "Tak, dodaj", pt: "Sim, adicionar" },
+  "contacts.duplicate_added": { no: "Kontakt lagt til", en: "Contact added", de: "Kontakt hinzugefügt", fr: "Contact ajouté", es: "Contacto agregado", it: "Contatto aggiunto", pl: "Kontakt dodany", pt: "Contato adicionado" },
+
+  // Notification permission banner
+  "notif.banner_text": { no: "Aktiver varsler for å motta lydvarsler ved nye meldinger", en: "Enable notifications to receive sound alerts for new messages", de: "Aktivieren Sie Benachrichtigungen, um Soundbenachrichtigungen für neue Nachrichten zu erhalten", fr: "Activez les notifications pour recevoir des alertes sonores pour les nouveaux messages", es: "Habilite las notificaciones para recibir alertas de sonido para mensajes nuevos", it: "Attiva le notifiche per ricevere avvisi sonori per i nuovi messaggi", pl: "Włącz powiadomienia, aby otrzymywać dźwiękowe alerty o nowych wiadomościach", pt: "Ative as notificações para receber alertas de som para novas mensagens" },
+  "notif.enable": { no: "Aktiver", en: "Enable", de: "Aktivieren", fr: "Activer", es: "Activar", it: "Attiva", pl: "Włącz", pt: "Ativar" },
+  "notif.not_now": { no: "Ikke nå", en: "Not now", de: "Nicht jetzt", fr: "Pas maintenant", es: "Ahora no", it: "Non ora", pl: "Nie teraz", pt: "Agora não" },
 };
 
 // Default language for SSR and initial client render

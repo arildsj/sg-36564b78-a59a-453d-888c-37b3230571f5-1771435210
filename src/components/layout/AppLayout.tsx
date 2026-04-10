@@ -67,11 +67,34 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole>("member");
   const [userName, setUserName] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [notifBanner, setNotifBanner] = useState(false);
   const appCommit = process.env.NEXT_PUBLIC_APP_COMMIT || "local-dev";
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      typeof Notification !== "undefined" &&
+      Notification.permission === "default" &&
+      !localStorage.getItem("semse_notification_asked")
+    ) {
+      setNotifBanner(true);
+    }
+  }, []);
+
+  const handleNotifEnable = () => {
+    localStorage.setItem("semse_notification_asked", "1");
+    setNotifBanner(false);
+    Notification.requestPermission();
+  };
+
+  const handleNotifDismiss = () => {
+    localStorage.setItem("semse_notification_asked", "1");
+    setNotifBanner(false);
+  };
 
   const checkAuth = async () => {
     try {
@@ -222,6 +245,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* ── Main content ───────────────────────────────────────────────────── */}
       <main className="md:ml-64 min-h-screen pb-20 md:pb-0">
+        {/* Notification permission banner */}
+        {notifBanner && (
+          <div className="bg-primary/10 border-b px-4 py-2 flex items-center justify-between gap-3 text-sm">
+            <span className="flex-1">{t("notif.banner_text")}</span>
+            <div className="flex gap-2 shrink-0">
+              <Button size="sm" className="h-7 px-3 text-xs" onClick={handleNotifEnable}>
+                {t("notif.enable")}
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 px-3 text-xs" onClick={handleNotifDismiss}>
+                {t("notif.not_now")}
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="container mx-auto p-4 md:p-6 lg:p-8">{children}</div>
       </main>
 

@@ -101,6 +101,7 @@ export default function ContactsPage() {
     tags: [] as string[]
   });
   const [selectedContactGroupIds, setSelectedContactGroupIds] = useState<string[]>([]);
+  const [duplicateContact, setDuplicateContact] = useState<{ id: string; name: string } | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const toggleGroup = (id: string) => setCollapsedGroups(prev => {
@@ -162,6 +163,7 @@ export default function ContactsPage() {
       tags: [],
     });
     setSelectedContactGroupIds([]);
+    setDuplicateContact(null);
     setShowDialog(true);
   };
 
@@ -201,13 +203,17 @@ export default function ContactsPage() {
         });
         await contactService.setContactGroupMemberships(editingContact.id, selectedContactGroupIds);
       } else {
-        const createdContact = await contactService.createContact({
+        const result = await contactService.createContact({
           name: formData.name,
           phone: formData.phone,
           group_id: formData.group_id,
           tags: formData.tags,
         });
-        await contactService.setContactGroupMemberships(createdContact.id, selectedContactGroupIds);
+        if (result && result.duplicate) {
+          setDuplicateContact(result.existing);
+          return;
+        }
+        await contactService.setContactGroupMemberships(result.id, selectedContactGroupIds);
       }
 
       setShowDialog(false);
@@ -223,6 +229,22 @@ export default function ContactsPage() {
         description: error.message || "Ukjent feil",
         variant: "destructive",
       });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAddExisting = async () => {
+    if (!duplicateContact) return;
+    setSubmitting(true);
+    try {
+      await contactService.setContactGroupMemberships(duplicateContact.id, selectedContactGroupIds);
+      setDuplicateContact(null);
+      setShowDialog(false);
+      await loadData();
+      toast({ title: t("contacts.duplicate_added"), description: duplicateContact.name });
+    } catch (err: any) {
+      toast({ title: "Feil", description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -716,11 +738,31 @@ export default function ContactsPage() {
               )}
             </div>
           </div>
+
+          {/* Duplicate phone warning */}
+          {duplicateContact && !editingContact && (
+            <div className="rounded-md border border-yellow-500/40 bg-yellow-50/80 dark:bg-yellow-950/20 p-3 text-sm space-y-2">
+              <p>
+                {t("contacts.duplicate_message_prefix")}{" "}
+                <strong>{duplicateContact.name}</strong>
+                {t("contacts.duplicate_message_suffix")}
+              </p>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleAddExisting} disabled={submitting}>
+                  {t("contacts.duplicate_add_existing")}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setDuplicateContact(null)} disabled={submitting}>
+                  {t("contacts.cancel")}
+                </Button>
+              </div>
+            </div>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)} disabled={submitting}>
               {t("contacts.cancel")}
             </Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
+            <Button onClick={handleSubmit} disabled={submitting || !!duplicateContact}>
               {submitting ? t("contacts.saving") : (editingContact ? t("contacts.save_changes") : t("contacts.add_contact"))}
             </Button>
           </DialogFooter>

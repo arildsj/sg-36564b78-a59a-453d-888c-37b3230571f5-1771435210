@@ -42,7 +42,7 @@ export const contactService = {
     phone: string;
     group_id: string | null;
     tags?: string[];
-  }) {
+  }): Promise<any | { duplicate: true; existing: { id: string; name: string } }> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error("Not authenticated");
 
@@ -53,6 +53,18 @@ export const contactService = {
       .single();
 
     if (!profile) throw new Error("User profile not found");
+
+    // Duplicate phone check within the same tenant
+    const { data: existing } = await db
+      .from("contacts")
+      .select("id, name")
+      .eq("phone", contact.phone)
+      .eq("tenant_id", profile.tenant_id)
+      .maybeSingle();
+
+    if (existing) {
+      return { duplicate: true, existing: { id: existing.id, name: existing.name } };
+    }
 
     const { data: newContact, error } = await db
       .from("contacts")
