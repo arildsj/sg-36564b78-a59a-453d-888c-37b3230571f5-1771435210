@@ -125,6 +125,40 @@ export default async function handler(
     console.error("[route-message] Failed to write audit log:", logError);
   }
 
+  // ── Schedule escalation steps if any are configured for this rule ────
+  const { data: steps } = await admin
+    .from("routing_rule_escalation_steps")
+    .select("id, step_order, timeout_seconds, target_group_id")
+    .eq("rule_id", matched.id)
+    .eq("is_active", true)
+    .order("step_order", { ascending: true });
+
+  if (steps && steps.length > 0) {
+    const now = Date.now();
+    let cumulativeOffsetMs = 0;
+
+    const queueRows = steps.map((step) => {
+      cumulativeOffsetMs += step.timeout_seconds * 1000;
+      return {
+        rule_id:      matched!.id,
+        message_id:   null as string | null,
+        group_id:     step.target_group_id,
+        level_number: step.step_order,
+        trigger_at:   new Date(now + cumulativeOffsetMs).toISOString(),
+        status:       "pending",
+      };
+    });
+
+    const { error: queueError } = await admin
+      .from("escalation_queue")
+      .insert(queueRows);
+
+    if (queueError) {
+      // Non-fatal — log but don't fail the routing response
+      console.error("[route-message] Failed to enqueue escalation steps:", queueError);
+    }
+  }
+
   return res.status(200).json({
     matched_rule_id: matched.id,
     group_id:        matched.target_group_id,
