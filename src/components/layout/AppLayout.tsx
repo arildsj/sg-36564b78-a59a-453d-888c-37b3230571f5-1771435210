@@ -25,6 +25,9 @@ import {
 } from "lucide-react";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
+import { supabase } from "@/integrations/supabase/client";
+
+const db = supabase as any;
 
 type UserRole = "member" | "group_admin" | "tenant_admin" | string;
 
@@ -68,6 +71,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [notifBanner, setNotifBanner] = useState(false);
+  const [pendingActivationCount, setPendingActivationCount] = useState(0);
   const appCommit = process.env.NEXT_PUBLIC_APP_COMMIT || "local-dev";
 
   useEffect(() => {
@@ -96,6 +100,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     setNotifBanner(false);
   };
 
+  const loadPendingActivations = async (userId: string) => {
+    const { data } = await db
+      .from("activation_requests")
+      .select("id, requested_user_ids")
+      .eq("status", "pending");
+    const count = ((data ?? []) as any[]).filter((req: any) =>
+      Array.isArray(req.requested_user_ids) && req.requested_user_ids.includes(userId)
+    ).length;
+    setPendingActivationCount(count);
+  };
+
   const checkAuth = async () => {
     try {
       const session = await authService.getCurrentSession();
@@ -106,6 +121,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       const profile = await userService.getCurrentUserProfile();
       setUserRole(profile?.role || "member");
       setUserName(profile?.full_name || profile?.email || "Bruker");
+      // Load pending activation requests for badge
+      loadPendingActivations(session.user.id);
+      // Keep badge live
+      const channel = db
+        .channel("applayout-activation")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "activation_requests" },
+          () => loadPendingActivations(session.user.id)
+        )
+        .subscribe();
+      return () => db.removeChannel(channel);
     } catch (error) {
       console.error("Auth check failed:", error);
       router.push("/login");
@@ -145,6 +172,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     compact?: boolean;
   }) => {
     const isActive = router.pathname === item.href;
+    const hasBadge = item.href === "/vaktliste" && pendingActivationCount > 0;
     return (
       <Link
         href={item.href}
@@ -157,7 +185,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             : "text-muted-foreground hover:bg-muted hover:text-foreground"
         )}
       >
-        <item.icon className="h-5 w-5 flex-shrink-0" />
+        <span className="relative flex-shrink-0">
+          <item.icon className="h-5 w-5" />
+          {hasBadge && (
+            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-card" />
+          )}
+        </span>
         <span>{t(item.labelKey)}</span>
       </Link>
     );
@@ -272,6 +305,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t flex items-stretch h-16">
         {bottomNavItems.map((item) => {
           const isActive = router.pathname === item.href;
+          const hasBadge = item.href === "/vaktliste" && pendingActivationCount > 0;
           return (
             <Link
               key={item.href}
@@ -281,7 +315,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <span className="relative">
+                <item.icon className="h-5 w-5" />
+                {hasBadge && (
+                  <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-card" />
+                )}
+              </span>
               <span>{t(item.labelKey)}</span>
             </Link>
           );
