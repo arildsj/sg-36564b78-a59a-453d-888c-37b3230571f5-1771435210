@@ -58,7 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // ── Count total group members ─────────────────────────────────────────
   const { count: memberCount, error: memberCountError } = await admin
-    .from("group_members")
+    .from("group_memberships")
     .select("*", { count: "exact", head: true })
     .eq("group_id", group_id);
 

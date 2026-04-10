@@ -60,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // ── Safety check when deactivating ───────────────────────────────────
   if (!set_active) {
     const { count: activeCount, error: countError } = await admin
-      .from("group_members")
+      .from("group_memberships")
       .select("*", { count: "exact", head: true })
       .eq("group_id", group_id)
       .eq("is_active", true);
@@ -83,11 +83,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // ── Apply the change ──────────────────────────────────────────────────
   const { error: upsertError } = await admin
-    .from("group_members")
-    .upsert(
-      { group_id, user_id: target_user_id, is_active: set_active },
-      { onConflict: "group_id,user_id" }
-    );
+    .from("group_memberships")
+    .update({ is_active: set_active, last_active_at: new Date().toISOString() })
+    .eq("group_id", group_id)
+    .eq("user_id", target_user_id);
 
   if (upsertError) {
     return res.status(500).json({ error: "Failed to update group member status" });
@@ -97,7 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await admin.from("audit_log").insert({
     user_id:        user.id,
     action:         "admin_override",
-    resource_type:  "group_members",
+    resource_type:  "group_memberships",
     resource_id:    group_id,
     event_type:     "admin_override",
     group_id,

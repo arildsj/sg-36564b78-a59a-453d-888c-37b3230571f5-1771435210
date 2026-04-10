@@ -43,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // ── Count currently active members ───────────────────────────────────
   const { count: activeCount, error: countError } = await admin
-    .from("group_members")
+    .from("group_memberships")
     .select("*", { count: "exact", head: true })
     .eq("group_id", group_id)
     .eq("is_active", true);
@@ -70,8 +70,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // ── If enough members are active, allow immediate deactivation ────────
   if (current > (group.min_active ?? 0)) {
     const { error: deactivateError } = await admin
-      .from("group_members")
-      .update({ is_active: false })
+      .from("group_memberships")
+      .update({ is_active: false, last_active_at: new Date().toISOString() })
       .eq("group_id", group_id)
       .eq("user_id", user.id);
 
@@ -82,7 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await admin.from("audit_log").insert({
       user_id:      user.id,
       action:       "deactivate",
-      resource_type: "group_members",
+      resource_type: "group_memberships",
       resource_id:   group_id,
       event_type:   "deactivated",
       group_id,

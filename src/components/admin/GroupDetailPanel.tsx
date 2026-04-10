@@ -57,7 +57,7 @@ export function GroupDetailPanel({
     setLoading(true);
     try {
       const { data: gm, error: gmError } = await db
-        .from("group_members")
+        .from("group_memberships")
         .select("user_id, is_active")
         .eq("group_id", group.id);
 

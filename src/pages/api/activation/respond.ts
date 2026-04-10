@@ -79,11 +79,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (response === "accepted") {
     // Activate the responding user
     const { error: activateError } = await admin
-      .from("group_members")
-      .upsert(
-        { group_id: request.group_id, user_id: user.id, is_active: true },
-        { onConflict: "group_id,user_id" }
-      );
+      .from("group_memberships")
+      .update({ is_active: true, last_active_at: new Date().toISOString() })
+      .eq("group_id", request.group_id)
+      .eq("user_id", user.id);
 
     if (activateError) {
       return res.status(500).json({ error: "Failed to activate user" });
@@ -113,7 +112,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Re-check if requester A can now go off duty
     const { count: activeCount } = await admin
-      .from("group_members")
+      .from("group_memberships")
       .select("*", { count: "exact", head: true })
       .eq("group_id", request.group_id)
       .eq("is_active", true);
@@ -122,8 +121,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (newActive - 1 >= (group.min_active ?? 0)) {
       const { error: deactivateError } = await admin
-        .from("group_members")
-        .update({ is_active: false })
+        .from("group_memberships")
+        .update({ is_active: false, last_active_at: new Date().toISOString() })
         .eq("group_id", request.group_id)
         .eq("user_id", request.requester_id);
 
@@ -131,7 +130,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         await admin.from("audit_log").insert({
           user_id:        user.id,
           action:         "deactivate",
-          resource_type:  "group_members",
+          resource_type:  "group_memberships",
           resource_id:    request.group_id,
           event_type:     "deactivated",
           group_id:       request.group_id,

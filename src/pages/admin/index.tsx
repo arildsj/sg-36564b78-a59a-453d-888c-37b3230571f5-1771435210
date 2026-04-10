@@ -298,7 +298,7 @@ export default function AdminPage() {
 
       // Fetch active member counts per group
       const { data: activeCounts } = await db
-        .from("group_members")
+        .from("group_memberships")
         .select("group_id")
         .eq("is_active", true);
 
