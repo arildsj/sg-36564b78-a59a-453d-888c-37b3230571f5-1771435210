@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Head from "next/head";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useLanguage } from "@/contexts/LanguageProvider";
@@ -46,6 +46,13 @@ type ConfirmAction =
   | { type: "activate_other"; member: GroupMember; group: Group }
   | { type: "deactivate_other"; member: GroupMember; group: Group };
 
+interface IncomingRequest {
+  id: string;
+  group_id: string;
+  group_name: string;
+  requester_name: string;
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function VaktlistePage() {
@@ -68,6 +75,15 @@ export default function VaktlistePage() {
   const [rejectionMap, setRejectionMap] = useState<Map<string, string>>(new Map());
   // Confirm dialog
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  // Handover picker: blocked user picks who to ask
+  const [handoverGroup, setHandoverGroup] = useState<Group | null>(null);
+  // Incoming activation request modal (target user)
+  const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null);
+  const [respondingToRequest, setRespondingToRequest] = useState(false);
+
+  // Refs for stable Realtime closures
+  const currentUserIdRef = useRef<string | null>(null);
+  const groupsRef = useRef<Group[]>([]);
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
@@ -172,7 +188,7 @@ export default function VaktlistePage() {
           membership_id: m.id,
           user_id: m.user_id,
           full_name: p?.full_name ?? null,
-          email: p?.email ?? m.user_id,
+          email: p?.email ?? null,   // never fall back to raw UUID
           is_active: m.is_active ?? false,
           last_active_at: m.last_active_at ?? null,
           is_admin: m.is_admin ?? false,
@@ -182,6 +198,7 @@ export default function VaktlistePage() {
     });
 
     setGroups(builtGroups);
+    groupsRef.current = builtGroups;
     setLoading(false);
   }, []);
 
@@ -189,7 +206,12 @@ export default function VaktlistePage() {
     loadData();
   }, [loadData]);
 
-  // Realtime: refresh on membership or activation_request changes
+  // Keep userId ref in sync
+  useEffect(() => {
+    currentUserIdRef.current = currentUserId;
+  }, [currentUserId]);
+
+  // Realtime: refresh on membership changes + intercept incoming activation requests
   useEffect(() => {
     const channel = db
       .channel("vaktliste-live")
@@ -201,7 +223,29 @@ export default function VaktlistePage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "activation_requests" },
-        () => loadData()
+        (payload: any) => {
+          loadData();
+          // Show modal if this INSERT targets the current user
+          if (payload.eventType === "INSERT") {
+            const req = payload.new;
+            const uid = currentUserIdRef.current;
+            if (uid && Array.isArray(req.requested_user_ids) && req.requested_user_ids.includes(uid)) {
+              const grp = groupsRef.current.find((g) => g.id === req.group_id);
+              const requesterMember = groupsRef.current
+                .flatMap((g) => g.members)
+                .find((m) => m.user_id === req.requester_id);
+              setIncomingRequest({
+                id: req.id,
+                group_id: req.group_id,
+                group_name: grp?.name ?? "ukjent gruppe",
+                requester_name:
+                  requesterMember?.full_name ||
+                  requesterMember?.email ||
+                  "En annen bruker",
+              });
+            }
+          }
+        }
       )
       .subscribe();
     return () => {
@@ -334,6 +378,18 @@ export default function VaktlistePage() {
 
   const deactivateOther = async (member: GroupMember, group: Group) => {
     if (!currentUserId) return;
+    // Enforce min_active for all roles — no bypass
+    const activeCount = group.members.filter((m) => m.is_active).length;
+    if (activeCount - 1 < group.min_active) {
+      toast({
+        title: "Ikke tillatt",
+        description: `Kan ikke deaktivere — ville bragt aktive (${activeCount - 1}) under minimumsantallet (${group.min_active}).`,
+        variant: "destructive",
+      });
+      setConfirmAction(null);
+      return;
+    }
+
     const key = `${member.user_id}_${group.id}`;
     setConfirmAction(null);
     addToggling(key);
@@ -359,6 +415,36 @@ export default function VaktlistePage() {
     }
 
     removeToggling(key);
+  };
+
+  // ── Activation request responses (incoming modal) ───────────────────────────
+
+  const respondToRequest = async (response: "accepted" | "rejected") => {
+    if (!incomingRequest || respondingToRequest) return;
+    setRespondingToRequest(true);
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      const res = await fetch("/api/activation/respond", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ request_id: incomingRequest.id, response }),
+      });
+      if (!res.ok && response === "accepted") {
+        const err = await res.json();
+        toast({ title: "Feil", description: err.error, variant: "destructive" });
+      } else if (response === "accepted") {
+        toast({ title: "Vakt overtatt", description: `Du er nå på vakt i ${incomingRequest.group_name}` });
+      }
+      setIncomingRequest(null);
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Feil", description: e.message, variant: "destructive" });
+    } finally {
+      setRespondingToRequest(false);
+    }
   };
 
   // ── Main toggle dispatcher ──────────────────────────────────────────────────
@@ -457,7 +543,7 @@ export default function VaktlistePage() {
                                   <div className="min-w-0">
                                     <div className="text-sm font-medium flex items-center gap-1.5 flex-wrap">
                                       <span className="truncate">
-                                        {member.full_name || member.email}
+                                        {member.full_name || member.email || "Ukjent bruker"}
                                       </span>
                                       {isSelf && (
                                         <span className="text-xs text-muted-foreground font-normal">
@@ -505,18 +591,12 @@ export default function VaktlistePage() {
                                 <div className="pt-1 pb-3 space-y-2">
                                   <p className="text-sm text-destructive">
                                     Du kan ikke gå av vakt uten at noen overtar.
-                                    Send en forespørsel til andre i gruppen.
+                                    Send en forespørsel til en annen i gruppen.
                                   </p>
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => {
-                                      // Shift handover modal — to be built
-                                      toast({
-                                        title: "Vaktbytte",
-                                        description: "Vaktbytte-forespørsel kommer i neste versjon.",
-                                      });
-                                    }}
+                                    onClick={() => setHandoverGroup(group)}
                                   >
                                     Send forespørsel om vaktbytte →
                                   </Button>
@@ -554,10 +634,10 @@ export default function VaktlistePage() {
             <DialogTitle>
               {confirmAction?.type === "activate_other"
                 ? `Sett ${
-                    confirmAction.member.full_name || confirmAction.member.email
+                    confirmAction.member.full_name || confirmAction.member.email || "Ukjent"
                   } på vakt i ${confirmAction.group.name}?`
                 : `Ta ${
-                    confirmAction?.member.full_name || confirmAction?.member.email
+                    confirmAction?.member.full_name || confirmAction?.member.email || "Ukjent"
                   } av vakt i ${confirmAction?.group.name}?`}
             </DialogTitle>
           </DialogHeader>
@@ -586,6 +666,85 @@ export default function VaktlistePage() {
               {confirmAction?.type === "activate_other"
                 ? "Ja, send forespørsel"
                 : "Ja, ta av vakt"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* ── Handover picker (blocked self-deactivation) ──────────────────── */}
+      <Dialog open={!!handoverGroup} onOpenChange={(open) => { if (!open) setHandoverGroup(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hvem skal ta over vakten?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground mb-3">
+            Velg hvem du vil be om å ta over vakten i{" "}
+            <strong>{handoverGroup?.name}</strong>.
+          </p>
+          <div className="space-y-1">
+            {handoverGroup?.members
+              .filter((m) => m.user_id !== currentUserId && !m.is_active)
+              .map((m) => (
+                <Button
+                  key={m.user_id}
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    if (handoverGroup) {
+                      requestActivateOther(m, handoverGroup);
+                      setHandoverGroup(null);
+                      setBlocked(null);
+                    }
+                  }}
+                >
+                  {m.full_name || m.email || "Ukjent bruker"}
+                </Button>
+              ))}
+            {handoverGroup?.members.filter(
+              (m) => m.user_id !== currentUserId && !m.is_active
+            ).length === 0 && (
+              <p className="text-sm text-muted-foreground italic">
+                Ingen andre inaktive medlemmer i gruppen.
+              </p>
+            )}
+          </div>
+          <DialogFooter className="mt-2">
+            <Button variant="outline" onClick={() => setHandoverGroup(null)}>
+              Avbryt
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Incoming activation request modal ────────────────────────────── */}
+      <Dialog
+        open={!!incomingRequest}
+        onOpenChange={(open) => { if (!open && !respondingToRequest) setIncomingRequest(null); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Forespørsel om vaktoverlapp</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm">
+            <strong>{incomingRequest?.requester_name}</strong> ønsker å gå av vakt.
+            Vil du ta over vakten i{" "}
+            <strong>{incomingRequest?.group_name}</strong>?
+          </p>
+          <DialogFooter className="gap-2 flex-col sm:flex-row mt-2">
+            <Button
+              variant="outline"
+              disabled={respondingToRequest}
+              onClick={() => respondToRequest("rejected")}
+            >
+              Nei
+            </Button>
+            <Button
+              disabled={respondingToRequest}
+              onClick={() => respondToRequest("accepted")}
+            >
+              {respondingToRequest ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Ja, jeg tar vakt
             </Button>
           </DialogFooter>
         </DialogContent>

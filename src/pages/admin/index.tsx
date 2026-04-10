@@ -937,13 +937,14 @@ export default function AdminPage() {
               </CardHeader>
 
               <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
+                <DialogContent className="max-w-2xl flex flex-col max-h-[90vh]">
+                  <DialogHeader className="flex-none">
                     <DialogTitle id="edit-user-dialog-title">{t("admin.edit_user_title")}</DialogTitle>
                     <DialogDescription>
                       {t("admin.edit_user_description")}
                     </DialogDescription>
                   </DialogHeader>
+                  <div className="flex-1 overflow-y-auto min-h-0 pr-1">
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
                       <Label>{t("admin.name")}</Label>
@@ -1056,7 +1057,8 @@ export default function AdminPage() {
                       </div>
                     </div>
                   </div>
-                  <DialogFooter>
+                  </div>{/* end scroll container */}
+                  <DialogFooter className="flex-none pt-2 border-t">
                     <Button variant="outline" onClick={() => setEditingUser(null)}>
                       {t("admin.cancel")}
                     </Button>
