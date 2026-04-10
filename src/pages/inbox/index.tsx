@@ -245,7 +245,9 @@ export default function InboxPage() {
             loadThreads();
           }
         )
-        .subscribe();
+        .subscribe((status, err) => {
+          if (err) console.error("[Realtime] inbox_updates error:", err);
+        });
 
       return () => {
         db.removeChannel(channel);

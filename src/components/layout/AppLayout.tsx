@@ -148,7 +148,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           loadPendingActivations(uid);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) console.error("[Realtime] applayout-activation error:", err);
+      });
 
     return () => {
       db.removeChannel(channel);

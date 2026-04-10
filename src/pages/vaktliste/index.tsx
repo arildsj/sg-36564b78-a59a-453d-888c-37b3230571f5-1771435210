@@ -269,7 +269,9 @@ export default function VaktlistePage() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) console.error("[Realtime] vaktliste-live error:", err);
+      });
     return () => {
       db.removeChannel(channel);
     };
