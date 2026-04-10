@@ -16,10 +16,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { CalendarClock, Loader2, Bell } from "lucide-react";
+import { CalendarClock, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { nb } from "date-fns/locale";
-import { playAlert } from "@/services/SoundService";
 
 // Cast to any to bypass outdated database.types.ts
 const db = supabaseClient as any;
@@ -81,8 +80,8 @@ export default function VaktlistePage() {
   // Incoming activation request modal (target user)
   const [incomingRequest, setIncomingRequest] = useState<IncomingRequest | null>(null);
   const [respondingToRequest, setRespondingToRequest] = useState(false);
-  // Pending request for the current user (for persistent banner)
-  const [pendingRequestForMe, setPendingRequestForMe] = useState<IncomingRequest | null>(null);
+  // Guard: only auto-show modal once on initial page load (not on every Realtime refresh)
+  const hasShownInitialModalRef = useRef(false);
 
   // Refs for stable Realtime closures
   const currentUserIdRef = useRef<string | null>(null);
@@ -203,30 +202,23 @@ export default function VaktlistePage() {
     setGroups(builtGroups);
     groupsRef.current = builtGroups;
 
-    // Check if there's a pending request targeting the current user (page-load check)
+    // Page-load: if there's a pending request targeting the current user, auto-open modal once
     const myPendingReq = ((pendingReqs ?? []) as any[]).find(
       (req: any) =>
         Array.isArray(req.requested_user_ids) &&
         req.requested_user_ids.includes(userId)
     );
-    if (myPendingReq) {
+    if (myPendingReq && !hasShownInitialModalRef.current) {
+      hasShownInitialModalRef.current = true;
       const grp = builtGroups.find((g) => g.id === myPendingReq.group_id);
       const requesterProfile = (profiles ?? []).find((p: any) => p.id === myPendingReq.requester_id) as any;
-      const incoming: IncomingRequest = {
+      setIncomingRequest({
         id: myPendingReq.id,
         group_id: myPendingReq.group_id,
         group_name: grp?.name ?? "ukjent gruppe",
         requester_name:
           requesterProfile?.full_name || requesterProfile?.email || "En annen bruker",
-      };
-      setPendingRequestForMe(incoming);
-      // Play sound once per session
-      if (!sessionStorage.getItem("semse_activation_sound_played")) {
-        sessionStorage.setItem("semse_activation_sound_played", "1");
-        playAlert("activation");
-      }
-    } else {
-      setPendingRequestForMe(null);
+      });
     }
 
     setLoading(false);
@@ -255,7 +247,7 @@ export default function VaktlistePage() {
         { event: "*", schema: "public", table: "activation_requests" },
         (payload: any) => {
           loadData();
-          // Show modal if this INSERT targets the current user
+          // Show modal if this INSERT targets the current user (sound handled by AppLayout)
           if (payload.eventType === "INSERT") {
             const req = payload.new;
             const uid = currentUserIdRef.current;
@@ -264,7 +256,7 @@ export default function VaktlistePage() {
               const requesterMember = groupsRef.current
                 .flatMap((g) => g.members)
                 .find((m) => m.user_id === req.requester_id);
-              const incoming: IncomingRequest = {
+              setIncomingRequest({
                 id: req.id,
                 group_id: req.group_id,
                 group_name: grp?.name ?? "ukjent gruppe",
@@ -272,13 +264,7 @@ export default function VaktlistePage() {
                   requesterMember?.full_name ||
                   requesterMember?.email ||
                   "En annen bruker",
-              };
-              setPendingRequestForMe(incoming);
-              setIncomingRequest(incoming);
-              if (!sessionStorage.getItem("semse_activation_sound_played")) {
-                sessionStorage.setItem("semse_activation_sound_played", "1");
-                playAlert("activation");
-              }
+              });
             }
           }
         }
@@ -474,8 +460,6 @@ export default function VaktlistePage() {
       } else if (response === "accepted") {
         toast({ title: t("vaktliste.on_duty"), description: `Du er nå på vakt i ${incomingRequest.group_name}` });
       }
-      sessionStorage.removeItem("semse_activation_sound_played");
-      setPendingRequestForMe(null);
       setIncomingRequest(null);
       loadData();
     } catch (e: any) {
@@ -530,27 +514,6 @@ export default function VaktlistePage() {
           </h1>
           <p className="text-muted-foreground mt-1">{t("vaktliste.subtitle")}</p>
         </div>
-
-        {/* Persistent pending-request banner */}
-        {pendingRequestForMe && (
-          <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40 text-sm">
-            <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-              <span className="text-amber-900 dark:text-amber-200">
-                {t("vaktliste.request_banner")}{" "}
-                <strong>{pendingRequestForMe.group_name}</strong>
-              </span>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-3 text-xs border-amber-400 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300 dark:hover:bg-amber-900/30 shrink-0"
-              onClick={() => setIncomingRequest(pendingRequestForMe)}
-            >
-              {t("vaktliste.see_request")}
-            </Button>
-          </div>
-        )}
 
         {loading ? (
           <div className="text-muted-foreground py-8 text-center">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { cn } from "@/lib/utils";
@@ -22,10 +22,12 @@ import {
   CalendarClock,
   MoreHorizontal,
   Menu,
+  Bell,
 } from "lucide-react";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
 import { supabase } from "@/integrations/supabase/client";
+import { playAlert } from "@/services/SoundService";
 
 const db = supabase as any;
 
@@ -37,6 +39,12 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   roles: UserRole[];
 };
+
+interface PendingRequest {
+  id: string;
+  group_name: string;
+  requester_name: string;
+}
 
 const ALL_NAV: NavItem[] = [
   { labelKey: "nav.dashboard",  href: "/",           icon: LayoutDashboard, roles: ["member", "group_admin", "tenant_admin"] },
@@ -69,15 +77,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [userRole, setUserRole] = useState<UserRole>("member");
   const [userName, setUserName] = useState<string>("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notifBanner, setNotifBanner] = useState(false);
-  const [pendingActivationCount, setPendingActivationCount] = useState(0);
+  const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(null);
   const appCommit = process.env.NEXT_PUBLIC_APP_COMMIT || "local-dev";
 
+  // Refs for stable closures in Realtime handlers
+  const currentUserIdRef = useRef<string | null>(null);
+  const prevRequestIdRef = useRef<string | null>(null);
+
+  // ── Auth ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     checkAuth();
   }, []);
 
+  // Keep ref in sync with state
+  useEffect(() => {
+    currentUserIdRef.current = currentUserId;
+  }, [currentUserId]);
+
+  // ── Notification permission banner ───────────────────────────────────────────
   useEffect(() => {
     if (
       typeof window !== "undefined" &&
@@ -89,26 +109,83 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const handleNotifEnable = () => {
-    localStorage.setItem("semse_notification_asked", "1");
-    setNotifBanner(false);
-    Notification.requestPermission();
-  };
+  // ── Play sound whenever a new pending request arrives ────────────────────────
+  useEffect(() => {
+    if (pendingRequest && pendingRequest.id !== prevRequestIdRef.current) {
+      prevRequestIdRef.current = pendingRequest.id;
+      playAlert("activation");
+    }
+    if (!pendingRequest) {
+      prevRequestIdRef.current = null;
+    }
+  }, [pendingRequest]);
 
-  const handleNotifDismiss = () => {
-    localStorage.setItem("semse_notification_asked", "1");
-    setNotifBanner(false);
-  };
+  // ── Realtime subscription for activation_requests ────────────────────────────
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = db
+      .channel("applayout-activation")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "activation_requests" },
+        (payload: any) => {
+          const uid = currentUserIdRef.current;
+          if (!uid) return;
+          // On INSERT: check if this request targets us, then update state
+          if (payload.eventType === "INSERT") {
+            const req = payload.new;
+            if (
+              Array.isArray(req.requested_user_ids) &&
+              req.requested_user_ids.includes(uid)
+            ) {
+              // Fetch group + requester names, then set pendingRequest
+              // (the sound effect will fire automatically via the pendingRequest effect)
+              loadPendingActivations(uid);
+              return;
+            }
+          }
+          loadPendingActivations(uid);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      db.removeChannel(channel);
+    };
+  }, [currentUserId]);
 
   const loadPendingActivations = async (userId: string) => {
-    const { data } = await db
+    const { data: reqs } = await db
       .from("activation_requests")
-      .select("id, requested_user_ids")
+      .select("id, group_id, requested_user_ids, requester_id")
       .eq("status", "pending");
-    const count = ((data ?? []) as any[]).filter((req: any) =>
-      Array.isArray(req.requested_user_ids) && req.requested_user_ids.includes(userId)
-    ).length;
-    setPendingActivationCount(count);
+
+    const mine = ((reqs ?? []) as any[]).find(
+      (r: any) =>
+        Array.isArray(r.requested_user_ids) &&
+        r.requested_user_ids.includes(userId)
+    );
+
+    if (!mine) {
+      setPendingRequest(null);
+      return;
+    }
+
+    // Fetch group name and requester name in parallel
+    const [{ data: grp }, { data: requester }] = await Promise.all([
+      db.from("groups").select("name").eq("id", mine.group_id).maybeSingle(),
+      db.from("user_profiles").select("full_name, email").eq("id", mine.requester_id).maybeSingle(),
+    ]);
+
+    setPendingRequest({
+      id: mine.id,
+      group_name: grp?.name ?? "ukjent gruppe",
+      requester_name:
+        (requester as any)?.full_name ||
+        (requester as any)?.email ||
+        "En annen bruker",
+    });
   };
 
   const checkAuth = async () => {
@@ -121,24 +198,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       const profile = await userService.getCurrentUserProfile();
       setUserRole(profile?.role || "member");
       setUserName(profile?.full_name || profile?.email || "Bruker");
-      // Load pending activation requests for badge
+      // Setting this triggers the Realtime useEffect
+      setCurrentUserId(session.user.id);
       loadPendingActivations(session.user.id);
-      // Keep badge live
-      const channel = db
-        .channel("applayout-activation")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "activation_requests" },
-          () => loadPendingActivations(session.user.id)
-        )
-        .subscribe();
-      return () => db.removeChannel(channel);
     } catch (error) {
       console.error("Auth check failed:", error);
       router.push("/login");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleNotifEnable = () => {
+    localStorage.setItem("semse_notification_asked", "1");
+    setNotifBanner(false);
+    Notification.requestPermission();
+  };
+
+  const handleNotifDismiss = () => {
+    localStorage.setItem("semse_notification_asked", "1");
+    setNotifBanner(false);
   };
 
   const handleLogout = async () => {
@@ -162,6 +241,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const hasPendingBadge = !!pendingRequest;
+
   const NavLink = ({
     item,
     onClick,
@@ -172,7 +253,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     compact?: boolean;
   }) => {
     const isActive = router.pathname === item.href;
-    const hasBadge = item.href === "/vaktliste" && pendingActivationCount > 0;
+    const hasBadge = item.href === "/vaktliste" && hasPendingBadge;
     return (
       <Link
         href={item.href}
@@ -298,6 +379,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         )}
+
+        {/* Pending activation request banner — shown on ALL pages */}
+        {pendingRequest && (
+          <Link
+            href="/vaktliste"
+            className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-amber-300 bg-amber-50 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/40 dark:hover:bg-amber-950/60 transition-colors text-sm group"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Bell className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <span className="text-amber-900 dark:text-amber-200 truncate">
+                {t("vaktliste.request_banner")}{" "}
+                <strong>{pendingRequest.group_name}</strong>
+              </span>
+            </div>
+            <span className="text-amber-700 dark:text-amber-300 text-xs font-medium group-hover:underline shrink-0">
+              {t("vaktliste.see_request")} →
+            </span>
+          </Link>
+        )}
+
         <div className="container mx-auto p-4 md:p-6 lg:p-8">{children}</div>
       </main>
 
@@ -305,7 +406,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t flex items-stretch h-16">
         {bottomNavItems.map((item) => {
           const isActive = router.pathname === item.href;
-          const hasBadge = item.href === "/vaktliste" && pendingActivationCount > 0;
+          const hasBadge = item.href === "/vaktliste" && hasPendingBadge;
           return (
             <Link
               key={item.href}
