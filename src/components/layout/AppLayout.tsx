@@ -209,17 +209,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="p-4 border-t space-y-2 flex-none">
-          <div className="px-4 py-3 bg-muted/50 rounded-lg space-y-1">
+          <Link
+            href="/profile"
+            onClick={() => setSidebarOpen(false)}
+            className="block px-4 py-3 bg-muted/50 rounded-lg space-y-1 hover:bg-muted transition-colors group"
+          >
             <div className="flex items-center gap-2 text-sm">
               <User className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-foreground">{userName}</span>
+              <span className="font-medium text-foreground group-hover:text-primary transition-colors">
+                {userName}
+              </span>
             </div>
             {userRole && (
               <div className="text-xs text-muted-foreground pl-6">
                 {roleLabel(userRole, t)}
               </div>
             )}
-          </div>
+          </Link>
           <div className="flex gap-2">
             <LanguageSwitch />
             <ThemeSwitch />
@@ -295,13 +301,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <SheetPrimitive.Content className="fixed bottom-0 inset-x-0 z-50 bg-card rounded-t-2xl border-t p-4 pb-8 space-y-1 max-h-[70vh] overflow-y-auto focus:outline-none">
                 <SheetPrimitive.Title className="sr-only">{t("nav.more")}</SheetPrimitive.Title>
                 <div className="mx-auto w-10 h-1 bg-muted rounded-full mb-4" />
-                <div className="px-4 py-3 bg-muted/50 rounded-lg space-y-1 mb-3">
+                <Link
+                  href="/profile"
+                  onClick={() => setSheetOpen(false)}
+                  className="block px-4 py-3 bg-muted/50 rounded-lg space-y-1 mb-3 hover:bg-muted transition-colors group"
+                >
                   <div className="flex items-center gap-2 text-sm">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium text-foreground">{userName}</span>
+                    <span className="font-medium text-foreground group-hover:text-primary transition-colors">
+                      {userName}
+                    </span>
                   </div>
                   <div className="text-xs text-muted-foreground pl-6">{roleLabel(userRole, t)}</div>
-                </div>
+                </Link>
                 {moreItems.map((item) => (
                   <NavLink
                     key={item.href}
