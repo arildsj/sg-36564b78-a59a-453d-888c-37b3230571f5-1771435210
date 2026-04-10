@@ -46,6 +46,8 @@ import { motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useLanguage } from "@/contexts/LanguageProvider";
+import { playAlert } from "@/services/SoundService";
+import { sendPushNotification } from "@/services/NotificationService";
 
 // Hjelpefunksjon for datoformatering
 const formatMessageTime = (dateString: string, t: (key: string) => string) => {
@@ -131,6 +133,17 @@ export default function InboxPage() {
   const [reclassifyTargetGroup, setReclassifyTargetGroup] = useState<string>("");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
+  // Contact name lookup: phone → name
+  const [contactMap, setContactMap] = useState<Map<string, string>>(new Map());
+
+  // New-message overlay
+  const overlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [overlay, setOverlay] = useState<{
+    sender: string;
+    preview: string;
+    threadId: string | null;
+  } | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const selectedThread = threads.find((t) => t.id === selectedThreadId);
@@ -175,12 +188,44 @@ export default function InboxPage() {
     if (user) {
       loadGroups();
       loadThreads();
+      loadContacts();
 
       const channel = db
         .channel("inbox_updates")
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "messages" },
+          { event: "INSERT", schema: "public", table: "messages" },
+          (payload: any) => {
+            const msg = payload.new;
+            // Only trigger for inbound messages not sent by the current user
+            if (msg?.direction === "inbound") {
+              const sender: string = msg.from_number || t("inbox.unknown");
+              const preview: string = (msg.content || "").slice(0, 80);
+
+              // Sound alert
+              playAlert("incoming");
+
+              // Browser push notification
+              sendPushNotification(
+                user.id,
+                t("inbox.overlay_new_message"),
+                `${t("inbox.overlay_from")} ${sender}: ${preview}`
+              );
+
+              // In-app overlay (auto-dismiss after 5s)
+              if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
+              setOverlay({ sender, preview, threadId: msg.thread_id ?? null });
+              overlayTimerRef.current = setTimeout(() => setOverlay(null), 5000);
+            }
+            loadThreads();
+            if (selectedThreadId) {
+              loadMessages(selectedThreadId);
+            }
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "messages" },
           () => {
             loadThreads();
             if (selectedThreadId) {
@@ -199,6 +244,7 @@ export default function InboxPage() {
 
       return () => {
         db.removeChannel(channel);
+        if (overlayTimerRef.current) clearTimeout(overlayTimerRef.current);
       };
     }
   }, [activeTab, selectedGroupFilter, user]);
@@ -217,6 +263,21 @@ export default function InboxPage() {
       console.error("Failed to load groups:", error);
     }
   };
+
+  const loadContacts = useCallback(async () => {
+    if (!user?.tenant_id) return;
+    const { data } = await db
+      .from("contacts")
+      .select("phone, name")
+      .eq("tenant_id", user.tenant_id);
+    if (data) {
+      const map = new Map<string, string>();
+      data.forEach((c: { phone: string; name: string }) => {
+        if (c.phone && c.name) map.set(c.phone, c.name);
+      });
+      setContactMap(map);
+    }
+  }, [user]);
 
   const loadThreads = useCallback(async () => {
     if (!user) return;
@@ -766,6 +827,39 @@ export default function InboxPage() {
       </Head>
 
       <AppLayout>
+        {/* New-message overlay */}
+        {overlay && (
+          <div className="fixed top-4 right-4 z-50 max-w-sm w-full bg-card border shadow-lg rounded-xl p-4 flex flex-col gap-2 animate-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-primary">{t("inbox.overlay_new_message")}</span>
+              <button
+                onClick={() => setOverlay(null)}
+                className="text-muted-foreground hover:text-foreground text-xs"
+              >
+                {t("inbox.overlay_dismiss")}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">{t("inbox.overlay_from")}</span>{" "}
+              {contactMap.get(overlay.sender) || overlay.sender}
+            </p>
+            {overlay.preview && (
+              <p className="text-sm line-clamp-2">{overlay.preview}</p>
+            )}
+            {overlay.threadId && (
+              <button
+                onClick={() => {
+                  setSelectedThreadId(overlay.threadId);
+                  setOverlay(null);
+                }}
+                className="text-xs text-primary underline text-left"
+              >
+                {t("inbox.overlay_view")}
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
           <div className="flex-none">
             <h2 className="text-3xl font-bold tracking-tight text-foreground">{t("inbox.title")}</h2>
@@ -803,19 +897,34 @@ export default function InboxPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <Select value={selectedGroupFilter} onValueChange={setSelectedGroupFilter}>
-                <SelectTrigger className="w-[250px]">
-                  <SelectValue placeholder={t("inbox.filter_by_group")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("inbox.all_groups")}</SelectItem>
-                  {groups.map((group) => (
-                    <SelectItem key={group.id} value={group.id}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* Group filter tabs */}
+              <div className="flex gap-1 overflow-x-auto pb-1 max-w-full">
+                <button
+                  onClick={() => setSelectedGroupFilter("all")}
+                  className={cn(
+                    "shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap",
+                    selectedGroupFilter === "all"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
+                >
+                  {t("inbox.group_filter_all")}
+                </button>
+                {groups.map((group) => (
+                  <button
+                    key={group.id}
+                    onClick={() => setSelectedGroupFilter(group.id)}
+                    className={cn(
+                      "shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap",
+                      selectedGroupFilter === group.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    )}
+                  >
+                    {group.name}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <TabsContent value={activeTab} className="flex-1 m-0 min-h-0 overflow-hidden flex flex-col">
@@ -879,7 +988,9 @@ export default function InboxPage() {
                                     </>
                                   ) : (
                                     <>
-                                      <span className="font-semibold text-sm truncate">{thread.contact_phone}</span>
+                                      <span className="font-semibold text-sm truncate">
+                                        {contactMap.get(thread.contact_phone) || thread.contact_phone}
+                                      </span>
                                       {(thread.unread_count || 0) > 0 && (
                                         <Badge variant="destructive" className="text-[10px] h-4 px-1">
                                           {thread.unread_count}

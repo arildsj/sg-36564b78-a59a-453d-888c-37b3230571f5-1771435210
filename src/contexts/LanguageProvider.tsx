@@ -717,6 +717,41 @@ const translations: Record<string, Record<Language, string>> = {
   "contacts.unknown": { no: "Ukjent", en: "Unknown", de: "Unbekannt", fr: "Inconnu", es: "Desconocido", it: "Sconosciuto", pl: "Nieznany", pt: "Desconhecido" },
   "settings.outside_hours_default": { no: "Takk for din henvendelse. Vi har stengt for i dag, men svarer så snart vi åpner igjen.", en: "Thank you for your inquiry. We are closed for today, but will respond as soon as we open again.", de: "Vielen Dank für Ihre Anfrage. Wir haben heute geschlossen, antworten aber sobald wir wieder öffnen.", fr: "Merci pour votre demande. Nous sommes fermés aujourd'hui, mais nous répondrons dès que nous rouvrirons.", es: "Gracias por su consulta. Estamos cerrados por hoy, pero responderemos en cuanto abramos de nuevo.", it: "Grazie per la sua richiesta. Siamo chiusi per oggi, ma risponderemo non appena riapriamo.", pl: "Dziękujemy za zapytanie. Jesteśmy dzisiaj zamknięci, ale odpowiemy gdy otworzymy ponownie.", pt: "Obrigado pela sua consulta. Estamos fechados por hoje, mas responderemos assim que abrirmos novamente." },
   "settings.first_message_default": { no: "Velkommen! Vi har mottatt din melding og svarer så snart som mulig.", en: "Welcome! We have received your message and will reply as soon as possible.", de: "Willkommen! Wir haben Ihre Nachricht erhalten und werden so bald wie möglich antworten.", fr: "Bienvenue ! Nous avons reçu votre message et vous répondrons dès que possible.", es: "¡Bienvenido! Hemos recibido su mensaje y responderemos lo antes posible.", it: "Benvenuto! Abbiamo ricevuto il tuo messaggio e risponderemo il prima possibile.", pl: "Witamy! Otrzymaliśmy Twoją wiadomość i odpowiemy jak najszybciej.", pt: "Bem-vindo! Recebemos sua mensagem e responderemos o mais breve possível." },
+
+  // Navigation — new
+  "nav.vaktliste": { no: "Vaktliste", en: "Duty Roster", de: "Dienstplan", fr: "Tableau de service", es: "Lista de guardia", it: "Lista di servizio", pl: "Lista dyżurów", pt: "Lista de plantão" },
+  "nav.more": { no: "Mer", en: "More", de: "Mehr", fr: "Plus", es: "Más", it: "Altro", pl: "Więcej", pt: "Mais" },
+
+  // Roles — extended
+  "role.member": { no: "Medlem", en: "Member", de: "Mitglied", fr: "Membre", es: "Miembro", it: "Membro", pl: "Członek", pt: "Membro" },
+  "role.group_admin": { no: "Gruppeadmin", en: "Group Admin", de: "Gruppenadmin", fr: "Admin de groupe", es: "Admin de grupo", it: "Admin del gruppo", pl: "Admin grupy", pt: "Admin do grupo" },
+  "role.tenant_admin": { no: "Organisasjonsadmin", en: "Tenant Admin", de: "Mandantenadmin", fr: "Admin de l'organisation", es: "Admin de organización", it: "Admin dell'organizzazione", pl: "Admin organizacji", pt: "Admin da organização" },
+
+  // Vaktliste page
+  "vaktliste.title": { no: "Vaktliste", en: "Duty Roster", de: "Dienstplan", fr: "Tableau de service", es: "Lista de guardia", it: "Lista di servizio", pl: "Lista dyżurów", pt: "Lista de plantão" },
+  "vaktliste.subtitle": { no: "Oversikt over hvem som er på vakt per gruppe.", en: "Overview of who is on duty per group.", de: "Übersicht, wer je Gruppe im Dienst ist.", fr: "Aperçu de qui est de garde par groupe.", es: "Resumen de quién está de guardia por grupo.", it: "Panoramica di chi è in servizio per gruppo.", pl: "Przegląd kto jest na dyżurze w każdej grupie.", pt: "Visão geral de quem está de plantão por grupo." },
+  "vaktliste.on_duty": { no: "På vakt", en: "On duty", de: "Im Dienst", fr: "De garde", es: "De guardia", it: "In servizio", pl: "Na dyżurze", pt: "De plantão" },
+  "vaktliste.off_duty": { no: "Ikke på vakt", en: "Off duty", de: "Nicht im Dienst", fr: "Pas de garde", es: "Fuera de guardia", it: "Non in servizio", pl: "Poza dyżurem", pt: "Fora de plantão" },
+  "vaktliste.go_on_duty": { no: "Gå på vakt", en: "Go on duty", de: "Dienst antreten", fr: "Prendre la garde", es: "Tomar la guardia", it: "Inizia il servizio", pl: "Wejdź na dyżur", pt: "Entrar de plantão" },
+  "vaktliste.go_off_duty": { no: "Avslutt vakt", en: "Go off duty", de: "Dienst beenden", fr: "Quitter la garde", es: "Terminar la guardia", it: "Termina il servizio", pl: "Zakończ dyżur", pt: "Sair de plantão" },
+  "vaktliste.your_status": { no: "Din status", en: "Your status", de: "Ihr Status", fr: "Votre statut", es: "Su estado", it: "Il tuo stato", pl: "Twój status", pt: "Seu status" },
+  "vaktliste.no_members": { no: "Ingen medlemmer i denne gruppen", en: "No members in this group", de: "Keine Mitglieder in dieser Gruppe", fr: "Aucun membre dans ce groupe", es: "Sin miembros en este grupo", it: "Nessun membro in questo gruppo", pl: "Brak członków w tej grupie", pt: "Sem membros neste grupo" },
+  "vaktliste.no_groups": { no: "Du er ikke medlem av noen grupper", en: "You are not a member of any groups", de: "Sie sind kein Mitglied einer Gruppe", fr: "Vous n'êtes membre d'aucun groupe", es: "No eres miembro de ningún grupo", it: "Non sei membro di nessun gruppo", pl: "Nie jesteś członkiem żadnej grupy", pt: "Você não é membro de nenhum grupo" },
+  "vaktliste.loading": { no: "Laster vaktliste...", en: "Loading duty roster...", de: "Dienstplan laden...", fr: "Chargement du tableau de service...", es: "Cargando lista de guardia...", it: "Caricamento lista di servizio...", pl: "Ładowanie listy dyżurów...", pt: "Carregando lista de plantão..." },
+  "vaktliste.last_changed": { no: "Sist endret", en: "Last changed", de: "Zuletzt geändert", fr: "Dernière modification", es: "Último cambio", it: "Ultima modifica", pl: "Ostatnia zmiana", pt: "Última alteração" },
+  "vaktliste.error_loading": { no: "Kunne ikke laste vaktliste", en: "Could not load duty roster", de: "Dienstplan konnte nicht geladen werden", fr: "Impossible de charger le tableau de service", es: "No se pudo cargar la lista de guardia", it: "Impossibile caricare la lista di servizio", pl: "Nie można załadować listy dyżurów", pt: "Não foi possível carregar a lista de plantão" },
+  "vaktliste.error_toggle": { no: "Kunne ikke oppdatere vaktstatus", en: "Could not update duty status", de: "Dienststatus konnte nicht aktualisiert werden", fr: "Impossible de mettre à jour le statut de garde", es: "No se pudo actualizar el estado de guardia", it: "Impossibile aggiornare lo stato di servizio", pl: "Nie można zaktualizować statusu dyżuru", pt: "Não foi possível atualizar o status de plantão" },
+  "vaktliste.updated": { no: "Vaktstatus oppdatert", en: "Duty status updated", de: "Dienststatus aktualisiert", fr: "Statut de garde mis à jour", es: "Estado de guardia actualizado", it: "Stato di servizio aggiornato", pl: "Status dyżuru zaktualizowany", pt: "Status de plantão atualizado" },
+  "vaktliste.members_on_duty": { no: "på vakt", en: "on duty", de: "im Dienst", fr: "de garde", es: "de guardia", it: "in servizio", pl: "na dyżurze", pt: "de plantão" },
+
+  // Inbox — new message overlay + activation
+  "inbox.overlay_new_message": { no: "Ny melding", en: "New message", de: "Neue Nachricht", fr: "Nouveau message", es: "Nuevo mensaje", it: "Nuovo messaggio", pl: "Nowa wiadomość", pt: "Nova mensagem" },
+  "inbox.overlay_from": { no: "Fra:", en: "From:", de: "Von:", fr: "De:", es: "De:", it: "Da:", pl: "Od:", pt: "De:" },
+  "inbox.overlay_dismiss": { no: "Lukk", en: "Dismiss", de: "Schließen", fr: "Fermer", es: "Cerrar", it: "Chiudi", pl: "Zamknij", pt: "Fechar" },
+  "inbox.overlay_view": { no: "Vis samtale", en: "View conversation", de: "Unterhaltung anzeigen", fr: "Voir la conversation", es: "Ver conversación", it: "Vedi conversazione", pl: "Zobacz rozmowę", pt: "Ver conversa" },
+  "inbox.group_filter_all": { no: "Alle grupper", en: "All groups", de: "Alle Gruppen", fr: "Tous les groupes", es: "Todos los grupos", it: "Tutti i gruppi", pl: "Wszystkie grupy", pt: "Todos os grupos" },
+  "inbox.activation_on": { no: "Du er på vakt", en: "You are on duty", de: "Sie sind im Dienst", fr: "Vous êtes de garde", es: "Estás de guardia", it: "Sei in servizio", pl: "Jesteś na dyżurze", pt: "Você está de plantão" },
+  "inbox.activation_off": { no: "Du er ikke på vakt", en: "You are not on duty", de: "Sie sind nicht im Dienst", fr: "Vous n'êtes pas de garde", es: "No estás de guardia", it: "Non sei in servizio", pl: "Nie jesteś na dyżurze", pt: "Você não está de plantão" },
 };
 
 // Default language for SSR and initial client render

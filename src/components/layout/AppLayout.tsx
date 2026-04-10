@@ -6,51 +6,65 @@ import { Button } from "@/components/ui/button";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { useLanguage } from "@/contexts/LanguageProvider";
+import * as SheetPrimitive from "@radix-ui/react-dialog";
 import {
-  Home,
   Inbox,
   Users,
   Settings,
   Send,
   PlayCircle,
-  Menu,
   X,
   LogOut,
   Shield,
-  Megaphone,
   Printer,
   LayoutDashboard,
   User,
-  TestTube,
-  Wrench,
+  CalendarClock,
+  MoreHorizontal,
+  Menu,
 } from "lucide-react";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
+
+type UserRole = "member" | "group_admin" | "tenant_admin" | string;
 
 type NavItem = {
   labelKey: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  adminOnly?: boolean;
-  rawLabel?: string;
+  roles: UserRole[];
 };
 
-const navItems: NavItem[] = [
-  { labelKey: "nav.dashboard", href: "/", icon: LayoutDashboard },
-  { labelKey: "nav.inbox", href: "/inbox", icon: Inbox },
-  { labelKey: "nav.contacts", href: "/contacts", icon: Users },
-  { labelKey: "nav.sending", href: "/sending", icon: Send },
-  { labelKey: "nav.print_to_sms", href: "/print-to-sms", icon: Printer },
-  { labelKey: "nav.simulate", href: "/simulate", icon: PlayCircle },
-  { labelKey: "nav.admin", href: "/admin", icon: Shield },
-  { labelKey: "nav.settings", href: "/settings", icon: Settings },
+const ALL_NAV: NavItem[] = [
+  { labelKey: "nav.dashboard",  href: "/",           icon: LayoutDashboard, roles: ["member", "group_admin", "tenant_admin"] },
+  { labelKey: "nav.inbox",      href: "/inbox",       icon: Inbox,           roles: ["member", "group_admin", "tenant_admin"] },
+  { labelKey: "nav.vaktliste",  href: "/vaktliste",   icon: CalendarClock,   roles: ["member", "group_admin", "tenant_admin"] },
+  { labelKey: "nav.contacts",   href: "/contacts",    icon: Users,           roles: ["member", "group_admin", "tenant_admin"] },
+  { labelKey: "nav.sending",    href: "/sending",     icon: Send,            roles: ["tenant_admin"] },
+  { labelKey: "nav.simulate",   href: "/simulate",    icon: PlayCircle,      roles: ["tenant_admin"] },
+  { labelKey: "nav.admin",      href: "/admin",       icon: Shield,          roles: ["tenant_admin"] },
+  { labelKey: "nav.settings",   href: "/settings",    icon: Settings,        roles: ["tenant_admin"] },
 ];
+
+// Bottom nav always shows these 3 + "Mer" button
+const BOTTOM_NAV_HREFS = ["/", "/inbox", "/vaktliste"];
+
+function roleLabel(role: string, t: (k: string) => string): string {
+  if (role === "member")       return t("role.member");
+  if (role === "group_admin")  return t("role.group_admin");
+  if (role === "tenant_admin") return t("role.tenant_admin");
+  if (role === "super_admin")  return t("role.super_admin");
+  if (role === "admin")        return t("role.admin");
+  if (role === "user")         return t("role.user");
+  return role;
+}
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { t } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole>("member");
   const [userName, setUserName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const appCommit = process.env.NEXT_PUBLIC_APP_COMMIT || "local-dev";
@@ -66,9 +80,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         router.push("/login");
         return;
       }
-
       const profile = await userService.getCurrentUserProfile();
-      setUserRole(profile?.role || null);
+      setUserRole(profile?.role || "member");
       setUserName(profile?.full_name || profile?.email || "Bruker");
     } catch (error) {
       console.error("Auth check failed:", error);
@@ -83,11 +96,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
-  const handleNavClick = () => {
-    setSidebarOpen(false);
-  };
+  // Items visible to this role
+  const visibleNav = ALL_NAV.filter((item) => item.roles.includes(userRole));
 
-  const filteredNavItems = navItems.filter((item) => item.labelKey !== "nav.print_to_sms");
+  // Desktop sidebar: all visible items
+  // Mobile bottom nav: fixed 3 items + "Mer" sheet with the rest
+  const bottomNavItems = visibleNav.filter((item) => BOTTOM_NAV_HREFS.includes(item.href));
+  const moreItems = visibleNav.filter((item) => !BOTTOM_NAV_HREFS.includes(item.href));
 
   if (loading) {
     return (
@@ -97,15 +112,45 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const NavLink = ({
+    item,
+    onClick,
+    compact = false,
+  }: {
+    item: NavItem;
+    onClick?: () => void;
+    compact?: boolean;
+  }) => {
+    const isActive = router.pathname === item.href;
+    return (
+      <Link
+        href={item.href}
+        onClick={onClick}
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors min-h-[48px]",
+          compact && "px-3 py-2 min-h-[44px]",
+          isActive
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        )}
+      >
+        <item.icon className="h-5 w-5 flex-shrink-0" />
+        <span>{t(item.labelKey)}</span>
+      </Link>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <header className={cn("md:hidden flex items-center justify-between px-4 h-16 border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40")}>
+      {/* ── Mobile top header (hidden on md+) ─────────────────────────────── */}
+      <header className="md:hidden flex items-center justify-between px-4 h-16 border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="flex flex-col">
           <Link href="/" className="text-2xl font-bold text-primary">
             SeMSe
           </Link>
           <span className="text-[10px] text-muted-foreground">Commit: {appCommit}</span>
         </div>
+        {/* Hamburger only on mobile for edge-case nav access */}
         <Button
           variant="ghost"
           size="icon"
@@ -117,6 +162,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </Button>
       </header>
 
+      {/* ── Desktop sidebar ────────────────────────────────────────────────── */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transform transition-transform duration-200 ease-in-out flex flex-col",
@@ -134,25 +180,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {filteredNavItems.map((item) => {
-            const isActive = router.pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={handleNavClick}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors min-h-[48px]",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
-                {item.rawLabel || t(item.labelKey)}
-              </Link>
-            );
-          })}
+          {visibleNav.map((item) => (
+            <NavLink key={item.href} item={item} onClick={() => setSidebarOpen(false)} />
+          ))}
         </nav>
 
         <div className="p-4 border-t space-y-2 flex-none">
@@ -163,20 +193,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             {userRole && (
               <div className="text-xs text-muted-foreground pl-6">
-                {userRole === "super_admin" ? t("role.super_admin") :
-                 userRole === "admin" ? t("role.admin") :
-                 userRole === "user" ? t("role.user") : userRole}
+                {roleLabel(userRole, t)}
               </div>
             )}
           </div>
-
           <div className="flex gap-2">
             <LanguageSwitch />
             <ThemeSwitch />
           </div>
-          <Button 
-            variant="outline" 
-            className="w-full justify-start min-h-[48px]" 
+          <Button
+            variant="outline"
+            className="w-full justify-start min-h-[48px]"
             onClick={handleLogout}
           >
             <LogOut className="h-5 w-5 mr-3" />
@@ -185,6 +212,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
+      {/* Overlay for mobile sidebar */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
@@ -192,11 +220,87 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      <main className="md:ml-64 min-h-screen">
-        <div className="container mx-auto p-4 md:p-6 lg:p-8">
-          {children}
-        </div>
+      {/* ── Main content ───────────────────────────────────────────────────── */}
+      <main className="md:ml-64 min-h-screen pb-20 md:pb-0">
+        <div className="container mx-auto p-4 md:p-6 lg:p-8">{children}</div>
       </main>
+
+      {/* ── Mobile bottom nav bar (hidden on md+) ─────────────────────────── */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t flex items-stretch h-16">
+        {bottomNavItems.map((item) => {
+          const isActive = router.pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex-1 flex flex-col items-center justify-center gap-0.5 text-[11px] transition-colors",
+                isActive ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              <span>{t(item.labelKey)}</span>
+            </Link>
+          );
+        })}
+
+        {/* "Mer" button — opens sheet if there are overflow items */}
+        {moreItems.length > 0 ? (
+          <SheetPrimitive.Root open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetPrimitive.Trigger asChild>
+              <button className="flex-1 flex flex-col items-center justify-center gap-0.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground">
+                <MoreHorizontal className="h-5 w-5" />
+                <span>{t("nav.more")}</span>
+              </button>
+            </SheetPrimitive.Trigger>
+            <SheetPrimitive.Portal>
+              <SheetPrimitive.Overlay className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50" />
+              <SheetPrimitive.Content className="fixed bottom-0 inset-x-0 z-50 bg-card rounded-t-2xl border-t p-4 pb-8 space-y-1 max-h-[70vh] overflow-y-auto focus:outline-none">
+                <SheetPrimitive.Title className="sr-only">{t("nav.more")}</SheetPrimitive.Title>
+                <div className="mx-auto w-10 h-1 bg-muted rounded-full mb-4" />
+                <div className="px-4 py-3 bg-muted/50 rounded-lg space-y-1 mb-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium text-foreground">{userName}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground pl-6">{roleLabel(userRole, t)}</div>
+                </div>
+                {moreItems.map((item) => (
+                  <NavLink
+                    key={item.href}
+                    item={item}
+                    onClick={() => setSheetOpen(false)}
+                    compact
+                  />
+                ))}
+                <div className="flex gap-2 pt-2">
+                  <LanguageSwitch />
+                  <ThemeSwitch />
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start min-h-[48px] mt-2"
+                  onClick={async () => {
+                    setSheetOpen(false);
+                    await handleLogout();
+                  }}
+                >
+                  <LogOut className="h-5 w-5 mr-3" />
+                  {t("nav.logout")}
+                </Button>
+              </SheetPrimitive.Content>
+            </SheetPrimitive.Portal>
+          </SheetPrimitive.Root>
+        ) : (
+          <button
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 text-[11px] text-muted-foreground"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-5 w-5" />
+            <span>{t("nav.logout")}</span>
+          </button>
+        )}
+      </nav>
     </div>
   );
 }
