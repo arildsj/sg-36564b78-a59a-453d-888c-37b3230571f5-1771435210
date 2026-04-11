@@ -81,6 +81,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [notifBanner, setNotifBanner] = useState(false);
   const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(null);
+  const [alertClicked, setAlertClicked] = useState(false);
   const appCommit = process.env.NEXT_PUBLIC_APP_COMMIT || "local-dev";
 
   // Refs for stable closures in Realtime handlers
@@ -109,10 +110,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ── Play sound whenever a new pending request arrives ────────────────────────
+  // ── Play sound + reset alert state whenever a new pending request arrives ────
   useEffect(() => {
     if (pendingRequest && pendingRequest.id !== prevRequestIdRef.current) {
       prevRequestIdRef.current = pendingRequest.id;
+      setAlertClicked(false);
       playAlert("activation");
     }
     if (!pendingRequest) {
@@ -229,6 +231,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
+  const isBlinking = !!pendingRequest && !alertClicked;
+  const logoHref = isBlinking ? "/vaktliste" : "/";
+  const handleLogoClick = () => { if (isBlinking) setAlertClicked(true); };
+
   // Items visible to this role
   const visibleNav = ALL_NAV.filter((item) => item.roles.includes(userRole));
 
@@ -286,7 +292,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* ── Mobile top header (hidden on md+) ─────────────────────────────── */}
       <header className="md:hidden flex items-center justify-between px-4 h-16 border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="flex flex-col">
-          <Link href="/" className="text-2xl font-bold text-primary">
+          <Link
+            href={logoHref}
+            onClick={handleLogoClick}
+            className={cn("text-2xl font-bold", isBlinking ? "semse-logo-alert" : "text-primary")}
+          >
             SeMSe
           </Link>
           <span className="text-[10px] text-muted-foreground">Commit: {appCommit}</span>
@@ -312,7 +322,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         )}
       >
         <div className="p-6 border-b flex-none">
-          <Link href="/" className="text-2xl font-bold text-primary">
+          <Link
+            href={logoHref}
+            onClick={handleLogoClick}
+            className={cn("text-2xl font-bold", isBlinking ? "semse-logo-alert" : "text-primary")}
+          >
             SeMSe
           </Link>
           <div className="text-xs text-muted-foreground mt-1">
