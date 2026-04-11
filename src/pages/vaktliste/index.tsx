@@ -16,9 +16,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { CalendarClock, Loader2 } from "lucide-react";
+import { CalendarClock, Loader2, XCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { nb } from "date-fns/locale";
+import { playAlert } from "@/services/SoundService";
 
 // Cast to any to bypass outdated database.types.ts
 const db = supabaseClient as any;
@@ -86,6 +87,15 @@ export default function VaktlistePage() {
   // Refs for stable Realtime closures
   const currentUserIdRef = useRef<string | null>(null);
   const groupsRef = useRef<Group[]>([]);
+  const prevRejectionSizeRef = useRef(0);
+
+  // ── Play sound when a rejection arrives via Realtime ────────────────────────
+  useEffect(() => {
+    if (rejectionMap.size > prevRejectionSizeRef.current) {
+      playAlert("tick");
+    }
+    prevRejectionSizeRef.current = rejectionMap.size;
+  }, [rejectionMap]);
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
@@ -159,7 +169,7 @@ export default function VaktlistePage() {
     });
     setPendingMap(newPending);
 
-    // Check recently rejected requests so we can show inline messages
+    // Check recently rejected requests so we can show inline messages (10 min window)
     const { data: rejectedReqs } = await db
       .from("activation_requests")
       .select("id, group_id, requested_user_ids, resolved_by")
@@ -167,7 +177,7 @@ export default function VaktlistePage() {
       .eq("status", "rejected")
       .gte(
         "resolved_at",
-        new Date(Date.now() - 60 * 1000).toISOString() // last 60 s
+        new Date(Date.now() - 10 * 60 * 1000).toISOString()
       );
 
     const newRejection = new Map<string, string>();
@@ -629,7 +639,8 @@ export default function VaktlistePage() {
 
                               {/* Rejection message */}
                               {rejection && !isBlocked && (
-                                <div className="pt-0.5 pb-2 text-xs text-muted-foreground">
+                                <div className="pt-0.5 pb-2 flex items-center gap-1 text-xs text-destructive">
+                                  <XCircle className="h-3.5 w-3.5 flex-shrink-0" />
                                   {rejection}
                                 </div>
                               )}

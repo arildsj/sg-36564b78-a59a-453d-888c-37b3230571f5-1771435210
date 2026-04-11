@@ -148,6 +148,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // ────────────────────────── REJECTED ──────────────────────────────────
+  // Mark the request as rejected immediately so the requester sees feedback
+  // via Realtime without delay.
+  await admin
+    .from("activation_requests")
+    .update({
+      status:      "rejected",
+      resolved_at: new Date().toISOString(),
+      resolved_by: user.id,
+    })
+    .eq("id", request_id);
+
   await admin.from("audit_log").insert({
     user_id:        user.id,
     action:         "activation_rejected",
@@ -156,34 +167,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     event_type:     "activation_rejected",
     group_id:       request.group_id,
     target_user_id: request.requester_id,
-    metadata:       { group_name: group.name, rejected_by: user.id },
+    metadata:       { group_name: group.name, rejected_by: user.id, request_id },
     tenant_id:      request.tenant_id,
   });
 
-  // Check if ALL invited users have now rejected (no more open slots)
-  // We check audit_log for rejections on this request
-  const { count: rejectionCount } = await admin
-    .from("audit_log")
-    .select("*", { count: "exact", head: true })
-    .eq("event_type", "activation_rejected")
-    .eq("metadata->>request_id", request_id);
-
-  const totalInvited = (request.requested_user_ids as string[]).length;
-
-  if ((rejectionCount ?? 0) >= totalInvited) {
-    await admin
-      .from("activation_requests")
-      .update({ status: "rejected" })
-      .eq("id", request_id);
-
-    // Notify the requester that everyone rejected
-    await sendPushNotification(
-      request.requester_id,
-      `Ingen overtok vakten — ${group.name}`,
-      "Alle forespurte brukere avslo forespørselen. Du er fortsatt aktiv.",
-      { type: "activation_all_rejected", group_id: request.group_id }
-    );
-  }
+  // Notify the requester
+  await sendPushNotification(
+    request.requester_id,
+    `Forespørsel avslått — ${group.name}`,
+    `${profile.full_name || profile.email || "En bruker"} avslo forespørselen. Du er fortsatt aktiv.`,
+    { type: "activation_rejected", group_id: request.group_id }
+  );
 
   return res.status(200).json({ accepted: false, message: "Rejection recorded." });
 }
