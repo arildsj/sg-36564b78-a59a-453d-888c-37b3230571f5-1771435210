@@ -245,6 +245,7 @@ export default function VaktlistePage() {
 
   // Realtime: refresh on membership changes + intercept incoming activation requests
   useEffect(() => {
+    if (!currentUserId) return;
     const channel = db
       .channel("vaktliste-live")
       .on(
@@ -285,7 +286,7 @@ export default function VaktlistePage() {
     return () => {
       db.removeChannel(channel);
     };
-  }, [loadData]);
+  }, [loadData, currentUserId]);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
