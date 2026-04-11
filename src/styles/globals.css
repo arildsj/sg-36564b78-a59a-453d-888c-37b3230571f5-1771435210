@@ -53,6 +53,7 @@
     --ring: 210 75% 30%; /* Focus ring matches primary */
 
     --radius: 0.375rem; /* Slightly smaller, more professional */
+    --warning: 38 92% 50%; /* amber-500 — used for logo alert blink */
   }
 
   .dark {
@@ -82,19 +83,27 @@
     --border: 210 11% 30%;
     --input: 210 11% 30%;
     --ring: 210 75% 45%;
+    --warning: 38 92% 60%; /* slightly brighter amber in dark mode */
   }
 }
 
 /* ── SeMSe logo alert blink ──────────────────────────────────────────────── */
 @keyframes semse-blink {
-  0%, 100% { color: hsl(var(--primary)); background-color: transparent; }
-  50%       { color: #f59e0b; background-color: rgba(245, 158, 11, 0.12); }
+  0%, 49.9% {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--warning));
+  }
+  50%, 100% {
+    background-color: hsl(var(--warning));
+    color: hsl(var(--primary));
+  }
 }
-.semse-logo-alert {
-  animation: semse-blink 1.2s ease-in-out infinite;
-  border-radius: 6px;
-  padding: 2px 8px;
-  margin: -2px -8px;
+.semse-logo-alert-area {
+  animation: semse-blink 2s step-start infinite;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: -6px -10px;
+  text-decoration: none;
 }
 
 @layer base {

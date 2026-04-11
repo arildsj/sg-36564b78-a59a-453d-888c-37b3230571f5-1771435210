@@ -110,16 +110,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ── Play sound + reset alert state whenever a new pending request arrives ────
+  // ── Clear ref when pending request is resolved ───────────────────────────────
+  // Sound and alertClicked reset are handled directly in loadPendingActivations
+  // so they fire in the same async callstack, not one render cycle later.
   useEffect(() => {
-    if (pendingRequest && pendingRequest.id !== prevRequestIdRef.current) {
-      prevRequestIdRef.current = pendingRequest.id;
-      setAlertClicked(false);
-      playAlert("activation");
-    }
-    if (!pendingRequest) {
-      prevRequestIdRef.current = null;
-    }
+    if (!pendingRequest) prevRequestIdRef.current = null;
   }, [pendingRequest]);
 
   // ── Realtime subscription for activation_requests ────────────────────────────
@@ -178,6 +173,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Play sound and reset click-dismiss immediately — before fetching names.
+    // This fires in the same async callstack as the DB read, not a render later.
+    if (mine.id !== prevRequestIdRef.current) {
+      prevRequestIdRef.current = mine.id;
+      setAlertClicked(false);
+      playAlert("activation");
+    }
+
     // Fetch group name and requester name in parallel
     const [{ data: grp }, { data: requester }] = await Promise.all([
       db.from("groups").select("name").eq("id", mine.group_id).maybeSingle(),
@@ -232,8 +235,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const isBlinking = !!pendingRequest && !alertClicked;
-  const logoHref = isBlinking ? "/vaktliste" : "/";
   const handleLogoClick = () => { if (isBlinking) setAlertClicked(true); };
+
+  // Whole logo block (SeMSe + commit line) — clickable area when blinking
+  const logoBlock = isBlinking ? (
+    <Link
+      href="/vaktliste"
+      onClick={handleLogoClick}
+      className="semse-logo-alert-area flex flex-col"
+    >
+      <span className="text-2xl font-bold">SeMSe</span>
+      <span className="text-[10px] opacity-75">Commit: {appCommit}</span>
+    </Link>
+  ) : (
+    <div className="flex flex-col">
+      <Link href="/" className="text-2xl font-bold text-primary">SeMSe</Link>
+      <span className="text-[10px] text-muted-foreground">Commit: {appCommit}</span>
+    </div>
+  );
 
   // Items visible to this role
   const visibleNav = ALL_NAV.filter((item) => item.roles.includes(userRole));
@@ -291,16 +310,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       {/* ── Mobile top header (hidden on md+) ─────────────────────────────── */}
       <header className="md:hidden flex items-center justify-between px-4 h-16 border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="flex flex-col">
-          <Link
-            href={logoHref}
-            onClick={handleLogoClick}
-            className={cn("text-2xl font-bold", isBlinking ? "semse-logo-alert" : "text-primary")}
-          >
-            SeMSe
-          </Link>
-          <span className="text-[10px] text-muted-foreground">Commit: {appCommit}</span>
-        </div>
+        {logoBlock}
         {/* Hamburger only on mobile for edge-case nav access */}
         <Button
           variant="ghost"
@@ -322,16 +332,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         )}
       >
         <div className="p-6 border-b flex-none">
-          <Link
-            href={logoHref}
-            onClick={handleLogoClick}
-            className={cn("text-2xl font-bold", isBlinking ? "semse-logo-alert" : "text-primary")}
-          >
-            SeMSe
-          </Link>
-          <div className="text-xs text-muted-foreground mt-1">
-            Commit: <span className="font-mono">{appCommit}</span>
-          </div>
+          {logoBlock}
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
