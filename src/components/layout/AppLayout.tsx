@@ -51,10 +51,10 @@ const ALL_NAV: NavItem[] = [
   { labelKey: "nav.inbox",      href: "/inbox",       icon: Inbox,           roles: ["member", "group_admin", "tenant_admin"] },
   { labelKey: "nav.vaktliste",  href: "/vaktliste",   icon: CalendarClock,   roles: ["member", "group_admin", "tenant_admin"] },
   { labelKey: "nav.contacts",   href: "/contacts",    icon: Users,           roles: ["member", "group_admin", "tenant_admin"] },
-  { labelKey: "nav.sending",    href: "/sending",     icon: Send,            roles: ["tenant_admin"] },
-  { labelKey: "nav.simulate",   href: "/simulate",    icon: PlayCircle,      roles: ["tenant_admin"] },
+  { labelKey: "nav.sending",    href: "/sending",     icon: Send,            roles: ["member", "group_admin", "tenant_admin"] },
+  { labelKey: "nav.simulate",   href: "/simulate",    icon: PlayCircle,      roles: ["member", "group_admin", "tenant_admin"] },
   { labelKey: "nav.admin",      href: "/admin",       icon: Shield,          roles: ["tenant_admin"] },
-  { labelKey: "nav.settings",   href: "/settings",    icon: Settings,        roles: ["tenant_admin"] },
+  { labelKey: "nav.settings",   href: "/settings",    icon: Settings,        roles: ["group_admin", "tenant_admin"] },
 ];
 
 // Bottom nav always shows these 3 + "Mer" button
