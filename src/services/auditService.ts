@@ -15,7 +15,8 @@ export type AuditEventType =
   | "admin_override"
   | "min_active_changed"
   | "rule_changed"
-  | "rule_matched";
+  | "rule_matched"
+  | "message_acknowledged";
 
 export type AuditLogEntry = {
   id:             string;

@@ -30,6 +30,7 @@ export type RoutingRule = {
   match_value?: string;
   priority: number;
   is_active: boolean;
+  message_type: "conversation" | "alert";
   tenant_id: string;
   created_at: string;
   escalation_config?: EscalationLevel[] | null;

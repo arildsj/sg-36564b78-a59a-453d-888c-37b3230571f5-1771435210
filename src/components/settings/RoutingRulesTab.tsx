@@ -35,6 +35,7 @@ const emptyRule = {
   target_group_id: "",
   gateway_id: "",
   priority: 0,
+  message_type: "conversation" as "conversation" | "alert",
 };
 
 const emptyEscalationLevel = (level: number): EscalationLevel => ({
@@ -122,6 +123,7 @@ export function RoutingRulesTab() {
       target_group_id: rule.target_group_id || "",
       gateway_id:      rule.gateway_id || "",
       priority:        rule.priority ?? 0,
+      message_type:    (rule.message_type as "conversation" | "alert") || "conversation",
     };
     const levels: EscalationLevel[] = (rule.escalation_levels_data ?? []).map(l => ({
       level:            l.level_number,
@@ -208,6 +210,7 @@ export function RoutingRulesTab() {
           target_group_id: formRule.target_group_id,
           gateway_id:      formRule.gateway_id,
           priority:        formRule.priority,
+          message_type:    formRule.message_type,
         });
         await routingRuleService.saveEscalationLevels(editingId, escalationLevels);
         toast({ title: "Regel oppdatert" });
@@ -378,6 +381,11 @@ export function RoutingRulesTab() {
                     </span>
                     {rule.match_value && (
                       <span className="font-mono text-xs text-muted-foreground">{rule.match_value}</span>
+                    )}
+                    {rule.message_type === "alert" && (
+                      <span className="inline-flex items-center rounded border px-1 py-0 text-xs font-mono leading-4 bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-300">
+                        varsel
+                      </span>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground flex gap-3 flex-wrap">
@@ -577,6 +585,23 @@ export function RoutingRulesTab() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* ── Message type ── */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">Meldingstype</Label>
+              <Select
+                value={formRule.message_type}
+                onValueChange={(v: any) => setFormRule({ ...formRule, message_type: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="conversation">Samtale (kan besvares)</SelectItem>
+                  <SelectItem value="alert">Varsel (kvitteres)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* ── Section 2: Escalation levels ── */}

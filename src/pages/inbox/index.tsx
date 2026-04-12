@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Phone, Mail, Tag, AlertTriangle, Users, Inbox, Send, Clock, CheckCircle2, XCircle, MessageSquare, User, Settings as SettingsIcon, ArrowDownLeft, Settings, FolderInput, Inbox as InboxIcon, Check, ArrowRight, RefreshCw } from "lucide-react";
+import { Phone, Mail, Tag, AlertTriangle, Users, Inbox, Send, Clock, CheckCircle2, XCircle, MessageSquare, User, Settings as SettingsIcon, ArrowDownLeft, Settings, FolderInput, Inbox as InboxIcon, Check, ArrowRight, RefreshCw, CheckCheck, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -49,6 +49,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useLanguage } from "@/contexts/LanguageProvider";
 import { playAlert } from "@/services/SoundService";
 import { sendPushNotification } from "@/services/NotificationService";
+import { auditService } from "@/services/auditService";
 
 // Hjelpefunksjon for datoformatering
 const formatMessageTime = (dateString: string, t: (key: string) => string) => {
@@ -140,6 +141,11 @@ export default function InboxPage() {
   // Active duty groups for the current user
   const [activeGroupIds, setActiveGroupIds] = useState<Set<string>>(new Set());
 
+  // Alert thread state
+  const [threadMessageType, setThreadMessageType] = useState<"conversation" | "alert">("conversation");
+  const [acknowledgingAll, setAcknowledgingAll] = useState(false);
+  const [acknowledgedByMap, setAcknowledgedByMap] = useState<Map<string, string>>(new Map());
+
   // New-message overlay
   const overlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [overlay, setOverlay] = useState<{
@@ -151,6 +157,16 @@ export default function InboxPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const selectedThread = threads.find((t) => t.id === selectedThreadId);
+
+  // For alert threads: unacknowledged inbound first, then acknowledged (newest first within each group)
+  const displayMessages = threadMessageType === "alert"
+    ? [...messages].sort((a, b) => {
+        const aAcked = (a as any).acknowledged_at ? 1 : 0;
+        const bAcked = (b as any).acknowledged_at ? 1 : 0;
+        if (aAcked !== bAcked) return aAcked - bAcked;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      })
+    : messages;
 
   // Filter threads based on search query and filters
   const filteredThreads = threads.filter((thread) => {
@@ -408,7 +424,36 @@ export default function InboxPage() {
       );
 
       setMessages(threadMessages);
-      
+
+      // Fetch routing rule message_type for this thread
+      setThreadMessageType("conversation");
+      setAcknowledgedByMap(new Map());
+      if (thread?.resolved_group_id) {
+        const ruleQuery = db
+          .from("routing_rules")
+          .select("message_type")
+          .eq("target_group_id", thread.resolved_group_id)
+          .eq("is_active", true)
+          .limit(1);
+        if (thread.gateway_id) ruleQuery.eq("gateway_id", thread.gateway_id);
+        const { data: rule } = await ruleQuery.maybeSingle();
+        setThreadMessageType(rule?.message_type ?? "conversation");
+      }
+
+      // Fetch acknowledged_by display names
+      const ackedByIds = [...new Set(
+        threadMessages.filter((m: any) => m.acknowledged_by).map((m: any) => m.acknowledged_by)
+      )] as string[];
+      if (ackedByIds.length > 0) {
+        const { data: profiles } = await db
+          .from("user_profiles").select("id, full_name, email").in("id", ackedByIds);
+        if (profiles) {
+          const map = new Map<string, string>();
+          profiles.forEach((p: any) => map.set(p.id, p.full_name || p.email || p.id));
+          setAcknowledgedByMap(map);
+        }
+      }
+
       setTimeout(() => {
         if (messagesEndRef.current) {
           messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -447,6 +492,34 @@ export default function InboxPage() {
       });
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleAcknowledgeAll = async () => {
+    if (!selectedThread || !user) return;
+    setAcknowledgingAll(true);
+    try {
+      const now = new Date().toISOString();
+      const { data: updated } = await db
+        .from("messages")
+        .update({ acknowledged_at: now, acknowledged_by: user.id })
+        .eq("thread_id", selectedThread.id)
+        .eq("direction", "inbound")
+        .is("acknowledged_at", null)
+        .select("id");
+      const messageIds = (updated || []).map((m: any) => m.id);
+      await auditService.logEvent({
+        event_type: "message_acknowledged",
+        group_id: selectedThread.resolved_group_id ?? null,
+        resource_type: "message",
+        metadata: { thread_id: selectedThread.id, message_ids: messageIds },
+      });
+      await loadMessages(selectedThread.id);
+      toast({ title: "Kvittert", description: `${messageIds.length} melding(er) kvittert` });
+    } catch (err: any) {
+      toast({ title: "Feil", description: err.message, variant: "destructive" });
+    } finally {
+      setAcknowledgingAll(false);
     }
   };
 
@@ -1346,35 +1419,66 @@ export default function InboxPage() {
                             </div>
                           ) : (
                             <div className="space-y-4">
-                              {messages.map((message) => (
-                                <div
-                                  key={message.id}
-                                  className={cn(
-                                    "flex flex-col max-w-[85%] rounded-lg p-3",
-                                    message.direction === "outbound"
-                                      ? "ml-auto bg-primary text-primary-foreground"
-                                      : "mr-auto bg-muted"
-                                  )}
-                                >
-                                  <div className="flex justify-between items-baseline gap-2 mb-1">
-                                    <span className="text-xs font-medium opacity-80">
-                                      {message.direction === "outbound" ? t("inbox.you") : message.from_number}
-                                    </span>
-                                    <span className="text-[10px] opacity-70">
-                                      {formatMessageTime(message.created_at, t)}
-                                    </span>
+                              {displayMessages.map((message) => {
+                                const isAcked = !!(message as any).acknowledged_at;
+                                const ackedByName = (message as any).acknowledged_by
+                                  ? (acknowledgedByMap.get((message as any).acknowledged_by) ?? "Ukjent")
+                                  : null;
+                                const ackedTime = (message as any).acknowledged_at
+                                  ? new Intl.DateTimeFormat("no-NO", { hour: "2-digit", minute: "2-digit" })
+                                      .format(new Date((message as any).acknowledged_at))
+                                  : null;
+                                return (
+                                  <div
+                                    key={message.id}
+                                    className={cn(
+                                      "flex flex-col max-w-[85%] rounded-lg p-3",
+                                      message.direction === "outbound"
+                                        ? "ml-auto bg-primary text-primary-foreground"
+                                        : isAcked
+                                          ? "mr-auto bg-muted opacity-50"
+                                          : "mr-auto bg-muted"
+                                    )}
+                                  >
+                                    <div className="flex justify-between items-baseline gap-2 mb-1">
+                                      <span className="text-xs font-medium opacity-80">
+                                        {message.direction === "outbound" ? t("inbox.you") : message.from_number}
+                                      </span>
+                                      <span className="text-[10px] opacity-70">
+                                        {formatMessageTime(message.created_at, t)}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                    {isAcked && ackedByName && (
+                                      <p className="text-[10px] mt-1 opacity-60 flex items-center gap-1">
+                                        <CheckCheck className="h-3 w-3" />
+                                        Kvittert av {ackedByName} kl {ackedTime}
+                                      </p>
+                                    )}
                                   </div>
-                                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                                </div>
-                              ))}
+                                );
+                              })}
                               <div ref={messagesEndRef} />
                             </div>
                           )}
                         </CardContent>
                         
-                        {/* Reply Input Area */}
+                        {/* Reply / Acknowledge Input Area */}
                         <div className="p-4 border-t bg-background mt-auto">
-                          {selectedThread?.resolved_group_id && !activeGroupIds.has(selectedThread.resolved_group_id) ? (
+                          {threadMessageType === "alert" ? (
+                            <Button
+                              onClick={handleAcknowledgeAll}
+                              disabled={acknowledgingAll || displayMessages.filter(
+                                m => m.direction === "inbound" && !(m as any).acknowledged_at
+                              ).length === 0}
+                              className="w-full h-12 text-base"
+                            >
+                              {acknowledgingAll
+                                ? <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                                : <CheckCheck className="h-5 w-5 mr-2" />}
+                              Kvitter alle
+                            </Button>
+                          ) : selectedThread?.resolved_group_id && !activeGroupIds.has(selectedThread.resolved_group_id) ? (
                             <div className="flex flex-col gap-1.5 text-sm text-muted-foreground py-1">
                               <span>{t("inbox.not_on_duty_reply")}</span>
                               <Link href="/vaktliste" className="text-primary hover:underline text-xs">
