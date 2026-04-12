@@ -90,6 +90,39 @@ serve(async (req) => {
       contact = newContact;
     }
 
+    // ── Routing rule resolution ─────────────────────────────────────────────
+    async function resolveGroupByRules(
+      client: any,
+      tenantId: string,
+      fromNumber: string,
+      msgContent: string,
+      contactGroupId: string | null,
+      fallbackGroupId: string | null
+    ): Promise<string | null> {
+      const { data: rules } = await client
+        .from("routing_rules")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .eq("is_active", true)
+        .order("priority", { ascending: true });
+
+      if (rules && rules.length > 0) {
+        for (const rule of rules) {
+          let matches = false;
+          if (rule.match_type === "sender" && rule.match_value)
+            matches = rule.match_value.trim().toLowerCase() === fromNumber.trim().toLowerCase();
+          else if (rule.match_type === "keyword" && rule.match_value)
+            matches = msgContent.toLowerCase().includes(rule.match_value.trim().toLowerCase());
+          else if (rule.match_type === "prefix" && rule.match_value)
+            matches = msgContent.toLowerCase().startsWith(rule.match_value.trim().toLowerCase());
+          else if (rule.match_type === "fallback")
+            matches = true;
+          if (matches) return rule.target_group_id;
+        }
+      }
+      return contactGroupId || fallbackGroupId;
+    }
+
     let threadId = null;
     let resolvedGroupId = target_group_id || contact.group_id;
 
@@ -119,46 +152,22 @@ serve(async (req) => {
 
       if (existingThread) {
         threadId = existingThread.id;
+        resolvedGroupId = existingThread.resolved_group_id;
+
+        // Always re-evaluate routing rules — rule changes must win over thread history
         if (!target_group_id) {
-          resolvedGroupId = existingThread.resolved_group_id;
+          const ruleGroupId = await resolveGroupByRules(supabaseClient, gateway.tenant_id, from_number, content, contact.group_id, gatewayFallbackGroupId);
+          if (ruleGroupId && ruleGroupId !== existingThread.resolved_group_id) {
+            resolvedGroupId = ruleGroupId;
+            await supabaseClient
+              .from("message_threads")
+              .update({ resolved_group_id: ruleGroupId })
+              .eq("id", threadId);
+          }
         }
       } else {
         if (!target_group_id) {
-          resolvedGroupId = contact.group_id || gatewayFallbackGroupId;
-
-          const { data: rules, error: rulesError } = await supabaseClient
-            .from("routing_rules")
-            .select("*")
-            .eq("is_active", true)
-            .order("priority", { ascending: true });
-
-          if (rules && rules.length > 0) {
-            for (const rule of rules) {
-              let matches = false;
-
-              if (rule.match_type === "sender" && rule.match_value) {
-                // Case-insensitive exact match against from_number (both sides trimmed)
-                matches =
-                  rule.match_value.trim().toLowerCase() ===
-                  from_number.trim().toLowerCase();
-              } else if (rule.match_type === "keyword" && rule.match_value) {
-                matches = content
-                  .toLowerCase()
-                  .includes(rule.match_value.trim().toLowerCase());
-              } else if (rule.match_type === "prefix" && rule.match_value) {
-                matches = content
-                  .toLowerCase()
-                  .startsWith(rule.match_value.trim().toLowerCase());
-              } else if (rule.match_type === "fallback") {
-                matches = true;
-              }
-
-              if (matches) {
-                resolvedGroupId = rule.target_group_id;
-                break;
-              }
-            }
-          }
+          resolvedGroupId = await resolveGroupByRules(supabaseClient, gateway.tenant_id, from_number, content, contact.group_id, gatewayFallbackGroupId);
         }
 
         if (!resolvedGroupId) {
