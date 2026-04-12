@@ -82,6 +82,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [notifBanner, setNotifBanner] = useState(false);
   const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(null);
   const [alertClicked, setAlertClicked] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const appCommit = process.env.NEXT_PUBLIC_APP_COMMIT || "local-dev";
 
   // Refs for stable closures in Realtime handlers
@@ -97,6 +98,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     currentUserIdRef.current = currentUserId;
   }, [currentUserId]);
+
+  // Reset unread badge when user visits inbox
+  useEffect(() => {
+    if (router.pathname === "/inbox") setUnreadCount(0);
+  }, [router.pathname]);
 
   // ── Notification permission banner ───────────────────────────────────────────
   useEffect(() => {
@@ -116,6 +122,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!pendingRequest) prevRequestIdRef.current = null;
   }, [pendingRequest]);
+
+  // ── Realtime subscription for inbound messages (inbox badge + sound) ────────────
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = db
+      .channel("applayout-messages")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload: any) => {
+          const msg = payload.new;
+          if (msg?.direction === "inbound" && msg?.status === "received") {
+            setUnreadCount((prev) => prev + 1);
+            playAlert("tick");
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { db.removeChannel(channel); };
+  }, [currentUserId]);
 
   // ── Realtime subscription for activation_requests ────────────────────────────
   useEffect(() => {
@@ -197,6 +225,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const loadUnreadCount = async () => {
+    const { count } = await db
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .eq("direction", "inbound")
+      .eq("status", "received");
+    setUnreadCount(count ?? 0);
+  };
+
   const checkAuth = async () => {
     try {
       const session = await authService.getCurrentSession();
@@ -207,9 +244,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       const profile = await userService.getCurrentUserProfile();
       setUserRole(profile?.role || "member");
       setUserName(profile?.full_name || profile?.email || "Bruker");
-      // Setting this triggers the Realtime useEffect
+      // Setting this triggers the Realtime useEffects
       setCurrentUserId(session.user.id);
       loadPendingActivations(session.user.id);
+      loadUnreadCount();
     } catch (error) {
       console.error("Auth check failed:", error);
       router.push("/login");
@@ -282,7 +320,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     compact?: boolean;
   }) => {
     const isActive = router.pathname === item.href;
-    const hasBadge = item.href === "/vaktliste" && hasPendingBadge;
+    const hasBadge =
+      (item.href === "/vaktliste" && hasPendingBadge) ||
+      (item.href === "/inbox" && unreadCount > 0);
     return (
       <Link
         href={item.href}
@@ -425,7 +465,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-card border-t flex items-stretch h-16">
         {bottomNavItems.map((item) => {
           const isActive = router.pathname === item.href;
-          const hasBadge = item.href === "/vaktliste" && hasPendingBadge;
+          const hasBadge =
+            (item.href === "/vaktliste" && hasPendingBadge) ||
+            (item.href === "/inbox" && unreadCount > 0);
           return (
             <Link
               key={item.href}

@@ -135,21 +135,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (existingThread) {
       threadId = existingThread.id;
       if (!target_group_id) resolvedGroupId = existingThread.resolved_group_id;
+      console.log("[simulate] existing thread found:", threadId, "→ group:", resolvedGroupId);
     } else {
       // 3. New thread — evaluate routing rules
+      console.log("[simulate] no existing thread, evaluating routing rules");
       if (!target_group_id) {
         resolvedGroupId = contact.group_id || gatewayFallbackGroupId;
 
         const { data: rules } = await admin
           .from("routing_rules")
           .select("*")
+          .eq("tenant_id", gateway.tenant_id)
           .eq("is_active", true)
           .order("priority", { ascending: true });
 
+        console.log("[simulate] routing rules loaded:", rules?.length ?? 0, "active rules");
+
         if (rules && rules.length > 0) {
           for (const rule of rules) {
-            if (matchesRule(rule, from_number, content)) {
+            const matched = matchesRule(rule, from_number, content);
+            console.log(`[simulate] rule "${rule.name}" (${rule.match_type}="${rule.match_value}") → ${matched ? "MATCH" : "no match"}`);
+            if (matched) {
               resolvedGroupId = rule.target_group_id;
+              console.log("[simulate] rule matched — resolvedGroupId:", resolvedGroupId);
               break;
             }
           }
