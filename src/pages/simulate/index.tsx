@@ -116,7 +116,12 @@ export default function SimulatePage() {
 
   const normalizePhone = (phone: string) => {
     const normalized = phone.trim().replace(/[\s\-\(\)]/g, "");
-    return normalized.startsWith("+") ? normalized : `+${normalized}`;
+    // Only prepend + for numeric strings (phone/short-codes).
+    // Alphanumeric sender IDs like "KRAFTVERK" are returned as-is.
+    if (/^\+?\d+$/.test(normalized)) {
+      return normalized.startsWith("+") ? normalized : `+${normalized}`;
+    }
+    return normalized;
   };
 
   const isKnownContactPhone = (phone: string) => {

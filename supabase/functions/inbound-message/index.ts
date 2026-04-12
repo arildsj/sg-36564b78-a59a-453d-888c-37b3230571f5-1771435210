@@ -136,35 +136,25 @@ serve(async (req) => {
             for (const rule of rules) {
               let matches = false;
 
-              const conditions = rule.conditions || {};
-
-              if (conditions.keywords && Array.isArray(conditions.keywords)) {
-                matches = conditions.keywords.some((kw: string) =>
-                  content.toLowerCase().includes(kw.toLowerCase())
-                );
-              } else if (conditions.phone_numbers && Array.isArray(conditions.phone_numbers)) {
-                matches = conditions.phone_numbers.includes(from_number);
-              } else if (conditions.start_hour !== undefined || conditions.end_hour !== undefined) {
-                const now = new Date();
-                const currentHour = now.getHours();
-                const currentDay = now.getDay();
-
-                const hourMatch =
-                  conditions.start_hour !== undefined &&
-                  conditions.end_hour !== undefined &&
-                  currentHour >= conditions.start_hour &&
-                  currentHour < conditions.end_hour;
-
-                const dayMatch =
-                  !conditions.days_of_week ||
-                  conditions.days_of_week.length === 0 ||
-                  conditions.days_of_week.includes(currentDay);
-
-                matches = hourMatch && dayMatch;
+              if (rule.match_type === "sender" && rule.match_value) {
+                // Case-insensitive exact match against from_number (both sides trimmed)
+                matches =
+                  rule.match_value.trim().toLowerCase() ===
+                  from_number.trim().toLowerCase();
+              } else if (rule.match_type === "keyword" && rule.match_value) {
+                matches = content
+                  .toLowerCase()
+                  .includes(rule.match_value.trim().toLowerCase());
+              } else if (rule.match_type === "prefix" && rule.match_value) {
+                matches = content
+                  .toLowerCase()
+                  .startsWith(rule.match_value.trim().toLowerCase());
+              } else if (rule.match_type === "fallback") {
+                matches = true;
               }
 
               if (matches) {
-                resolvedGroupId = rule.group_id;
+                resolvedGroupId = rule.target_group_id;
                 break;
               }
             }
