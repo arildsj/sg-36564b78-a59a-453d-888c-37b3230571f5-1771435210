@@ -254,17 +254,24 @@ export default function SimulatePage() {
         target_group_id: effectiveTargetGroupId,
       };
 
-      console.log("📤 Sending to inbound-message:", payload);
+      console.log("📤 Sending to /api/simulate:", payload);
 
       const { data: { session } } = await db.auth.getSession();
-      const { data, error } = await db.functions.invoke("inbound-message", {
-        body: payload,
+      const res = await fetch("/api/simulate", {
+        method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token}`,
         },
+        body: JSON.stringify(payload),
       });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
 
       console.log("✅ Inbound message processed:", data);
 
