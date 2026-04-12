@@ -83,6 +83,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(null);
   const [alertClicked, setAlertClicked] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [hasInboxAlert, setHasInboxAlert] = useState(false);
   const appCommit = process.env.NEXT_PUBLIC_APP_COMMIT || "local-dev";
 
   // Refs for stable closures in Realtime handlers
@@ -101,9 +102,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     currentUserIdRef.current = currentUserId;
   }, [currentUserId]);
 
-  // Reset unread badge when user visits inbox
+  // Reset unread badge and inbox alert when user visits inbox
   useEffect(() => {
-    if (router.pathname === "/inbox") setUnreadCount(0);
+    if (router.pathname === "/inbox") {
+      setUnreadCount(0);
+      setHasInboxAlert(false);
+    }
   }, [router.pathname]);
 
   // ── Notification permission banner ───────────────────────────────────────────
@@ -138,10 +142,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           const msg = payload.new;
           if (msg?.direction === "inbound" && msg?.status === "received") {
             setUnreadCount((prev) => prev + 1);
-            // Play sound only if the user is on duty in the message's group
+            // Play sound + trigger logo-blink only if user is on duty in message's group
             if (msg?.group_id && activeGroupIdsRef.current.has(msg.group_id)) {
               playAlert("tick");
+              setHasInboxAlert(true);
             }
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_memberships" },
+        (payload: any) => {
+          // Fix A: keep activeGroupIdsRef current when user's own duty status changes
+          const uid = currentUserIdRef.current;
+          if (!uid) return;
+          const row = (payload.new ?? payload.old) as any;
+          if (row?.user_id === uid) {
+            loadActiveGroupIds(uid);
           }
         }
       )
@@ -289,13 +307,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
-  const isBlinking = !!pendingRequest && !alertClicked;
-  const handleLogoClick = () => { if (isBlinking) setAlertClicked(true); };
+  const isBlinking = (!!pendingRequest && !alertClicked) || hasInboxAlert;
+  // When blinking: activation requests take priority and go to vaktliste;
+  // inbox alerts go to inbox.
+  const blinkTarget = (pendingRequest && !alertClicked) ? "/vaktliste" : "/inbox";
+  const handleLogoClick = () => {
+    if (isBlinking) {
+      setAlertClicked(true);
+      setHasInboxAlert(false);
+    }
+  };
 
   // Whole logo block (SeMSe + commit line) — clickable area when blinking
   const logoBlock = isBlinking ? (
     <Link
-      href="/vaktliste"
+      href={blinkTarget}
       onClick={handleLogoClick}
       className="semse-logo-alert-area flex flex-col"
     >
