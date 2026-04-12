@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
 import { createAdminClient, getRequestUser } from "@/lib/supabaseAdmin";
+import { matchesRule } from "@/lib/routingUtils";
 
 const bodySchema = z.object({
   gateway_id:        z.string().uuid(),
@@ -13,24 +14,7 @@ const bodySchema = z.object({
   target_group_id:   z.string().uuid().nullable().optional(),
 });
 
-// ── Routing rule matching (mirrors inbound-message Edge Function) ─────────────
-function matchesRule(rule: any, from_number: string, content: string): boolean {
-  if (rule.match_type === "sender" && rule.match_value) {
-    return rule.match_value.trim().toLowerCase() === from_number.trim().toLowerCase();
-  }
-  if (rule.match_type === "keyword" && rule.match_value) {
-    return content.toLowerCase().includes(rule.match_value.trim().toLowerCase());
-  }
-  if (rule.match_type === "prefix" && rule.match_value) {
-    return content.toLowerCase().startsWith(rule.match_value.trim().toLowerCase());
-  }
-  if (rule.match_type === "fallback") {
-    return true;
-  }
-  return false;
-}
-
-// ── Routing rule resolution ───────────────────────────────────────────────────
+// ── Logging wrapper around shared resolveGroupByRules ────────────────────────
 async function resolveGroupByRules(
   admin: any,
   tenantId: string,
