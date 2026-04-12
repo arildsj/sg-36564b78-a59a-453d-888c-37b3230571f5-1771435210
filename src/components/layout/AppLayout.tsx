@@ -88,6 +88,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   // Refs for stable closures in Realtime handlers
   const currentUserIdRef = useRef<string | null>(null);
   const prevRequestIdRef = useRef<string | null>(null);
+  // Groups where the current user is currently on duty (for sound gating)
+  const activeGroupIdsRef = useRef<Set<string>>(new Set());
 
   // ── Auth ────────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -136,7 +138,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           const msg = payload.new;
           if (msg?.direction === "inbound" && msg?.status === "received") {
             setUnreadCount((prev) => prev + 1);
-            playAlert("tick");
+            // Play sound only if the user is on duty in the message's group
+            if (msg?.group_id && activeGroupIdsRef.current.has(msg.group_id)) {
+              playAlert("tick");
+            }
           }
         }
       )
@@ -234,6 +239,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     setUnreadCount(count ?? 0);
   };
 
+  const loadActiveGroupIds = async (userId: string) => {
+    const { data } = await db
+      .from("group_memberships")
+      .select("group_id")
+      .eq("user_id", userId)
+      .eq("is_active", true);
+    activeGroupIdsRef.current = new Set(
+      ((data ?? []) as any[]).map((m: any) => m.group_id)
+    );
+  };
+
   const checkAuth = async () => {
     try {
       const session = await authService.getCurrentSession();
@@ -248,6 +264,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       setCurrentUserId(session.user.id);
       loadPendingActivations(session.user.id);
       loadUnreadCount();
+      loadActiveGroupIds(session.user.id);
     } catch (error) {
       console.error("Auth check failed:", error);
       router.push("/login");
