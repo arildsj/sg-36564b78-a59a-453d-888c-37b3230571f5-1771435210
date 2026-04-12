@@ -353,26 +353,24 @@ export default function SimulatePage() {
 
                 <div className="space-y-2">
                   <Label>{t("simulate.from_number")}</Label>
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="+4791234567, KRAFTVERK, 2222 ..."
+                      value={fromPhone}
+                      onChange={(e) => setFromPhone(e.target.value)}
+                      className="flex-1"
+                    />
                     <Popover open={fromSearchOpen} onOpenChange={setFromSearchOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          role="combobox"
-                          aria-expanded={fromSearchOpen}
-                          className="w-full justify-between h-12"
+                          size="icon"
+                          title={t("simulate.search_contact")}
                         >
-                           {fromPhone ? (
-                             <span className="truncate">{fromPhone}</span>
-                           ) : (
-                             <>
-                               <User className="mr-2 h-4 w-4" />
-                               <span>{t("simulate.search_contact")}</span>
-                             </>
-                           )}
+                          <User className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[calc(100vw-2rem)] sm:w-[300px] p-0" align="start">
+                      <PopoverContent className="w-[300px] p-0" align="end">
                         <Command shouldFilter={false}>
                           <CommandInput
                             placeholder={t("simulate.search_name_or_number")}
@@ -383,7 +381,7 @@ export default function SimulatePage() {
                             <CommandEmpty>{t("simulate.no_contacts_found")}</CommandEmpty>
                             <CommandGroup>
                               {contacts
-                                .filter(contact => 
+                                .filter(contact =>
                                   (contact.name?.toLowerCase() || "").includes(fromSearchValue.toLowerCase()) ||
                                   (contact.phone || "").includes(fromSearchValue)
                                 )
@@ -415,17 +413,9 @@ export default function SimulatePage() {
                         </Command>
                       </PopoverContent>
                     </Popover>
-                    
-                    <Input
-                      type="tel"
-                      placeholder="+47..."
-                      value={fromPhone}
-                      onChange={(e) => setFromPhone(e.target.value)}
-                      className="w-[180px]"
-                    />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {t("simulate.search_contact_note")}
+                    Skriv inn nummer (+4791234567), alfanumerisk (KRAFTVERK) eller kortnummer (2222). Bruk 👤-knappen for å velge fra kontakter.
                   </p>
                 </div>
 
