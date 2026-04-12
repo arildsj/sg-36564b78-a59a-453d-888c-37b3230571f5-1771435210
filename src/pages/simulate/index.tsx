@@ -256,7 +256,7 @@ export default function SimulatePage() {
 
       console.log("📤 Sending to inbound-message:", payload);
 
-      const { data: { session } } = await supabaseClient.auth.getSession();
+      const { data: { session } } = await db.auth.getSession();
       const { data, error } = await db.functions.invoke("inbound-message", {
         body: payload,
         headers: {
