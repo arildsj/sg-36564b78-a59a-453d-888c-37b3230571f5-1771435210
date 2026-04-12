@@ -687,6 +687,35 @@ export const messageService = {
       .eq("direction", "inbound")
       .eq("status", "received");
 
+    // Fire-and-forget SSE push so FairGateway gets the message immediately.
+    // Best-effort only — FairGateway polling covers the offline / multi-instance case.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.access_token || !gatewayId) return;
+      fetch("/api/mobile/notify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          gateway_id: gatewayId,
+          message: {
+            id:                 messageData.id,
+            deviceId:           gatewayId,
+            phoneNumbers:       [formattedToNumber],
+            message:            content,
+            isEncrypted:        false,
+            priority:           1,
+            createdAt:          messageData.created_at,
+            withDeliveryReport: true,
+            simNumber:          null,
+            ttl:                null,
+            validUntil:         null,
+          },
+        }),
+      }).catch(() => {});
+    });
+
     return messageData as Message;
   },
 
