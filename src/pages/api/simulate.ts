@@ -162,6 +162,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .eq("contact_phone", from_number)
       .eq("tenant_id", gateway.tenant_id)
       .eq("is_resolved", false)
+      .order("last_message_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (existingThread) {

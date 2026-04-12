@@ -565,7 +565,9 @@ export default function InboxPage() {
     if (!selectedThread) return;
 
     try {
+      console.log("[handleResolve] resolving thread:", selectedThread.id);
       await messageService.resolveThread(selectedThread.id);
+      console.log("[handleResolve] resolve OK");
       setSelectedThreadId(null);
       await loadThreads();
       toast({
@@ -1050,7 +1052,13 @@ export default function InboxPage() {
                           <p className="text-muted-foreground text-sm">{t("inbox.no_conversations_found")}</p>
                         </div>
                       ) : (
-                        filteredThreads.map((thread) => (
+                        filteredThreads.map((thread) => {
+                          const isResolved = !!thread.is_resolved;
+                          const hasUnread = !isResolved &&
+                            (thread.messages as any[])?.some(
+                              (m: any) => m.direction === "inbound" && m.status === "received"
+                            );
+                          return (
                           <button
                             key={thread.id}
                             onClick={() => setSelectedThreadId(thread.id)}
@@ -1058,7 +1066,9 @@ export default function InboxPage() {
                               "w-full text-left p-2.5 lg:p-3 rounded-lg border transition-all hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
                               selectedThreadId === thread.id
                                 ? "bg-primary/5 border-primary/50 shadow-sm"
-                                : "bg-card hover:bg-accent/50"
+                                : isResolved
+                                  ? "bg-muted/30 hover:bg-muted/50 opacity-60"
+                                  : "bg-card hover:bg-accent/50"
                             )}
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -1080,9 +1090,12 @@ export default function InboxPage() {
                                     </>
                                   ) : (
                                     <>
-                                      <span className="font-semibold text-sm truncate">
+                                      <span className={cn("text-sm truncate", hasUnread ? "font-bold" : "font-medium")}>
                                         {contactMap.get(thread.contact_phone) || thread.contact_phone}
                                       </span>
+                                      {hasUnread && (
+                                        <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                                      )}
                                       {(thread.unread_count || 0) > 0 && (
                                         <Badge variant="destructive" className="text-[10px] h-4 px-1">
                                           {thread.unread_count}
@@ -1101,6 +1114,11 @@ export default function InboxPage() {
                                   <Badge variant="outline" className="text-[10px] h-4 px-1 font-normal bg-muted">
                                     {thread.group_name}
                                   </Badge>
+                                  {isResolved && (
+                                    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground px-1 py-0 rounded border border-muted-foreground/20 bg-muted/50">
+                                      <Check className="h-2.5 w-2.5" /> Løst
+                                    </span>
+                                  )}
                                   <span className="flex items-center gap-1 ml-auto">
                                     <Clock className="h-3 w-3" />
                                     {formatMessageTime(thread.last_message_at || "", t)}
@@ -1112,7 +1130,8 @@ export default function InboxPage() {
                               </div>
                             </div>
                           </button>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </ScrollArea>
