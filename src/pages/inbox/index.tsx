@@ -1055,7 +1055,7 @@ export default function InboxPage() {
                         filteredThreads.map((thread) => {
                           const isResolved = !!thread.is_resolved;
                           const hasUnread = !isResolved &&
-                            (thread.messages as any[])?.some(
+                            !!(thread as any).messages?.some(
                               (m: any) => m.direction === "inbound" && m.status === "received"
                             );
                           return (
