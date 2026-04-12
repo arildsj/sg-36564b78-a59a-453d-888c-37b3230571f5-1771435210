@@ -673,11 +673,19 @@ export const messageService = {
     // Update thread timestamp
     await db
       .from("message_threads")
-      .update({ 
+      .update({
         last_message_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq("id", thread.id);
+
+    // Mark all unread inbound messages in this thread as replied
+    await db
+      .from("messages")
+      .update({ status: "replied" })
+      .eq("thread_id", thread.id)
+      .eq("direction", "inbound")
+      .eq("status", "received");
 
     return messageData as Message;
   },
