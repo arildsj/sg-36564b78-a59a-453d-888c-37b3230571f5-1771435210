@@ -123,6 +123,17 @@ export default function AdminPage() {
     gw_phone: "",
   });
 
+  const [editingGateway, setEditingGateway] = useState<Gateway | null>(null);
+  const [editGatewayData, setEditGatewayData] = useState({
+    name: "",
+    gw_phone: "",
+    base_url: "",
+    api_key: "",
+    api_secret: "",
+    webhook_secret: "",
+    gateway_description: "",
+  });
+
   useEffect(() => {
     if (editingUser) {
       const loadAdminPermissions = async () => {
@@ -679,6 +690,31 @@ export default function AdminPage() {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleOpenEditGateway = (gw: Gateway) => {
+    setEditingGateway(gw);
+    setEditGatewayData({
+      name:                gw.name || "",
+      gw_phone:            gw.gw_phone || "",
+      base_url:            gw.base_url || "",
+      api_key:             (gw as any).api_key || "",
+      api_secret:          (gw as any).api_secret || "",
+      webhook_secret:      (gw as any).webhook_secret || "",
+      gateway_description: (gw as any).gateway_description || "",
+    });
+  };
+
+  const handleSaveGateway = async () => {
+    if (!editingGateway) return;
+    try {
+      await gatewayService.update(editingGateway.id, editGatewayData);
+      toast({ title: "Gateway oppdatert", description: "Endringene er lagret" });
+      setEditingGateway(null);
+      fetchData();
+    } catch (error: any) {
+      toast({ title: "Feil", description: error.message || "Kunne ikke oppdatere gateway", variant: "destructive" });
     }
   };
 
@@ -1672,10 +1708,13 @@ export default function AdminPage() {
                           <div className="text-sm text-muted-foreground">{gw.base_url}</div>
                           <div className="text-xs text-muted-foreground">{gw.gw_phone || t("admin.no_phone")}</div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
                           <Badge variant={gw.is_active ? 'default' : 'secondary'}>
                             {gw.is_active ? t("admin.active") : t("admin.inactive")}
                           </Badge>
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenEditGateway(gw)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => handleDeleteGateway(gw.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1686,6 +1725,50 @@ export default function AdminPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* ── Edit gateway dialog ─────────────────────────────────────── */}
+            <Dialog open={!!editingGateway} onOpenChange={(open) => { if (!open) setEditingGateway(null); }}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Rediger gateway</DialogTitle>
+                  <DialogDescription>Oppdater gatewayens innstillinger</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label>Gateway-navn</Label>
+                    <Input value={editGatewayData.name} onChange={(e) => setEditGatewayData({ ...editGatewayData, name: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>{t("admin.phone_number")}</Label>
+                    <Input value={editGatewayData.gw_phone} onChange={(e) => setEditGatewayData({ ...editGatewayData, gw_phone: e.target.value })} placeholder="+47..." />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>{t("admin.base_url")}</Label>
+                    <Input value={editGatewayData.base_url} onChange={(e) => setEditGatewayData({ ...editGatewayData, base_url: e.target.value })} placeholder="https://..." />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>{t("admin.api_key")}</Label>
+                    <Input value={editGatewayData.api_key} onChange={(e) => setEditGatewayData({ ...editGatewayData, api_key: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>{t("admin.api_secret")}</Label>
+                    <Input type="password" value={editGatewayData.api_secret} onChange={(e) => setEditGatewayData({ ...editGatewayData, api_secret: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>{t("admin.webhook_secret")}</Label>
+                    <Input type="password" value={editGatewayData.webhook_secret} onChange={(e) => setEditGatewayData({ ...editGatewayData, webhook_secret: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>{t("admin.description")}</Label>
+                    <Input value={editGatewayData.gateway_description} onChange={(e) => setEditGatewayData({ ...editGatewayData, gateway_description: e.target.value })} />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditingGateway(null)}>{t("admin.cancel")}</Button>
+                  <Button onClick={handleSaveGateway}>{t("admin.save_changes")}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="routing" className="space-y-4">

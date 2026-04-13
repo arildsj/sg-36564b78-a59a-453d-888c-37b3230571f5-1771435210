@@ -21,7 +21,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, Send, Clock, User } from "lucide-react";
+import { Check, Send, Clock, User, AlertTriangle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { contactService } from "@/services/contactService";
@@ -58,6 +59,17 @@ export default function SimulatePage() {
   const [selectedRecentMessageId, setSelectedRecentMessageId] = useState<string>("");
   const [replyContext, setReplyContext] = useState<string>("");
   
+  // Gateway API override (persisted in localStorage)
+  const [gatewayOverride, setGatewayOverride] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("sim_gateway_override") === "true";
+  });
+
+  const toggleGatewayOverride = (val: boolean) => {
+    setGatewayOverride(val);
+    localStorage.setItem("sim_gateway_override", String(val));
+  };
+
   // Search state
   const [fromSearchOpen, setFromSearchOpen] = useState(false);
   const [fromSearchValue, setFromSearchValue] = useState("");
@@ -335,6 +347,13 @@ export default function SimulatePage() {
             </p>
           </div>
 
+          {gatewayOverride && (
+            <div className="flex items-center gap-2 rounded-md border border-yellow-400 bg-yellow-50 px-4 py-2 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              Gateway API overstyrt — simuleringsmodus
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -344,6 +363,17 @@ export default function SimulatePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <Label htmlFor="gateway-override" className="text-sm cursor-pointer">
+                    Overstyr Gateway API
+                  </Label>
+                  <Switch
+                    id="gateway-override"
+                    checked={gatewayOverride}
+                    onCheckedChange={toggleGatewayOverride}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="group">{t("simulate.target_group")}</Label>
                   <select

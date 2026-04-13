@@ -81,8 +81,27 @@ export async function deleteGateway(id: string): Promise<void> {
     .from("sms_gateways")
     .delete()
     .eq("id", id);
-    
+
   if (error) throw error;
+}
+
+export async function updateGateway(
+  id: string,
+  data: Partial<Pick<Gateway, "name" | "gw_phone" | "base_url"> & {
+    api_key: string;
+    api_secret: string;
+    webhook_secret: string;
+    gateway_description: string;
+  }>
+): Promise<Gateway> {
+  const { data: updated, error } = (await supabase
+    .from("sms_gateways")
+    .update(data as any)
+    .eq("id", id)
+    .select()
+    .single()) as any;
+  if (error) throw error;
+  return updated;
 }
 
 export const gatewayService = {
@@ -90,5 +109,6 @@ export const gatewayService = {
   getGatewaysForGroup,
   getAll,
   create,
+  update: updateGateway,
   delete: deleteGateway
 };
