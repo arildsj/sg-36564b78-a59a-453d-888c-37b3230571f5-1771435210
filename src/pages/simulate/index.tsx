@@ -350,7 +350,7 @@ export default function SimulatePage() {
           {gatewayOverride && (
             <div className="flex items-center gap-2 rounded-md border border-yellow-400 bg-yellow-50 px-4 py-2 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300">
               <AlertTriangle className="h-4 w-4 shrink-0" />
-              Gateway API overstyrt — simuleringsmodus
+              {t("simulate.gateway_override_banner")}
             </div>
           )}
 
@@ -365,7 +365,7 @@ export default function SimulatePage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between rounded-md border px-3 py-2">
                   <Label htmlFor="gateway-override" className="text-sm cursor-pointer">
-                    Overstyr Gateway API
+                    {t("simulate.gateway_override_label")}
                   </Label>
                   <Switch
                     id="gateway-override"
@@ -461,7 +461,7 @@ export default function SimulatePage() {
                     </Popover>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Skriv inn nummer (+4791234567), alfanumerisk (KRAFTVERK) eller kortnummer (2222). Bruk 👤-knappen for å velge fra kontakter.
+                    {t("simulate.phone_hint")}
                   </p>
                 </div>
 
