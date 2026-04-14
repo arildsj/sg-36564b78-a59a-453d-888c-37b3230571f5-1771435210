@@ -147,10 +147,6 @@ export default function SimulatePage() {
       setFromPhone(simulatedSender);
     }
 
-    if (msg.group_id) {
-      setSelectedGroup(msg.group_id);
-    }
-
     setReplyContext(msg.content || "");
   };
 
