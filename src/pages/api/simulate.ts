@@ -145,6 +145,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       contact.group_id, gatewayFallbackGroupId
     );
 
+    console.log("[routing] from:", from_number, "target_group_id:", target_group_id, "→ resolvedGroupId:", resolvedGroupId);
+
     if (!resolvedGroupId) {
       return res.status(422).json({
         error: "No target group found — no routing rules matched and no fallback configured",
