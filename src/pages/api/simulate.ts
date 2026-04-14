@@ -122,7 +122,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // ── Thread resolution ─────────────────────────────────────────────────────
   let threadId: string | null = null;
-  let resolvedGroupId: string | null = target_group_id || contact.group_id;
+  let resolvedGroupId: string | null = null;
 
   // 1. Inherit thread from parent message (bulk campaign reply)
   if (parent_message_id) {
@@ -134,17 +134,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (parentMsg) {
       threadId = parentMsg.thread_id;
-      if (!target_group_id) resolvedGroupId = parentMsg.group_id;
+      resolvedGroupId = target_group_id || parentMsg.group_id;
     }
   }
 
-  // 2. Find existing open thread for this sender
+  // 2. Routing rules always win — resolve group before any thread lookup
   if (!threadId) {
+    resolvedGroupId = target_group_id ?? await resolveGroupByRules(
+      admin, gateway.tenant_id, from_number, content,
+      contact.group_id, gatewayFallbackGroupId
+    );
+
+    if (!resolvedGroupId) {
+      return res.status(422).json({
+        error: "No target group found — no routing rules matched and no fallback configured",
+      });
+    }
+
+    // 3. Find existing open thread for this sender scoped to the resolved group
     const { data: existingThread } = await admin
       .from("message_threads")
-      .select("*")
+      .select("id")
       .eq("contact_phone", from_number)
       .eq("tenant_id", gateway.tenant_id)
+      .eq("resolved_group_id", resolvedGroupId)
       .eq("is_resolved", false)
       .order("last_message_at", { ascending: false })
       .limit(1)
@@ -152,34 +165,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (existingThread) {
       threadId = existingThread.id;
-      resolvedGroupId = existingThread.resolved_group_id;
-      console.log("[simulate] existing thread found:", threadId, "→ current group:", resolvedGroupId);
-
-      // Always re-evaluate routing rules — rule changes must win over thread history
-      if (!target_group_id) {
-        const ruleGroupId = await resolveGroupByRules(admin, gateway.tenant_id, from_number, content, contact.group_id, gatewayFallbackGroupId);
-        if (ruleGroupId && ruleGroupId !== existingThread.resolved_group_id) {
-          resolvedGroupId = ruleGroupId;
-          await admin
-            .from("message_threads")
-            .update({ resolved_group_id: ruleGroupId })
-            .eq("id", threadId);
-          console.log("[simulate] routing rule overrode existing thread → new group:", ruleGroupId);
-        }
-      }
+      console.log("[simulate] existing thread found:", threadId, "→ group:", resolvedGroupId);
     } else {
-      // 3. New thread — evaluate routing rules
-      console.log("[simulate] no existing thread, evaluating routing rules");
-      if (!target_group_id) {
-        resolvedGroupId = await resolveGroupByRules(admin, gateway.tenant_id, from_number, content, contact.group_id, gatewayFallbackGroupId);
-      }
-
-      if (!resolvedGroupId) {
-        return res.status(422).json({
-          error: "No target group found — no routing rules matched and no fallback configured",
-        });
-      }
-
+      // 4. Create new thread in the rule's group
+      console.log("[simulate] creating new thread → group:", resolvedGroupId);
       const { data: newThread, error: threadError } = await admin
         .from("message_threads")
         .insert({

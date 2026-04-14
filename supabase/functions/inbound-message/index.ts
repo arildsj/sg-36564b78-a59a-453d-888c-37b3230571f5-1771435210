@@ -124,7 +124,7 @@ serve(async (req) => {
     }
 
     let threadId = null;
-    let resolvedGroupId = target_group_id || contact.group_id;
+    let resolvedGroupId: string | null = null;
 
     if (parent_message_id) {
       const { data: parentMsg } = await supabaseClient
@@ -135,18 +135,30 @@ serve(async (req) => {
 
       if (parentMsg) {
         threadId = parentMsg.thread_id;
-        if (!target_group_id) {
-          resolvedGroupId = parentMsg.group_id;
-        }
+        resolvedGroupId = target_group_id || parentMsg.group_id;
       }
     }
 
+    // Routing rules always win — resolve group before any thread lookup
     if (!threadId) {
+      resolvedGroupId = target_group_id ?? await resolveGroupByRules(
+        supabaseClient, gateway.tenant_id, from_number, content,
+        contact.group_id, gatewayFallbackGroupId
+      );
+
+      if (!resolvedGroupId) {
+        throw new Error(
+          "No target group found - no routing rules matched and no fallback group configured"
+        );
+      }
+
+      // Find existing open thread scoped to the resolved group
       const { data: existingThread } = await supabaseClient
         .from("message_threads")
-        .select("*")
+        .select("id")
         .eq("contact_phone", from_number)
         .eq("tenant_id", gateway.tenant_id)
+        .eq("resolved_group_id", resolvedGroupId)
         .eq("is_resolved", false)
         .order("last_message_at", { ascending: false })
         .limit(1)
@@ -154,30 +166,7 @@ serve(async (req) => {
 
       if (existingThread) {
         threadId = existingThread.id;
-        resolvedGroupId = existingThread.resolved_group_id;
-
-        // Always re-evaluate routing rules — rule changes must win over thread history
-        if (!target_group_id) {
-          const ruleGroupId = await resolveGroupByRules(supabaseClient, gateway.tenant_id, from_number, content, contact.group_id, gatewayFallbackGroupId);
-          if (ruleGroupId && ruleGroupId !== existingThread.resolved_group_id) {
-            resolvedGroupId = ruleGroupId;
-            await supabaseClient
-              .from("message_threads")
-              .update({ resolved_group_id: ruleGroupId })
-              .eq("id", threadId);
-          }
-        }
       } else {
-        if (!target_group_id) {
-          resolvedGroupId = await resolveGroupByRules(supabaseClient, gateway.tenant_id, from_number, content, contact.group_id, gatewayFallbackGroupId);
-        }
-
-        if (!resolvedGroupId) {
-          throw new Error(
-            "No target group found - no routing rules matched and no fallback group configured"
-          );
-        }
-
         const { data: newThread, error: threadError } = await supabaseClient
           .from("message_threads")
           .insert({
