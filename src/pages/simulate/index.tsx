@@ -117,10 +117,6 @@ export default function SimulatePage() {
         
       if (messagesData) setRecentMessages(messagesData);
 
-      // Set defaults
-      if (groupsData && groupsData.length > 0 && !selectedGroup) {
-        setSelectedGroup(groupsData[0].id);
-      }
     } catch (error) {
       console.error("Failed to load data:", error);
     }
