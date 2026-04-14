@@ -847,15 +847,26 @@ export const messageService = {
    * Resolve a thread (mark as completed/closed)
    */
   async resolveThread(threadId: string) {
-    const { error } = await db
+    const { data, error } = await db
       .from("message_threads")
       .update({
         is_resolved: true,
         resolved_at: new Date().toISOString(),
       })
-      .eq("id", threadId);
+      .eq("id", threadId)
+      .select("id")
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) throw new Error("Permission denied or thread not found");
+
+    // Mark all received inbound messages in this thread as replied
+    await db
+      .from("messages")
+      .update({ status: "replied" })
+      .eq("thread_id", threadId)
+      .eq("direction", "inbound")
+      .eq("status", "received");
   },
 
   // Helper to map Supabase response to MessageThread type

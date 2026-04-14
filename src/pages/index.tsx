@@ -61,10 +61,9 @@ async function fetchDashboardData(userId: string, tenantId: string, role: string
 
   // ── All roles: unread messages ────────────────────────────────────────────
   const { count: unreadCount } = await db
-    .from("messages")
+    .from("message_threads")
     .select("*", { count: "exact", head: true })
-    .eq("direction", "inbound")
-    .eq("status", "received");
+    .eq("is_resolved", false);
   base.unreadMessages = unreadCount ?? 0;
 
   // ── All roles: recent messages ────────────────────────────────────────────

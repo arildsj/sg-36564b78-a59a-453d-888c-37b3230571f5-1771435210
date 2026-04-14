@@ -248,10 +248,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const loadUnreadCount = async () => {
     const { count } = await db
-      .from("messages")
+      .from("message_threads")
       .select("*", { count: "exact", head: true })
-      .eq("direction", "inbound")
-      .eq("status", "received");
+      .eq("is_resolved", false);
     setUnreadCount(count ?? 0);
   };
 
