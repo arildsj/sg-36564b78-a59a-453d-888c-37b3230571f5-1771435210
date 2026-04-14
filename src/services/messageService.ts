@@ -45,6 +45,9 @@ export type ExtendedMessageThread = MessageThread & {
   unread_count?: number;
   last_message_content?: string;
   is_fallback?: boolean;
+  escalation_level?: number;
+  escalated_at?: string;
+  escalated_to_group_name?: string;
   // Bulk specific fields
   is_bulk?: boolean;
   subject_line?: string;
@@ -909,6 +912,23 @@ export const messageService = {
     }
 
     return Array.from(threadMap.values());
+  },
+
+  async getEscalationEventsForThread(
+    threadId: string
+  ): Promise<{ level: number; triggeredAt: string; groupName: string }[]> {
+    const { data: msgs } = await db.from("messages").select("id").eq("thread_id", threadId);
+    if (!msgs?.length) return [];
+    const { data: events } = await db
+      .from("escalation_events")
+      .select("escalation_level, triggered_at, escalated_to_group_id, groups(name)")
+      .in("message_id", msgs.map((m: any) => m.id))
+      .order("triggered_at", { ascending: true });
+    return (events || []).map((e: any) => ({
+      level: e.escalation_level,
+      triggeredAt: e.triggered_at,
+      groupName: e.groups?.name ?? "Ukjent gruppe",
+    }));
   },
 
   async getRecentMessages(limit: number) {

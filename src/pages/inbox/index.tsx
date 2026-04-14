@@ -148,6 +148,14 @@ export default function InboxPage() {
   const [acknowledgingAll, setAcknowledgingAll] = useState(false);
   const [acknowledgedByMap, setAcknowledgedByMap] = useState<Map<string, string>>(new Map());
 
+  // Escalation state
+  const [escalationMap, setEscalationMap] = useState<
+    Map<string, { level: number; at: string; groupName: string }>
+  >(new Map());
+  const [threadEscalationEvents, setThreadEscalationEvents] = useState<
+    { level: number; triggeredAt: string; groupName: string }[]
+  >([]);
+
   // New-message overlay
   const overlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [overlay, setOverlay] = useState<{
@@ -263,6 +271,15 @@ export default function InboxPage() {
             loadThreads();
           }
         )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "escalation_events" },
+          () => {
+            playAlert("escalation");
+            loadThreads();
+            if (selectedThreadId) loadMessages(selectedThreadId);
+          }
+        )
         .subscribe((status, err) => {
           if (err) console.error("[Realtime] inbox_updates error:", err);
         });
@@ -374,6 +391,32 @@ export default function InboxPage() {
       const uniqueThreads = Array.from(uniqueThreadsMap.values());
 
       setThreads(uniqueThreads || []);
+
+      // Build escalation map: threadId → { level, at, groupName }
+      const { data: escEvents } = await db
+        .from("escalation_events")
+        .select("message_id, escalation_level, triggered_at, escalated_to_group_id")
+        .eq("tenant_id", user.tenant_id)
+        .order("triggered_at", { ascending: false });
+      if (escEvents?.length) {
+        const msgIds = escEvents.map((e: any) => e.message_id).filter(Boolean);
+        const gIds = [...new Set(escEvents.map((e: any) => e.escalated_to_group_id))].filter(Boolean) as string[];
+        const [{ data: msgRows }, { data: grpRows }] = await Promise.all([
+          db.from("messages").select("id, thread_id").in("id", msgIds),
+          db.from("groups").select("id, name").in("id", gIds),
+        ]);
+        const msgThread = new Map<string, string>((msgRows || []).map((m: any) => [m.id as string, m.thread_id as string]));
+        const grpName = new Map<string, string>((grpRows || []).map((g: any) => [g.id as string, g.name as string]));
+        const em = new Map<string, { level: number; at: string; groupName: string }>();
+        escEvents.forEach((e: any) => {
+          const tid = msgThread.get(e.message_id as string);
+          if (tid && !em.has(tid))
+            em.set(tid, { level: e.escalation_level, at: e.triggered_at, groupName: grpName.get(e.escalated_to_group_id as string) ?? "Ukjent gruppe" });
+        });
+        setEscalationMap(em);
+      } else {
+        setEscalationMap(new Map());
+      }
     } catch (error: any) {
       console.error("Error loading threads:", error);
       toast({
@@ -426,6 +469,10 @@ export default function InboxPage() {
       );
 
       setMessages(threadMessages);
+
+      // Load escalation events for this thread (rendered inline in timeline)
+      const esc = await messageService.getEscalationEventsForThread(threadId);
+      setThreadEscalationEvents(esc);
 
       // Fetch routing rule message_type for this thread
       setThreadMessageType("conversation");
@@ -1076,7 +1123,9 @@ export default function InboxPage() {
                                 ? "bg-primary/5 border-primary/50 shadow-sm"
                                 : isResolved
                                   ? "bg-muted/30 hover:bg-muted/50 opacity-60"
-                                  : "bg-card hover:bg-accent/50"
+                                  : escalationMap.has(thread.id)
+                                    ? "border-l-4 border-l-orange-500 bg-orange-50/30 dark:bg-orange-900/10 hover:bg-orange-50/50"
+                                    : "bg-card hover:bg-accent/50"
                             )}
                           >
                             <div className="flex items-center gap-3">
@@ -1112,6 +1161,19 @@ export default function InboxPage() {
                                             {t("inbox.unknown")}
                                           </Badge>
                                         )}
+                                        {!thread.is_bulk && escalationMap.has(thread.id) && (() => {
+                                          const esc = escalationMap.get(thread.id)!;
+                                          const mins = Math.floor((Date.now() - new Date(esc.at).getTime()) / 60000);
+                                          const ago = mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} t`;
+                                          return (
+                                            <>
+                                              <Badge className="text-[10px] h-4 px-1 bg-orange-100 text-orange-700 border border-orange-300 shrink-0">
+                                                Eskalert nivå {esc.level}
+                                              </Badge>
+                                              <span className="text-[10px] text-orange-600 shrink-0">{ago} siden</span>
+                                            </>
+                                          );
+                                        })()}
                                       </>
                                     )}
                                   </div>
@@ -1475,7 +1537,25 @@ export default function InboxPage() {
                             </div>
                           ) : (
                             <div className="space-y-4">
-                              {displayMessages.map((message) => {
+                              {(() => {
+                                const timelineItems = [
+                                  ...displayMessages.map(m => ({ type: "msg" as const, ts: m.created_at, msg: m })),
+                                  ...threadEscalationEvents.map(e => ({ type: "esc" as const, ts: e.triggeredAt, esc: e })),
+                                ].sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+
+                                return timelineItems.map((item) => {
+                                  if (item.type === "esc") {
+                                    return (
+                                      <div key={`esc-${item.ts}`} className="flex justify-center py-1">
+                                        <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-800 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-300 text-xs px-3 py-1.5 rounded-full">
+                                          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                                          Eskalert til {item.esc.groupName} — nivå {item.esc.level}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  const message = item.msg;
                                 const isAcked = !!(message as any).acknowledged_at;
                                 const ackedByName = (message as any).acknowledged_by
                                   ? (acknowledgedByMap.get((message as any).acknowledged_by) ?? "Ukjent")
@@ -1537,7 +1617,8 @@ export default function InboxPage() {
                                     )}
                                   </div>
                                 );
-                              })}
+                                });
+                              })()}
                               <div ref={messagesEndRef} />
                             </div>
                           )}
