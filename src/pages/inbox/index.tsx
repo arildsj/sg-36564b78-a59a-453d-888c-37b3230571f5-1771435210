@@ -23,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Phone, Mail, Tag, AlertTriangle, Users, Inbox, Send, Clock, CheckCircle2, XCircle, MessageSquare, User, Settings as SettingsIcon, ArrowDownLeft, Settings, FolderInput, Inbox as InboxIcon, Check, ArrowRight, RefreshCw, CheckCheck, Loader2 } from "lucide-react";
+import { Phone, Mail, Tag, AlertTriangle, Users, Inbox, Send, Clock, CheckCircle2, XCircle, MessageSquare, User, Settings as SettingsIcon, ArrowDownLeft, Settings, FolderInput, Inbox as InboxIcon, Check, ArrowRight, ArrowLeft, RefreshCw, CheckCheck, Loader2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -95,6 +96,7 @@ type FilterType = "all" | "unassigned" | "escalated" | "inbound" | "rule_based";
 export default function InboxPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "fallback" | "escalated" | "inbound" | "rule_based">("all");
@@ -1025,7 +1027,12 @@ export default function InboxPage() {
             <TabsContent value={activeTab} className="flex-1 m-0 min-h-0 overflow-hidden flex flex-col">
               <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6 h-full">
                 {/* Thread List - Full width on mobile */}
-                <Card className="lg:col-span-1 flex flex-col h-[400px] lg:h-full overflow-hidden">
+                <Card className={cn(
+                  "lg:col-span-1 flex flex-col overflow-hidden",
+                  isMobile
+                    ? selectedThreadId ? "hidden" : "flex-1 h-full border-0 rounded-none shadow-none"
+                    : "h-full"
+                )}>
                   <CardHeader className="border-b py-3 px-3 lg:px-4 flex-none">
                     <CardTitle className="flex items-center gap-2 text-sm lg:text-base">
                       <MessageSquare className="h-4 w-4 text-primary" />
@@ -1072,62 +1079,62 @@ export default function InboxPage() {
                                   : "bg-card hover:bg-accent/50"
                             )}
                           >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                  {thread.is_bulk ? (
-                                    <>
-                                      <span className="font-semibold text-sm truncate text-primary">
-                                        {thread.subject_line || t("inbox.bulk_no_subject")}
-                                      </span>
-                                      <Badge variant="secondary" className="text-[10px] h-4 px-1">
-                                        {t("inbox.bulk")}
-                                      </Badge>
-                                      {thread.recipient_stats && (
-                                        <span className="text-[10px] text-muted-foreground ml-auto">
-                                          {thread.recipient_stats.responded}/{thread.recipient_stats.total} {t("inbox.replies")}
-                                        </span>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <>
-                                      <span className={cn("text-sm truncate", hasUnread ? "font-bold" : "font-medium")}>
-                                        {contactMap.get(thread.contact_phone) || thread.contact_phone}
-                                      </span>
-                                      {hasUnread && (
-                                        <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
-                                      )}
-                                      {(thread.unread_count || 0) > 0 && (
-                                        <Badge variant="destructive" className="text-[10px] h-4 px-1">
-                                          {thread.unread_count}
-                                        </Badge>
-                                      )}
-                                    </>
-                                  )}
-                                  
-                                  {thread.is_fallback && !thread.is_bulk && (
-                                    <Badge variant="outline" className="text-[10px] h-4 px-1 border-yellow-500 text-yellow-600">
-                                      {t("inbox.unknown")}
-                                    </Badge>
-                                  )}
+                            <div className="flex items-center gap-3">
+                              {/* Avatar circle — mobile only */}
+                              {isMobile && (
+                                <div className="w-9 h-9 rounded-full bg-[#e8edf5] text-[#1a3c6e] flex items-center justify-center text-sm font-medium shrink-0">
+                                  {(contactMap.get(thread.contact_phone) || thread.contact_phone || "?")[0].toUpperCase()}
                                 </div>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                                  <Badge variant="outline" className="text-[10px] h-4 px-1 font-normal bg-muted">
-                                    {thread.group_name}
-                                  </Badge>
-                                  {isResolved && (
-                                    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground px-1 py-0 rounded border border-muted-foreground/20 bg-muted/50">
-                                      <Check className="h-2.5 w-2.5" /> Løst
-                                    </span>
-                                  )}
-                                  <span className="flex items-center gap-1 ml-auto">
-                                    <Clock className="h-3 w-3" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                {/* Row 1: name + timestamp */}
+                                <div className="flex items-center justify-between gap-2 mb-0.5">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    {thread.is_bulk ? (
+                                      <>
+                                        <span className="font-semibold text-sm truncate text-primary">
+                                          {thread.subject_line || t("inbox.bulk_no_subject")}
+                                        </span>
+                                        <Badge variant="secondary" className="text-[10px] h-4 px-1 shrink-0">
+                                          {t("inbox.bulk")}
+                                        </Badge>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span className={cn("text-sm truncate", hasUnread ? "font-bold" : "font-medium")}>
+                                          {contactMap.get(thread.contact_phone) || thread.contact_phone}
+                                        </span>
+                                        {hasUnread && (
+                                          <span className="w-2 h-2 rounded-full bg-[#1a3c6e] shrink-0" />
+                                        )}
+                                        {thread.is_fallback && (
+                                          <Badge variant="outline" className="text-[10px] h-4 px-1 border-yellow-500 text-yellow-600 shrink-0">
+                                            {t("inbox.unknown")}
+                                          </Badge>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground shrink-0">
                                     {formatMessageTime(thread.last_message_at || "", t)}
                                   </span>
                                 </div>
-                                <p className="text-xs text-muted-foreground truncate line-clamp-1">
-                                  {thread.last_message_content}
-                                </p>
+                                {/* Row 2: preview + group badge + resolved */}
+                                <div className="flex items-center gap-1">
+                                  <p className="text-xs text-muted-foreground truncate flex-1">
+                                    {thread.is_bulk && thread.recipient_stats
+                                      ? `${thread.recipient_stats.responded}/${thread.recipient_stats.total} ${t("inbox.replies")}`
+                                      : thread.last_message_content}
+                                  </p>
+                                  <Badge variant="outline" className="text-[10px] h-4 px-1 font-normal bg-muted shrink-0">
+                                    {thread.group_name}
+                                  </Badge>
+                                  {isResolved && (
+                                    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground px-1 rounded border border-muted-foreground/20 bg-muted/50 shrink-0">
+                                      <Check className="h-2.5 w-2.5" /> Løst
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </button>
@@ -1138,8 +1145,15 @@ export default function InboxPage() {
                   </ScrollArea>
                 </Card>
 
-                {/* Message Thread View - Full width on mobile when selected */}
-                <Card className="lg:col-span-2 flex flex-col h-[600px] lg:h-full overflow-hidden">
+                {/* Message Thread View — full-screen on mobile, col-span-2 on desktop */}
+                <Card className={cn(
+                  "flex flex-col overflow-hidden",
+                  isMobile && selectedThreadId
+                    ? "fixed inset-0 z-50 rounded-none border-0 bg-background"
+                    : isMobile
+                      ? "hidden"
+                      : "lg:col-span-2 h-full"
+                )}>
                   {selectedThread ? (
                     selectedThread.is_bulk ? (
                       // === BULK CAMPAIGN DETAIL VIEW ===
@@ -1395,34 +1409,56 @@ export default function InboxPage() {
                       // === STANDARD THREAD VIEW ===
                       <>
                         <CardHeader className="border-b py-3 px-3 lg:px-6 flex-none bg-muted/10">
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <CardTitle className="text-base lg:text-lg flex items-center gap-2">
-                              {selectedThread.contact_phone}
-                              <Badge variant="outline" className="text-xs font-normal">
-                                {selectedThread.group_name}
-                              </Badge>
-                            </CardTitle>
+                          {isMobile ? (
+                            /* Mobile header: back arrow + phone + group subtitle */
                             <div className="flex items-center gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleResolve()}
-                                    className="h-9"
-                                  >
-                                    <Check className="h-4 w-4 mr-2" />
-                                    {t("inbox.resolve")}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setReclassifyDialogOpen(true)}
-                                    className="h-9"
-                                  >
-                                    <ArrowRight className="h-4 w-4 mr-2" />
-                                    {t("inbox.move")}
-                                  </Button>
+                              <button
+                                onClick={() => setSelectedThreadId(null)}
+                                className="mr-1 h-8 w-8 rounded-full flex items-center justify-center hover:bg-muted shrink-0"
+                                aria-label="Tilbake"
+                              >
+                                <ArrowLeft className="h-5 w-5" />
+                              </button>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-semibold text-base truncate leading-tight">
+                                  {contactMap.get(selectedThread.contact_phone) || selectedThread.contact_phone}
+                                </span>
+                                <span className="text-xs text-muted-foreground truncate leading-tight">
+                                  {selectedThread.group_name}
+                                </span>
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            /* Desktop header: unchanged */
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <CardTitle className="text-base lg:text-lg flex items-center gap-2">
+                                {selectedThread.contact_phone}
+                                <Badge variant="outline" className="text-xs font-normal">
+                                  {selectedThread.group_name}
+                                </Badge>
+                              </CardTitle>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleResolve()}
+                                  className="h-9"
+                                >
+                                  <Check className="h-4 w-4 mr-2" />
+                                  {t("inbox.resolve")}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setReclassifyDialogOpen(true)}
+                                  className="h-9"
+                                >
+                                  <ArrowRight className="h-4 w-4 mr-2" />
+                                  {t("inbox.move")}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </CardHeader>
 
                         <CardContent className="flex-1 p-4 overflow-y-auto">
@@ -1452,28 +1488,52 @@ export default function InboxPage() {
                                   <div
                                     key={message.id}
                                     className={cn(
-                                      "flex flex-col max-w-[85%] rounded-lg p-3",
-                                      message.direction === "outbound"
-                                        ? "ml-auto bg-primary text-primary-foreground"
-                                        : isAcked
-                                          ? "mr-auto bg-muted opacity-50"
-                                          : "mr-auto bg-muted"
+                                      "flex flex-col",
+                                      message.direction === "outbound" ? "items-end" : "items-start"
                                     )}
                                   >
-                                    <div className="flex justify-between items-baseline gap-2 mb-1">
-                                      <span className="text-xs font-medium opacity-80">
-                                        {message.direction === "outbound" ? t("inbox.you") : message.from_number}
-                                      </span>
-                                      <span className="text-[10px] opacity-70">
+                                    <div
+                                      className={cn(
+                                        isMobile
+                                          ? message.direction === "outbound"
+                                            ? "max-w-[80%] px-4 py-2.5 rounded-[16px_4px_16px_16px] bg-[#1a3c6e] text-white text-sm"
+                                            : cn(
+                                                "max-w-[80%] px-4 py-2.5 rounded-[4px_16px_16px_16px] bg-white border text-sm",
+                                                isAcked && "opacity-50"
+                                              )
+                                          : cn(
+                                              "flex flex-col max-w-[85%] rounded-lg p-3",
+                                              message.direction === "outbound"
+                                                ? "ml-auto bg-primary text-primary-foreground"
+                                                : isAcked
+                                                  ? "mr-auto bg-muted opacity-50"
+                                                  : "mr-auto bg-muted"
+                                            )
+                                      )}
+                                    >
+                                      {!isMobile && (
+                                        <div className="flex justify-between items-baseline gap-2 mb-1">
+                                          <span className="text-xs font-medium opacity-80">
+                                            {message.direction === "outbound" ? t("inbox.you") : message.from_number}
+                                          </span>
+                                          <span className="text-[10px] opacity-70">
+                                            {formatMessageTime(message.created_at, t)}
+                                          </span>
+                                        </div>
+                                      )}
+                                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                      {isAcked && ackedByName && (
+                                        <p className="text-[10px] mt-1 opacity-60 flex items-center gap-1">
+                                          <CheckCheck className="h-3 w-3" />
+                                          Kvittert av {ackedByName} kl {ackedTime}
+                                        </p>
+                                      )}
+                                    </div>
+                                    {/* Timestamp below bubble on mobile */}
+                                    {isMobile && (
+                                      <span className="text-[10px] text-muted-foreground mt-1 px-1">
                                         {formatMessageTime(message.created_at, t)}
                                       </span>
-                                    </div>
-                                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                                    {isAcked && ackedByName && (
-                                      <p className="text-[10px] mt-1 opacity-60 flex items-center gap-1">
-                                        <CheckCheck className="h-3 w-3" />
-                                        Kvittert av {ackedByName} kl {ackedTime}
-                                      </p>
                                     )}
                                   </div>
                                 );
@@ -1484,49 +1544,95 @@ export default function InboxPage() {
                         </CardContent>
                         
                         {/* Reply / Acknowledge Input Area */}
-                        <div className="p-4 border-t bg-background mt-auto">
+                        <div className="border-t bg-background mt-auto">
                           {threadMessageType === "alert" ? (
-                            <Button
-                              onClick={handleAcknowledgeAll}
-                              disabled={acknowledgingAll || displayMessages.filter(
-                                m => m.direction === "inbound" && !(m as any).acknowledged_at
-                              ).length === 0}
-                              className="w-full h-12 text-base"
-                            >
-                              {acknowledgingAll
-                                ? <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                                : <CheckCheck className="h-5 w-5 mr-2" />}
-                              Kvitter alle
-                            </Button>
+                            <div className="p-4">
+                              <Button
+                                onClick={handleAcknowledgeAll}
+                                disabled={acknowledgingAll || displayMessages.filter(
+                                  m => m.direction === "inbound" && !(m as any).acknowledged_at
+                                ).length === 0}
+                                className="w-full h-12 text-base"
+                              >
+                                {acknowledgingAll
+                                  ? <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                                  : <CheckCheck className="h-5 w-5 mr-2" />}
+                                Kvitter alle
+                              </Button>
+                            </div>
                           ) : selectedThread?.resolved_group_id && !activeGroupIds.has(selectedThread.resolved_group_id) ? (
-                            <div className="flex flex-col gap-1.5 text-sm text-muted-foreground py-1">
+                            <div className="p-4 flex flex-col gap-1.5 text-sm text-muted-foreground">
                               <span>{t("inbox.not_on_duty_reply")}</span>
                               <Link href="/vaktliste" className="text-primary hover:underline text-xs">
                                 {t("inbox.activate_now")}
                               </Link>
                             </div>
                           ) : (
-                            <div className="flex gap-2">
-                              <Textarea
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                placeholder={t("inbox.write_reply")}
-                                className="min-h-[80px] resize-none"
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSendReply();
-                                  }
-                                }}
-                              />
-                              <Button
-                                onClick={handleSendReply}
-                                disabled={sending || !newMessage.trim()}
-                                className="h-[80px] px-6"
-                              >
-                                <Send className="h-5 w-5" />
-                              </Button>
-                            </div>
+                            <>
+                              {/* Pill action row — mobile only */}
+                              {isMobile && selectedThreadId && (
+                                <div className="flex gap-2 px-3 py-2 border-b">
+                                  <button
+                                    onClick={handleResolve}
+                                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-sm bg-background hover:bg-muted"
+                                  >
+                                    <Check className="h-3.5 w-3.5" /> {t("inbox.resolve")}
+                                  </button>
+                                  <button
+                                    onClick={() => setReclassifyDialogOpen(true)}
+                                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-sm bg-background hover:bg-muted"
+                                  >
+                                    <ArrowRight className="h-3.5 w-3.5" /> {t("inbox.move")}
+                                  </button>
+                                </div>
+                              )}
+                              {/* Compose bar */}
+                              {isMobile ? (
+                                <div className="flex items-center gap-2 p-3">
+                                  <input
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter" && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendReply();
+                                      }
+                                    }}
+                                    placeholder={t("inbox.write_reply")}
+                                    className="flex-1 rounded-full border px-4 py-2.5 text-sm bg-muted/30 outline-none focus:border-[#1a3c6e]"
+                                  />
+                                  <button
+                                    onClick={handleSendReply}
+                                    disabled={!newMessage.trim() || sending}
+                                    className="h-10 w-10 rounded-full bg-[#1a3c6e] text-white flex items-center justify-center shrink-0 disabled:opacity-40"
+                                  >
+                                    <Send className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="p-4 flex gap-2">
+                                  <Textarea
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    placeholder={t("inbox.write_reply")}
+                                    className="min-h-[80px] resize-none"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendReply();
+                                      }
+                                    }}
+                                  />
+                                  <Button
+                                    onClick={handleSendReply}
+                                    disabled={sending || !newMessage.trim()}
+                                    className="h-[80px] px-6"
+                                  >
+                                    <Send className="h-5 w-5" />
+                                  </Button>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       </>
