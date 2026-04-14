@@ -46,15 +46,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     for (const msg of messages) {
       if (alreadyDone.has(msg.id)) continue;
 
-      await admin.from("escalation_events").insert({
+      const { error: insErr } = await admin.from("escalation_events").insert({
         message_id:            msg.id,
         escalation_level:      1,
         escalated_to_group_id: group.id,
+        method:                "cron",
         tenant_id:             msg.tenant_id,
         triggered_at:          new Date().toISOString(),
       });
 
-      totalEscalated++;
+      if (!insErr) totalEscalated++;
     }
   }
 
