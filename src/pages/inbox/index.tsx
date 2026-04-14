@@ -239,7 +239,7 @@ export default function InboxPage() {
               overlayTimerRef.current = setTimeout(() => setOverlay(null), 5000);
             }
             loadThreads();
-            if (selectedThreadId) {
+            if (selectedThreadId && msg?.thread_id === selectedThreadId) {
               loadMessages(selectedThreadId);
             }
           }
@@ -479,6 +479,7 @@ export default function InboxPage() {
       );
 
       setNewMessage("");
+      await loadMessages(selectedThread.id);
       toast({
         title: t("inbox.toast.message_sent"),
         description: t("inbox.toast.reply_sent"),
