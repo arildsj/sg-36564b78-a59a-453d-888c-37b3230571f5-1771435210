@@ -44,13 +44,19 @@ export async function resolveGroupByRules(
     .eq("is_active", true)
     .order("priority", { ascending: true });
 
+  console.log("[rules] evaluating", rules?.length ?? 0, "rules for from_number:", from_number);
+
   if (rules && rules.length > 0) {
     for (const rule of rules) {
-      if (matchesRule(rule, from_number, content)) {
+      const matched = matchesRule(rule, from_number, content);
+      console.log("[rules] testing rule:", rule.match_type, JSON.stringify(rule.match_value), "against:", JSON.stringify(from_number), "→ matched:", matched);
+      if (matched) {
+        console.log("[rules] match found → group:", rule.target_group_id);
         return rule.target_group_id;
       }
     }
   }
 
+  console.log("[rules] no match — falling back to contactGroupId:", contactGroupId, "gatewayFallbackGroupId:", gatewayFallbackGroupId);
   return contactGroupId || gatewayFallbackGroupId;
 }
