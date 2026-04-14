@@ -24,8 +24,7 @@ serve(async (req) => {
     const { data: groupsWithEscalation } = await supabase
       .from("groups")
       .select("id, tenant_id, escalation_timeout_minutes, name")
-      .eq("escalation_enabled", true)
-      .is("deleted_at", null);
+      .eq("escalation_enabled", true);
 
     if (!groupsWithEscalation || groupsWithEscalation.length === 0) {
       return new Response(
@@ -44,11 +43,10 @@ serve(async (req) => {
       // FR31002: Find messages that are unacknowledged
       const { data: unacknowledgedMessages } = await supabase
         .from("messages")
-        .select("id, tenant_id, resolved_group_id, from_number, content, created_at, escalation_level")
-        .eq("resolved_group_id", group.id)
+        .select("id, tenant_id, group_id, from_number, content, created_at")
+        .eq("group_id", group.id)
         .eq("direction", "inbound")
         .is("acknowledged_at", null)
-        .is("deleted_at", null)
         .lt("created_at", timeoutThreshold)
         .order("created_at", { ascending: true });
 
@@ -79,7 +77,7 @@ serve(async (req) => {
 });
 
 async function escalateMessage(supabase: any, message: any, group: any): Promise<void> {
-  const newEscalationLevel = message.escalation_level + 1;
+  const newEscalationLevel = 1;
 
   // Determine escalation target based on level
   let escalatedToUserIds: string[] = [];
@@ -125,7 +123,7 @@ async function escalateMessage(supabase: any, message: any, group: any): Promise
     message_id: message.id,
     escalation_level: newEscalationLevel,
     escalated_to_user_ids: escalatedToUserIds,
-    escalated_to_group_id: escalatedToGroupId,
+    escalated_to_group_id: group.id,
     reason: `Unacknowledged for ${group.escalation_timeout_minutes} minutes`,
   });
 
@@ -141,7 +139,7 @@ async function escalateMessage(supabase: any, message: any, group: any): Promise
     p_metadata: {
       escalation_level: newEscalationLevel,
       escalated_to_user_ids: escalatedToUserIds,
-      escalated_to_group_id: escalatedToGroupId,
+      escalated_to_group_id: group.id,
       reason: `Unacknowledged for ${group.escalation_timeout_minutes} minutes`,
     },
   });
