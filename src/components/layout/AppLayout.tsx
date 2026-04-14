@@ -178,7 +178,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         "postgres_changes",
         { event: "*", schema: "public", table: "activation_requests" },
         (payload: any) => {
-          console.log("[Realtime] applayout-activation EVENT:", payload.eventType, payload);
           const uid = currentUserIdRef.current;
           if (!uid) return;
           // On INSERT: check if this request targets us, then update state
@@ -198,7 +197,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         }
       )
       .subscribe((status, err) => {
-        console.log("[Realtime] applayout-activation STATUS:", status);
         if (err) console.error("[Realtime] applayout-activation error:", err);
       });
 
