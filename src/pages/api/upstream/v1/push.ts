@@ -4,36 +4,24 @@ import { createAdminClient } from "@/lib/supabaseAdmin";
 import { resolveGroupByRules } from "@/lib/routingUtils";
 
 const bodySchema = z.object({
-  token:  z.string().min(1),
-  event:  z.string().min(1),
-  data:   z.object({
-    from:       z.string().min(1),
-    to:         z.string().min(1),
-    message:    z.string().min(1),
-    deviceId:   z.string().optional(),
-    receivedAt: z.string().optional(),
-  }),
+  from_number: z.string().min(1),
+  to_number:   z.string().min(1),
+  content:     z.string().min(1),
+  received_at: z.string().optional(),
 });
 
-// ── Bearer device_token validation ────────────────────────────────────────────
 async function getGatewayFromToken(admin: any, req: NextApiRequest) {
   const authHeader = req.headers.authorization ?? "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice(7).trim()
-    : null;
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
   if (!token) return null;
-
   const { data } = await admin
     .from("sms_gateways")
     .select("*")
     .eq("device_token", token)
     .eq("is_active", true)
     .maybeSingle();
-
   return data ?? null;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST")
@@ -41,26 +29,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const admin = createAdminClient() as any;
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
   const gateway = await getGatewayFromToken(admin, req);
   if (!gateway)
     return res.status(401).json({ error: "Invalid or missing device token" });
 
-  // ── Body validation ───────────────────────────────────────────────────────
   const parsed = bodySchema.safeParse(req.body);
   if (!parsed.success)
     return res.status(400).json({ error: parsed.error.errors[0].message });
 
-  const { event, data: pushData } = parsed.data;
-
-  // Only handle SMS received events
-  if (event !== "sms:received")
-    return res.status(200).json({ success: true, skipped: true });
-
-  const from_number = pushData.from;
-  const to_number   = pushData.to;
-  const content     = pushData.message;
-  const received_at = pushData.receivedAt ?? new Date().toISOString();
+  const { from_number, to_number, content, received_at = new Date().toISOString() } = parsed.data;
 
   // ── Gateway fallback group ────────────────────────────────────────────────
   const { data: gatewayGroup } = await admin
@@ -70,7 +47,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .order("name", { ascending: true })
     .limit(1)
     .maybeSingle();
-
   const gatewayFallbackGroupId: string | null = gatewayGroup?.id ?? null;
 
   // ── Contact: find or create ───────────────────────────────────────────────
@@ -92,10 +68,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
       .select()
       .single();
-
     if (contactError || !newContact)
       return res.status(500).json({ error: `Failed to create contact: ${contactError?.message}` });
-
     contact = newContact;
   }
 
@@ -134,10 +108,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
       .select()
       .single();
-
     if (threadError || !newThread)
       return res.status(500).json({ error: `Failed to create thread: ${threadError?.message}` });
-
     threadId = newThread.id;
   }
 
@@ -159,7 +131,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
     .select()
     .single();
-
   if (messageError || !message)
     return res.status(500).json({ error: `Failed to create message: ${messageError?.message}` });
 
@@ -169,5 +140,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .update({ last_message_at: message.created_at })
     .eq("id", threadId);
 
-  return res.status(200).json({ success: true, message });
+  return res.status(200).json({ success: true });
 }

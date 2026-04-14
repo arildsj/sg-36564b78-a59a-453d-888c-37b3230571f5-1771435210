@@ -57,6 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       deviceId:           gateway.id,
       phoneNumbers:       [m.to_number],
       message:            m.content,
+      state:              "Pending",
       isEncrypted:        false,
       priority:           1,
       createdAt:          m.created_at,
@@ -71,16 +72,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // ── PATCH — update message delivery status ────────────────────────────────
   if (req.method === "PATCH") {
-    const items: { id: string; status: string }[] = req.body;
+    const items: { id: string; state: string }[] = req.body;
     if (!Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "Body must be a non-empty array" });
 
     const results: { id: string; ok: boolean; error?: string }[] = [];
 
     for (const item of items) {
-      const mappedStatus = STATUS_MAP[item.status];
+      const mappedStatus = STATUS_MAP[item.state];
       if (!mappedStatus) {
-        results.push({ id: item.id, ok: false, error: `Unknown status: ${item.status}` });
+        results.push({ id: item.id, ok: false, error: `Unknown status: ${item.state}` });
         continue;
       }
 

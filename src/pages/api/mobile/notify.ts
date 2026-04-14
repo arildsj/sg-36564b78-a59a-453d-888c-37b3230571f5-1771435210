@@ -27,8 +27,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (send) {
     const event =
-      `event: message:send\n` +
-      `data: ${JSON.stringify(message)}\n\n`;
+      `event: MessageEnqueued\n` +
+      `data: null\n\n`;
     send(event);
   }
 
