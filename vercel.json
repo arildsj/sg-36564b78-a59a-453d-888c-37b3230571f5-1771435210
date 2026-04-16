@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/process-escalations",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/process-scheduled-sends",
+      "schedule": "* * * * *"
     }
   ],
   "redirects": [

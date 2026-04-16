@@ -114,8 +114,6 @@ export default function SendingPage() {
   // Form states
   const [message, setMessage] = useState("");
   const [scheduleDate, setScheduleDate] = useState("");
-  const [isUrgent, setIsUrgent] = useState(false);
-  const [requireAck, setRequireAck] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -657,8 +655,6 @@ export default function SendingPage() {
       setSelectedGroups([]);
       setExpandedGroups(new Set());
       setScheduleDate("");
-      setIsUrgent(false);
-      setRequireAck(false);
       setActiveTab("history");
 
     } catch (error: any) {
@@ -816,28 +812,6 @@ export default function SendingPage() {
                     <CardTitle>{t("sending.settings_title")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between space-x-2">
-                      <Label htmlFor="urgent" className="flex flex-col space-y-1">
-                        <span>{t("sending.urgent_message")}</span>
-                        <span className="font-normal text-xs text-muted-foreground">{t("sending.urgent_help")}</span>
-                      </Label>
-                      <Switch 
-                        id="urgent" 
-                        checked={isUrgent}
-                        onCheckedChange={setIsUrgent}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between space-x-2">
-                      <Label htmlFor="ack" className="flex flex-col space-y-1">
-                        <span>{t("sending.require_confirmation")}</span>
-                        <span className="font-normal text-xs text-muted-foreground">{t("sending.confirmation_help")}</span>
-                      </Label>
-                      <Switch 
-                        id="ack" 
-                        checked={requireAck}
-                        onCheckedChange={setRequireAck}
-                      />
-                    </div>
                     <div className="space-y-2">
                       <Label>{t("sending.schedule_optional")}</Label>
                       <Input 
@@ -1172,6 +1146,9 @@ export default function SendingPage() {
 
       <Dialog open={campaignDetailDialogOpen} onOpenChange={setCampaignDetailDialogOpen}>
         <DialogContent className="max-w-4xl w-full max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
+          <DialogTitle className="sr-only">
+            {selectedCampaign?.name || t("sending.campaign_details")}
+          </DialogTitle>
           {/* ── Header ── */}
           {/* pr-14 keeps content clear of the absolutely-positioned Radix close button (right-4 top-4) */}
           <div className="pl-6 pr-14 pt-6 pb-4 border-b">

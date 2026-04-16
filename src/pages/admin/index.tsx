@@ -64,6 +64,7 @@ export default function AdminPage() {
     event_type: "",
   });
   const [userRole, setUserRole] = useState<string>("member");
+  const [tenantId, setTenantId] = useState<string>("");
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   const [newUser, setNewUser] = useState({
@@ -196,6 +197,7 @@ export default function AdminPage() {
         
         if (profile) {
           setUserRole(profile.role);
+          setTenantId(profile.tenant_id);
         }
       }
 
@@ -641,7 +643,7 @@ export default function AdminPage() {
 
   const handleCreateGateway = async (gatewayData: any) => {
     try {
-      await gatewayService.create(gatewayData);
+      await gatewayService.create({ ...gatewayData, tenant_id: tenantId });
       toast({
         title: "Gateway opprettet",
         description: "Den nye gatewayen er lagt til",
