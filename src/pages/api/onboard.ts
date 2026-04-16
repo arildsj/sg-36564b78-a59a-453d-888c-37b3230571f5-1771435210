@@ -17,6 +17,12 @@ interface OnboardResponse {
   debug?: any;
 }
 
+// NOTE: Outbound SMS messages have no translation/locale system — the codebase's
+// i18n (LanguageProvider.tsx) is React-only and unavailable in API routes.
+// This welcome message is intentionally hardcoded in Norwegian, which is the
+// primary language of the platform's target market. If multi-language SMS is
+// needed in the future, it would require storing the user's preferred locale
+// during sign-up and selecting the message text here at send time.
 const WELCOME_MESSAGE =
   "Velkommen til SeMSe! Din organisasjon er registrert og du har fått en gratis simuleringslisens i 30 dager. Svar INFO for informasjon, STOPP for å melde deg av.";
 

@@ -129,9 +129,9 @@ function LoginPageContent() {
           <div className="mt-6 text-center space-y-2">
             <button
               onClick={() => router.push("/onboarding")}
-              className="text-sm text-blue-400 hover:text-blue-300 block w-full"
+              className="text-sm text-slate-400 hover:text-slate-300 block"
             >
-              {t("login.no_account")}
+              {t("login.register")}
             </button>
             <a
               href="#"
