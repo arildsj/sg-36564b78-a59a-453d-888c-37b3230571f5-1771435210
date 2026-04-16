@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 interface OnboardRequest {
   user_id: string;
@@ -15,6 +15,109 @@ interface OnboardResponse {
   tenant_id?: string;
   user_id?: string;
   debug?: any;
+}
+
+const WELCOME_MESSAGE =
+  "Velkommen til SeMSe! Din organisasjon er registrert og du har fått en gratis simuleringslisens i 30 dager. Svar INFO for informasjon, STOPP for å melde deg av.";
+
+/**
+ * Send a welcome SMS via the "Fair Teknologi Main" gateway and log it in the
+ * messages table so it appears in that gateway's inbox.
+ *
+ * Failures are logged but never propagate — a broken welcome SMS must never
+ * block successful account creation.
+ */
+async function sendWelcomeSms(
+  admin: SupabaseClient,
+  phone: string,
+  newTenantId: string,
+  newUserId: string
+): Promise<void> {
+  const GATEWAY_NAME = "Fair Teknologi Main";
+
+  // 1. Resolve gateway by name at runtime — never hardcode the UUID
+  const { data: gateway, error: gatewayError } = await admin
+    .from("sms_gateways")
+    .select("id, gw_phone, tenant_id")
+    .eq("name", GATEWAY_NAME)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (gatewayError || !gateway) {
+    console.error(`[welcome-sms] Gateway "${GATEWAY_NAME}" not found:`, gatewayError?.message ?? "no row");
+    return;
+  }
+
+  const now = new Date().toISOString();
+
+  // 2. Find or create the thread for this phone number inside the gateway's tenant
+  const { data: existingThread } = await admin
+    .from("message_threads")
+    .select("id")
+    .eq("contact_phone", phone)
+    .eq("tenant_id", gateway.tenant_id)
+    .eq("is_resolved", false)
+    .maybeSingle();
+
+  let threadId: string;
+
+  if (existingThread) {
+    threadId = existingThread.id;
+    await admin
+      .from("message_threads")
+      .update({ gateway_id: gateway.id, last_message_at: now, updated_at: now })
+      .eq("id", threadId);
+  } else {
+    const { data: newThread, error: threadError } = await admin
+      .from("message_threads")
+      .insert({
+        contact_phone: phone,
+        tenant_id: gateway.tenant_id,
+        gateway_id: gateway.id,
+        last_message_at: now,
+      })
+      .select("id")
+      .single();
+
+    if (threadError || !newThread) {
+      console.error("[welcome-sms] Failed to create thread:", threadError?.message);
+      return;
+    }
+    threadId = newThread.id;
+  }
+
+  // 3. Log the outbound message — tenant_id = gateway owner so it shows in their inbox
+  const { error: msgError } = await admin
+    .from("messages")
+    .insert({
+      direction: "outbound",
+      from_number: gateway.gw_phone,
+      to_number: phone,
+      content: WELCOME_MESSAGE,
+      status: "sent",
+      gateway_id: gateway.id,
+      tenant_id: gateway.tenant_id,
+      thread_id: threadId,
+      thread_key: phone,
+      metadata: {
+        welcome_sms: true,
+        onboarding_tenant_id: newTenantId,
+        onboarding_user_id: newUserId,
+      },
+    });
+
+  if (msgError) {
+    console.error("[welcome-sms] Failed to insert message:", msgError.message);
+    return;
+  }
+
+  // 4. Keep thread last_message_at fresh (best-effort)
+  await admin
+    .from("message_threads")
+    .update({ last_message_at: now })
+    .eq("id", threadId);
+
+  console.log(`[welcome-sms] ✅ Sent to ${phone.substring(0, 6)}***`);
 }
 
 /**
@@ -214,6 +317,14 @@ export default async function handler(
     }
 
     console.log("✅ User profile created");
+
+    // STEP 3: Send welcome SMS — fire-and-forget; never blocks success response
+    try {
+      await sendWelcomeSms(supabaseAdmin, phone, tenantId, user_id);
+    } catch (smsErr: any) {
+      console.error("[welcome-sms] Unexpected error (ignored):", smsErr?.message);
+    }
+
     console.log("=== ONBOARD SUCCESS ===");
 
     // Success!
