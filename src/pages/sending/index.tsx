@@ -539,7 +539,7 @@ export default function SendingPage() {
         campaign_type: campaignType,
         status: isScheduled ? "scheduled" : "sending",
         sent_immediately: !isScheduled,
-        scheduled_at: scheduleDate || null,
+        scheduled_at: scheduleDate ? new Date(scheduleDate).toISOString() : null,
         tenant_id: profile.tenant_id,
         created_by: profile.id,
         group_id: selectedGroups[0].groupId,

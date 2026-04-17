@@ -9,33 +9,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const admin = createAdminClient();
 
-  const nowIso = new Date().toISOString();
-  console.log("[process-scheduled-sends] NOW (UTC):", nowIso);
-
-  // DIAGNOSTIC: fetch ALL campaigns with status='scheduled' regardless of time,
-  // so we can see their scheduled_at values vs NOW.
-  const { data: allScheduled, error: diagError } = await admin
-    .from("bulk_campaigns")
-    .select("id, name, status, scheduled_at")
-    .eq("status", "scheduled");
-  console.log("[process-scheduled-sends] All status='scheduled' rows:", JSON.stringify(allScheduled ?? diagError));
-
-  // DIAGNOSTIC: also check the 5 most-recently-updated campaigns of any status
-  const { data: recent } = await admin
-    .from("bulk_campaigns")
-    .select("id, name, status, scheduled_at, updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(5);
-  console.log("[process-scheduled-sends] 5 most-recent campaigns:", JSON.stringify(recent));
-
   // Find all scheduled campaigns whose send time has arrived
   const { data: campaigns, error: fetchError } = await admin
     .from("bulk_campaigns")
     .select("id, name, tenant_id")
     .eq("status", "scheduled")
-    .lte("scheduled_at", nowIso);
-
-  console.log("[process-scheduled-sends] Campaigns due now:", campaigns?.length ?? 0, JSON.stringify(campaigns));
+    .lte("scheduled_at", new Date().toISOString());
 
   if (fetchError) {
     console.error("[process-scheduled-sends] Failed to fetch campaigns:", fetchError);
@@ -43,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (!campaigns?.length)
-    return res.status(200).json({ processed: 0, debug: { now: nowIso, allScheduledCount: allScheduled?.length ?? 0 } });
+    return res.status(200).json({ processed: 0 });
 
   const results: Array<{ campaign_id: string; status: "ok" | "error"; detail?: string }> = [];
 
