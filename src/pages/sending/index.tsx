@@ -539,7 +539,14 @@ export default function SendingPage() {
         campaign_type: campaignType,
         status: isScheduled ? "scheduled" : "sending",
         sent_immediately: !isScheduled,
-        scheduled_at: scheduleDate ? new Date(scheduleDate).toISOString() : null,
+        scheduled_at: (() => {
+          if (!scheduleDate) return null;
+          const localDate = new Date(scheduleDate);
+          // Interpret as Europe/Oslo and convert to UTC ISO string
+          const utcDate = new Date(localDate.toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+          const offset = localDate.getTime() - utcDate.getTime();
+          return new Date(localDate.getTime() + offset).toISOString();
+        })(),
         tenant_id: profile.tenant_id,
         created_by: profile.id,
         group_id: selectedGroups[0].groupId,
