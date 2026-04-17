@@ -4,63 +4,12 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Volume2, ArrowLeft } from "lucide-react";
+import { playAlert } from "@/services/SoundService";
 
-// ---------------------------------------------------------------------------
-// Web Audio API synth — the public/sounds/*.mp3 files are stub placeholders
-// (all identical, null-byte bodies) so file-based playback produces silence.
-// These synthesized tones are triggered by user gesture and have no autoplay
-// issues.
-// ---------------------------------------------------------------------------
-
-type Tone = { freq: number; duration: number; delay?: number };
-
-function playTones(tones: Tone[]) {
-  const ctx = new AudioContext();
-  tones.forEach(({ freq, duration, delay = 0 }) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = "sine";
-    osc.frequency.value = freq;
-    const start = ctx.currentTime + delay;
-    gain.gain.setValueAtTime(0.4, start);
-    gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
-    osc.start(start);
-    osc.stop(start + duration);
-  });
-}
-
-// Distinct tones per event type
 const SOUNDS = [
-  {
-    id: "incoming",
-    label: "Innkommende melding",
-    // Two-tone ascending chime: C5 → E5
-    play: () => playTones([
-      { freq: 523, duration: 0.18 },
-      { freq: 659, duration: 0.28, delay: 0.15 },
-    ]),
-  },
-  {
-    id: "activation",
-    label: "Aktivering",
-    // Three-tone ascending: C5 → E5 → G5
-    play: () => playTones([
-      { freq: 523, duration: 0.15 },
-      { freq: 659, duration: 0.15, delay: 0.13 },
-      { freq: 784, duration: 0.30, delay: 0.26 },
-    ]),
-  },
-  {
-    id: "escalation",
-    label: "Eskalering",
-    // Urgent double-pulse: G5 → G5
-    play: () => playTones([
-      { freq: 784, duration: 0.12 },
-      { freq: 784, duration: 0.20, delay: 0.18 },
-    ]),
-  },
+  { id: "incoming",   label: "Innkommende melding" },
+  { id: "activation", label: "Aktivering"          },
+  { id: "escalation", label: "Eskalering"          },
 ];
 
 export default function SoundsTestPage() {
@@ -93,13 +42,13 @@ export default function SoundsTestPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {SOUNDS.map(({ id, label, play }) => (
+              {SOUNDS.map(({ id, label }) => (
                 <div key={id} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
                   <span className="font-medium">{label}</span>
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={play}
+                    onClick={() => playAlert(id)}
                     title={`Spill av: ${label}`}
                   >
                     <Volume2 className="h-4 w-4" />
