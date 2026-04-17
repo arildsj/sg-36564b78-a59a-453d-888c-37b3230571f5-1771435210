@@ -305,12 +305,6 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
-                  <div className="flex justify-end pt-4">
-                    <Button className="gap-2">
-                      <Save className="h-4 w-4" />
-                      {t("settings.save_settings")}
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
