@@ -92,44 +92,44 @@ function fluteNote(
 //
 
 /**
- * Phrase: INCOMING — calm, 2.5–4 kHz.
+ * Phrase: INCOMING — calm, 1.3–1.8 kHz.
  * "tu-weee-wee": soft staccato, rising glide, settle.
- * Duration ≈ 430 ms
+ * Duration ≈ 600 ms
  */
 function phraseIncoming(ctx: AudioContext, offset: number): void {
-  fluteNote(ctx, 2637, 2637, offset,        0.085, 0.20); // E7  — short soft call
-  fluteNote(ctx, 3136, 3520, offset + 0.12, 0.165, 0.27); // G7→A7 rising glide
-  fluteNote(ctx, 2794, 2794, offset + 0.32, 0.110, 0.20); // F7  — settle
+  fluteNote(ctx, 1319, 1319, offset,         0.119, 0.20); // E6  — short soft call
+  fluteNote(ctx, 1568, 1760, offset + 0.168, 0.231, 0.27); // G6→A6 rising glide
+  fluteNote(ctx, 1397, 1397, offset + 0.448, 0.154, 0.20); // F6  — settle
 }
-const INCOMING_DUR = 0.43;
-const INCOMING_GAP = 0.42; // gap between phrase repetitions
+const INCOMING_DUR = 0.602;
+const INCOMING_GAP = 0.588; // gap between phrase repetitions
 
 /**
- * Phrase: ACTIVATION — brighter, 4–6 kHz, slightly faster.
+ * Phrase: ACTIVATION — brighter, 2–3 kHz, slightly faster.
  * Three-note ascending flourish.
- * Duration ≈ 340 ms
+ * Duration ≈ 476 ms
  */
 function phraseActivation(ctx: AudioContext, offset: number): void {
-  fluteNote(ctx, 4186, 4186, offset,        0.075, 0.24); // C8
-  fluteNote(ctx, 4699, 4699, offset + 0.11, 0.075, 0.26); // D8
-  fluteNote(ctx, 5274, 4978, offset + 0.22, 0.120, 0.28); // E8→D#8 slight fall
+  fluteNote(ctx, 2093, 2093, offset,         0.105, 0.24); // C7
+  fluteNote(ctx, 2350, 2350, offset + 0.154, 0.105, 0.26); // D7
+  fluteNote(ctx, 2637, 2489, offset + 0.308, 0.168, 0.28); // E7→D#7 slight fall
 }
-const ACTIVATION_DUR = 0.34;
-const ACTIVATION_GAP = 0.36;
+const ACTIVATION_DUR = 0.476;
+const ACTIVATION_GAP = 0.504;
 
 /**
- * Phrase: ESCALATION — highest register, 5.5–8 kHz, urgent staccato.
+ * Phrase: ESCALATION — highest register, 2.8–3.5 kHz, urgent staccato.
  * Four rapid notes: rise to peak then drop.
- * Duration ≈ 365 ms
+ * Duration ≈ 511 ms
  */
 function phraseEscalation(ctx: AudioContext, offset: number): void {
-  fluteNote(ctx, 5588, 5588, offset,        0.070, 0.28); // F8
-  fluteNote(ctx, 6272, 6272, offset + 0.10, 0.065, 0.30); // G8
-  fluteNote(ctx, 7040, 7040, offset + 0.19, 0.065, 0.33); // A8 (peak)
-  fluteNote(ctx, 5919, 5919, offset + 0.28, 0.085, 0.26); // F#8 — drop
+  fluteNote(ctx, 2794, 2794, offset,         0.098, 0.28); // F7
+  fluteNote(ctx, 3136, 3136, offset + 0.140, 0.091, 0.30); // G7
+  fluteNote(ctx, 3520, 3520, offset + 0.266, 0.091, 0.33); // A7 (peak)
+  fluteNote(ctx, 2960, 2960, offset + 0.392, 0.119, 0.26); // F#7 — drop
 }
-const ESCALATION_DUR = 0.365;
-const ESCALATION_GAP = 0.28;
+const ESCALATION_DUR = 0.511;
+const ESCALATION_GAP = 0.392;
 
 // ─── Sound-ID → phrase + repetition mapping ──────────────────────────────────
 
