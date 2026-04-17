@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Find all scheduled campaigns whose send time has arrived
   const { data: campaigns, error: fetchError } = await admin
     .from("bulk_campaigns")
-    .select("id, name, tenant_id, scheduled_at")
+    .select("id, name, tenant_id")
     .eq("status", "scheduled")
     .lte("scheduled_at", new Date().toISOString());
 
@@ -27,10 +27,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const results: Array<{ campaign_id: string; status: "ok" | "error"; detail?: string }> = [];
 
   for (const campaign of campaigns) {
-    console.log(`[process-scheduled-sends] Invoking bulk-campaign for ${campaign.id} (${campaign.name}), scheduled_at=${(campaign as any).scheduled_at}`);
     try {
       const { data, error } = await admin.functions.invoke("bulk-campaign", {
-        body: { campaignId: campaign.id },
+        body: { campaign_id: campaign.id },
       });
 
       if (error) {
@@ -46,10 +45,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       if (data && typeof data === "object" && "error" in data) throw new Error(String(data.error));
 
-      console.log(
-        `[process-scheduled-sends] Campaign ${campaign.id} (${campaign.name}) done:`,
-        `sent=${data?.sent ?? "?"}, failed=${data?.failed ?? "?"}`
-      );
       results.push({ campaign_id: campaign.id, status: "ok" });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
@@ -71,6 +66,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const succeeded = results.filter((r) => r.status === "ok").length;
   const failed = results.filter((r) => r.status === "error").length;
 
-  console.log(`[process-scheduled-sends] ${succeeded} succeeded, ${failed} failed`);
   return res.status(200).json({ processed: campaigns.length, succeeded, failed, results });
 }
