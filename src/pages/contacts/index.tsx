@@ -469,7 +469,7 @@ export default function ContactsPage() {
   return (
     <>
       <Head>
-        <title>{t("contacts.title")} | SeMSe</title>
+        <title>{t("contacts.title")} – SeMSe</title>
         <meta name="description" content={t("contacts.description")} />
       </Head>
 

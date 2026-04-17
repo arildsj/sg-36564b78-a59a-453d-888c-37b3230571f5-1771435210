@@ -7,7 +7,7 @@ export default function NotFound() {
   return (
     <>
       <Head>
-        <title>404 - Page Not Found</title>
+        <title>404 – SeMSe</title>
         <meta name="description" content="Page not found" />
         <link rel="icon" href="/favicon.ico" />
       </Head>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Head from "next/head";
 import { useLanguage } from "@/contexts/LanguageProvider";
 import { useToast } from "@/hooks/use-toast";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -777,6 +778,7 @@ export default function AdminPage() {
 
   return (
     <AppLayout>
+      <Head><title>{t("admin.title")} – SeMSe</title></Head>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>

@@ -394,7 +394,7 @@ export default function PrintToSMS() {
   return (
     <AppLayout>
       <SEO 
-        title="Print to SMS - SeMSe"
+        title="Print til SMS – SeMSe"
         description="Convert copied content into structured SMS/MMS labels"
       />
 

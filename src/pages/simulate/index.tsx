@@ -327,7 +327,7 @@ export default function SimulatePage() {
   return (
     <>
       <Head>
-        <title>{t("simulate.title")} - SeMSe</title>
+        <title>{t("simulate.title")} – SeMSe</title>
       </Head>
 
       <AppLayout>

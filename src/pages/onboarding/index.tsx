@@ -369,7 +369,7 @@ export default function OnboardingPage() {
   return (
     <>
       <Head>
-        <title>Onboarding - SeMSe</title>
+        <title>Registrering – SeMSe</title>
       </Head>
 
       <div className="min-h-screen bg-background p-6">

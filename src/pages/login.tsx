@@ -15,8 +15,8 @@ export default function LoginPage() {
   return (
     <>
       <SEO
-        title="Login"
-        description="Sign in to SeMSe"
+        title="Login – SeMSe"
+        description="Logg inn på SeMSe"
       />
       <LoginPageContent />
     </>

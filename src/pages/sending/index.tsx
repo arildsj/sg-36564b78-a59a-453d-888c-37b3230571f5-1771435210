@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Head from "next/head";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageProvider";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -671,6 +672,7 @@ export default function SendingPage() {
 
   return (
     <AppLayout>
+      <Head><title>{t("sending.page_title")} – SeMSe</title></Head>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t("sending.page_title")}</h1>

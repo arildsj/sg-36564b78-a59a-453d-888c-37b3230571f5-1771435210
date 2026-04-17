@@ -302,7 +302,7 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <Head><title>SeMSe Dashboard</title></Head>
+      <Head><title>Dashboard – SeMSe</title></Head>
 
       <div className="space-y-6">
         {/* Header */}

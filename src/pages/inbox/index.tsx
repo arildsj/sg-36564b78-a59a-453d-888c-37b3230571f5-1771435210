@@ -966,7 +966,7 @@ export default function InboxPage() {
   return (
     <>
       <Head>
-        <title>{t("inbox.title")} | SeMSe</title>
+        <title>{t("inbox.title")} – SeMSe</title>
         <meta name="description" content={t("inbox.description")} />
       </Head>
 

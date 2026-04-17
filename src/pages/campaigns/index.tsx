@@ -91,7 +91,7 @@ export default function CampaignsPage() {
     return (
       <>
         <Head>
-          <title>{t("campaigns.title")} - SeMSe</title>
+          <title>{t("campaigns.title")} – SeMSe</title>
         </Head>
         <AppLayout>
           <div className="flex items-center justify-center h-64">
@@ -105,7 +105,7 @@ export default function CampaignsPage() {
   return (
     <>
       <Head>
-        <title>{t("campaigns.title")} - SeMSe</title>
+        <title>{t("campaigns.title")} – SeMSe</title>
       </Head>
 
       <AppLayout>

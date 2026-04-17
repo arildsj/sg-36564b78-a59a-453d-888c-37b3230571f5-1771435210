@@ -25,7 +25,7 @@ export default function SettingsPage() {
   return (
     <>
       <Head>
-        <title>{t("settings.title")} | SeMSe</title>
+        <title>{t("settings.title")} – SeMSe</title>
         <meta name="description" content={t("settings.description")} />
       </Head>
 

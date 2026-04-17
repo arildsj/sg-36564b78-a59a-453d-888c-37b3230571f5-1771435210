@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Head from "next/head";
 import { useRouter } from "next/router";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -165,6 +166,7 @@ export default function CampaignDashboard() {
 
   return (
     <AppLayout>
+      <Head><title>{t("campaigns.dashboard.title")} – SeMSe</title></Head>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
