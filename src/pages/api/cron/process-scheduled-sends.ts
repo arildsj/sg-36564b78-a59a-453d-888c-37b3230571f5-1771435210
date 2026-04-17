@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Find all scheduled campaigns whose send time has arrived
   const { data: campaigns, error: fetchError } = await admin
     .from("bulk_campaigns")
-    .select("id, name, tenant_id")
+    .select("id, name, tenant_id, scheduled_at")
     .eq("status", "scheduled")
     .lte("scheduled_at", new Date().toISOString());
 
@@ -27,12 +27,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const results: Array<{ campaign_id: string; status: "ok" | "error"; detail?: string }> = [];
 
   for (const campaign of campaigns) {
+    console.log(`[process-scheduled-sends] Invoking bulk-campaign for ${campaign.id} (${campaign.name}), scheduled_at=${(campaign as any).scheduled_at}`);
     try {
       const { data, error } = await admin.functions.invoke("bulk-campaign", {
         body: { campaignId: campaign.id },
       });
 
-      if (error) throw new Error(error.message || "Edge Function error");
+      if (error) {
+        // FunctionsHttpError carries the actual response on .context (a Response object).
+        // Read the body so the real error message appears in Vercel logs.
+        let detail = error.message || "Edge Function error";
+        try {
+          const body = await (error as any).context?.text?.();
+          const status = (error as any).context?.status ?? "?";
+          detail = `HTTP ${status}: ${body || detail}`;
+        } catch { /* response body unreadable, keep generic message */ }
+        throw new Error(detail);
+      }
       if (data && typeof data === "object" && "error" in data) throw new Error(String(data.error));
 
       console.log(
