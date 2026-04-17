@@ -66,6 +66,7 @@ export default function AdminPage() {
   const [userRole, setUserRole] = useState<string>("member");
   const [tenantId, setTenantId] = useState<string>("");
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
 
   const [newUser, setNewUser] = useState({
     email: "",
@@ -619,6 +620,7 @@ export default function AdminPage() {
         description: `${newGroup.name} er klar til bruk`,
       });
 
+      setCreateGroupOpen(false);
       fetchData();
       setNewGroup({
         name: "",
@@ -1185,13 +1187,11 @@ export default function AdminPage() {
                     {t("admin.groups_description")}
                   </CardDescription>
                 </div>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      {t("admin.new_group_btn")}
-                    </Button>
-                  </DialogTrigger>
+                <Dialog open={createGroupOpen} onOpenChange={setCreateGroupOpen}>
+                  <Button onClick={() => setCreateGroupOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("admin.new_group_btn")}
+                  </Button>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle id="create-group-dialog-title">{t("admin.create_group_title")}</DialogTitle>
