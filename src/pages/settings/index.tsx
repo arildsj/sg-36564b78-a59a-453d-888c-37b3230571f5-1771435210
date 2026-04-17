@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Clock, MessageSquare, Bell, Save } from "lucide-react";
+import { Clock, MessageSquare, Bell, Save, Volume2 } from "lucide-react";
+import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageProvider";
 
 export default function SettingsPage() {
@@ -287,6 +288,20 @@ export default function SettingsPage() {
                         </p>
                       </div>
                       <Switch defaultChecked />
+                    </div>
+
+                    <div className="flex items-center justify-between border-t pt-4">
+                      <div>
+                        <h3 className="font-semibold">Lydvarsler</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Test varsellyder – Turdus philomelos
+                        </p>
+                      </div>
+                      <Button variant="outline" size="icon" asChild>
+                        <Link href="/test/sounds">
+                          <Volume2 className="h-4 w-4" />
+                        </Link>
+                      </Button>
                     </div>
                   </div>
 
