@@ -40,6 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
           "x-cron-secret": process.env.CRON_SECRET ?? "",
         },
         body: JSON.stringify({ campaign_id: campaign.id }),
