@@ -12,16 +12,50 @@ serve(async (req) => {
   }
 
   try {
+    // ── Auth gate ──────────────────────────────────────────────────────────────
+    // Supabase infrastructure has already verified the JWT signature before this
+    // code runs, so we can safely read the decoded payload to check the role.
+    // Service-role callers (e.g. the Vercel cron) are allowed through directly.
+    // Regular user callers must have a valid session.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+
+    let isServiceRole = false;
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        isServiceRole = payload?.role === "service_role";
+      } catch { /* malformed JWT — fall through to user-session check */ }
+    }
+
+    if (!isServiceRole) {
+      // Verify user session for non-service-role callers
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { campaignId } = await req.json();
+    const body = await req.json();
+    // Accept both snake_case (campaign_id, from cron) and camelCase (campaignId)
+    const campaignId = body.campaign_id ?? body.campaignId;
 
     if (!campaignId) {
       return new Response(
-        JSON.stringify({ error: "Campaign ID is required" }),
+        JSON.stringify({ error: "campaign_id is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
