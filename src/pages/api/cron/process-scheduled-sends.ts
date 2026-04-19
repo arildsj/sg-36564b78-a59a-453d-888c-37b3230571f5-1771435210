@@ -35,6 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       // Use plain fetch — no Authorization header — so Supabase's gateway does not
       // attempt JWT verification. Auth is handled by the shared x-cron-secret header.
+      console.log(`[process-scheduled-sends] Calling Edge Function: ${edgeFunctionUrl} | CRON_SECRET defined: ${!!process.env.CRON_SECRET}`);
       const response = await fetch(edgeFunctionUrl, {
         method: "POST",
         headers: {
@@ -44,6 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         body: JSON.stringify({ campaign_id: campaign.id }),
       });
 
+      console.log(`[process-scheduled-sends] Edge Function response status: ${response.status}`);
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
