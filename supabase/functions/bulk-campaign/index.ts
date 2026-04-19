@@ -19,7 +19,6 @@ serve(async (req) => {
     const cronSecret = Deno.env.get("CRON_SECRET");
     const incomingCronSecret = req.headers.get("x-cron-secret");
     const isCronCaller = cronSecret && incomingCronSecret === cronSecret;
-    console.log("[auth] cronSecret present:", !!cronSecret, "| incomingSecret present:", !!incomingCronSecret, "| match:", isCronCaller);
 
     if (!isCronCaller) {
       const authHeader = req.headers.get("Authorization") ?? "";
