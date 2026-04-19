@@ -24,26 +24,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!campaigns?.length)
     return res.status(200).json({ processed: 0 });
 
+  // Build the Edge Function URL from NEXT_PUBLIC_SUPABASE_URL.
+  // Pattern: https://<project-ref>.supabase.co → https://<project-ref>.supabase.co/functions/v1/bulk-campaign
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const edgeFunctionUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/bulk-campaign`;
+
   const results: Array<{ campaign_id: string; status: "ok" | "error"; detail?: string }> = [];
 
   for (const campaign of campaigns) {
     try {
-      const { data, error } = await admin.functions.invoke("bulk-campaign", {
-        body: { campaign_id: campaign.id },
+      // Use plain fetch — no Authorization header — so Supabase's gateway does not
+      // attempt JWT verification. Auth is handled by the shared x-cron-secret header.
+      const response = await fetch(edgeFunctionUrl, {
+        method: "POST",
         headers: {
+          "Content-Type": "application/json",
           "x-cron-secret": process.env.CRON_SECRET ?? "",
         },
+        body: JSON.stringify({ campaign_id: campaign.id }),
       });
 
-      if (error) {
-        // FunctionsHttpError carries the actual response on .context (a Response object).
-        // Read the body so the real error message appears in Vercel logs.
-        let detail = error.message || "Edge Function error";
-        try {
-          const body = await (error as any).context?.text?.();
-          const status = (error as any).context?.status ?? "?";
-          detail = `HTTP ${status}: ${body || detail}`;
-        } catch { /* response body unreadable, keep generic message */ }
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const detail = (data && typeof data === "object" && "error" in data)
+          ? String(data.error)
+          : `HTTP ${response.status}`;
         throw new Error(detail);
       }
       if (data && typeof data === "object" && "error" in data) throw new Error(String(data.error));
