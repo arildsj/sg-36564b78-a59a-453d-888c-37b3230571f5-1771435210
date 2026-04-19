@@ -13,23 +13,15 @@ serve(async (req) => {
 
   try {
     // ── Auth gate ──────────────────────────────────────────────────────────────
-    // Supabase infrastructure has already verified the JWT signature before this
-    // code runs, so we can safely read the decoded payload to check the role.
-    // Service-role callers (e.g. the Vercel cron) are allowed through directly.
-    // Regular user callers must have a valid session.
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    // Internal cron callers authenticate via x-cron-secret (shared secret stored
+    // in both Vercel env and Supabase secrets).  All other callers must have a
+    // valid Supabase user session via the Authorization header.
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const incomingCronSecret = req.headers.get("x-cron-secret");
+    const isCronCaller = cronSecret && incomingCronSecret === cronSecret;
 
-    let isServiceRole = false;
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        isServiceRole = payload?.role === "service_role";
-      } catch { /* malformed JWT — fall through to user-session check */ }
-    }
-
-    if (!isServiceRole) {
-      // Verify user session for non-service-role callers
+    if (!isCronCaller) {
+      const authHeader = req.headers.get("Authorization") ?? "";
       const userClient = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
         Deno.env.get("SUPABASE_ANON_KEY") ?? "",

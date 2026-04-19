@@ -30,6 +30,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const { data, error } = await admin.functions.invoke("bulk-campaign", {
         body: { campaign_id: campaign.id },
+        headers: {
+          "x-cron-secret": process.env.CRON_SECRET ?? "",
+        },
       });
 
       if (error) {
